@@ -1,16 +1,17 @@
 import sys
+import enum
+import typing
 import datetime
+# noinspection PyUnresolvedReferences
 import builtins
-from enum import Enum
-from typing import Mapping, Union, Any
 from dataclasses import is_dataclass, MISSING
 try:
     from typing import GenericMeta as Generic
 except ImportError:  # python 3.7
     from typing import _GenericAlias as Generic
 
-import msgpack
-import yaml
+# noinspection PyUnresolvedReferences
+from mashumaro.exceptions import MissingField
 
 
 def is_generic(type_):
@@ -26,7 +27,7 @@ if sys.version_info.minor == 6:
         return type_.__extra__ is dict
 
     def is_generic_union(type_):
-        return type_.__extra__ is Union
+        return type_.__extra__ is typing.Union
 
 elif sys.version_info.minor == 7:
 
@@ -37,7 +38,13 @@ elif sys.version_info.minor == 7:
         return type_.__origin__ is dict
 
     def is_generic_union(type_):
-        return type_.__origin__ is Union
+        return type_.__origin__ is typing.Union
+
+else:
+    raise RuntimeError(
+        "Python %d.%d.%d is not supported by mashumaro" %
+        (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
+    )
 
 
 class indent:
@@ -51,44 +58,13 @@ class indent:
         indent.current = indent.current[:-4]
 
 
-def default_packer(o):
-    if isinstance(o, datetime.datetime):
-        return o.timestamp()
-
-
-class MissingField(Exception):
-    def __init__(self, field_name, field_type, holder_class):
-        self.field_name = field_name
-        self.field_type = field_type
-        self.holder_class = holder_class
-
-    @property
-    def field_type_name(self):
-        if is_generic(self.field_type):
-            return str(self.field_type)
-        else:
-            return f"{self.field_type.__module__}.{self.field_type.__name__}"
-
-    @property
-    def holder_class_name(self):
-        return self.holder_class.__name__
-        # return f"{self.holder_class.__module__}." \
-        #        f"{self.holder_class.__name__}"
-
-    def __str__(self):
-        return f'Field "{self.field_name}" of type {self.field_type_name}' \
-               f' is missing in {self.holder_class} instance'
-
-
 def add_from_dict(cls):
 
     def type_name(type_):
-        if type_ is Any:
+        if type_ is typing.Any:
             return str(type_)
-            # return f"{type_module}.Any"
         elif is_generic(type_):
             return str(type_)
-            # return "f{type_module}.{str(type_)}"
         else:
             return f"{type_.__module__}.{type_.__name__}"
 
@@ -97,7 +73,7 @@ def add_from_dict(cls):
 
     def set_field_value(fname, ftype):
         if is_dataclass(ftype):
-            add_line(f"if not isinstance(value, dict):")
+            add_line(f"if not isinstance(value, base):")
             with indent():
                 add_line(f"raise TypeError('{fname} value should be "
                          f"a dictionary object not %s' % type(value))")
@@ -129,7 +105,7 @@ def add_from_dict(cls):
             with indent():
                 add_line(f"kwargs['{fname}'] = "
                          f"datetime.datetime.utcfromtimestamp(value)")
-        elif ftype is not Any and issubclass(ftype, Enum):
+        elif ftype is not typing.Any and issubclass(ftype, enum.Enum):
             add_line(f"kwargs['{fname}'] = {type_name(ftype)}(value)")
         else:
             add_line(f"kwargs['{fname}'] = value")
@@ -145,7 +121,7 @@ def add_from_dict(cls):
     exclude = {'builtins', 'typing', 'datetime'}
 
     add_line("@classmethod")
-    add_line("def from_dict(cls, d: Mapping):")
+    add_line("def from_dict(cls, d: typing.Mapping):")
     with indent():
         add_line("kwargs = {}")
         for field_name, field_type in fields.items():
@@ -171,7 +147,6 @@ def add_from_dict(cls):
         add_line("return cls(**kwargs)")
     add_line(f"setattr(cls, 'from_dict', from_dict)")
 
-    # print('\n'.join(lines))
     exec("\n".join(lines), globals(), locals())
 
 
@@ -216,36 +191,4 @@ def add_to_dict(cls):
     exec("\n".join(lines), globals(), locals())
 
 
-class DataClassDictMixin:
-    def __init_subclass__(cls, **kwargs):
-        add_from_dict(cls)
-        add_to_dict(cls)
-
-    def to_dict(self) -> dict:
-        pass
-
-    @classmethod
-    def from_dict(cls, d: Mapping):
-        pass
-
-
-class DataClassMessagePackMixin(DataClassDictMixin):
-    def to_msgpack(self):
-        return msgpack.packb(
-            self.to_dict(), default=default_packer, use_bin_type=True)
-
-    @classmethod
-    def from_msgpack(cls, data: bytes):
-        return cls.from_dict(msgpack.unpackb(data, raw=False))
-
-
-class DataClassYAMLMixin(DataClassDictMixin):
-    def to_yaml(self):
-        return yaml.dump(self.to_dict())
-
-    @classmethod
-    def from_yaml(cls, data: bytes):
-        return cls.from_dict(yaml.load(data))
-
-
-__all__ = [DataClassDictMixin, DataClassMessagePackMixin, DataClassYAMLMixin]
+__all__ = [add_from_dict, add_to_dict, is_generic]
