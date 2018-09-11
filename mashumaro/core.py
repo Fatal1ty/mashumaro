@@ -105,7 +105,10 @@ def add_from_dict(cls):
                      f"{type_name(ftype)}.from_dict(value)")
         elif is_generic(ftype):
             if is_generic_list(ftype):
-                arg_type, = ftype.__args__
+                arg_type, *_ = ftype.__args__
+                # TODO: Добавить поддержку Union
+                # TODO: добавить поддержку Dict
+                # TODO: добавить поддержку Collection
                 arg_type_name = arg_type.__name__
                 if is_dataclass(arg_type):
                     add_line(f"if not isinstance(value, list):")
@@ -118,7 +121,6 @@ def add_from_dict(cls):
                     add_line(f"kwargs['{fname}'] = value")
             elif is_generic_union(ftype):
                 add_line(f"kwargs['{fname}'] = value")
-            # TODO: добавить Generic Dict
         elif ftype is datetime.datetime:
             add_line(f"if isinstance(value, datetime.datetime):")
             with indent():
@@ -196,7 +198,10 @@ def add_to_dict(cls):
             if is_dataclass(field_type):
                 add_line(f"kwargs['{field_name}'] = value.to_dict()")
             elif is_generic(field_type):
-                arg_type, = field_type.__args__
+                arg_type, *_ = field_type.__args__
+                # TODO: Добавить поддержку Union
+                # TODO: добавить поддержку Dict
+                # TODO: добавить поддержку Collection
                 if is_generic_list(field_type):
                     if is_dataclass(arg_type):
                         add_line(f"kwargs['{field_name}'] = "
