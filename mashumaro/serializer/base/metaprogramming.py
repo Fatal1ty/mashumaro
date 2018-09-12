@@ -1,5 +1,6 @@
 import sys
 import enum
+import types
 import typing
 import datetime
 # noinspection PyUnresolvedReferences
@@ -12,6 +13,10 @@ except ImportError:  # python 3.7
 
 # noinspection PyUnresolvedReferences
 from mashumaro.exceptions import MissingField
+
+
+def get_imported_module_names():
+    return {k for k, v in globals().items() if isinstance(v, types.ModuleType)}
 
 
 def is_generic(type_):
@@ -117,8 +122,7 @@ def add_from_dict(cls):
 
     defaults = {name: namespace.get(name, MISSING) for name in fields}
     lines = list()
-    modules = set()
-    exclude = {'builtins', 'typing', 'datetime'}
+    modules = get_imported_module_names()
 
     add_line("@classmethod")
     add_line("def from_dict(cls, d: typing.Mapping):")
@@ -126,11 +130,10 @@ def add_from_dict(cls):
         add_line("kwargs = {}")
         for field_name, field_type in fields.items():
             if field_type.__module__ not in modules:
-                if field_type.__module__ not in exclude:
-                    modules.add(field_type.__module__)
-                    add_line(f"import {field_type.__module__}")
-                    add_line(f"globals()['{field_type.__module__}'] = "
-                             f"{field_type.__module__}")
+                modules.add(field_type.__module__)
+                add_line(f"import {field_type.__module__}")
+                add_line(f"globals()['{field_type.__module__}'] = "
+                         f"{field_type.__module__}")
             add_line(f"value = d.get('{field_name}', MISSING)")
             if defaults[field_name] is MISSING:
                 add_line(f"if value is MISSING:")
