@@ -9,6 +9,8 @@ from dataclasses import is_dataclass, MISSING
 try:
     from typing import GenericMeta as Generic
 except ImportError:  # python 3.7
+    # noinspection PyProtectedMember
+    # noinspection PyUnresolvedReferences
     from typing import _GenericAlias as Generic
 
 # noinspection PyUnresolvedReferences
