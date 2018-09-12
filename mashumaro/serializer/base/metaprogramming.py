@@ -73,7 +73,7 @@ def add_from_dict(cls):
 
     def set_field_value(fname, ftype):
         if is_dataclass(ftype):
-            add_line(f"if not isinstance(value, base):")
+            add_line(f"if not isinstance(value, dict):")
             with indent():
                 add_line(f"raise TypeError('{fname} value should be "
                          f"a dictionary object not %s' % type(value))")
