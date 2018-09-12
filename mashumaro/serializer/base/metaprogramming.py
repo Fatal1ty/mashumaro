@@ -16,7 +16,8 @@ from mashumaro.exceptions import MissingField
 
 
 def get_imported_module_names():
-    return {k for k, v in globals().items() if isinstance(v, types.ModuleType)}
+    return {value.__name__ for value in globals().values()
+            if isinstance(value, types.ModuleType)}
 
 
 def is_generic(type_):
@@ -121,8 +122,8 @@ def add_from_dict(cls):
         return
 
     defaults = {name: namespace.get(name, MISSING) for name in fields}
-    lines = list()
     modules = get_imported_module_names()
+    lines = list()
 
     add_line("@classmethod")
     add_line("def from_dict(cls, d: typing.Mapping):")
