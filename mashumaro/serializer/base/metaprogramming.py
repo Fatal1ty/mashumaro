@@ -64,6 +64,13 @@ def is_generic(t):
             raise NotImplementedError
 
 
+def is_union(t):
+    try:
+        return t.__origin__ is typing.Union
+    except AttributeError:
+        return False
+
+
 class CodeBuilder:
     def __init__(self, cls):
         self.cls = cls
@@ -273,7 +280,7 @@ class CodeBuilder:
         if is_special_typing_primitive(origin_type):
             if origin_type in (typing.Any, typing.AnyStr):
                 add_fkey('value')
-            elif origin_type is typing.Union:
+            elif is_union(origin_type):
                 # TODO: выбирать в рантайме подходящий тип
                 add_fkey('value')
             elif hasattr(origin_type, '__constraints__'):
