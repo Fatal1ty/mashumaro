@@ -1,200 +1,416 @@
 import sys
-import enum
 import types
 import typing
-import datetime
+import inspect
 # noinspection PyUnresolvedReferences
 import builtins
+import collections
+import collections.abc
+# noinspection PyUnresolvedReferences
+from binascii import hexlify, unhexlify
+from contextlib import contextmanager
 from dataclasses import is_dataclass, MISSING
-try:
-    from typing import GenericMeta as Generic
-except ImportError:  # python 3.7
-    # noinspection PyProtectedMember
-    # noinspection PyUnresolvedReferences
-    from typing import _GenericAlias as Generic
 
 # noinspection PyUnresolvedReferences
-from mashumaro.exceptions import MissingField
+from mashumaro.exceptions import MissingField, UnserializableField,\
+    UnserializableDataError
+from mashumaro.abc import SerializableSequence, SerializableMapping
 
 
 def get_imported_module_names():
+    # noinspection PyUnresolvedReferences
     return {value.__name__ for value in globals().values()
             if isinstance(value, types.ModuleType)}
 
 
-def is_generic(type_):
-    return isinstance(type_, Generic)
-
-
-if sys.version_info.minor == 6:
-
-    def is_generic_list(type_):
-        return type_.__extra__ is list
-
-    def is_generic_dict(type_):
-        return type_.__extra__ is dict
-
-    def is_generic_union(type_):
-        return type_.__extra__ is typing.Union
-
-elif sys.version_info.minor == 7:
-
-    def is_generic_list(type_):
-        return type_.__origin__ is list
-
-    def is_generic_dict(type_):
-        return type_.__origin__ is dict
-
-    def is_generic_union(type_):
-        return type_.__origin__ is typing.Union
-
-else:
-    raise RuntimeError(
-        "Python %d.%d.%d is not supported by mashumaro" %
-        (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
-    )
-
-
-class indent:
-
-    current = ''
-
-    def __enter__(self):
-        indent.current += ' ' * 4
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        indent.current = indent.current[:-4]
-
-
-def add_from_dict(cls):
-
-    def type_name(type_):
-        if type_ is typing.Any:
-            return str(type_)
-        elif is_generic(type_):
-            return str(type_)
+def get_type_origin(t):
+    try:
+        return t.__origin__
+    except AttributeError:
+        if sys.version_info.minor == 6:
+            try:
+                return t.extra__
+            except AttributeError:
+                return t
         else:
-            return f"{type_.__module__}.{type_.__name__}"
+            return t
 
-    def add_line(line):
-        lines.append(f"{indent.current}{line}")
 
-    def set_field_value(fname, ftype):
+def type_name(t):
+    try:
+        return f"{t.__module__}.{t.__name__}"
+    except AttributeError:
+        return str(t)
+
+
+def is_special_typing_primitive(t):
+    try:
+        issubclass(t, object)
+        return False
+    except TypeError:
+        return True
+
+
+def is_generic(t):
+    try:
+        # noinspection PyProtectedMember
+        # noinspection PyUnresolvedReferences
+        return t.__class__ is typing._GenericAlias
+    except AttributeError:
+        if sys.version_info.minor == 6:
+            try:
+                # noinspection PyUnresolvedReferences
+                return t.__class__ == typing.GenericMeta
+            except AttributeError:
+                return False
+        else:
+            raise NotImplementedError
+
+
+class CodeBuilder:
+    def __init__(self, cls):
+        self.cls = cls
+        self.lines = None
+        self.modules = None
+        self._current_indent = None
+
+    def reset(self):
+        self.lines = []
+        self.modules = get_imported_module_names()
+        self._current_indent = ''
+
+    @property
+    def namespace(self):
+        return self.cls.__dict__
+
+    @property
+    def fields(self):
+        return typing.get_type_hints(self.cls)
+
+    @property
+    def defaults(self):
+        return {name: self.namespace.get(name, MISSING) for name in self.fields}
+
+    def _add_type_modules(self, *types_):
+        for t in types_:
+            module = t.__module__
+            if module not in self.modules:
+                self.modules.add(module)
+                self.add_line(f"import {module}")
+                self.add_line(f"globals()['{module}'] = {module}")
+            args = getattr(t, '__args__', ())
+            if args:
+                self._add_type_modules(*args)
+            constraints = getattr(t, '__constraints__', ())
+            if constraints:
+                self._add_type_modules(*constraints)
+
+    def add_line(self, line):
+        self.lines.append(f"{self._current_indent}{line}")
+
+    @contextmanager
+    def indent(self):
+        self._current_indent += ' ' * 4
+        try:
+            yield
+        finally:
+            self._current_indent = self._current_indent[:-4]
+
+    def compile(self):
+        exec("\n".join(self.lines), globals(), self.__dict__)
+
+    def add_from_dict(self):
+
+        self.reset()
+        if not self.fields:
+            return
+
+        self.add_line('@classmethod')
+        self.add_line("def from_dict(cls, d):")
+        with self.indent():
+            self.add_line('try:')
+            with self.indent():
+                self.add_line("kwargs = {}")
+                for fname, ftype in self.fields.items():
+                    self._add_type_modules(ftype)
+                    self.add_line(f"value = d.get('{fname}', MISSING)")
+                    if self.defaults[fname] is MISSING:
+                        self.add_line(f"if value is MISSING:")
+                        with self.indent():
+                            self._add_type_modules(ftype)
+                            self.add_line(f"raise MissingField('{fname}',"
+                                          f"{type_name(ftype)},cls)")
+                        self.add_line(f"else:")
+                        with self.indent():
+                            self._unpack_field_value(fname, ftype, self.cls)
+                    else:
+                        self.add_line("if value is not MISSING:")
+                        with self.indent():
+                            self._unpack_field_value(fname, ftype, self.cls)
+            self.add_line('except AttributeError:')
+            with self.indent():
+                self.add_line('if not isinstance(d, dict):')
+                with self.indent():
+                    self.add_line(f"raise ValueError('Argument for "
+                                  f"{type_name(self.cls)}.from_dict method "
+                                  f"should be a dict instance')")
+                self.add_line('else:')
+                with self.indent():
+                    self.add_line('raise')
+            self.add_line("return cls(**kwargs)")
+        self.add_line(f"setattr(cls, 'from_dict', from_dict)")
+        self.compile()
+
+    def add_to_dict(self):
+
+        self.reset()
+        if not self.fields:
+            return
+
+        self.add_line("def to_dict(self):")
+        with self.indent():
+            self.add_line("kwargs = {}")
+            for fname, ftype in self.fields.items():
+                self.add_line(f"value = getattr(self, '{fname}')")
+                self._pack_field_value(fname, ftype, self.cls)
+            self.add_line("return kwargs")
+        self.add_line(f"setattr(cls, 'to_dict', to_dict)")
+        self.compile()
+
+    def _pack_field_value(self, fname, ftype, parent):
+
+        is_serializable = False
+
+        def add_fkey(expr):
+            nonlocal is_serializable
+            is_serializable = True
+            self.add_line(f"kwargs['{fname}'] = {expr}")
+
         if is_dataclass(ftype):
-            add_line(f"if not isinstance(value, dict):")
-            with indent():
-                add_line(f"raise TypeError('{fname} value should be "
-                         f"a dictionary object not %s' % type(value))")
-            add_line(f"kwargs['{fname}'] = "
-                     f"{type_name(ftype)}.from_dict(value)")
-        elif is_generic(ftype):
-            if is_generic_list(ftype):
-                arg_type, *_ = ftype.__args__
-                # TODO: Добавить поддержку Union
-                # TODO: добавить поддержку Dict
-                # TODO: добавить поддержку Collection
-                arg_type_name = arg_type.__name__
-                if is_dataclass(arg_type):
-                    add_line(f"if not isinstance(value, list):")
-                    with indent():
-                        add_line(f"raise TypeError('{fname} should be "
-                                 f"a list object not %s' % type(value))")
-                    add_line(f"kwargs['{fname}'] = [{arg_type_name}"
-                             f".from_dict(v) for v in value]")
+            add_fkey(f"value.to_dict()")
+            return
+
+        pack_dataclass_gen = 'v.to_dict() for v in value'
+
+        origin_type = get_type_origin(ftype)
+        if is_special_typing_primitive(origin_type):
+            add_fkey('value')
+        elif issubclass(origin_type, typing.Collection):
+            args = getattr(ftype, '__args__', ())
+            if issubclass(origin_type, typing.List):
+                if ftype is list:
+                    add_fkey('value')
+                elif is_generic(ftype):
+                    if is_dataclass(args[0]):
+                        add_fkey(f"[{pack_dataclass_gen}]")
+                    else:
+                        add_fkey('[v for v in value]')
                 else:
-                    add_line(f"kwargs['{fname}'] = value")
-            elif is_generic_union(ftype):
-                add_line(f"kwargs['{fname}'] = value")
-        elif ftype is datetime.datetime:
-            add_line(f"if isinstance(value, datetime.datetime):")
-            with indent():
-                add_line(f"kwargs['{fname}'] = value")
-            add_line(f"else:")
-            with indent():
-                add_line(f"kwargs['{fname}'] = "
-                         f"datetime.datetime.utcfromtimestamp(value)")
-        elif ftype is not typing.Any and issubclass(ftype, enum.Enum):
-            add_line(f"kwargs['{fname}'] = {type_name(ftype)}(value)")
+                    add_fkey('[v for v in value]')
+            elif issubclass(origin_type, (typing.Deque, typing.Tuple,
+                                          typing.Set, typing.FrozenSet)):
+                if is_generic(ftype) and is_dataclass(args[0]):
+                    add_fkey(f"[{pack_dataclass_gen}]")
+                else:
+                    add_fkey('[v for v in value]')
+            elif issubclass(origin_type, typing.ChainMap):
+                if ftype is collections.ChainMap:
+                    add_fkey('value.maps')
+                elif is_generic(ftype):
+                    if is_dataclass(args[0]):
+                        raise UnserializableDataError(
+                            'ChainMaps with dataclasses as keys '
+                            'are not supported by mashumaro')
+                    elif is_dataclass(args[1]):
+                        add_fkey('[{k: v.to_dict() for k,v in m.items()} '
+                                 'for m in value.maps]')
+                    else:
+                        add_fkey('[m for m in value.maps]')
+                else:
+                    add_fkey('[m for m in value.maps]')
+            elif issubclass(origin_type, typing.Mapping):
+                if ftype is dict:
+                    add_fkey('value')
+                elif is_generic(ftype):
+                    if is_dataclass(args[0]):
+                        raise UnserializableDataError(
+                            'Mappings with dataclasses as keys '
+                            'are not supported by mashumaro')
+                    elif is_dataclass(args[1]):
+                        add_fkey('{k: v.to_dict() for k,v in value.items()}')
+                    else:
+                        add_fkey('{k: v for k,v in value.items()}')
+                else:
+                    add_fkey('{k: v for k,v in value.items()}')
+            elif issubclass(origin_type, typing.ByteString):
+                add_fkey('hexlify(value)')
+            elif issubclass(origin_type, str):
+                add_fkey('value')
+            elif issubclass(origin_type, typing.Sequence):
+                if is_generic(ftype) and is_dataclass(args[0]):
+                    add_fkey(f"[{pack_dataclass_gen}]")
+                else:
+                    add_fkey('[v for v in value]')
+            if not is_serializable:
+                raise UnserializableField(fname, ftype, parent)
         else:
-            add_line(f"kwargs['{fname}'] = value")
+            add_fkey('value')
 
-    namespace = cls.__dict__
-    fields = namespace.get('__annotations__')
-    if not fields:
-        return
+    def _unpack_field_value(self, fname, ftype, parent):
 
-    defaults = {name: namespace.get(name, MISSING) for name in fields}
-    modules = get_imported_module_names()
-    lines = list()
+        is_serializable = False
 
-    add_line("@classmethod")
-    add_line("def from_dict(cls, d: typing.Mapping):")
-    with indent():
-        add_line("kwargs = {}")
-        for field_name, field_type in fields.items():
-            if field_type.__module__ not in modules:
-                modules.add(field_type.__module__)
-                add_line(f"import {field_type.__module__}")
-                add_line(f"globals()['{field_type.__module__}'] = "
-                         f"{field_type.__module__}")
-            add_line(f"value = d.get('{field_name}', MISSING)")
-            if defaults[field_name] is MISSING:
-                add_line(f"if value is MISSING:")
-                with indent():
-                    add_line(f"raise MissingField('{field_name}',"
-                             f"{type_name(field_type)},cls)")
-                add_line(f"else:")
-                with indent():
-                    set_field_value(field_name, field_type)
+        def add_fkey(expr):
+            nonlocal is_serializable
+            is_serializable = True
+            self.add_line(f"kwargs['{fname}'] = {expr}")
+
+        def unpack_dataclass_gen(arg_type):
+            return f"{type_name(arg_type)}.from_dict(v) for v in value"
+
+        if is_dataclass(ftype):
+            add_fkey(f"{type_name(ftype)}.from_dict(value)")
+            return
+
+        origin_type = get_type_origin(ftype)
+        if is_special_typing_primitive(origin_type):
+            if origin_type in (typing.Any, typing.AnyStr):
+                add_fkey('value')
+            elif origin_type is typing.Union:
+                # TODO: выбирать в рантайме подходящий тип
+                add_fkey('value')
+            elif hasattr(origin_type, '__constraints__'):
+                if origin_type in origin_type.__constraints__:
+                    # TODO: выбирать в рантайме подходящий тип
+                    add_fkey('value')
+        else:
+            if issubclass(origin_type, typing.Collection):
+                args = getattr(ftype, '__args__', ())
+                if issubclass(origin_type, typing.List):
+                    if ftype is list:
+                        add_fkey('value')
+                    elif is_generic(ftype):
+                        if is_dataclass(args[0]):
+                            add_fkey(f"[{unpack_dataclass_gen(args[0])}]")
+                        else:
+                            add_fkey('value')
+                    elif inspect.isabstract(origin_type):
+                        add_fkey('value')
+                    elif issubclass(origin_type, SerializableSequence):
+                        add_fkey(f"{type_name(origin_type)}.from_sequence("
+                                 f"[v for v in value])")
+                elif issubclass(origin_type, typing.Deque):
+                    if ftype is collections.deque:
+                        add_fkey('collections.deque(value)')
+                    elif is_generic(ftype):
+                        if is_dataclass(args[0]):
+                            add_fkey(f"collections.deque("
+                                     f"{unpack_dataclass_gen(args[0])})")
+                        else:
+                            add_fkey('collections.deque(value)')
+                    elif inspect.isabstract(origin_type):
+                        add_fkey('collections.deque(value)')
+                    elif issubclass(origin_type, SerializableSequence):
+                        add_fkey(f"{type_name(origin_type)}.from_sequence("
+                                 f"[v for v in value])")
+                elif issubclass(origin_type, typing.Tuple):
+                    if ftype in (tuple, typing.Tuple):
+                        add_fkey('tuple(value)')
+                    elif is_generic(ftype):
+                        if is_dataclass(args[0]):
+                            add_fkey(f"tuple({unpack_dataclass_gen(args[0])})")
+                        else:
+                            add_fkey('tuple(value)')
+                    elif inspect.isabstract(origin_type):
+                        add_fkey('tuple(value)')
+                    elif issubclass(origin_type, SerializableSequence):
+                        add_fkey(f"{type_name(origin_type)}.from_sequence("
+                                 f"[v for v in value])")
+                elif issubclass(origin_type, typing.Set):
+                    if ftype is set:
+                        add_fkey('set(value)')
+                    elif is_generic(ftype):
+                        if is_dataclass(args[0]):
+                            add_fkey(f"set({unpack_dataclass_gen(args[0])})")
+                        else:
+                            add_fkey('set(value)')
+                    elif inspect.isabstract(origin_type):
+                        add_fkey('set(value)')
+                    elif issubclass(origin_type, SerializableSequence):
+                        add_fkey(f"{type_name(origin_type)}.from_sequence("
+                                 f"[v for v in value])")
+                elif issubclass(origin_type, typing.FrozenSet):
+                    if ftype is frozenset:
+                        add_fkey('frozenset(value)')
+                    elif is_generic(ftype):
+                        if is_dataclass(args[0]):
+                            add_fkey(f"frozenset("
+                                     f"{unpack_dataclass_gen(args[0])})")
+                        else:
+                            add_fkey('frozenset(value)')
+                        add_fkey('frozenset(value)')
+                    elif inspect.isabstract(origin_type):
+                        add_fkey('frozenset(value)')
+                    elif issubclass(origin_type, SerializableSequence):
+                        add_fkey(f"{type_name(origin_type)}.from_sequence("
+                                 f"[v for v in value])")
+                elif issubclass(origin_type, typing.ChainMap):
+                    if ftype is collections.ChainMap:
+                        add_fkey('collections.ChainMap(*value)')
+                    elif is_generic(ftype):
+                        if is_dataclass(args[0]):
+                            raise UnserializableDataError(
+                                'ChainMaps with dataclasses as keys '
+                                'are not supported by mashumaro')
+                        elif is_dataclass(args[1]):
+                            dc = f"{type_name(args[1])}.from_dict(v)"
+                            add_fkey(f"collections.ChainMap(*[{{k: {dc} "
+                                     f"for k,v in m.items()}} for m in value])")
+                        else:
+                            add_fkey('collections.ChainMap(*value)')
+                    elif inspect.isabstract(origin_type):
+                        add_fkey('collections.ChainMap(*value)')
+                    elif issubclass(origin_type, SerializableSequence):
+                        add_fkey(f"{type_name(origin_type)}.from_sequence("
+                                 f"[v for v in value])")
+                elif issubclass(origin_type, typing.Mapping):
+                    if ftype is dict:
+                        add_fkey('value')
+                    elif is_generic(ftype):
+                        if is_dataclass(args[0]):
+                            raise UnserializableDataError(
+                                'Mappings with dataclasses as keys '
+                                'are not supported by mashumaro')
+                        elif is_dataclass(args[1]):
+                            dc = f"{type_name(args[1])}.from_dict(v)"
+                            add_fkey(f"{{k:{dc} for k,v in value.items()}}")
+                        else:
+                            add_fkey('value')
+                    if inspect.isabstract(origin_type):
+                        add_fkey('value')
+                    elif issubclass(origin_type, SerializableMapping):
+                        add_fkey(f"{type_name(origin_type)}.from_mapping("
+                                 "{k: v for k, v in value.items()})")
+                elif issubclass(origin_type, typing.ByteString):
+                    if origin_type is bytes:
+                        add_fkey('unhexlify(value)')
+                    elif origin_type is bytearray:
+                        add_fkey('bytearray(unhexlify(value))')
+                    if inspect.isabstract(origin_type):
+                        add_fkey('unhexlify(value)')
+                    elif issubclass(origin_type, SerializableSequence):
+                        add_fkey(f"{type_name(origin_type)}.from_sequence("
+                                 f"value)")
+                elif issubclass(origin_type, str):
+                    if inspect.isabstract(origin_type) or origin_type is str:
+                        add_fkey('value')
+                elif issubclass(origin_type, typing.Sequence):
+                    if inspect.isabstract(origin_type):
+                        add_fkey('list(v for v in value)')
+                    elif issubclass(origin_type, SerializableSequence):
+                        add_fkey(f"{type_name(origin_type)}.from_sequence("
+                                 f"[v for v in value])")
+                if not is_serializable:
+                    raise UnserializableField(fname, ftype, parent)
             else:
-                add_line("if value is not MISSING:")
-                with indent():
-                    set_field_value(field_name, field_type)
-        add_line("return cls(**kwargs)")
-    add_line(f"setattr(cls, 'from_dict', from_dict)")
-
-    exec("\n".join(lines), globals(), locals())
-
-
-def add_to_dict(cls):
-
-    def add_line(line):
-        lines.append(f"{indent.current}{line}")
-
-    namespace = cls.__dict__
-    fields = namespace.get('__annotations__')
-    if not fields:
-        return
-
-    defaults = {name: namespace.get(name, MISSING) for name in fields}
-    lines = list()
-    modules = set()
-    exclude = {'builtins', 'typing', 'datetime'}
-
-    add_line("def to_dict(self):")
-    with indent():
-        add_line("kwargs = {}")
-        for field_name, field_type in fields.items():
-            add_line(f"value = getattr(self, '{field_name}')")
-            if is_dataclass(field_type):
-                add_line(f"kwargs['{field_name}'] = value.to_dict()")
-            elif is_generic(field_type):
-                arg_type, *_ = field_type.__args__
-                # TODO: Добавить поддержку Union
-                # TODO: добавить поддержку Dict
-                # TODO: добавить поддержку Collection
-                if is_generic_list(field_type):
-                    if is_dataclass(arg_type):
-                        add_line(f"kwargs['{field_name}'] = "
-                                 f"[v.to_dict() for v in value]")
-                elif is_generic_union(field_type):
-                    add_line(f"kwargs['{field_name}'] = value.value")
-            else:
-                add_line(f"kwargs['{field_name}'] = value")
-        add_line("return kwargs")
-    add_line(f"setattr(cls, 'to_dict', to_dict)")
-
-    exec("\n".join(lines), globals(), locals())
-
-
-__all__ = [add_from_dict, add_to_dict, is_generic]
+                add_fkey('value')

@@ -1,12 +1,13 @@
 from typing import Mapping
 
-from mashumaro.serializer.base.metaprogramming import add_from_dict, add_to_dict
+from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
 
 class DataClassDictMixin:
     def __init_subclass__(cls, **kwargs):
-        add_from_dict(cls)
-        add_to_dict(cls)
+        builder = CodeBuilder(cls)
+        builder.add_from_dict()
+        builder.add_to_dict()
 
     def to_dict(self) -> dict:
         pass
