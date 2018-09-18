@@ -280,7 +280,7 @@ class CodeBuilder:
         if is_special_typing_primitive(origin_type):
             if origin_type in (typing.Any, typing.AnyStr):
                 add_fkey('value')
-            elif is_union(origin_type):
+            elif is_union(ftype):
                 # TODO: выбирать в рантайме подходящий тип
                 add_fkey('value')
             elif hasattr(origin_type, '__constraints__'):
