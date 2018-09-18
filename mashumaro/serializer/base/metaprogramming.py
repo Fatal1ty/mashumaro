@@ -26,7 +26,7 @@ def get_imported_module_names():
 def get_type_origin(t):
     try:
         if sys.version_info.minor == 6:
-            return t.extra__
+            return t.__extra__
         elif sys.version_info.minor == 7:
             return t.__origin__
     except AttributeError:
