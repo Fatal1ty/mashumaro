@@ -141,26 +141,31 @@ class CodeBuilder:
                 for fname, ftype in self.fields.items():
                     self._add_type_modules(ftype)
                     self.add_line(f"value = d.get('{fname}', MISSING)")
-                    if self.defaults[fname] is MISSING:
-                        self.add_line(f"if value is MISSING:")
-                        with self.indent():
-                            self._add_type_modules(ftype)
-                            self.add_line(f"raise MissingField('{fname}',"
-                                          f"{type_name(ftype)},cls)")
-                        self.add_line(f"else:")
-                        with self.indent():
-                            self._unpack_field_value(fname, ftype, self.cls)
-                    else:
-                        self.add_line("if value is not MISSING:")
-                        with self.indent():
-                            self._unpack_field_value(fname, ftype, self.cls)
+                    self.add_line("if value is None:")
+                    with self.indent():
+                        self.add_line(f"kwargs['{fname}'] = None")
+                    self.add_line("else:")
+                    with self.indent():
+                        if self.defaults[fname] is MISSING:
+                            self.add_line(f"if value is MISSING:")
+                            with self.indent():
+                                self._add_type_modules(ftype)
+                                self.add_line(f"raise MissingField('{fname}',"
+                                              f"{type_name(ftype)},cls)")
+                            self.add_line("else:")
+                            with self.indent():
+                                self._unpack_field_value(fname, ftype, self.cls)
+                        else:
+                            self.add_line("if value is not MISSING:")
+                            with self.indent():
+                                self._unpack_field_value(fname, ftype, self.cls)
             self.add_line('except AttributeError:')
             with self.indent():
                 self.add_line('if not isinstance(d, dict):')
                 with self.indent():
                     self.add_line(f"raise ValueError('Argument for "
                                   f"{type_name(self.cls)}.from_dict method "
-                                  f"should be a dict instance')")
+                                  f"should be a dict instance') from None")
                 self.add_line('else:')
                 with self.indent():
                     self.add_line('raise')
