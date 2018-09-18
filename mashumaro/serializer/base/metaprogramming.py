@@ -17,6 +17,9 @@ from mashumaro.exceptions import MissingField, UnserializableField,\
 from mashumaro.abc import SerializableSequence, SerializableMapping
 
 
+NoneType = type(None)
+
+
 def get_imported_module_names():
     # noinspection PyUnresolvedReferences
     return {value.__name__ for value in globals().values()
@@ -198,8 +201,10 @@ class CodeBuilder:
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
+            # TODO: упаковывать dataclass и вложенные типы
             add_fkey('value')
         elif issubclass(origin_type, typing.Collection):
+            # TODO: упаковывать вложенные типы
             args = getattr(ftype, '__args__', ())
             if issubclass(origin_type, typing.List):
                 if ftype is list:
@@ -278,17 +283,26 @@ class CodeBuilder:
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
+            # TODO: распаковывать dataclass и вложенные типы
             if origin_type in (typing.Any, typing.AnyStr):
                 add_fkey('value')
             elif is_union(ftype):
                 # TODO: выбирать в рантайме подходящий тип
-                add_fkey('value')
+                args = getattr(ftype, '__args__', ())
+                if len(args) == 2 and args[1] == NoneType:  # it is Optional
+                    if is_dataclass(args[0]):
+                        add_fkey(f"{type_name(args[0])}.from_dict(value)")
+                    else:
+                        add_fkey('value')
+                else:
+                    add_fkey('value')
             elif hasattr(origin_type, '__constraints__'):
                 if origin_type in origin_type.__constraints__:
                     # TODO: выбирать в рантайме подходящий тип
                     add_fkey('value')
         else:
             if issubclass(origin_type, typing.Collection):
+                # TODO: распаковывать вложенные типы
                 args = getattr(ftype, '__args__', ())
                 if issubclass(origin_type, typing.List):
                     if ftype is list:
