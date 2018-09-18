@@ -133,7 +133,7 @@ class CodeBuilder:
             return
 
         self.add_line('@classmethod')
-        self.add_line("def from_dict(cls, d):")
+        self.add_line("def from_dict(cls, d, use_bytes=False):")
         with self.indent():
             self.add_line('try:')
             with self.indent():
@@ -179,7 +179,7 @@ class CodeBuilder:
         if not self.fields:
             return
 
-        self.add_line("def to_dict(self):")
+        self.add_line("def to_dict(self, use_bytes=False):")
         with self.indent():
             self.add_line("kwargs = {}")
             for fname, ftype in self.fields.items():
@@ -257,7 +257,12 @@ class CodeBuilder:
                 else:
                     add_fkey('{k: v for k,v in value.items()}')
             elif issubclass(origin_type, typing.ByteString):
-                add_fkey('hexlify(value)')
+                self.add_line('if use_bytes:')
+                with self.indent():
+                    add_fkey('value')
+                self.add_line('else:')
+                with self.indent():
+                    add_fkey('hexlify(value)')
             elif issubclass(origin_type, str):
                 add_fkey('value')
             elif issubclass(origin_type, typing.Sequence):
@@ -280,10 +285,11 @@ class CodeBuilder:
             self.add_line(f"kwargs['{fname}'] = {expr}")
 
         def unpack_dataclass_gen(arg_type):
-            return f"{type_name(arg_type)}.from_dict(v) for v in value"
+            return f"{type_name(arg_type)}.from_dict(v, use_bytes) " \
+                   f"for v in value"
 
         if is_dataclass(ftype):
-            add_fkey(f"{type_name(ftype)}.from_dict(value)")
+            add_fkey(f"{type_name(ftype)}.from_dict(value, use_bytes)")
             return
 
         origin_type = get_type_origin(ftype)
@@ -296,7 +302,8 @@ class CodeBuilder:
                 args = getattr(ftype, '__args__', ())
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
                     if is_dataclass(args[0]):
-                        add_fkey(f"{type_name(args[0])}.from_dict(value)")
+                        add_fkey(f"{type_name(args[0])}.from_dict("
+                                 f"value, use_bytes)")
                     else:
                         add_fkey('value')
                 else:
@@ -386,7 +393,7 @@ class CodeBuilder:
                                 'ChainMaps with dataclasses as keys '
                                 'are not supported by mashumaro')
                         elif is_dataclass(args[1]):
-                            dc = f"{type_name(args[1])}.from_dict(v)"
+                            dc = f"{type_name(args[1])}.from_dict(v, use_bytes)"
                             add_fkey(f"collections.ChainMap(*[{{k: {dc} "
                                      f"for k,v in m.items()}} for m in value])")
                         else:
@@ -405,7 +412,7 @@ class CodeBuilder:
                                 'Mappings with dataclasses as keys '
                                 'are not supported by mashumaro')
                         elif is_dataclass(args[1]):
-                            dc = f"{type_name(args[1])}.from_dict(v)"
+                            dc = f"{type_name(args[1])}.from_dict(v, use_bytes)"
                             add_fkey(f"{{k:{dc} for k,v in value.items()}}")
                         else:
                             add_fkey('value')
@@ -416,11 +423,26 @@ class CodeBuilder:
                                  "{k: v for k, v in value.items()})")
                 elif issubclass(origin_type, typing.ByteString):
                     if origin_type is bytes:
-                        add_fkey('unhexlify(value)')
+                        self.add_line('if use_bytes:')
+                        with self.indent():
+                            add_fkey('value')
+                        self.add_line('else:')
+                        with self.indent():
+                            add_fkey('unhexlify(value)')
                     elif origin_type is bytearray:
-                        add_fkey('bytearray(unhexlify(value))')
+                        self.add_line('if use_bytes:')
+                        with self.indent():
+                            add_fkey('bytearray(value)')
+                        self.add_line('else:')
+                        with self.indent():
+                            add_fkey('bytearray(unhexlify(value))')
                     if inspect.isabstract(origin_type):
-                        add_fkey('unhexlify(value)')
+                        self.add_line('if use_bytes:')
+                        with self.indent():
+                            add_fkey('value')
+                        self.add_line('else:')
+                        with self.indent():
+                            add_fkey('unhexlify(value)')
                     elif issubclass(origin_type, SerializableSequence):
                         add_fkey(f"{type_name(origin_type)}.from_sequence("
                                  f"value)")
