@@ -1,7 +1,7 @@
 from collections import deque, ChainMap
 
 from mashumaro.abc import SerializableSequence, SerializableMapping
-from mashumaro.tests.entities.abstract import *
+from tests.entities.abstract import *
 
 
 class CustomSerializableList(list, SerializableSequence):

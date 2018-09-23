@@ -3,8 +3,8 @@ import collections
 from dataclasses import dataclass
 
 from mashumaro import DataClassDictMixin
-from mashumaro.tests.entities.abstract import *
-from mashumaro.tests.entities.custom import *
+from tests.entities.abstract import *
+from tests.entities.custom import *
 
 
 # simple types
