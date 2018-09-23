@@ -221,8 +221,9 @@ class CodeBuilder:
                         add_fkey('[v for v in value]')
                 else:
                     add_fkey('[v for v in value]')
-            elif issubclass(origin_type, (typing.Deque, typing.Tuple,
-                                          typing.Set, typing.FrozenSet)):
+            elif issubclass(origin_type, (typing.Deque,
+                                          typing.Tuple,
+                                          typing.AbstractSet)):
                 if is_generic(ftype) and is_dataclass(args[0]):
                     add_fkey(f"[{pack_dataclass_gen}]")
                 else:
@@ -356,19 +357,6 @@ class CodeBuilder:
                     elif issubclass(origin_type, SerializableSequence):
                         add_fkey(f"{type_name(origin_type)}.from_sequence("
                                  f"[v for v in value])")
-                elif issubclass(origin_type, typing.Set):
-                    if ftype is set:
-                        add_fkey('set(value)')
-                    elif is_generic(ftype):
-                        if is_dataclass(args[0]):
-                            add_fkey(f"set({unpack_dataclass_gen(args[0])})")
-                        else:
-                            add_fkey('set(value)')
-                    elif inspect.isabstract(origin_type):
-                        add_fkey('set(value)')
-                    elif issubclass(origin_type, SerializableSequence):
-                        add_fkey(f"{type_name(origin_type)}.from_sequence("
-                                 f"[v for v in value])")
                 elif issubclass(origin_type, typing.FrozenSet):
                     if ftype is frozenset:
                         add_fkey('frozenset(value)')
@@ -381,6 +369,19 @@ class CodeBuilder:
                         add_fkey('frozenset(value)')
                     elif inspect.isabstract(origin_type):
                         add_fkey('frozenset(value)')
+                    elif issubclass(origin_type, SerializableSequence):
+                        add_fkey(f"{type_name(origin_type)}.from_sequence("
+                                 f"[v for v in value])")
+                elif issubclass(origin_type, typing.AbstractSet):
+                    if ftype is set:
+                        add_fkey('set(value)')
+                    elif is_generic(ftype):
+                        if is_dataclass(args[0]):
+                            add_fkey(f"set({unpack_dataclass_gen(args[0])})")
+                        else:
+                            add_fkey('set(value)')
+                    elif inspect.isabstract(origin_type):
+                        add_fkey('set(value)')
                     elif issubclass(origin_type, SerializableSequence):
                         add_fkey(f"{type_name(origin_type)}.from_sequence("
                                  f"[v for v in value])")
