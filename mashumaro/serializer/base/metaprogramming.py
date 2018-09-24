@@ -17,6 +17,9 @@ from mashumaro.exceptions import MissingField, UnserializableField,\
 from mashumaro.abc import SerializableSequence, SerializableMapping
 
 
+PY_36 = sys.version_info < (3, 7)
+PY_37 = sys.version_info >= (3, 7)
+
 NoneType = type(None)
 
 
@@ -28,9 +31,9 @@ def get_imported_module_names():
 
 def get_type_origin(t):
     try:
-        if sys.version_info.minor == 6:
+        if PY_36:
             return t.__extra__
-        elif sys.version_info.minor == 7:
+        elif PY_37:
             return t.__origin__
     except AttributeError:
         return t
@@ -57,7 +60,7 @@ def is_generic(t):
         # noinspection PyUnresolvedReferences
         return t.__class__ is typing._GenericAlias
     except AttributeError:
-        if sys.version_info.minor == 6:
+        if PY_36:
             try:
                 # noinspection PyUnresolvedReferences
                 return t.__class__ == typing.GenericMeta
