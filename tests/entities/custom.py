@@ -179,7 +179,7 @@ class CustomSerializableMutableSequence(AbstractMutableSequence,
     def __setitem__(self, key, value):
         pass
 
-    def insert(self):
+    def insert(self, index, obj):
         pass
 
     def foo(self):
