@@ -80,9 +80,9 @@ def is_union(t):
 class CodeBuilder:
     def __init__(self, cls):
         self.cls = cls
-        self.lines = None
-        self.modules = None
-        self._current_indent = None
+        self.lines = None            # type: typing.Optional[typing.List[str]]
+        self.modules = None          # type: typing.Optional[typing.Set[str]]
+        self._current_indent = None  # type: typing.Optional[str]
 
     def reset(self):
         self.lines = []
