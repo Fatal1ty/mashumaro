@@ -202,10 +202,10 @@ class CodeBuilder:
             self.add_line(f"kwargs['{fname}'] = {expr}")
 
         if is_dataclass(ftype):
-            add_fkey(f"value.to_dict()")
+            add_fkey(f"value.to_dict(use_bytes)")
             return
 
-        pack_dataclass_gen = 'v.to_dict() for v in value'
+        pack_dataclass_gen = 'v.to_dict(use_bytes) for v in value'
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
@@ -240,8 +240,8 @@ class CodeBuilder:
                             'ChainMaps with dataclasses as keys '
                             'are not supported by mashumaro')
                     elif is_dataclass(args[1]):
-                        add_fkey('[{k: v.to_dict() for k,v in m.items()} '
-                                 'for m in value.maps]')
+                        add_fkey('[{k: v.to_dict(use_bytes) for k,v '
+                                 'in m.items()} for m in value.maps]')
                     else:
                         add_fkey('[m for m in value.maps]')
                 else:
@@ -255,7 +255,8 @@ class CodeBuilder:
                             'Mappings with dataclasses as keys '
                             'are not supported by mashumaro')
                     elif is_dataclass(args[1]):
-                        add_fkey('{k: v.to_dict() for k,v in value.items()}')
+                        add_fkey('{k: v.to_dict(use_bytes) '
+                                 'for k,v in value.items()}')
                     else:
                         add_fkey('{k: v for k,v in value.items()}')
                 else:
