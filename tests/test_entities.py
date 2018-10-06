@@ -232,4 +232,41 @@ def test_data_class_with_abstract_mutable_sequence():
     dataclass_x(DataClassWithAbstractMutableSequence, x, dictionary)
 
 
+def test_data_class_with_enum():
+    x = MyEnum.a
+    value = x.value
+    inst = DataClassWithEnum(x)
+    assert inst.to_dict(use_enum=True) == {'x': x}
+    assert inst.to_dict(use_enum=False) == {'x': value}
+    assert DataClassWithEnum.from_dict({'x': x}, use_enum=True) == inst
+    assert DataClassWithEnum.from_dict({'x': value}, use_enum=False) == inst
 
+
+def test_data_class_with_int_enum():
+    x = MyIntEnum.a
+    value = x.value
+    inst = DataClassWithIntEnum(x)
+    assert inst.to_dict(use_enum=True) == {'x': x}
+    assert inst.to_dict(use_enum=False) == {'x': value}
+    assert DataClassWithIntEnum.from_dict({'x': x}, use_enum=True) == inst
+    assert DataClassWithIntEnum.from_dict({'x': value}, use_enum=False) == inst
+
+
+def test_data_class_with_flag():
+    x = MyFlag.a
+    value = x.value
+    inst = DataClassWithFlag(x)
+    assert inst.to_dict(use_enum=True) == {'x': x}
+    assert inst.to_dict(use_enum=False) == {'x': value}
+    assert DataClassWithFlag.from_dict({'x': x}, use_enum=True) == inst
+    assert DataClassWithFlag.from_dict({'x': value}, use_enum=False) == inst
+
+
+def test_data_class_with_int_flag():
+    x = MyIntFlag.a
+    value = x.value
+    inst = DataClassWithIntFlag(x)
+    assert inst.to_dict(use_enum=True) == {'x': x}
+    assert inst.to_dict(use_enum=False) == {'x': value}
+    assert DataClassWithIntFlag.from_dict({'x': x}, use_enum=True) == inst
+    assert DataClassWithIntFlag.from_dict({'x': value}, use_enum=False) == inst

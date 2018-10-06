@@ -1,4 +1,5 @@
 import sys
+import enum
 import types
 import typing
 import inspect
@@ -136,7 +137,7 @@ class CodeBuilder:
             return
 
         self.add_line('@classmethod')
-        self.add_line("def from_dict(cls, d, use_bytes=False):")
+        self.add_line("def from_dict(cls, d, use_bytes=False, use_enum=False):")
         with self.indent():
             self.add_line('try:')
             with self.indent():
@@ -182,7 +183,7 @@ class CodeBuilder:
         if not self.fields:
             return
 
-        self.add_line("def to_dict(self, use_bytes=False):")
+        self.add_line("def to_dict(self, use_bytes=False, use_enum=False):")
         with self.indent():
             self.add_line("kwargs = {}")
             for fname, ftype in self.fields.items():
@@ -202,10 +203,10 @@ class CodeBuilder:
             self.add_line(f"kwargs['{fname}'] = {expr}")
 
         if is_dataclass(ftype):
-            add_fkey(f"value.to_dict(use_bytes)")
+            add_fkey(f"value.to_dict(use_bytes, use_enum)")
             return
 
-        pack_dataclass_gen = 'v.to_dict(use_bytes) for v in value'
+        pack_dataclass_gen = 'v.to_dict(use_bytes, use_enum) for v in value'
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
@@ -240,7 +241,7 @@ class CodeBuilder:
                             'ChainMaps with dataclasses as keys '
                             'are not supported by mashumaro')
                     elif is_dataclass(args[1]):
-                        add_fkey('[{k: v.to_dict(use_bytes) for k,v '
+                        add_fkey('[{k: v.to_dict(use_bytes, use_enum) for k,v '
                                  'in m.items()} for m in value.maps]')
                     else:
                         add_fkey('[m for m in value.maps]')
@@ -255,7 +256,7 @@ class CodeBuilder:
                             'Mappings with dataclasses as keys '
                             'are not supported by mashumaro')
                     elif is_dataclass(args[1]):
-                        add_fkey('{k: v.to_dict(use_bytes) '
+                        add_fkey('{k: v.to_dict(use_bytes, use_enum) '
                                  'for k,v in value.items()}')
                     else:
                         add_fkey('{k: v for k,v in value.items()}')
@@ -277,6 +278,13 @@ class CodeBuilder:
                     add_fkey('[v for v in value]')
             if not is_serializable:
                 raise UnserializableField(fname, ftype, parent)
+        elif issubclass(origin_type, enum.Enum):
+            self.add_line('if use_enum:')
+            with self.indent():
+                add_fkey('value')
+            self.add_line('else:')
+            with self.indent():
+                add_fkey("value.value")
         else:
             add_fkey('value')
 
@@ -290,11 +298,12 @@ class CodeBuilder:
             self.add_line(f"kwargs['{fname}'] = {expr}")
 
         def unpack_dataclass_gen(arg_type):
-            return f"{type_name(arg_type)}.from_dict(v, use_bytes) " \
+            return f"{type_name(arg_type)}.from_dict(v, use_bytes, use_enum) " \
                    f"for v in value"
 
         if is_dataclass(ftype):
-            add_fkey(f"{type_name(ftype)}.from_dict(value, use_bytes)")
+            add_fkey(f"{type_name(ftype)}.from_dict(value, use_bytes, "
+                     f"use_enum)")
             return
 
         origin_type = get_type_origin(ftype)
@@ -308,7 +317,7 @@ class CodeBuilder:
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
                     if is_dataclass(args[0]):
                         add_fkey(f"{type_name(args[0])}.from_dict("
-                                 f"value, use_bytes)")
+                                 f"value, use_bytes, use_enum)")
                     else:
                         add_fkey('value')
                 else:
@@ -398,7 +407,8 @@ class CodeBuilder:
                                 'ChainMaps with dataclasses as keys '
                                 'are not supported by mashumaro')
                         elif is_dataclass(args[1]):
-                            dc = f"{type_name(args[1])}.from_dict(v, use_bytes)"
+                            dc = f"{type_name(args[1])}.from_dict(v, " \
+                                 f"use_bytes, use_enum)"
                             add_fkey(f"collections.ChainMap(*[{{k: {dc} "
                                      f"for k,v in m.items()}} for m in value])")
                         else:
@@ -417,7 +427,8 @@ class CodeBuilder:
                                 'Mappings with dataclasses as keys '
                                 'are not supported by mashumaro')
                         elif is_dataclass(args[1]):
-                            dc = f"{type_name(args[1])}.from_dict(v, use_bytes)"
+                            dc = f"{type_name(args[1])}.from_dict(v, " \
+                                 f"use_bytes, use_enum)"
                             add_fkey(f"{{k:{dc} for k,v in value.items()}}")
                         else:
                             add_fkey('value')
@@ -462,5 +473,12 @@ class CodeBuilder:
                                  f"[v for v in value])")
                 if not is_serializable:
                     raise UnserializableField(fname, ftype, parent)
+            elif issubclass(origin_type, enum.Enum):
+                self.add_line('if use_enum:')
+                with self.indent():
+                    add_fkey("value")
+                self.add_line('else:')
+                with self.indent():
+                    add_fkey(f"{type_name(origin_type)}(value)")
             else:
                 add_fkey('value')

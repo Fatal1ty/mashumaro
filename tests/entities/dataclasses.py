@@ -1,3 +1,4 @@
+from enum import Enum, IntEnum, Flag, IntFlag
 import typing
 import collections
 from dataclasses import dataclass
@@ -196,3 +197,43 @@ class DataClassWithAbstractSequence(DataClassDictMixin):
 @dataclass
 class DataClassWithAbstractMutableSequence(DataClassDictMixin):
     x: AbstractMutableSequence
+
+
+class MyEnum(Enum):
+    a = 'a'
+    b = 'b'
+
+
+class MyIntEnum(IntEnum):
+    a = 1
+    b = 2
+
+
+class MyFlag(Flag):
+    a = 1
+    b = 2
+
+
+class MyIntFlag(IntFlag):
+    a = 1
+    b = 2
+
+
+@dataclass
+class DataClassWithEnum(DataClassDictMixin):
+    x: MyEnum
+
+
+@dataclass
+class DataClassWithIntEnum(DataClassDictMixin):
+    x: MyIntEnum
+
+
+@dataclass
+class DataClassWithFlag(DataClassDictMixin):
+    x: MyFlag
+
+
+@dataclass
+class DataClassWithIntFlag(DataClassDictMixin):
+    x: MyIntFlag

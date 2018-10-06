@@ -9,11 +9,18 @@ class DataClassDictMixin:
         builder.add_from_dict()
         builder.add_to_dict()
 
-    def to_dict(self, use_bytes: bool = False) -> dict:
+    def to_dict(
+            self,
+            use_bytes: bool = False,
+            use_enum: bool = False) -> dict:
         pass
 
     @classmethod
-    def from_dict(cls, d: Mapping, use_bytes: bool = False):
+    def from_dict(
+            cls,
+            d: Mapping,
+            use_bytes: bool = False,
+            use_enum: bool = False):
         pass
 
 
