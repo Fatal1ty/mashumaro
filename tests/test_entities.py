@@ -13,7 +13,7 @@ def dataclass_x(cls, x, dictionary, use_bytes=False):
 def test_data_class_with_int():
     x = 123
     dictionary = {'x': 123}
-    dataclass_x(DataClassInt, x, dictionary)
+    dataclass_x(DataClassWithInt, x, dictionary)
 
 
 def test_data_class_with_list():

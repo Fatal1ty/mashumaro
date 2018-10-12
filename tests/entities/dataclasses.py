@@ -10,7 +10,7 @@ from tests.entities.custom import *
 
 # simple types
 @dataclass
-class DataClassInt(DataClassDictMixin):
+class DataClassWithInt(DataClassDictMixin):
     x: int
 
 
