@@ -3,6 +3,8 @@ from tests.entities.dataclasses import *
 from tests.entities.custom import *
 from collections import deque, ChainMap
 
+import pytest
+
 
 def dataclass_x(cls, x, dictionary, use_bytes=False):
     instance = cls(x)
@@ -161,7 +163,7 @@ def test_data_class_with_abstract_mutable_mapping():
     dataclass_x(DataClassWithAbstractMutableMapping, x, dictionary)
 
 
-# TODO: параметризировать
+@pytest.mark.parametrize('use_bytes', [True, False])
 def test_data_class_with_bytes(use_bytes: bool):
     if use_bytes:
         x = bytearray(b'foo')
@@ -171,7 +173,7 @@ def test_data_class_with_bytes(use_bytes: bool):
     dataclass_x(DataClassWithBytes, x, dictionary, use_bytes)
 
 
-# TODO: параметризировать
+@pytest.mark.parametrize('use_bytes', [True, False])
 def test_data_class_with_byte_array(use_bytes: bool):
     if use_bytes:
         x = bytearray(b'foo')
