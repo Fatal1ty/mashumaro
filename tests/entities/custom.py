@@ -143,10 +143,13 @@ class CustomSerializableSequence(AbstractSequence, SerializableSequence):
     def __init__(self):
         self.x = []
 
-    def __getitem__(self, item):
-        pass
+    def __iter__(self):
+        return iter(self.x)
 
     def __len__(self):
+        pass
+
+    def __getitem__(self, item):
         pass
 
     def foo(self):
@@ -166,6 +169,9 @@ class CustomSerializableMutableSequence(AbstractMutableSequence,
                                         SerializableSequence):
     def __init__(self):
         self.x = []
+
+    def __iter__(self):
+        return iter(self.x)
 
     def __getitem__(self, item):
         pass
