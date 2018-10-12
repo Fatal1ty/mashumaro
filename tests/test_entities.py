@@ -20,146 +20,146 @@ def test_data_class_with_int():
 
 def test_data_class_with_list():
     x = [1, 2, 3]
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithList, x, dictionary)
 
 
 def test_data_class_with_generic_list():
     x = [1, 2, 3]
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithGenericList, x, dictionary)
 
 
 def test_data_class_with_custom_list():
     x = CustomSerializableList.from_sequence([1, 2, 3])
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithCustomSerializableList, x, dictionary)
 
 
 def test_data_class_with_deque():
     x = deque([1, 2, 3])
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithDeque, x, dictionary)
 
 
 def test_data_class_with_generic_deque():
     x = deque([1, 2, 3])
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithGenericDeque, x, dictionary)
 
 
 def test_data_class_with_custom_serializable_deque():
     x = CustomSerializableDeque.from_sequence([1, 2, 3])
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithCustomSerializableDeque, x, dictionary)
 
 
 def test_data_class_with_tuple():
     x = (1, 2, 3)
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithTuple, x, dictionary)
 
 
 def test_data_class_with_generic_tuple():
     x = (1, 2, 3)
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithGenericTuple, x, dictionary)
 
 
 def test_data_class_with_custom_serializable_tuple():
     x = CustomSerializableTuple.from_sequence([1, 2, 3])
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithCustomSerializableTuple, x, dictionary)
 
 
 def test_data_class_with_set():
     x = {1, 2, 3}
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithSet, x, dictionary)
 
 
 def test_data_class_with_generic_set():
     x = {1, 2, 3}
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithGenericSet, x, dictionary)
 
 
 def test_data_class_with_custom_serializable_set():
     x = CustomSerializableSet.from_sequence([1, 2, 3])
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithCustomSerializableSet, x, dictionary)
 
 
 def test_data_class_with_abstract_set():
     x = {1, 2, 3}
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithAbstractSet, x, dictionary)
 
 
 def test_data_class_with_abstract_mutable_set():
     x = {1, 2, 3}
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithAbstractMutableSet, x, dictionary)
 
 
 def test_data_class_with_frozen_set():
     x = {1, 2, 3}
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithGenericFrozenSet, x, dictionary)
 
 
 def test_data_class_with_custom_serializable_frozen_set():
     x = CustomSerializableFrozenSet.from_sequence([1, 2, 3])
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithCustomSerializableFrozenSet, x, dictionary)
 
 
 def test_data_class_with_chain_map():
     x = ChainMap({'a': 1, 'b': 2}, {'c': 3, 'd': 4})
-    dictionary = {'x': x}
+    dictionary = {'x': [{'a': 1, 'b': 2}, {'c': 3, 'd': 4}]}
     dataclass_x(DataClassWithChainMap, x, dictionary)
 
 
 def test_data_class_with_generic_chain_map():
     x = ChainMap({'a': 1, 'b': 2}, {'c': 3, 'd': 4})
-    dictionary = {'x': x}
+    dictionary = {'x': [{'a': 1, 'b': 2}, {'c': 3, 'd': 4}]}
     dataclass_x(DataClassWithGenericChainMap, x, dictionary)
 
 
 def test_data_class_with_custom_serializable_chain_map():
     x = CustomSerializableChainMap.from_sequence(
         [{'a': 1, 'b': 2}, {'c': 3, 'd': 4}])
-    dictionary = {'x': x}
+    dictionary = {'x': [{'a': 1, 'b': 2}, {'c': 3, 'd': 4}]}
     dataclass_x(DataClassWithCustomSerializableChainMap, x, dictionary)
 
 
 def test_data_class_with_dict():
     x = {'a': 1, 'b': 2}
-    dictionary = {'x': x}
+    dictionary = {'x': {'a': 1, 'b': 2}}
     dataclass_x(DataClassWithDict, x, dictionary)
 
 
 def test_data_class_with_generic_dict():
     x = {'a': 1, 'b': 2}
-    dictionary = {'x': x}
+    dictionary = {'x': {'a': 1, 'b': 2}}
     dataclass_x(DataClassWithGenericDict, x, dictionary)
 
 
 def test_data_class_with_custom_serializable_mapping():
     x = CustomSerializableMapping.from_mapping({'a': 1, 'b': 2})
-    dictionary = {'x': x}
+    dictionary = {'x': {'a': 1, 'b': 2}}
     dataclass_x(DataClassWithCustomSerializableMapping, x, dictionary)
 
 
 def test_data_class_with_abstract_mapping():
     x = {'a': 1, 'b': 2}
-    dictionary = {'x': x}
+    dictionary = {'x': {'a': 1, 'b': 2}}
     dataclass_x(DataClassWithAbstractMapping, x, dictionary)
 
 
 def test_data_class_with_abstract_mutable_mapping():
     x = {'a': 1, 'b': 2}
-    dictionary = {'x': x}
+    dictionary = {'x': {'a': 1, 'b': 2}}
     dataclass_x(DataClassWithAbstractMutableMapping, x, dictionary)
 
 
