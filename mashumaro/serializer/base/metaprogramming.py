@@ -16,7 +16,7 @@ from dataclasses import is_dataclass, MISSING
 from mashumaro.exceptions import MissingField, UnserializableField,\
     UnserializableDataError
 from mashumaro.abc import SerializableSequence, SerializableMapping,\
-    SerializableByteString
+    SerializableByteString, SerializableChainMap
 
 
 PY_36 = sys.version_info < (3, 7)
@@ -250,6 +250,8 @@ class CodeBuilder:
                                  'in m.items()} for m in value.maps]')
                     else:
                         add_fkey('[m for m in value.maps]')
+                elif issubclass(origin_type, SerializableChainMap):
+                    add_fkey("value.to_maps()")
                 else:
                     add_fkey('[m for m in value.maps]')
             elif issubclass(origin_type, typing.Mapping):
@@ -428,8 +430,8 @@ class CodeBuilder:
                             add_fkey('collections.ChainMap(*value)')
                     elif inspect.isabstract(origin_type):
                         add_fkey('collections.ChainMap(*value)')
-                    elif issubclass(origin_type, SerializableSequence):
-                        add_fkey(f"{type_name(origin_type)}.from_sequence("
+                    elif issubclass(origin_type, SerializableChainMap):
+                        add_fkey(f"{type_name(origin_type)}.from_maps("
                                  f"[v for v in value])")
                 elif issubclass(origin_type, typing.Mapping):
                     if ftype is dict:

@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Sequence, Mapping
+from typing import Sequence, Mapping, List
 
 
 class SerializableSequence(metaclass=ABCMeta):
@@ -27,6 +27,20 @@ class SerializableMapping(metaclass=ABCMeta):
 
     @abstractmethod
     def to_mapping(self) -> Mapping:
+        pass
+
+
+class SerializableChainMap(metaclass=ABCMeta):
+
+    __slots__ = ()
+
+    @classmethod
+    @abstractmethod
+    def from_maps(cls, maps: List[Mapping]) -> 'SerializableChainMap':
+        pass
+
+    @abstractmethod
+    def to_maps(self) -> List[Mapping]:
         pass
 
 

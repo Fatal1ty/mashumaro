@@ -1,7 +1,8 @@
+from typing import List
 from collections import deque, ChainMap
 
 from mashumaro.abc import SerializableSequence, SerializableMapping,\
-    SerializableByteString
+    SerializableByteString, SerializableChainMap
 from tests.entities.abstract import *
 
 
@@ -95,16 +96,19 @@ class CustomSerializableFrozenSet(set, SerializableSequence):
         return f"CustomSerializableFrozenSet({str(self.x)})"
 
 
-class CustomSerializableChainMap(ChainMap, SerializableSequence):
+class CustomSerializableChainMap(ChainMap, SerializableChainMap):
     def __init__(self):
         super().__init__()
         self.x = ChainMap()
 
     @classmethod
-    def from_sequence(cls, seq):
+    def from_maps(cls, maps: List[Mapping]):
         inst = cls()
-        inst.x = ChainMap(*seq)
+        inst.x = ChainMap(*maps)
         return inst
+
+    def to_maps(self):
+        return self.x.maps
 
     def __repr__(self):
         return f"CustomSerializableChainMap({str(self.x)})"

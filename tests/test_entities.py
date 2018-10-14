@@ -129,7 +129,7 @@ def test_data_class_with_generic_chain_map():
 
 
 def test_data_class_with_custom_serializable_chain_map():
-    x = CustomSerializableChainMap.from_sequence(
+    x = CustomSerializableChainMap.from_maps(
         [{'a': 1, 'b': 2}, {'c': 3, 'd': 4}])
     dictionary = {'x': [{'a': 1, 'b': 2}, {'c': 3, 'd': 4}]}
     dataclass_x(DataClassWithCustomSerializableChainMap, x, dictionary)
