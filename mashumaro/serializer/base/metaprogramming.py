@@ -224,6 +224,8 @@ class CodeBuilder:
                         add_fkey(f"[{pack_dataclass_gen}]")
                     else:
                         add_fkey('[v for v in value]')
+                elif issubclass(origin_type, SerializableSequence):
+                    add_fkey("list(value.to_sequence())")
                 else:
                     add_fkey('[v for v in value]')
             elif issubclass(origin_type, (typing.Deque,
@@ -231,6 +233,8 @@ class CodeBuilder:
                                           typing.AbstractSet)):
                 if is_generic(ftype) and is_dataclass(args[0]):
                     add_fkey(f"[{pack_dataclass_gen}]")
+                elif issubclass(origin_type, SerializableSequence):
+                    add_fkey("list(value.to_sequence())")
                 else:
                     add_fkey('[v for v in value]')
             elif issubclass(origin_type, typing.ChainMap):
@@ -261,6 +265,8 @@ class CodeBuilder:
                                  'for k,v in value.items()}')
                     else:
                         add_fkey('{k: v for k,v in value.items()}')
+                elif issubclass(origin_type, SerializableMapping):
+                    add_fkey('dict(value.to_mapping())')
                 else:
                     add_fkey('{k: v for k,v in value.items()}')
             elif issubclass(origin_type, typing.ByteString):

@@ -16,6 +16,9 @@ class CustomSerializableList(list, SerializableSequence):
         inst.x = list(seq)
         return inst
 
+    def to_sequence(self):
+        return self.x
+
     def __repr__(self):
         return f"CustomSerializableList({str(self.x)})"
 
@@ -30,6 +33,9 @@ class CustomSerializableDeque(deque, SerializableSequence):
         inst = cls()
         inst.x = deque(seq)
         return inst
+
+    def to_sequence(self):
+        return self.x
 
     def __repr__(self):
         return f"CustomSerializableDeque({str(self.x)})"
@@ -46,6 +52,9 @@ class CustomSerializableTuple(tuple, SerializableSequence):
         inst.x = tuple(seq)
         return inst
 
+    def to_sequence(self):
+        return self.x
+
     def __repr__(self):
         return f"CustomSerializableTuple({str(self.x)})"
 
@@ -61,6 +70,9 @@ class CustomSerializableSet(set, SerializableSequence):
         inst.x = set(seq)
         return inst
 
+    def to_sequence(self):
+        return self.x
+
     def __repr__(self):
         return f"CustomSerializableSet({str(self.x)})"
 
@@ -75,6 +87,9 @@ class CustomSerializableFrozenSet(set, SerializableSequence):
         inst = cls()
         inst.x = frozenset(seq)
         return inst
+
+    def to_sequence(self):
+        return self.x
 
     def __repr__(self):
         return f"CustomSerializableFrozenSet({str(self.x)})"
@@ -105,6 +120,9 @@ class CustomSerializableMapping(dict, SerializableMapping):
         inst = cls()
         inst.x = {**mapping}
         return inst
+
+    def to_mapping(self):
+        return self.x
 
     def __repr__(self):
         return f"CustomSerializableMapping({str(self.x)})"
@@ -168,6 +186,9 @@ class CustomSerializableSequence(AbstractSequence, SerializableSequence):
         inst.x = list(seq)
         return inst
 
+    def to_sequence(self):
+        return self.x
+
     def __repr__(self):
         return f"CustomSerializableSequence({str(self.x)})"
 
@@ -200,6 +221,9 @@ class CustomSerializableMutableSequence(AbstractMutableSequence,
         inst = cls()
         inst.x = list(seq)
         return inst
+
+    def to_sequence(self):
+        return self.x
 
     def __repr__(self):
         return f"CustomSerializableMutableSequence({str(self.x)})"

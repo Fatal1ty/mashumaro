@@ -11,6 +11,10 @@ class SerializableSequence(metaclass=ABCMeta):
     def from_sequence(cls, seq: Sequence) -> 'SerializableSequence':
         pass
 
+    @abstractmethod
+    def to_sequence(self) -> Sequence:
+        pass
+
 
 class SerializableMapping(metaclass=ABCMeta):
 
@@ -19,6 +23,10 @@ class SerializableMapping(metaclass=ABCMeta):
     @classmethod
     @abstractmethod
     def from_mapping(cls, mapping: Mapping) -> 'SerializableMapping':
+        pass
+
+    @abstractmethod
+    def to_mapping(self) -> Mapping:
         pass
 
 

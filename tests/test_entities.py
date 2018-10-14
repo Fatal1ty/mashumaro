@@ -223,20 +223,20 @@ def test_data_class_with_abstract_byte_string():
 
 
 def test_data_class_with_string():
-    x = 'foo'
+    x = '123'
     dictionary = {'x': x}
     dataclass_x(DataClassWithStr, x, dictionary)
 
 
 def test_data_class_with_custom_serializable_sequence():
     x = CustomSerializableSequence.from_sequence([1, 2, 3])
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithCustomSerializableSequence, x, dictionary)
 
 
 def test_data_class_with_custom_serializable_mutable_sequence():
     x = CustomSerializableMutableSequence.from_sequence([1, 2, 3])
-    dictionary = {'x': x}
+    dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithCustomSerializableMutableSequence, x, dictionary)
 
 
