@@ -1,6 +1,7 @@
 from collections import deque, ChainMap
 
-from mashumaro.abc import SerializableSequence, SerializableMapping
+from mashumaro.abc import SerializableSequence, SerializableMapping,\
+    SerializableByteString
 from tests.entities.abstract import *
 
 
@@ -109,31 +110,37 @@ class CustomSerializableMapping(dict, SerializableMapping):
         return f"CustomSerializableMapping({str(self.x)})"
 
 
-class CustomSerializableBytes(bytes, SerializableSequence):
+class CustomSerializableBytes(bytes, SerializableByteString):
     def __init__(self):
         super().__init__()
         self.x = bytes()
 
     @classmethod
-    def from_sequence(cls, seq):
+    def from_bytes(cls, data: bytes):
         inst = cls()
-        inst.x = bytes(seq)
+        inst.x = bytes(data)
         return inst
+
+    def to_bytes(self):
+        return self.x
 
     def __repr__(self):
         return f"CustomSerializableBytes({str(self.x)})"
 
 
-class CustomSerializableByteArray(bytes, SerializableSequence):
+class CustomSerializableByteArray(bytes, SerializableByteString):
     def __init__(self):
         super().__init__()
         self.x = bytearray()
 
     @classmethod
-    def from_sequence(cls, seq):
+    def from_bytes(cls, data: bytes):
         inst = cls()
-        inst.x = bytearray(seq)
+        inst.x = bytearray(data)
         return inst
+
+    def to_bytes(self):
+        return bytes(self.x)
 
     def __repr__(self):
         return f"CustomSerializableByteArray({str(self.x)})"

@@ -8,14 +8,15 @@ import builtins
 import collections
 import collections.abc
 # noinspection PyUnresolvedReferences
-from binascii import hexlify, unhexlify
+from base64 import encodebytes, decodebytes
 from contextlib import contextmanager
 from dataclasses import is_dataclass, MISSING
 
 # noinspection PyUnresolvedReferences
 from mashumaro.exceptions import MissingField, UnserializableField,\
     UnserializableDataError
-from mashumaro.abc import SerializableSequence, SerializableMapping
+from mashumaro.abc import SerializableSequence, SerializableMapping,\
+    SerializableByteString
 
 
 PY_36 = sys.version_info < (3, 7)
@@ -265,10 +266,16 @@ class CodeBuilder:
             elif issubclass(origin_type, typing.ByteString):
                 self.add_line('if use_bytes:')
                 with self.indent():
-                    add_fkey('value')
+                    if issubclass(origin_type, SerializableByteString):
+                        add_fkey('value.to_bytes()')
+                    else:
+                        add_fkey('value')
                 self.add_line('else:')
                 with self.indent():
-                    add_fkey('hexlify(value)')
+                    if issubclass(origin_type, SerializableByteString):
+                        add_fkey('encodebytes(value.to_bytes()).decode()')
+                    else:
+                        add_fkey('encodebytes(value).decode()')
             elif issubclass(origin_type, str):
                 add_fkey('value')
             elif issubclass(origin_type, typing.Sequence):
@@ -438,30 +445,28 @@ class CodeBuilder:
                         add_fkey(f"{type_name(origin_type)}.from_mapping("
                                  "{k: v for k, v in value.items()})")
                 elif issubclass(origin_type, typing.ByteString):
-                    if origin_type is bytes:
-                        self.add_line('if use_bytes:')
-                        with self.indent():
+                    self.add_line('if use_bytes:')
+                    with self.indent():
+                        if origin_type is bytes:
                             add_fkey('value')
-                        self.add_line('else:')
-                        with self.indent():
-                            add_fkey('unhexlify(value)')
-                    elif origin_type is bytearray:
-                        self.add_line('if use_bytes:')
-                        with self.indent():
+                        elif origin_type is bytearray:
                             add_fkey('bytearray(value)')
-                        self.add_line('else:')
-                        with self.indent():
-                            add_fkey('bytearray(unhexlify(value))')
-                    if inspect.isabstract(origin_type):
-                        self.add_line('if use_bytes:')
-                        with self.indent():
+                        elif inspect.isabstract(origin_type):
                             add_fkey('value')
-                        self.add_line('else:')
-                        with self.indent():
-                            add_fkey('unhexlify(value)')
-                    elif issubclass(origin_type, SerializableSequence):
-                        add_fkey(f"{type_name(origin_type)}.from_sequence("
-                                 f"value)")
+                        elif issubclass(origin_type, SerializableByteString):
+                            add_fkey(f"{type_name(origin_type)}.from_bytes("
+                                     f"value)")
+                    self.add_line('else:')
+                    with self.indent():
+                        if origin_type is bytes:
+                            add_fkey('decodebytes(value.encode())')
+                        elif origin_type is bytearray:
+                            add_fkey('bytearray(decodebytes(value.encode()))')
+                        elif inspect.isabstract(origin_type):
+                            add_fkey('decodebytes(value.encode())')
+                        elif issubclass(origin_type, SerializableByteString):
+                            add_fkey(f"{type_name(origin_type)}.from_bytes("
+                                     f"decodebytes(value.encode()))")
                 elif issubclass(origin_type, str):
                     if inspect.isabstract(origin_type) or origin_type is str:
                         add_fkey('value')

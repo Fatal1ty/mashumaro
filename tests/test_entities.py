@@ -1,9 +1,11 @@
-from binascii import hexlify
+from base64 import encodebytes
 from tests.entities.dataclasses import *
 from tests.entities.custom import *
 from collections import deque, ChainMap
 
-import pytest
+
+def to_base64(data: bytes) -> str:
+    return encodebytes(data).decode()
 
 
 def dataclass_x(cls, x, dictionary, use_bytes=False):
@@ -163,45 +165,61 @@ def test_data_class_with_abstract_mutable_mapping():
     dataclass_x(DataClassWithAbstractMutableMapping, x, dictionary)
 
 
-@pytest.mark.parametrize('use_bytes', [True, False])
-def test_data_class_with_bytes(use_bytes: bool):
-    if use_bytes:
-        x = bytearray(b'foo')
-    else:
-        x = bytearray(hexlify(b'foo'))
-    dictionary = {'x': x}
-    dataclass_x(DataClassWithBytes, x, dictionary, use_bytes)
+def test_data_class_with_bytes():
+    x = b'123'
+    x_b64 = to_base64(b'123')
+    inst = DataClassWithBytes(x)
+    assert inst.to_dict(use_bytes=True) == {'x': x}
+    assert inst.to_dict(use_bytes=False) == {'x': x_b64}
+    assert DataClassWithBytes.from_dict({'x': x}, use_bytes=True) == inst
+    assert DataClassWithBytes.from_dict({'x': x_b64}, use_bytes=False) == inst
 
 
-@pytest.mark.parametrize('use_bytes', [True, False])
-def test_data_class_with_byte_array(use_bytes: bool):
-    if use_bytes:
-        x = bytearray(b'foo')
-    else:
-        x = bytearray(hexlify(b'foo'))
-    dictionary = {'x': x}
-    dataclass_x(DataClassWithByteArray, x, dictionary, use_bytes)
+def test_data_class_with_byte_array():
+    x = bytearray(b'123')
+    x_b64 = to_base64(b'123')
+    inst = DataClassWithByteArray(x)
+    assert inst.to_dict(use_bytes=True) == {'x': b'123'}
+    assert inst.to_dict(use_bytes=False) == {'x': x_b64}
+    assert DataClassWithByteArray.from_dict({'x': x}, use_bytes=True) == inst
+    assert DataClassWithByteArray.from_dict(
+        {'x': x_b64}, use_bytes=False) == inst
 
 
 def test_data_class_with_custom_serializable_bytes():
-    x = CustomSerializableBytes.from_sequence(b'foo')
-    dictionary = {'x': x}
-    dataclass_x(DataClassWithCustomSerializableBytes, x, dictionary, False)
-    dataclass_x(DataClassWithCustomSerializableBytes, x, dictionary, True)
+    x = CustomSerializableBytes.from_bytes(b'123')
+    x_b64 = to_base64(b'123')
+    inst = DataClassWithCustomSerializableBytes(x)
+    assert inst.to_dict(use_bytes=True) == {'x': b'123'}
+    assert inst.to_dict(use_bytes=False) == {'x': x_b64}
+    assert DataClassWithCustomSerializableBytes.from_dict(
+        {'x': b'123'}, use_bytes=True) == inst
+    assert DataClassWithCustomSerializableBytes.from_dict(
+        {'x': x_b64}, use_bytes=False) == inst
 
 
 def test_data_class_with_custom_serializable_byte_array():
-    x = CustomSerializableByteArray.from_sequence(b'foo')
-    dictionary = {'x': x}
-    dataclass_x(DataClassWithCustomSerializableByteArray, x, dictionary, False)
-    dataclass_x(DataClassWithCustomSerializableByteArray, x, dictionary, True)
+    x = CustomSerializableByteArray.from_bytes(b'123')
+    x_b64 = to_base64(b'123')
+    inst = DataClassWithCustomSerializableByteArray(x)
+    assert inst.to_dict(use_bytes=True) == {'x': b'123'}
+    assert inst.to_dict(use_bytes=False) == {'x': x_b64}
+    assert DataClassWithCustomSerializableByteArray.from_dict(
+        {'x': b'123'}, use_bytes=True) == inst
+    assert DataClassWithCustomSerializableByteArray.from_dict(
+        {'x': x_b64}, use_bytes=False) == inst
 
 
 def test_data_class_with_abstract_byte_string():
-    x = b'foo'
-    dictionary = {'x': x}
-    dataclass_x(DataClassWithAbstractByteString, x, dictionary, False)
-    dataclass_x(DataClassWithAbstractByteString, x, dictionary, True)
+    x = b'123'
+    x_b64 = to_base64(x)
+    inst = DataClassWithAbstractByteString(x)
+    assert inst.to_dict(use_bytes=True) == {'x': b'123'}
+    assert inst.to_dict(use_bytes=False) == {'x': x_b64}
+    assert DataClassWithAbstractByteString.from_dict(
+        {'x': b'123'}, use_bytes=True) == inst
+    assert DataClassWithAbstractByteString.from_dict(
+        {'x': x_b64}, use_bytes=False) == inst
 
 
 def test_data_class_with_string():

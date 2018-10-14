@@ -20,3 +20,17 @@ class SerializableMapping(metaclass=ABCMeta):
     @abstractmethod
     def from_mapping(cls, mapping: Mapping) -> 'SerializableMapping':
         pass
+
+
+class SerializableByteString(metaclass=ABCMeta):
+
+    __slots__ = ()
+
+    @classmethod
+    @abstractmethod
+    def from_bytes(cls, data: bytes):
+        pass
+
+    @abstractmethod
+    def to_bytes(self) -> bytes:
+        pass
