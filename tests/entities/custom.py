@@ -181,6 +181,9 @@ class CustomSerializableSequence(AbstractSequence, SerializableSequence):
     def __getitem__(self, item):
         return self.x[item]
 
+    def __eq__(self, other):
+        return type(self) == type(other) and self.x == other.x
+
     def foo(self):
         pass
 
@@ -213,6 +216,9 @@ class CustomSerializableMutableSequence(AbstractMutableSequence,
 
     def __setitem__(self, key, value):
         self.x[key] = value
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.x == other.x
 
     def insert(self, index, obj):
         self.x.insert(index, obj)
