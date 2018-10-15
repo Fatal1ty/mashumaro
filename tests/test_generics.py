@@ -41,7 +41,7 @@ class Fixture:
     TUPLE = (1, 2, 3)
     DEQUE = collections.deque([1, 2, 3])
     SET = {1, 2, 3}
-    FROZEN_SET = frozenset()
+    FROZEN_SET = frozenset([1, 2, 3])
     CHAIN_MAP = collections.ChainMap({'a': 1, 'b': 2}, {'c': 3, 'd': 4})
     MAPS_LIST = [{'a': 1, 'b': 2}, {'c': 3, 'd': 4}]
     DICT = {'a': 1, 'b': 2}
@@ -119,20 +119,33 @@ inner_values = [
 ]
 
 
+x_factory = {
+    List: list,
+    Deque: collections.deque,
+    Tuple: tuple,
+    Set: set,
+    FrozenSet: frozenset,
+}
+
+
 def check_one_arg_generic(type_, inner_type, inner_value, inner_value_dumped):
     @dataclass
     class DataClass(DataClassDictMixin):
         x: type_[inner_type]
 
-    instance = DataClass(collections.deque([inner_value for _ in range(3)]))
+    x = x_factory[type_]([inner_value for _ in range(3)])
+    instance = DataClass(x)
     if inner_value_dumped == Fixture.BYTES:
         dumped_bytes = {'x': [Fixture.BYTES for _ in range(3)]}
         dumped_base64 = {'x': [Fixture.BYTES_BASE64 for _ in range(3)]}
         assert instance.to_dict(use_bytes=True) == dumped_bytes
         assert instance.to_dict(use_bytes=False) == dumped_base64
+        assert DataClass.from_dict(dumped_bytes, use_bytes=True) == instance
+        assert DataClass.from_dict(dumped_base64, use_bytes=False) == instance
     else:
         dumped = {'x': [inner_value_dumped for _ in range(3)]}
         assert instance.to_dict() == dumped
+        assert DataClass.from_dict(dumped) == instance
 
 
 @pytest.mark.parametrize(
