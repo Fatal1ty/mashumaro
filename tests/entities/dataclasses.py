@@ -1,11 +1,36 @@
-from enum import Enum, IntEnum, Flag, IntFlag
-import typing
 import collections
 from dataclasses import dataclass
+from typing import List, Deque, Tuple, Set, FrozenSet, ChainMap, Dict
 
 from mashumaro import DataClassDictMixin
-from tests.entities.abstract import *
-from tests.entities.custom import *
+from tests.entities.abstract import (
+    AbstractSet,
+    AbstractMutableSet,
+    AbstractMapping,
+    AbstractMutableMapping,
+    AbstractByteString,
+    AbstractSequence,
+    AbstractMutableSequence,
+)
+from tests.entities.custom import (
+    CustomSerializableList,
+    CustomSerializableDeque,
+    CustomSerializableTuple,
+    CustomSerializableSet,
+    CustomSerializableFrozenSet,
+    CustomSerializableChainMap,
+    CustomSerializableMapping,
+    CustomSerializableBytes,
+    CustomSerializableByteArray,
+    CustomSerializableSequence,
+    CustomSerializableMutableSequence,
+)
+from tests.entities.enums import (
+    MyEnum,
+    MyIntEnum,
+    MyFlag,
+    MyIntFlag,
+)
 
 
 # simple types
@@ -22,7 +47,7 @@ class DataClassWithList(DataClassDictMixin):
 
 @dataclass
 class DataClassWithGenericList(DataClassDictMixin):
-    x: typing.List[int]
+    x: List[int]
 
 
 @dataclass
@@ -38,7 +63,7 @@ class DataClassWithDeque(DataClassDictMixin):
 
 @dataclass
 class DataClassWithGenericDeque(DataClassDictMixin):
-    x: typing.Deque[int]
+    x: Deque[int]
 
 
 @dataclass
@@ -54,7 +79,7 @@ class DataClassWithTuple(DataClassDictMixin):
 
 @dataclass
 class DataClassWithGenericTuple(DataClassDictMixin):
-    x: typing.Tuple[int]
+    x: Tuple[int]
 
 
 @dataclass
@@ -70,7 +95,7 @@ class DataClassWithSet(DataClassDictMixin):
 
 @dataclass
 class DataClassWithGenericSet(DataClassDictMixin):
-    x: typing.Set[int]
+    x: Set[int]
 
 
 @dataclass
@@ -96,7 +121,7 @@ class DataClassWithFrozenSet(DataClassDictMixin):
 
 @dataclass
 class DataClassWithGenericFrozenSet(DataClassDictMixin):
-    x: typing.FrozenSet[int]
+    x: FrozenSet[int]
 
 
 @dataclass
@@ -112,7 +137,7 @@ class DataClassWithChainMap(DataClassDictMixin):
 
 @dataclass
 class DataClassWithGenericChainMap(DataClassDictMixin):
-    x: typing.ChainMap[int, int]
+    x: ChainMap[int, int]
 
 
 @dataclass
@@ -128,7 +153,7 @@ class DataClassWithDict(DataClassDictMixin):
 
 @dataclass
 class DataClassWithGenericDict(DataClassDictMixin):
-    x: typing.Dict[int, int]
+    x: Dict[int, int]
 
 
 @dataclass
@@ -197,26 +222,6 @@ class DataClassWithAbstractSequence(DataClassDictMixin):
 @dataclass
 class DataClassWithAbstractMutableSequence(DataClassDictMixin):
     x: AbstractMutableSequence
-
-
-class MyEnum(Enum):
-    a = 'a'
-    b = 'b'
-
-
-class MyIntEnum(IntEnum):
-    a = 1
-    b = 2
-
-
-class MyFlag(Flag):
-    a = 1
-    b = 2
-
-
-class MyIntFlag(IntFlag):
-    a = 1
-    b = 2
 
 
 @dataclass
