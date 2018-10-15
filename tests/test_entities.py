@@ -105,7 +105,7 @@ def test_data_class_with_abstract_mutable_set():
 
 
 def test_data_class_with_frozen_set():
-    x = {1, 2, 3}
+    x = frozenset([1, 2, 3])
     dictionary = {'x': [1, 2, 3]}
     dataclass_x(DataClassWithGenericFrozenSet, x, dictionary)
 
