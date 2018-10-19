@@ -27,10 +27,11 @@ class UnserializableDataError(Exception):
 
 
 class UnserializableField(UnserializableDataError):
-    def __init__(self, field_name, field_type, holder_class):
+    def __init__(self, field_name, field_type, holder_class, msg=None):
         self.field_name = field_name
         self.field_type = field_type
         self.holder_class = holder_class
+        self.msg = msg
 
     @property
     def field_type_name(self):
@@ -46,5 +47,8 @@ class UnserializableField(UnserializableDataError):
         #        f"{self.holder_class.__name__}"
 
     def __str__(self):
-        return f'Field "{self.field_name}" of type {self.field_type_name} ' \
+        s = f'Field "{self.field_name}" of type {self.field_type_name} ' \
                f'in {self.holder_class} is not serializable'
+        if self.msg:
+            s += f': {self.msg}'
+        return s

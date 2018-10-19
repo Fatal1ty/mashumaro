@@ -2,7 +2,6 @@ import sys
 import enum
 import types
 import typing
-import inspect
 # noinspection PyUnresolvedReferences
 import builtins
 import collections
@@ -15,8 +14,6 @@ from dataclasses import is_dataclass, MISSING
 # noinspection PyUnresolvedReferences
 from mashumaro.exceptions import MissingField, UnserializableField,\
     UnserializableDataError
-from mashumaro.abc import SerializableSequence, SerializableMapping,\
-    SerializableByteString, SerializableChainMap
 
 
 PY_36 = sys.version_info < (3, 7)
@@ -29,6 +26,9 @@ def get_imported_module_names():
     # noinspection PyUnresolvedReferences
     return {value.__name__ for value in globals().values()
             if isinstance(value, types.ModuleType)}
+
+
+INITIAL_MODULES = get_imported_module_names()
 
 
 def get_type_origin(t):
@@ -88,7 +88,7 @@ class CodeBuilder:
 
     def reset(self):
         self.lines = []
-        self.modules = get_imported_module_names()
+        self.modules = INITIAL_MODULES.copy()
         self._current_indent = ''
 
     @property
@@ -159,11 +159,17 @@ class CodeBuilder:
                                               f"{type_name(ftype)},cls)")
                             self.add_line("else:")
                             with self.indent():
-                                self._unpack_field_value(fname, ftype, self.cls)
+                                unpacked_value = self._unpack_field_value(
+                                    fname, ftype, self.cls)
+                                self.add_line(
+                                    f"kwargs['{fname}'] = {unpacked_value}")
                         else:
                             self.add_line("if value is not MISSING:")
                             with self.indent():
-                                self._unpack_field_value(fname, ftype, self.cls)
+                                unpacked_value = self._unpack_field_value(
+                                    fname, ftype, self.cls)
+                                self.add_line(
+                                    f"kwargs['{fname}'] = {unpacked_value}")
             self.add_line('except AttributeError:')
             with self.indent():
                 self.add_line('if not isinstance(d, dict):')
@@ -189,309 +195,202 @@ class CodeBuilder:
             self.add_line("kwargs = {}")
             for fname, ftype in self.fields.items():
                 self.add_line(f"value = getattr(self, '{fname}')")
-                self._pack_field_value(fname, ftype, self.cls)
+                packed_value = self._pack_value(fname, ftype, self.cls)
+                self.add_line(f"kwargs['{fname}'] = {packed_value}")
             self.add_line("return kwargs")
         self.add_line(f"setattr(cls, 'to_dict', to_dict)")
         self.compile()
 
-    def _pack_field_value(self, fname, ftype, parent):
-
-        is_serializable = False
-
-        def add_fkey(expr):
-            nonlocal is_serializable
-            is_serializable = True
-            self.add_line(f"kwargs['{fname}'] = {expr}")
+    def _pack_value(self, fname, ftype, parent, value_name='value'):
 
         if is_dataclass(ftype):
-            add_fkey(f"value.to_dict(use_bytes, use_enum)")
-            return
-
-        pack_dataclass_gen = 'v.to_dict(use_bytes, use_enum) for v in value'
+            return f"{value_name}.to_dict(use_bytes, use_enum)"
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             # TODO: упаковывать dataclass и вложенные типы
-            add_fkey('value')
+            return value_name
         elif issubclass(origin_type, typing.Collection):
-            # TODO: упаковывать вложенные типы
             args = getattr(ftype, '__args__', ())
-            if issubclass(origin_type, typing.List):
-                if ftype is list:
-                    add_fkey('value')
-                elif is_generic(ftype):
-                    if is_dataclass(args[0]):
-                        add_fkey(f"[{pack_dataclass_gen}]")
-                    else:
-                        add_fkey('[v for v in value]')
-                elif issubclass(origin_type, SerializableSequence):
-                    add_fkey("list(value.to_sequence())")
-                else:
-                    add_fkey('[v for v in value]')
-            elif issubclass(origin_type, (typing.Deque,
-                                          typing.Tuple,
-                                          typing.AbstractSet)):
-                if is_generic(ftype) and is_dataclass(args[0]):
-                    add_fkey(f"[{pack_dataclass_gen}]")
-                elif issubclass(origin_type, SerializableSequence):
-                    add_fkey("list(value.to_sequence())")
-                else:
-                    add_fkey('[v for v in value]')
+
+            def inner_expr(arg_num=0, v_name='value'):
+                return self._pack_value(fname, args[arg_num], parent, v_name)
+
+            if issubclass(origin_type, (typing.List,
+                                        typing.Deque,
+                                        typing.Tuple,
+                                        typing.AbstractSet)):
+                if is_generic(ftype):
+                    return f'[{inner_expr()} for value in {value_name}]'
+                elif ftype is list:
+                    raise UnserializableField(
+                        fname, ftype, parent, 'Use typing.List[T] instead')
+                elif ftype is collections.deque:
+                    raise UnserializableField(
+                        fname, ftype, parent, 'Use typing.Deque[T] instead')
+                elif ftype is tuple:
+                    raise UnserializableField(
+                        fname, ftype, parent, 'Use typing.Tuple[T] instead')
+                elif ftype is set:
+                    raise UnserializableField(
+                        fname, ftype, parent, 'Use typing.Set[T] instead')
+                elif ftype is frozenset:
+                    raise UnserializableField(
+                        fname, ftype, parent, 'Use typing.FrozenSet[T] instead')
             elif issubclass(origin_type, typing.ChainMap):
                 if ftype is collections.ChainMap:
-                    add_fkey('value.maps')
+                    raise UnserializableField(
+                        fname, ftype, parent,
+                        'Use typing.ChainMap[KT,VT] instead'
+                    )
                 elif is_generic(ftype):
                     if is_dataclass(args[0]):
                         raise UnserializableDataError(
                             'ChainMaps with dataclasses as keys '
                             'are not supported by mashumaro')
-                    elif is_dataclass(args[1]):
-                        add_fkey('[{k: v.to_dict(use_bytes, use_enum) for k,v '
-                                 'in m.items()} for m in value.maps]')
                     else:
-                        add_fkey('[m for m in value.maps]')
-                elif issubclass(origin_type, SerializableChainMap):
-                    add_fkey("value.to_maps()")
-                else:
-                    add_fkey('[m for m in value.maps]')
+                        return f'[{{{inner_expr(0,"key")}:{inner_expr(1)} ' \
+                               f'for key,value in m.items()}} ' \
+                               f'for m in value.maps]'
             elif issubclass(origin_type, typing.Mapping):
                 if ftype is dict:
-                    add_fkey('value')
+                    raise UnserializableField(
+                        fname, ftype, parent,
+                        'Use typing.Dict[KT,VT] or Mapping[KT,VT] instead'
+                    )
                 elif is_generic(ftype):
                     if is_dataclass(args[0]):
                         raise UnserializableDataError(
                             'Mappings with dataclasses as keys '
                             'are not supported by mashumaro')
-                    elif is_dataclass(args[1]):
-                        add_fkey('{k: v.to_dict(use_bytes, use_enum) '
-                                 'for k,v in value.items()}')
                     else:
-                        add_fkey('{k: v for k,v in value.items()}')
-                elif issubclass(origin_type, SerializableMapping):
-                    add_fkey('dict(value.to_mapping())')
-                else:
-                    add_fkey('{k: v for k,v in value.items()}')
+                        return f'{{{inner_expr(0,"key")}: {inner_expr(1)} ' \
+                               f'for key, value in {value_name}.items()}}'
             elif issubclass(origin_type, typing.ByteString):
-                self.add_line('if use_bytes:')
-                with self.indent():
-                    if issubclass(origin_type, SerializableByteString):
-                        add_fkey('value.to_bytes()')
-                    else:
-                        add_fkey('value')
-                self.add_line('else:')
-                with self.indent():
-                    if issubclass(origin_type, SerializableByteString):
-                        add_fkey('encodebytes(value.to_bytes()).decode()')
-                    else:
-                        add_fkey('encodebytes(value).decode()')
+                return f'{value_name} if use_bytes else ' \
+                       f'encodebytes({value_name}).decode()'
             elif issubclass(origin_type, str):
-                add_fkey('value')
+                return value_name
             elif issubclass(origin_type, typing.Sequence):
-                if is_generic(ftype) and is_dataclass(args[0]):
-                    add_fkey(f"[{pack_dataclass_gen}]")
-                else:
-                    add_fkey('[v for v in value]')
-            if not is_serializable:
-                raise UnserializableField(fname, ftype, parent)
+                if is_generic(ftype):
+                    return f'[{inner_expr()} for value in {value_name}]'
         elif issubclass(origin_type, enum.Enum):
-            self.add_line('if use_enum:')
-            with self.indent():
-                add_fkey('value')
-            self.add_line('else:')
-            with self.indent():
-                add_fkey("value.value")
-        else:
-            add_fkey('value')
+            return f'{value_name} if use_enum else {value_name}.value'
+        elif origin_type in (bool, int, float, NoneType):
+            return value_name
 
-    def _unpack_field_value(self, fname, ftype, parent):
+        raise UnserializableField(fname, ftype, parent)
 
-        is_serializable = False
-
-        def add_fkey(expr):
-            nonlocal is_serializable
-            is_serializable = True
-            self.add_line(f"kwargs['{fname}'] = {expr}")
-
-        def unpack_dataclass_gen(arg_type):
-            return f"{type_name(arg_type)}.from_dict(v, use_bytes, use_enum) " \
-                   f"for v in value"
+    def _unpack_field_value(self, fname, ftype, parent, value_name='value'):
 
         if is_dataclass(ftype):
-            add_fkey(f"{type_name(ftype)}.from_dict(value, use_bytes, "
-                     f"use_enum)")
-            return
+            return f"{type_name(ftype)}.from_dict({value_name}, " \
+                   f"use_bytes, use_enum)"
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             # TODO: распаковывать dataclass и вложенные типы
             if origin_type in (typing.Any, typing.AnyStr):
-                add_fkey('value')
+                return value_name
             elif is_union(ftype):
                 # TODO: выбирать в рантайме подходящий тип
                 args = getattr(ftype, '__args__', ())
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
                     if is_dataclass(args[0]):
-                        add_fkey(f"{type_name(args[0])}.from_dict("
-                                 f"value, use_bytes, use_enum)")
+                        return self._unpack_field_value(fname, args[0], parent)
                     else:
-                        add_fkey('value')
+                        return value_name
                 else:
-                    add_fkey('value')
+                    return value_name
             elif hasattr(origin_type, '__constraints__'):
                 if origin_type in origin_type.__constraints__:
                     # TODO: выбирать в рантайме подходящий тип
-                    add_fkey('value')
-        else:
-            if issubclass(origin_type, typing.Collection):
-                # TODO: распаковывать вложенные типы
-                args = getattr(ftype, '__args__', ())
-                if issubclass(origin_type, typing.List):
-                    if ftype is list:
-                        add_fkey('value')
-                    elif is_generic(ftype):
-                        if is_dataclass(args[0]):
-                            add_fkey(f"[{unpack_dataclass_gen(args[0])}]")
-                        else:
-                            add_fkey('value')
-                    elif inspect.isabstract(origin_type):
-                        add_fkey('value')
-                    elif issubclass(origin_type, SerializableSequence):
-                        add_fkey(f"{type_name(origin_type)}.from_sequence("
-                                 f"[v for v in value])")
-                elif issubclass(origin_type, typing.Deque):
-                    if ftype is collections.deque:
-                        add_fkey('collections.deque(value)')
-                    elif is_generic(ftype):
-                        if is_dataclass(args[0]):
-                            add_fkey(f"collections.deque("
-                                     f"{unpack_dataclass_gen(args[0])})")
-                        else:
-                            add_fkey('collections.deque(value)')
-                    elif inspect.isabstract(origin_type):
-                        add_fkey('collections.deque(value)')
-                    elif issubclass(origin_type, SerializableSequence):
-                        add_fkey(f"{type_name(origin_type)}.from_sequence("
-                                 f"[v for v in value])")
-                elif issubclass(origin_type, typing.Tuple):
-                    if ftype in (tuple, typing.Tuple):
-                        add_fkey('tuple(value)')
-                    elif is_generic(ftype):
-                        if is_dataclass(args[0]):
-                            add_fkey(f"tuple({unpack_dataclass_gen(args[0])})")
-                        else:
-                            add_fkey('tuple(value)')
-                    elif inspect.isabstract(origin_type):
-                        add_fkey('tuple(value)')
-                    elif issubclass(origin_type, SerializableSequence):
-                        add_fkey(f"{type_name(origin_type)}.from_sequence("
-                                 f"[v for v in value])")
-                elif issubclass(origin_type, typing.FrozenSet):
-                    if ftype is frozenset:
-                        add_fkey('frozenset(value)')
-                    elif is_generic(ftype):
-                        if is_dataclass(args[0]):
-                            add_fkey(f"frozenset("
-                                     f"{unpack_dataclass_gen(args[0])})")
-                        else:
-                            add_fkey('frozenset(value)')
-                        add_fkey('frozenset(value)')
-                    elif inspect.isabstract(origin_type):
-                        add_fkey('frozenset(value)')
-                    elif issubclass(origin_type, SerializableSequence):
-                        add_fkey(f"{type_name(origin_type)}.from_sequence("
-                                 f"[v for v in value])")
-                elif issubclass(origin_type, typing.AbstractSet):
-                    if ftype is set:
-                        add_fkey('set(value)')
-                    elif is_generic(ftype):
-                        if is_dataclass(args[0]):
-                            add_fkey(f"set({unpack_dataclass_gen(args[0])})")
-                        else:
-                            add_fkey('set(value)')
-                    elif inspect.isabstract(origin_type):
-                        add_fkey('set(value)')
-                    elif issubclass(origin_type, SerializableSequence):
-                        add_fkey(f"{type_name(origin_type)}.from_sequence("
-                                 f"[v for v in value])")
-                elif issubclass(origin_type, typing.ChainMap):
-                    if ftype is collections.ChainMap:
-                        add_fkey('collections.ChainMap(*value)')
-                    elif is_generic(ftype):
-                        if is_dataclass(args[0]):
-                            raise UnserializableDataError(
-                                'ChainMaps with dataclasses as keys '
-                                'are not supported by mashumaro')
-                        elif is_dataclass(args[1]):
-                            dc = f"{type_name(args[1])}.from_dict(v, " \
-                                 f"use_bytes, use_enum)"
-                            add_fkey(f"collections.ChainMap(*[{{k: {dc} "
-                                     f"for k,v in m.items()}} for m in value])")
-                        else:
-                            add_fkey('collections.ChainMap(*value)')
-                    elif inspect.isabstract(origin_type):
-                        add_fkey('collections.ChainMap(*value)')
-                    elif issubclass(origin_type, SerializableChainMap):
-                        add_fkey(f"{type_name(origin_type)}.from_maps("
-                                 f"[v for v in value])")
-                elif issubclass(origin_type, typing.Mapping):
-                    if ftype is dict:
-                        add_fkey('value')
-                    elif is_generic(ftype):
-                        if is_dataclass(args[0]):
-                            raise UnserializableDataError(
-                                'Mappings with dataclasses as keys '
-                                'are not supported by mashumaro')
-                        elif is_dataclass(args[1]):
-                            dc = f"{type_name(args[1])}.from_dict(v, " \
-                                 f"use_bytes, use_enum)"
-                            add_fkey(f"{{k:{dc} for k,v in value.items()}}")
-                        else:
-                            add_fkey('value')
-                    if inspect.isabstract(origin_type):
-                        add_fkey('value')
-                    elif issubclass(origin_type, SerializableMapping):
-                        add_fkey(f"{type_name(origin_type)}.from_mapping("
-                                 "{k: v for k, v in value.items()})")
-                elif issubclass(origin_type, typing.ByteString):
-                    self.add_line('if use_bytes:')
-                    with self.indent():
-                        if origin_type is bytes:
-                            add_fkey('value')
-                        elif origin_type is bytearray:
-                            add_fkey('bytearray(value)')
-                        elif inspect.isabstract(origin_type):
-                            add_fkey('value')
-                        elif issubclass(origin_type, SerializableByteString):
-                            add_fkey(f"{type_name(origin_type)}.from_bytes("
-                                     f"value)")
-                    self.add_line('else:')
-                    with self.indent():
-                        if origin_type is bytes:
-                            add_fkey('decodebytes(value.encode())')
-                        elif origin_type is bytearray:
-                            add_fkey('bytearray(decodebytes(value.encode()))')
-                        elif inspect.isabstract(origin_type):
-                            add_fkey('decodebytes(value.encode())')
-                        elif issubclass(origin_type, SerializableByteString):
-                            add_fkey(f"{type_name(origin_type)}.from_bytes("
-                                     f"decodebytes(value.encode()))")
-                elif issubclass(origin_type, str):
-                    if inspect.isabstract(origin_type) or origin_type is str:
-                        add_fkey('value')
-                elif issubclass(origin_type, typing.Sequence):
-                    if inspect.isabstract(origin_type):
-                        add_fkey('list(v for v in value)')
-                    elif issubclass(origin_type, SerializableSequence):
-                        add_fkey(f"{type_name(origin_type)}.from_sequence("
-                                 f"[v for v in value])")
-                if not is_serializable:
-                    raise UnserializableField(fname, ftype, parent)
-            elif issubclass(origin_type, enum.Enum):
-                self.add_line('if use_enum:')
-                with self.indent():
-                    add_fkey("value")
-                self.add_line('else:')
-                with self.indent():
-                    add_fkey(f"{type_name(origin_type)}(value)")
-            else:
-                add_fkey('value')
+                    return value_name
+        elif issubclass(origin_type, typing.Collection):
+            args = getattr(ftype, '__args__', ())
+
+            def inner_expr(arg_num=0, v_name='value'):
+                return self._unpack_field_value(
+                    fname, args[arg_num], parent, v_name)
+
+            if issubclass(origin_type, typing.List):
+                if is_generic(ftype):
+                    return f'[{inner_expr()} for value in {value_name}]'
+                elif ftype is list:
+                    raise UnserializableField(
+                        fname, ftype, parent, 'Use typing.List[T] instead')
+            elif issubclass(origin_type, typing.Deque):
+                if is_generic(ftype):
+                    return f'collections.deque([{inner_expr()} ' \
+                           f'for value in {value_name}])'
+                elif ftype is collections.deque:
+                    raise UnserializableField(
+                        fname, ftype, parent, 'Use typing.Deque[T] instead')
+            elif issubclass(origin_type, typing.Tuple):
+                if is_generic(ftype):
+                    return f'tuple([{inner_expr()} for value in {value_name}])'
+                elif ftype is tuple:
+                    raise UnserializableField(
+                        fname, ftype, parent, 'Use typing.Tuple[T] instead')
+            elif issubclass(origin_type, typing.FrozenSet):
+                if is_generic(ftype):
+                    return f'frozenset([{inner_expr()} ' \
+                           f'for value in {value_name}])'
+                elif ftype is frozenset:
+                    raise UnserializableField(
+                        fname, ftype, parent, 'Use typing.FrozenSet[T] instead')
+            elif issubclass(origin_type, typing.AbstractSet):
+                if is_generic(ftype):
+                    return f'set([{inner_expr()} for value in {value_name}])'
+                elif ftype is set:
+                    raise UnserializableField(
+                        fname, ftype, parent, 'Use typing.Set[T] instead')
+            elif issubclass(origin_type, typing.ChainMap):
+                if ftype is collections.ChainMap:
+                    raise UnserializableField(
+                        fname, ftype, parent,
+                        'Use typing.ChainMap[KT,VT] instead'
+                    )
+                elif is_generic(ftype):
+                    if is_dataclass(args[0]):
+                        raise UnserializableDataError(
+                            'ChainMaps with dataclasses as keys '
+                            'are not supported by mashumaro')
+                    else:
+                        return f'collections.ChainMap(' \
+                               f'*[{{{inner_expr(0,"key")}:{inner_expr(1)} ' \
+                               f'for key, value in m.items()}} ' \
+                               f'for m in {value_name}])'
+            elif issubclass(origin_type, typing.Mapping):
+                if ftype is dict:
+                    raise UnserializableField(
+                        fname, ftype, parent,
+                        'Use typing.Dict[KT,VT] or Mapping[KT,VT] instead'
+                    )
+                elif is_generic(ftype):
+                    if is_dataclass(args[0]):
+                        raise UnserializableDataError(
+                            'Mappings with dataclasses as keys '
+                            'are not supported by mashumaro')
+                    else:
+                        return f'{{{inner_expr(0,"key")}: {inner_expr(1)} ' \
+                               f'for key, value in {value_name}.items()}}'
+            elif issubclass(origin_type, typing.ByteString):
+                if origin_type is bytes:
+                    return f'{value_name} if use_bytes else ' \
+                           f'decodebytes({value_name}.encode())'
+                elif origin_type is bytearray:
+                    return f'bytearray({value_name} if use_bytes else ' \
+                           f'decodebytes({value_name}.encode()))'
+            elif issubclass(origin_type, str):
+                return value_name
+            elif issubclass(origin_type, typing.Sequence):
+                if is_generic(ftype):
+                    return f'[{inner_expr()} for value in {value_name}]'
+        elif issubclass(origin_type, enum.Enum):
+            return f'{value_name} if use_enum ' \
+                   f'else {type_name(origin_type)}({value_name})'
+        elif origin_type in (bool, int, float, NoneType):
+            return value_name
+
+        raise UnserializableField(fname, ftype, parent)

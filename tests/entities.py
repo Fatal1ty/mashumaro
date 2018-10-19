@@ -1,9 +1,12 @@
 from enum import Enum, IntEnum, Flag, IntFlag
+from dataclasses import dataclass
+
+from mashumaro import DataClassDictMixin
 
 
 class MyEnum(Enum):
-    a = 'a'
-    b = 'b'
+    a = 'letter a'
+    b = 'letter b'
 
 
 class MyIntEnum(IntEnum):
@@ -19,3 +22,9 @@ class MyFlag(Flag):
 class MyIntFlag(IntFlag):
     a = 1
     b = 2
+
+
+@dataclass
+class MyDataClass(DataClassDictMixin):
+    a: int
+    b: int
