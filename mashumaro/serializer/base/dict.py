@@ -12,7 +12,8 @@ class DataClassDictMixin:
     def to_dict(
             self,
             use_bytes: bool = False,
-            use_enum: bool = False) -> dict:
+            use_enum: bool = False,
+            use_datetime: bool = False) -> dict:
         pass
 
     @classmethod
@@ -20,7 +21,8 @@ class DataClassDictMixin:
             cls,
             d: Mapping,
             use_bytes: bool = False,
-            use_enum: bool = False):
+            use_enum: bool = False,
+            use_datetime: bool = False):
         pass
 
 

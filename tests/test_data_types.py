@@ -82,9 +82,9 @@ inner_values = [
     (MyIntFlag, Fixture.INT_FLAG, Fixture.INT_FLAG),
     (MyDataClass, Fixture.DATA_CLASS, Fixture.DICT),
     (type(None), Fixture.NONE, Fixture.NONE),
-    (datetime, Fixture.DATETIME, Fixture.DATETIME.isoformat()),
-    (date, Fixture.DATE, Fixture.DATE.isoformat()),
-    (time, Fixture.TIME, Fixture.TIME.isoformat()),
+    (datetime, Fixture.DATETIME, Fixture.DATETIME),
+    (date, Fixture.DATE, Fixture.DATE),
+    (time, Fixture.TIME, Fixture.TIME),
     (timedelta, Fixture.TIMEDELTA, Fixture.TIMEDELTA.total_seconds()),
 ]
 
@@ -118,7 +118,7 @@ x_factory_mapping = {
 
 
 # noinspection PyCallingNonCallable
-def check_one_arg_generic(type_, value_info, use_bytes, use_enum):
+def check_one_arg_generic(type_, value_info, use_bytes, use_enum, use_datetime):
     x_type, x_value, x_value_dumped = value_info
 
     @dataclass
@@ -134,23 +134,43 @@ def check_one_arg_generic(type_, value_info, use_bytes, use_enum):
         v_dumped = Fixture.BYTE_ARRAY if use_bytes else Fixture.BYTES_BASE64
     elif isinstance(x_value_dumped, Enum):
         v_dumped = x_value_dumped if use_enum else x_value_dumped.value
+    elif isinstance(x_value_dumped, (datetime, date, time)):
+        v_dumped = x_value_dumped if use_datetime \
+            else x_value_dumped.isoformat()
     else:
         v_dumped = x_value_dumped
     dumped = {'x': list(x_factory([v_dumped for _ in range(3)]))}
-    instance_dumped = instance.to_dict(use_bytes=use_bytes, use_enum=use_enum)
+    instance_dumped = instance.to_dict(
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
     instance_loaded = DataClass.from_dict(
-        dumped, use_bytes=use_bytes, use_enum=use_enum)
+        dumped,
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
     assert instance_dumped == dumped
     assert instance_loaded == instance
-    instance_dumped = instance.to_dict(use_bytes=use_bytes, use_enum=use_enum)
+    instance_dumped = instance.to_dict(
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
     instance_loaded = DataClass.from_dict(
-        dumped, use_bytes=use_bytes, use_enum=use_enum)
+        dumped,
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
     assert same_types(instance_dumped, dumped)
     assert same_types(instance_loaded.x, x)
 
 
 # noinspection PyCallingNonCallable
-def check_two_args_generic(type_, key_info, value_info, use_bytes, use_enum):
+def check_two_args_generic(type_, key_info, value_info, use_bytes, use_enum,
+                           use_datetime):
     k_type, k_value, k_value_dumped = key_info
     v_type, v_value, v_value_dumped = value_info
 
@@ -167,6 +187,9 @@ def check_two_args_generic(type_, key_info, value_info, use_bytes, use_enum):
         k_dumped = Fixture.BYTE_ARRAY if use_bytes else Fixture.BYTES_BASE64
     elif isinstance(k_value_dumped, Enum):
         k_dumped = k_value_dumped if use_enum else k_value_dumped.value
+    elif isinstance(k_value_dumped, (datetime, date, time)):
+        k_dumped = k_value_dumped if use_datetime \
+            else k_value_dumped.isoformat()
     else:
         k_dumped = k_value_dumped
     if v_value_dumped is Fixture.BYTES:
@@ -175,28 +198,48 @@ def check_two_args_generic(type_, key_info, value_info, use_bytes, use_enum):
         v_dumped = Fixture.BYTE_ARRAY if use_bytes else Fixture.BYTES_BASE64
     elif isinstance(v_value_dumped, Enum):
         v_dumped = v_value_dumped if use_enum else v_value_dumped.value
+    elif isinstance(v_value_dumped, (datetime, date, time)):
+        v_dumped = v_value_dumped if use_datetime \
+            else v_value_dumped.isoformat()
     else:
         v_dumped = v_value_dumped
     if type_ is ChainMap:
         dumped = {'x': x_factory([(k_dumped, v_dumped) for _ in range(3)]).maps}
     else:
         dumped = {'x': x_factory([(k_dumped, v_dumped) for _ in range(3)])}
-    instance_dumped = instance.to_dict(use_bytes=use_bytes, use_enum=use_enum)
+    instance_dumped = instance.to_dict(
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
     instance_loaded = DataClass.from_dict(
-        dumped, use_bytes=use_bytes, use_enum=use_enum)
+        dumped,
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
     assert instance_dumped == dumped
     assert instance_loaded == instance
-    instance_dumped = instance.to_dict(use_bytes=use_bytes, use_enum=use_enum)
+    instance_dumped = instance.to_dict(
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
     instance_loaded = DataClass.from_dict(
-        dumped, use_bytes=use_bytes, use_enum=use_enum)
+        dumped,
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
     assert same_types(instance_dumped, dumped)
     assert same_types(instance_loaded.x, x)
 
 
+@pytest.mark.parametrize('use_datetime', [True, False])
 @pytest.mark.parametrize('use_enum', [True, False])
 @pytest.mark.parametrize('use_bytes', [True, False])
 @pytest.mark.parametrize('value_info', inner_values)
-def test_one_level(value_info, use_bytes, use_enum):
+def test_one_level(value_info, use_bytes, use_enum, use_datetime):
     x_type, x_value, x_value_dumped = value_info
 
     @dataclass
@@ -210,95 +253,133 @@ def test_one_level(value_info, use_bytes, use_enum):
         v_dumped = Fixture.BYTE_ARRAY if use_bytes else Fixture.BYTES_BASE64
     elif isinstance(x_value_dumped, Enum):
         v_dumped = x_value_dumped if use_enum else x_value_dumped.value
+    elif isinstance(x_value_dumped, (datetime, date, time)):
+        v_dumped = x_value_dumped if use_datetime \
+            else x_value_dumped.isoformat()
     else:
         v_dumped = x_value_dumped
     dumped = {'x': v_dumped}
-    instance_dumped = instance.to_dict(use_bytes=use_bytes, use_enum=use_enum)
+    instance_dumped = instance.to_dict(
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
     instance_loaded = DataClass.from_dict(
-        dumped, use_bytes=use_bytes, use_enum=use_enum)
+        dumped,
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
     assert instance_dumped == dumped
     assert instance_loaded == instance
-    instance_dumped = instance.to_dict(use_bytes=use_bytes, use_enum=use_enum)
+    instance_dumped = instance.to_dict(
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
     instance_loaded = DataClass.from_dict(
-        dumped, use_bytes=use_bytes, use_enum=use_enum)
+        dumped,
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
     assert same_types(instance_dumped, dumped)
     assert same_types(instance_loaded.x, x_value)
 
 
+@pytest.mark.parametrize('use_datetime', [True, False])
 @pytest.mark.parametrize('use_enum', [True, False])
 @pytest.mark.parametrize('use_bytes', [True, False])
 @pytest.mark.parametrize('value_info', inner_values)
-def test_with_generic_list(value_info, use_bytes, use_enum):
-    check_one_arg_generic(List, value_info, use_bytes, use_enum)
+def test_with_generic_list(value_info, use_bytes, use_enum, use_datetime):
+    check_one_arg_generic(List, value_info, use_bytes, use_enum, use_datetime)
 
 
+@pytest.mark.parametrize('use_datetime', [True, False])
 @pytest.mark.parametrize('use_enum', [True, False])
 @pytest.mark.parametrize('use_bytes', [True, False])
 @pytest.mark.parametrize('value_info', inner_values)
-def test_with_generic_deque(value_info, use_bytes, use_enum):
-    check_one_arg_generic(Deque, value_info, use_bytes, use_enum)
+def test_with_generic_deque(value_info, use_bytes, use_enum, use_datetime):
+    check_one_arg_generic(Deque, value_info, use_bytes, use_enum, use_datetime)
 
 
+@pytest.mark.parametrize('use_datetime', [True, False])
 @pytest.mark.parametrize('use_enum', [True, False])
 @pytest.mark.parametrize('use_bytes', [True, False])
 @pytest.mark.parametrize('value_info', inner_values)
-def test_with_generic_tuple(value_info, use_bytes, use_enum):
-    check_one_arg_generic(Tuple, value_info, use_bytes, use_enum)
+def test_with_generic_tuple(value_info, use_bytes, use_enum, use_datetime):
+    check_one_arg_generic(Tuple, value_info, use_bytes, use_enum, use_datetime)
 
 
+@pytest.mark.parametrize('use_datetime', [True, False])
 @pytest.mark.parametrize('use_enum', [True, False])
 @pytest.mark.parametrize('use_bytes', [True, False])
 @pytest.mark.parametrize('value_info', hashable_inner_values)
-def test_with_generic_set(value_info, use_bytes, use_enum):
-    check_one_arg_generic(Set, value_info, use_bytes, use_enum)
+def test_with_generic_set(value_info, use_bytes, use_enum, use_datetime):
+    check_one_arg_generic(Set, value_info, use_bytes, use_enum, use_datetime)
 
 
+@pytest.mark.parametrize('use_datetime', [True, False])
 @pytest.mark.parametrize('use_enum', [True, False])
 @pytest.mark.parametrize('use_bytes', [True, False])
 @pytest.mark.parametrize('value_info', hashable_inner_values)
-def test_with_generic_frozenset(value_info, use_bytes, use_enum):
-    check_one_arg_generic(FrozenSet, value_info, use_bytes, use_enum)
+def test_with_generic_frozenset(value_info, use_bytes, use_enum, use_datetime):
+    check_one_arg_generic(
+        FrozenSet, value_info, use_bytes, use_enum, use_datetime)
 
 
+@pytest.mark.parametrize('use_datetime', [True, False])
 @pytest.mark.parametrize('use_enum', [True, False])
 @pytest.mark.parametrize('use_bytes', [True, False])
 @pytest.mark.parametrize('value_info', hashable_inner_values)
-def test_with_generic_mutable_set(value_info, use_bytes, use_enum):
-    check_one_arg_generic(MutableSet, value_info, use_bytes, use_enum)
+def test_with_generic_mutable_set(
+        value_info, use_bytes, use_enum, use_datetime):
+    check_one_arg_generic(
+        MutableSet, value_info, use_bytes, use_enum, use_datetime)
 
 
+@pytest.mark.parametrize('use_datetime', [True, False])
 @pytest.mark.parametrize('use_enum', [True, False])
 @pytest.mark.parametrize('use_bytes', [True, False])
 @pytest.mark.parametrize('value_info', inner_values)
 @pytest.mark.parametrize('key_info', hashable_inner_values)
-def test_with_generic_dict(key_info, value_info, use_bytes, use_enum):
-    check_two_args_generic(Dict, key_info, value_info, use_bytes, use_enum)
+def test_with_generic_dict(
+        key_info, value_info, use_bytes, use_enum, use_datetime):
+    check_two_args_generic(
+        Dict, key_info, value_info, use_bytes, use_enum, use_datetime)
 
 
+@pytest.mark.parametrize('use_datetime', [True, False])
 @pytest.mark.parametrize('use_enum', [True, False])
 @pytest.mark.parametrize('use_bytes', [True, False])
 @pytest.mark.parametrize('value_info', inner_values)
 @pytest.mark.parametrize('key_info', hashable_inner_values)
-def test_with_generic_mapping(key_info, value_info, use_bytes, use_enum):
-    check_two_args_generic(Mapping, key_info, value_info, use_bytes, use_enum)
+def test_with_generic_mapping(
+        key_info, value_info, use_bytes, use_enum, use_datetime):
+    check_two_args_generic(
+        Mapping, key_info, value_info, use_bytes, use_enum, use_datetime)
 
 
+@pytest.mark.parametrize('use_datetime', [True, False])
 @pytest.mark.parametrize('use_enum', [True, False])
 @pytest.mark.parametrize('use_bytes', [True, False])
 @pytest.mark.parametrize('value_info', inner_values)
 @pytest.mark.parametrize('key_info', hashable_inner_values)
-def test_with_generic_mutable_mapping(key_info, value_info,
-                                      use_bytes, use_enum):
-    check_two_args_generic(MutableMapping, key_info, value_info,
-                           use_bytes, use_enum)
+def test_with_generic_mutable_mapping(
+        key_info, value_info, use_bytes, use_enum, use_datetime):
+    check_two_args_generic(
+        MutableMapping, key_info, value_info, use_bytes, use_enum, use_datetime)
 
 
+@pytest.mark.parametrize('use_datetime', [True, False])
 @pytest.mark.parametrize('use_enum', [True, False])
 @pytest.mark.parametrize('use_bytes', [True, False])
 @pytest.mark.parametrize('value_info', inner_values)
 @pytest.mark.parametrize('key_info', hashable_inner_values)
-def test_with_generic_chain_map(key_info, value_info, use_bytes, use_enum):
-    check_two_args_generic(ChainMap, key_info, value_info, use_bytes, use_enum)
+def test_with_generic_chain_map(
+        key_info, value_info, use_bytes, use_enum, use_datetime):
+    check_two_args_generic(
+        ChainMap, key_info, value_info, use_bytes, use_enum, use_datetime)
 
 
 @pytest.mark.parametrize('x_type', unsupported_field_types)

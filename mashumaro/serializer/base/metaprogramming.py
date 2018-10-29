@@ -139,7 +139,8 @@ class CodeBuilder:
             return
 
         self.add_line('@classmethod')
-        self.add_line("def from_dict(cls, d, use_bytes=False, use_enum=False):")
+        self.add_line("def from_dict(cls, d, use_bytes=False, use_enum=False, "
+                      "use_datetime=False):")
         with self.indent():
             self.add_line('try:')
             with self.indent():
@@ -191,7 +192,8 @@ class CodeBuilder:
         if not self.fields:
             return
 
-        self.add_line("def to_dict(self, use_bytes=False, use_enum=False):")
+        self.add_line("def to_dict(self, use_bytes=False, use_enum=False, "
+                      "use_datetime=False):")
         with self.indent():
             self.add_line("kwargs = {}")
             for fname, ftype in self.fields.items():
@@ -205,7 +207,7 @@ class CodeBuilder:
     def _pack_value(self, fname, ftype, parent, value_name='value'):
 
         if is_dataclass(ftype):
-            return f"{value_name}.to_dict(use_bytes, use_enum)"
+            return f"{value_name}.to_dict(use_bytes, use_enum, use_datetime)"
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
@@ -280,7 +282,7 @@ class CodeBuilder:
         elif origin_type in (bool, int, float, NoneType):
             return value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
-            return f'{value_name}.isoformat()'
+            return f'{value_name} if use_datetime else {value_name}.isoformat()'
         elif origin_type is datetime.timedelta:
             return f'{value_name}.total_seconds()'
 
@@ -290,7 +292,7 @@ class CodeBuilder:
 
         if is_dataclass(ftype):
             return f"{type_name(ftype)}.from_dict({value_name}, " \
-                   f"use_bytes, use_enum)"
+                   f"use_bytes, use_enum, use_datetime)"
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
@@ -397,12 +399,10 @@ class CodeBuilder:
                    f'else {type_name(origin_type)}({value_name})'
         elif origin_type in (bool, int, float, NoneType):
             return value_name
-        elif origin_type is datetime.datetime:
-            return f'datetime.datetime.fromisoformat({value_name})'
-        elif origin_type is datetime.date:
-            return f'datetime.date.fromisoformat({value_name})'
-        elif origin_type is datetime.time:
-            return f'datetime.time.fromisoformat({value_name})'
+        elif origin_type in (datetime.datetime, datetime.date, datetime.time):
+            return f'{value_name} if use_datetime else ' \
+                   f'datetime.{origin_type.__name__}.' \
+                   f'fromisoformat({value_name})'
         elif origin_type is datetime.timedelta:
             return f'datetime.timedelta(seconds={value_name})'
 
