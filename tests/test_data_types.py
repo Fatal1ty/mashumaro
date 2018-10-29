@@ -1,5 +1,6 @@
 import collections
 from enum import Enum
+from datetime import datetime, date, time, timedelta
 from dataclasses import dataclass
 from typing import (
     Hashable,
@@ -52,6 +53,10 @@ class Fixture:
     INT_FLAG = MyIntFlag.a
     DATA_CLASS = MyDataClass(a=1, b=2)
     NONE = None
+    DATETIME = datetime(2018, 10, 29, 12, 46, 55, 308495)
+    DATE = DATETIME.date()
+    TIME = DATETIME.time()
+    TIMEDELTA = timedelta(3.14159265358979323846)
 
 
 inner_values = [
@@ -77,6 +82,10 @@ inner_values = [
     (MyIntFlag, Fixture.INT_FLAG, Fixture.INT_FLAG),
     (MyDataClass, Fixture.DATA_CLASS, Fixture.DICT),
     (type(None), Fixture.NONE, Fixture.NONE),
+    (datetime, Fixture.DATETIME, Fixture.DATETIME.isoformat()),
+    (date, Fixture.DATE, Fixture.DATE.isoformat()),
+    (time, Fixture.TIME, Fixture.TIME.isoformat()),
+    (timedelta, Fixture.TIMEDELTA, Fixture.TIMEDELTA.total_seconds()),
 ]
 
 

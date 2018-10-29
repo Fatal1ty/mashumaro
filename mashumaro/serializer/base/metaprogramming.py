@@ -4,6 +4,7 @@ import types
 import typing
 # noinspection PyUnresolvedReferences
 import builtins
+import datetime
 import collections
 import collections.abc
 # noinspection PyUnresolvedReferences
@@ -278,6 +279,10 @@ class CodeBuilder:
             return f'{value_name} if use_enum else {value_name}.value'
         elif origin_type in (bool, int, float, NoneType):
             return value_name
+        elif origin_type in (datetime.datetime, datetime.date, datetime.time):
+            return f'{value_name}.isoformat()'
+        elif origin_type is datetime.timedelta:
+            return f'{value_name}.total_seconds()'
 
         raise UnserializableField(fname, ftype, parent)
 
@@ -392,5 +397,13 @@ class CodeBuilder:
                    f'else {type_name(origin_type)}({value_name})'
         elif origin_type in (bool, int, float, NoneType):
             return value_name
+        elif origin_type is datetime.datetime:
+            return f'datetime.datetime.fromisoformat({value_name})'
+        elif origin_type is datetime.date:
+            return f'datetime.date.fromisoformat({value_name})'
+        elif origin_type is datetime.time:
+            return f'datetime.time.fromisoformat({value_name})'
+        elif origin_type is datetime.timedelta:
+            return f'datetime.timedelta(seconds={value_name})'
 
         raise UnserializableField(fname, ftype, parent)
