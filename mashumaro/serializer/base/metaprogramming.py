@@ -229,6 +229,9 @@ class CodeBuilder:
                 else:
                     raise UnserializableDataError(
                         'Unions are not supported by mashumaro')
+            elif origin_type is typing.AnyStr:
+                raise UnserializableDataError(
+                    'AnyStr is not supported by mashumaro')
             elif is_type_var(ftype):
                 raise UnserializableDataError(
                     'TypeVars are not supported by mashumaro')
@@ -320,11 +323,13 @@ class CodeBuilder:
             elif is_union(ftype):
                 args = getattr(ftype, '__args__', ())
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
-                    print(args)
                     return self._unpack_field_value(fname, args[0], parent)
                 else:
                     raise UnserializableDataError(
                         'Unions are not supported by mashumaro')
+            elif origin_type is typing.AnyStr:
+                raise UnserializableDataError(
+                    'AnyStr is not supported by mashumaro')
             elif is_type_var(ftype):
                 raise UnserializableDataError(
                     'TypeVars are not supported by mashumaro')
