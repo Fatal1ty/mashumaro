@@ -80,6 +80,10 @@ def is_union(t):
         return False
 
 
+def is_type_var(t):
+    return hasattr(t, '__constraints__')
+
+
 class CodeBuilder:
     def __init__(self, cls):
         self.cls = cls
@@ -198,8 +202,13 @@ class CodeBuilder:
             self.add_line("kwargs = {}")
             for fname, ftype in self.fields.items():
                 self.add_line(f"value = getattr(self, '{fname}')")
-                packed_value = self._pack_value(fname, ftype, self.cls)
-                self.add_line(f"kwargs['{fname}'] = {packed_value}")
+                self.add_line('if value is None:')
+                with self.indent():
+                    self.add_line(f"kwargs['{fname}'] = None")
+                self.add_line('else:')
+                with self.indent():
+                    packed_value = self._pack_value(fname, ftype, self.cls)
+                    self.add_line(f"kwargs['{fname}'] = {packed_value}")
             self.add_line("return kwargs")
         self.add_line(f"setattr(cls, 'to_dict', to_dict)")
         self.compile()
@@ -211,8 +220,18 @@ class CodeBuilder:
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
-            # TODO: упаковывать dataclass и вложенные типы
-            return value_name
+            if origin_type is typing.Any:
+                return value_name
+            elif is_union(ftype):
+                args = getattr(ftype, '__args__', ())
+                if len(args) == 2 and args[1] == NoneType:  # it is Optional
+                    return self._pack_value(fname, args[0], parent)
+                else:
+                    raise UnserializableDataError(
+                        'Unions are not supported by mashumaro')
+            elif is_type_var(ftype):
+                raise UnserializableDataError(
+                    'TypeVars are not supported by mashumaro')
         elif issubclass(origin_type, typing.Collection):
             args = getattr(ftype, '__args__', ())
 
@@ -296,23 +315,19 @@ class CodeBuilder:
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
-            # TODO: распаковывать dataclass и вложенные типы
-            if origin_type in (typing.Any, typing.AnyStr):
+            if origin_type is typing.Any:
                 return value_name
             elif is_union(ftype):
-                # TODO: выбирать в рантайме подходящий тип
                 args = getattr(ftype, '__args__', ())
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
-                    if is_dataclass(args[0]):
-                        return self._unpack_field_value(fname, args[0], parent)
-                    else:
-                        return value_name
+                    print(args)
+                    return self._unpack_field_value(fname, args[0], parent)
                 else:
-                    return value_name
-            elif hasattr(origin_type, '__constraints__'):
-                if origin_type in origin_type.__constraints__:
-                    # TODO: выбирать в рантайме подходящий тип
-                    return value_name
+                    raise UnserializableDataError(
+                        'Unions are not supported by mashumaro')
+            elif is_type_var(ftype):
+                raise UnserializableDataError(
+                    'TypeVars are not supported by mashumaro')
         elif issubclass(origin_type, typing.Collection):
             args = getattr(ftype, '__args__', ())
 

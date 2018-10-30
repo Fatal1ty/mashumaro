@@ -2,6 +2,7 @@ import collections
 from enum import Enum
 from datetime import datetime, date, time, timedelta
 from dataclasses import dataclass
+from queue import Queue
 from typing import (
     Hashable,
     List,
@@ -15,6 +16,11 @@ from typing import (
     Mapping,
     MutableMapping,
     Sequence,
+    Optional,
+    Any,
+    AnyStr,
+    Union,
+    TypeVar,
 )
 
 from mashumaro import DataClassDictMixin
@@ -100,7 +106,12 @@ generic_mapping_types = [Dict, Mapping, MutableMapping]
 
 
 unsupported_field_types = [
-    list, collections.deque, tuple, set, frozenset, collections.ChainMap, dict]
+    list, collections.deque, tuple, set, frozenset,
+    collections.ChainMap, dict, Queue]
+
+
+T = TypeVar('T', int, str)
+unsupported_typing_primitives = [AnyStr, Union[int, str], T]
 
 
 x_factory_mapping = {
@@ -392,12 +403,29 @@ def test_unsupported_generic_field_types(x_type, generic_type):
             x: generic_type[x_type]
 
 
+@pytest.mark.parametrize('x_type', unsupported_typing_primitives)
+@pytest.mark.parametrize('generic_type', generic_sequence_types)
+def test_unsupported_generic_typing_primitives(x_type, generic_type):
+    with pytest.raises(UnserializableDataError):
+        @dataclass
+        class _(DataClassDictMixin):
+            # noinspection PyTypeChecker
+            x: generic_type[x_type]
+
+
 @pytest.mark.parametrize('x_type', unsupported_field_types)
 def test_unsupported_field_types(x_type):
     with pytest.raises(UnserializableField):
         @dataclass
         class _(DataClassDictMixin):
-            # noinspection PyTypeChecker
+            x: x_type
+
+
+@pytest.mark.parametrize('x_type', unsupported_typing_primitives)
+def test_unsupported_typing_primitives(x_type):
+    with pytest.raises(UnserializableDataError):
+        @dataclass
+        class _(DataClassDictMixin):
             x: x_type
 
 
@@ -420,3 +448,86 @@ def test_data_class_as_chain_map_key():
         @dataclass
         class _(DataClassDictMixin):
             x: ChainMap[Key, int]
+
+
+@pytest.mark.parametrize('use_datetime', [True, False])
+@pytest.mark.parametrize('use_enum', [True, False])
+@pytest.mark.parametrize('use_bytes', [True, False])
+@pytest.mark.parametrize('value_info', inner_values)
+def test_with_any(value_info, use_bytes, use_enum, use_datetime):
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Any
+
+    x = value_info[1]
+    dumped = {'x': x}
+    instance = DataClass(x)
+    instance_dumped = instance.to_dict(
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
+    instance_loaded = DataClass.from_dict(
+        dumped,
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime
+    )
+    assert instance_dumped == dumped
+    assert instance_loaded == instance
+    assert same_types(instance_dumped, dumped)
+    assert same_types(instance_loaded.x, x)
+
+
+@pytest.mark.parametrize('use_datetime', [True, False])
+@pytest.mark.parametrize('use_enum', [True, False])
+@pytest.mark.parametrize('use_bytes', [True, False])
+@pytest.mark.parametrize('value_info', inner_values)
+def test_with_optional(value_info, use_bytes, use_enum, use_datetime):
+    x_type, x_value, x_value_dumped = value_info
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Optional[x_type] = None
+
+    for instance in [DataClass(x_value), DataClass()]:
+        if instance.x is None:
+            v_dumped = None
+        elif x_value_dumped is Fixture.BYTES:
+            v_dumped = Fixture.BYTES if use_bytes else Fixture.BYTES_BASE64
+        elif x_value_dumped is Fixture.BYTE_ARRAY:
+            v_dumped = Fixture.BYTE_ARRAY if use_bytes else Fixture.BYTES_BASE64
+        elif isinstance(x_value_dumped, Enum):
+            v_dumped = x_value_dumped if use_enum else x_value_dumped.value
+        elif isinstance(x_value_dumped, (datetime, date, time)):
+            v_dumped = x_value_dumped if use_datetime \
+                else x_value_dumped.isoformat()
+        else:
+            v_dumped = x_value_dumped
+        dumped = {'x': v_dumped}
+        instance_dumped = instance.to_dict(
+            use_bytes=use_bytes,
+            use_enum=use_enum,
+            use_datetime=use_datetime
+        )
+        instance_loaded = DataClass.from_dict(
+            dumped,
+            use_bytes=use_bytes,
+            use_enum=use_enum,
+            use_datetime=use_datetime
+        )
+        assert instance_dumped == dumped
+        assert instance_loaded == instance
+        instance_dumped = instance.to_dict(
+            use_bytes=use_bytes,
+            use_enum=use_enum,
+            use_datetime=use_datetime
+        )
+        instance_loaded = DataClass.from_dict(
+            dumped,
+            use_bytes=use_bytes,
+            use_enum=use_enum,
+            use_datetime=use_datetime
+        )
+        assert same_types(instance_dumped, dumped)
+        assert same_types(instance_loaded.x, instance.x)
