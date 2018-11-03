@@ -25,5 +25,6 @@ setup(
         "dataclasses;python_version=='3.6'",
         "msgpack>=0.5.6",
         "pyyaml>=3.13",
+        "backports-datetime-fromisoformat;python_version=='3.6'"
     ]
 )

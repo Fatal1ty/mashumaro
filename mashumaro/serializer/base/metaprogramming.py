@@ -20,6 +20,11 @@ from mashumaro.exceptions import MissingField, UnserializableField,\
 PY_36 = sys.version_info < (3, 7)
 PY_37 = sys.version_info >= (3, 7)
 
+if PY_36:
+    # noinspection PyUnresolvedReferences
+    from backports.datetime_fromisoformat import MonkeyPatch
+    MonkeyPatch.patch_fromisoformat()
+
 NoneType = type(None)
 
 
