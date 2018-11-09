@@ -5,4 +5,4 @@ python:
 install:
   - pip install .
 script:
-  - pytest --verbose
+  - pytest
