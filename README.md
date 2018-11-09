@@ -17,7 +17,7 @@ Installation
 
 Use pip to install:
 ```shell
-$ pip install aioapns
+$ pip install mashumaro
 ```
 
 Supported serialization formats
