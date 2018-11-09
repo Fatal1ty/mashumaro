@@ -1,13 +1,24 @@
-# mashumaro
+# mashumaro (マシュマロ)
 
-Fast and well tested serialization framework on top of dataclasses.
+> **mashumaro** is a fast and well tested serialization framework on top of dataclasses.
 
-```
-pip install mashumaro
-```
+[![Build Status](https://travis-ci.org/Fatal1ty/mashumaro.svg?branch=master)](https://travis-ci.org/Fatal1ty/mashumaro)
+[![Requirements Status](https://requires.io/github/Fatal1ty/mashumaro/requirements.svg?branch=master)](https://requires.io/github/Fatal1ty/mashumaro/requirements/?branch=master)
+[![Latest Version](https://img.shields.io/pypi/v/mashumaro.svg)](https://pypi.python.org/pypi/mashumaro)
+[![Python Version](https://img.shields.io/pypi/pyversions/mashumaro.svg)](https://pypi.python.org/pypi/mashumaro)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 
 When using dataclasses, you often need to dump and load objects according to the described scheme.
 This framework not only adds this ability to serialize in different formats, but also makes **serialization rapidly**.
+
+Installation
+--------------------------------------------------------------------------------
+
+Use pip to install:
+```shell
+$ pip install aioapns
+```
 
 Supported serialization formats
 --------------------------------------------------------------------------------
@@ -65,7 +76,7 @@ for other specific types like *NoneType* and for nested dataclasses itself.
 Usage example
 --------------------------------------------------------------------------------
 
-``` python
+```python
 from enum import Enum
 from typing import Set
 from dataclasses import dataclass
