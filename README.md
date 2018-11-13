@@ -12,6 +12,15 @@
 When using dataclasses, you often need to dump and load objects according to the described scheme.
 This framework not only adds this ability to serialize in different formats, but also makes **serialization rapidly**.
 
+Table of contens
+--------------------------------------------------------------------------------
+* [Installation](#installation)
+* [Supported serialization formats](#supported-serialization-formats)
+* [Supported field types](#supported-field-types)
+* [Usage example](#usage-example)
+* [How does it work?](#how-does-it-work)
+* [API](#api)
+
 Installation
 --------------------------------------------------------------------------------
 
@@ -112,6 +121,12 @@ Pet.from_json('{"name": "Tom", "age": 5, "pet_type": "CAT"}')
 # Pet(name='Tom', age=5, pet_type=<PetType.CAT: 'CAT'>)
 ```
 
+How does it work?
+--------------------------------------------------------------------------------
+
+This framework works by taking the schema of the data and generating a specific parser and builder for exactly that schema.
+This is much faster than inspection of field types on every call of parsing or building at runtime.
+
 API
 --------------------------------------------------------------------------------
 
@@ -159,10 +174,10 @@ use_enum: false      # False - load enum objects from enum values, True - keep u
 use_datetime: false  # False - load datetime oriented objects from ISO 8601 formatted string, True - keep untouched
 ```
 
+
 TODO
 --------------------------------------------------------------------------------
 
-* write about how it works
 * write benchmarks
 * add parameters to json serialization methods
 * add optional validation
