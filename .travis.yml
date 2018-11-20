@@ -10,6 +10,6 @@ matrix:
 install:
   - pip install .
 script:
-  - pytest
+  - pytest --cov=.
 after_success:
   - coveralls
