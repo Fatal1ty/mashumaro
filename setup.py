@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="mashumaro",
-    version="0.4",
+    version="0.5",
     description="Fast serialization framework on top of dataclasses",
     platforms="all",
     classifiers=[

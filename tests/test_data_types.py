@@ -1,3 +1,4 @@
+import uuid
 import collections
 from enum import Enum
 from datetime import datetime, date, time, timedelta
@@ -63,6 +64,8 @@ class Fixture:
     DATE = DATETIME.date()
     TIME = DATETIME.time()
     TIMEDELTA = timedelta(3.14159265358979323846)
+    UUID = uuid.UUID('3c25dd74-f208-46a2-9606-dd3919e975b7')
+    UUID_STR = '3c25dd74-f208-46a2-9606-dd3919e975b7'
 
 
 inner_values = [
@@ -92,6 +95,7 @@ inner_values = [
     (date, Fixture.DATE, Fixture.DATE),
     (time, Fixture.TIME, Fixture.TIME),
     (timedelta, Fixture.TIMEDELTA, Fixture.TIMEDELTA.total_seconds()),
+    (uuid.UUID, Fixture.UUID, Fixture.UUID_STR),
 ]
 
 

@@ -81,6 +81,9 @@ for built-in datetime oriented types:
 * time
 * timedelta
 
+for other less popular built-in types:
+* uuid.UUID
+
 for other specific types like *NoneType* and for nested dataclasses itself.
 
 Usage example
@@ -182,5 +185,5 @@ TODO
 * write benchmarks
 * add parameters to json serialization methods
 * add optional validation
-* write custom useful types such as URL, Email, UUID etc
+* write custom useful types such as URL, Email etc
 * write documentation

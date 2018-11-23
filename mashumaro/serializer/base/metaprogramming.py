@@ -1,5 +1,6 @@
 import sys
 import enum
+import uuid
 import types
 import typing
 # noinspection PyUnresolvedReferences
@@ -312,6 +313,8 @@ class CodeBuilder:
             return f'{value_name} if use_datetime else {value_name}.isoformat()'
         elif origin_type is datetime.timedelta:
             return f'{value_name}.total_seconds()'
+        elif origin_type is uuid.UUID:
+            return f'str({value_name})'
 
         raise UnserializableField(fname, ftype, parent)
 
@@ -434,5 +437,7 @@ class CodeBuilder:
                    f'fromisoformat({value_name})'
         elif origin_type is datetime.timedelta:
             return f'datetime.timedelta(seconds={value_name})'
+        elif origin_type is uuid.UUID:
+            return f'uuid.UUID({value_name})'
 
         raise UnserializableField(fname, ftype, parent)
