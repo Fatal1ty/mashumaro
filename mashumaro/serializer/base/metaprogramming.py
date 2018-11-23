@@ -307,7 +307,11 @@ class CodeBuilder:
                     return f'[{inner_expr()} for value in {value_name}]'
         elif issubclass(origin_type, enum.Enum):
             return f'{value_name} if use_enum else {value_name}.value'
-        elif origin_type in (bool, int, float, NoneType):
+        elif origin_type is int:
+            return f'int({value_name})'
+        elif origin_type is float:
+            return f'float({value_name})'
+        elif origin_type in (bool, NoneType):
             return value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
             return f'{value_name} if use_datetime else {value_name}.isoformat()'
