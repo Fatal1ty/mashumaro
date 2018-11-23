@@ -3,6 +3,7 @@
 > **mashumaro** is a fast and well tested serialization framework on top of dataclasses.
 
 [![Build Status](https://travis-ci.org/Fatal1ty/mashumaro.svg?branch=master)](https://travis-ci.org/Fatal1ty/mashumaro)
+[![Coverage Status](https://coveralls.io/repos/github/Fatal1ty/mashumaro/badge.svg?branch=master)](https://coveralls.io/github/Fatal1ty/mashumaro?branch=master)
 [![Requirements Status](https://requires.io/github/Fatal1ty/mashumaro/requirements.svg?branch=master)](https://requires.io/github/Fatal1ty/mashumaro/requirements/?branch=master)
 [![Latest Version](https://img.shields.io/pypi/v/mashumaro.svg)](https://pypi.python.org/pypi/mashumaro)
 [![Python Version](https://img.shields.io/pypi/pyversions/mashumaro.svg)](https://pypi.python.org/pypi/mashumaro)
