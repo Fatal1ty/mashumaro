@@ -6,8 +6,17 @@ from mashumaro.serializer.base.metaprogramming import CodeBuilder
 class DataClassDictMixin:
     def __init_subclass__(cls, **kwargs):
         builder = CodeBuilder(cls)
-        builder.add_from_dict()
-        builder.add_to_dict()
+        exc = None
+        try:
+            builder.add_from_dict()
+        except Exception as e:
+            exc = e
+        try:
+            builder.add_to_dict()
+        except Exception as e:
+            exc = e
+        if exc:
+            raise exc
 
     def to_dict(
             self,
