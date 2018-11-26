@@ -13,13 +13,15 @@ class MissingField(Exception):
 
     @property
     def holder_class_name(self):
-        return self.holder_class.__name__
-        # return f"{self.holder_class.__module__}." \
-        #        f"{self.holder_class.__name__}"
+        try:
+            return f"{self.holder_class.__module__}." \
+                   f"{self.holder_class.__name__}"
+        except AttributeError:
+            return str(self.holder_class)
 
     def __str__(self):
         return f'Field "{self.field_name}" of type {self.field_type_name}' \
-               f' is missing in {self.holder_class} instance'
+               f' is missing in {self.holder_class_name} instance'
 
 
 class UnserializableDataError(Exception):
@@ -42,13 +44,15 @@ class UnserializableField(UnserializableDataError):
 
     @property
     def holder_class_name(self):
-        return self.holder_class.__name__
-        # return f"{self.holder_class.__module__}." \
-        #        f"{self.holder_class.__name__}"
+        try:
+            return f"{self.holder_class.__module__}." \
+                   f"{self.holder_class.__name__}"
+        except AttributeError:
+            return str(self.holder_class)
 
     def __str__(self):
         s = f'Field "{self.field_name}" of type {self.field_type_name} ' \
-               f'in {self.holder_class} is not serializable'
+               f'in {self.holder_class_name} is not serializable'
         if self.msg:
             s += f': {self.msg}'
         return s

@@ -25,7 +25,8 @@ from typing import (
 )
 
 from mashumaro import DataClassDictMixin
-from mashumaro.exceptions import UnserializableField, UnserializableDataError
+from mashumaro.exceptions import UnserializableField, UnserializableDataError,\
+    MissingField
 from .utils import same_types
 from .entities import (
     MyEnum,
@@ -535,3 +536,13 @@ def test_with_optional(value_info, use_bytes, use_enum, use_datetime):
         )
         assert same_types(instance_dumped, dumped)
         assert same_types(instance_loaded.x, instance.x)
+
+
+def test_raises_missing_field():
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int
+
+    with pytest.raises(MissingField):
+        DataClass.from_dict({})
