@@ -72,7 +72,7 @@ def is_generic(t):
         if PY_36:
             try:
                 # noinspection PyUnresolvedReferences
-                return t.__class__ == typing.GenericMeta
+                return issubclass(t.__class__, typing.GenericMeta)
             except AttributeError:
                 return False
         else:
