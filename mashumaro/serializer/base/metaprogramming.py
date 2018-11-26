@@ -1,7 +1,5 @@
-import sys
 import enum
 import uuid
-import types
 import typing
 # noinspection PyUnresolvedReferences
 import builtins
@@ -16,78 +14,15 @@ from dataclasses import is_dataclass, MISSING
 # noinspection PyUnresolvedReferences
 from mashumaro.exceptions import MissingField, UnserializableField,\
     UnserializableDataError
+from mashumaro.meta.patch import patch_fromisoformat
+from mashumaro.meta.helpers import *
 
 
-PY_36 = sys.version_info < (3, 7)
-PY_37 = sys.version_info >= (3, 7)
+patch_fromisoformat()
 
-if PY_36:
-    # noinspection PyUnresolvedReferences
-    from backports.datetime_fromisoformat import MonkeyPatch
-    MonkeyPatch.patch_fromisoformat()
 
 NoneType = type(None)
-
-
-def get_imported_module_names():
-    # noinspection PyUnresolvedReferences
-    return {value.__name__ for value in globals().values()
-            if isinstance(value, types.ModuleType)}
-
-
 INITIAL_MODULES = get_imported_module_names()
-
-
-def get_type_origin(t):
-    try:
-        if PY_36:
-            return t.__extra__
-        elif PY_37:
-            return t.__origin__
-    except AttributeError:
-        return t
-
-
-def type_name(t):
-    try:
-        return f"{t.__module__}.{t.__name__}"
-    except AttributeError:
-        return str(t)
-
-
-def is_special_typing_primitive(t):
-    try:
-        issubclass(t, object)
-        return False
-    except TypeError:
-        return True
-
-
-def is_generic(t):
-    try:
-        # noinspection PyProtectedMember
-        # noinspection PyUnresolvedReferences
-        return t.__class__ is typing._GenericAlias
-    except AttributeError:
-        if PY_36:
-            try:
-                # noinspection PyUnresolvedReferences
-                return issubclass(t.__class__, typing.GenericMeta)
-            except AttributeError:
-                return False
-        else:
-            raise NotImplementedError
-
-
-def is_union(t):
-    try:
-        return t.__origin__ is typing.Union
-    except AttributeError:
-        return False
-
-
-def is_type_var(t):
-    return hasattr(t, '__constraints__')
 
 
 class CodeBuilder:

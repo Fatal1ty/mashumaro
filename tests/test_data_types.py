@@ -539,10 +539,8 @@ def test_with_optional(value_info, use_bytes, use_enum, use_datetime):
 
 
 def test_raises_missing_field():
-
     @dataclass
     class DataClass(DataClassDictMixin):
         x: int
-
     with pytest.raises(MissingField):
         DataClass.from_dict({})
