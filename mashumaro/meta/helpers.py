@@ -44,11 +44,8 @@ def is_generic(t):
         # noinspection PyUnresolvedReferences
         return t.__class__ is typing._GenericAlias
     elif PY_36:
-        try:
-            # noinspection PyUnresolvedReferences
-            return issubclass(t.__class__, typing.GenericMeta)
-        except AttributeError:
-            return False
+        # noinspection PyUnresolvedReferences
+        return issubclass(t.__class__, typing.GenericMeta)
     else:
         raise NotImplementedError
 
