@@ -39,19 +39,18 @@ def is_special_typing_primitive(t):
 
 
 def is_generic(t):
-    try:
+    if PY_37:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
         return t.__class__ is typing._GenericAlias
-    except AttributeError:
-        if PY_36:
-            try:
-                # noinspection PyUnresolvedReferences
-                return issubclass(t.__class__, typing.GenericMeta)
-            except AttributeError:
-                return False
-        else:
-            raise NotImplementedError
+    elif PY_36:
+        try:
+            # noinspection PyUnresolvedReferences
+            return issubclass(t.__class__, typing.GenericMeta)
+        except AttributeError:
+            return False
+    else:
+        raise NotImplementedError
 
 
 def is_union(t):
