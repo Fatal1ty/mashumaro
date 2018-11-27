@@ -2,9 +2,11 @@ from unittest.mock import patch
 
 import pytest
 
+from mashumaro.meta.helpers import is_generic
 
-@patch('sys.version_info', (3, 8))
+
 def test_is_generic_unsupported_python():
-    import mashumaro.meta.helpers
-    with pytest.raises(NotImplementedError):
-        mashumaro.meta.helpers.is_generic(int)
+    with patch('mashumaro.meta.helpers.PY_36', False):
+        with patch('mashumaro.meta.helpers.PY_37', False):
+            with pytest.raises(NotImplementedError):
+                is_generic(int)
