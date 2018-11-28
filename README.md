@@ -185,5 +185,6 @@ TODO
 * write benchmarks
 * add parameters to json serialization methods
 * add optional validation
+* add Union support (try to match types on each call)
 * write custom useful types such as URL, Email etc
 * write documentation
