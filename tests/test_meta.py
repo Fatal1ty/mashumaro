@@ -15,15 +15,21 @@ def test_is_generic_unsupported_python():
 
 
 def test_no_code_builder():
+
     class Mock:
         def add_from_dict(self):
             pass
 
         def add_to_dict(self):
             pass
+
     with patch('mashumaro.serializer.base.metaprogramming.CodeBuilder', Mock):
+
         @dataclass
         class DataClass(DataClassDictMixin):
             pass
+
+        assert Mock().add_from_dict() is None
+        assert Mock().add_to_dict() is None
         assert DataClass.from_dict({}) is None
         assert DataClass().to_dict() is None
