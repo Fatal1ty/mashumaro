@@ -93,20 +93,20 @@ Usage example
 from enum import Enum
 from typing import Set
 from dataclasses import dataclass
-from mashumaro import DataClassJsonMixin
+from mashumaro import DataClassJSONMixin
 
 class PetType(Enum):
     CAT = 'CAT'
     MOUSE = 'MOUSE'
 
 @dataclass
-class Pet(DataClassJsonMixin):
+class Pet(DataClassJSONMixin):
     name: str
     age: int
     pet_type: PetType
 
 @dataclass
-class Person(DataClassJsonMixin):
+class Person(DataClassJSONMixin):
     first_name: str
     second_name: str
     age: int
@@ -164,18 +164,18 @@ Make a new object from YAML formatted data based on the dataclass schema provide
 
 Make a dictionary from dataclass object based on the dataclass schema provided. Options include:
 ```python
-use_bytes: false     # False - convert bytes/bytearray objects to base64 encoded string, True - keep untouched
-use_enum: false      # False - convert enum objects to enum values, True - keep untouched
-use_datetime: false  # False - convert datetime oriented objects to ISO 8601 formatted string, True - keep untouched
+use_bytes: False     # False - convert bytes/bytearray objects to base64 encoded string, True - keep untouched
+use_enum: False      # False - convert enum objects to enum values, True - keep untouched
+use_datetime: False  # False - convert datetime oriented objects to ISO 8601 formatted string, True - keep untouched
 ```
 
 #### `DataClassDictMixin.from_dict(data: Mapping, use_bytes: bool, use_enum: bool, use_datetime: bool)`
 
 Make a new object from dict object based on the dataclass schema provided. Options include:
 ```python
-use_bytes: false     # False - load bytes/bytearray objects from base64 encoded string, True - keep untouched
-use_enum: false      # False - load enum objects from enum values, True - keep untouched
-use_datetime: false  # False - load datetime oriented objects from ISO 8601 formatted string, True - keep untouched
+use_bytes: False     # False - load bytes/bytearray objects from base64 encoded string, True - keep untouched
+use_enum: False      # False - load enum objects from enum values, True - keep untouched
+use_datetime: False  # False - load datetime oriented objects from ISO 8601 formatted string, True - keep untouched
 ```
 
 
