@@ -31,7 +31,7 @@ class DataClassDictMixin:
             d: Mapping,
             use_bytes: bool = False,
             use_enum: bool = False,
-            use_datetime: bool = False):
+            use_datetime: bool = False) -> 'DataClassDictMixin':
         pass
 
 
