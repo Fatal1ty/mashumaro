@@ -199,8 +199,9 @@ def check_two_args_generic(type_, key_info, value_info, use_bytes, use_enum,
     instance = DataClass(x)
     if k_value_dumped is Fixture.BYTES:
         k_dumped = Fixture.BYTES if use_bytes else Fixture.BYTES_BASE64
-    elif k_value_dumped is Fixture.BYTE_ARRAY:
-        k_dumped = Fixture.BYTE_ARRAY if use_bytes else Fixture.BYTES_BASE64
+    # Fixture.BYTE_ARRAY is not hashable
+    # elif k_value_dumped is Fixture.BYTE_ARRAY:
+    #     k_dumped = Fixture.BYTE_ARRAY if use_bytes else Fixture.BYTES_BASE64
     elif isinstance(k_value_dumped, Enum):
         k_dumped = k_value_dumped if use_enum else k_value_dumped.value
     elif isinstance(k_value_dumped, (datetime, date, time)):
