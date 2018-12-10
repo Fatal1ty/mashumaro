@@ -87,6 +87,10 @@ class CodeBuilder:
         self.add_line("def from_dict(cls, d, use_bytes=False, use_enum=False, "
                       "use_datetime=False, decode_hook=None):")
         with self.indent():
+            self.add_line("if decode_hook:")
+            with self.indent():
+                self.add_line('d = decode_hook(cls, d)')
+
             self.add_line('try:')
             with self.indent():
                 self.add_line("kwargs = {}")
@@ -127,10 +131,6 @@ class CodeBuilder:
                 self.add_line('else:')
                 with self.indent():
                     self.add_line('raise')
-
-            self.add_line("if decode_hook:")
-            with self.indent():
-                self.add_line('kwargs = decode_hook(cls, kwargs)')
 
             self.add_line("return cls(**kwargs)")
         self.add_line(f"setattr(cls, 'from_dict', from_dict)")

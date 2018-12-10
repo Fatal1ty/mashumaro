@@ -30,7 +30,7 @@ def test_encode_hook():
 def test_decode_hook():
 
     def decode_hook(cls, out_dict):
-        out_dict["z"] = 'some_other_value'
+        out_dict["z"] = out_dict.pop("Z", None)
         return out_dict
 
     @dataclass
@@ -38,8 +38,8 @@ def test_decode_hook():
         x: Optional[NestedClass] = None
         z: str = 'z'
 
-    input_dict = {'x': {'z': 'z'}, 'z': 'z'}
+    input_dict = {'x': {'Z': 'z'}, 'Z': 'z'}
     out_instance = DataClass.from_dict(input_dict, decode_hook=decode_hook)
 
-    assert out_instance.z == 'some_other_value'
-    assert out_instance.x.z == 'some_other_value'
+    assert out_instance.z == 'z'
+    assert out_instance.x.z == 'z'
