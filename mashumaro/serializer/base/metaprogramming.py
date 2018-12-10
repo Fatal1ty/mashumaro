@@ -85,7 +85,7 @@ class CodeBuilder:
 
         self.add_line('@classmethod')
         self.add_line("def from_dict(cls, d, use_bytes=False, use_enum=False, "
-                      "use_datetime=False):")
+                      "use_datetime=False, decode_hook=None):")
         with self.indent():
             self.add_line('try:')
             with self.indent():
@@ -127,6 +127,11 @@ class CodeBuilder:
                 self.add_line('else:')
                 with self.indent():
                     self.add_line('raise')
+
+            self.add_line("if decode_hook:")
+            with self.indent():
+                self.add_line('kwargs = decode_hook(cls, kwargs)')
+
             self.add_line("return cls(**kwargs)")
         self.add_line(f"setattr(cls, 'from_dict', from_dict)")
         self.compile()
@@ -138,7 +143,7 @@ class CodeBuilder:
             return
 
         self.add_line("def to_dict(self, use_bytes=False, use_enum=False, "
-                      "use_datetime=False):")
+                      "use_datetime=False, encode_hook=None):")
         with self.indent():
             self.add_line("kwargs = {}")
             for fname, ftype in self.fields.items():
@@ -150,6 +155,9 @@ class CodeBuilder:
                 with self.indent():
                     packed_value = self._pack_value(fname, ftype, self.cls)
                     self.add_line(f"kwargs['{fname}'] = {packed_value}")
+            self.add_line("if encode_hook:")
+            with self.indent():
+                self.add_line('kwargs = encode_hook(self, kwargs)')
             self.add_line("return kwargs")
         self.add_line(f"setattr(cls, 'to_dict', to_dict)")
         self.compile()
@@ -157,7 +165,7 @@ class CodeBuilder:
     def _pack_value(self, fname, ftype, parent, value_name='value'):
 
         if is_dataclass(ftype):
-            return f"{value_name}.to_dict(use_bytes, use_enum, use_datetime)"
+            return f"{value_name}.to_dict(use_bytes, use_enum, use_datetime, encode_hook)"
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
@@ -261,7 +269,7 @@ class CodeBuilder:
 
         if is_dataclass(ftype):
             return f"{type_name(ftype)}.from_dict({value_name}, " \
-                   f"use_bytes, use_enum, use_datetime)"
+                   f"use_bytes, use_enum, use_datetime, decode_hook)"
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
