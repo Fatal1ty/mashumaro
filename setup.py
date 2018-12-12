@@ -21,6 +21,7 @@ setup(
     license="Apache License, Version 2.0",
     author="Alexander Tikhonov",
     author_email="random.gauss@gmail.com",
+    url='https://github.com/Fatal1ty/mashumaro',
     packages=find_packages(exclude=("tests",)),
     python_requires=">=3.6",
     install_requires=[
