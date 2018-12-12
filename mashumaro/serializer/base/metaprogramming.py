@@ -80,9 +80,6 @@ class CodeBuilder:
     def add_from_dict(self):
 
         self.reset()
-        if not self.fields:
-            return
-
         self.add_line('@classmethod')
         self.add_line("def from_dict(cls, d, use_bytes=False, use_enum=False, "
                       "use_datetime=False):")
@@ -134,9 +131,6 @@ class CodeBuilder:
     def add_to_dict(self):
 
         self.reset()
-        if not self.fields:
-            return
-
         self.add_line("def to_dict(self, use_bytes=False, use_enum=False, "
                       "use_datetime=False):")
         with self.indent():

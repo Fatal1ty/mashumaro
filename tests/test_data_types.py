@@ -545,3 +545,12 @@ def test_raises_missing_field():
         x: int
     with pytest.raises(MissingField):
         DataClass.from_dict({})
+
+
+def test_empty_dataclass():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        pass
+    assert DataClass().to_dict() == {}
+    assert type(DataClass.from_dict({})) is DataClass
+    assert DataClass.from_dict({}).__dict__ == {}
