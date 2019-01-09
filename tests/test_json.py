@@ -205,8 +205,8 @@ def test_json_use_datetime(use_datetime):
             dd[key] = value
         return dd
 
-    dumped_with_dt_normal = r'{"x": "2018-10-29T12:46:55.308495"}'
-    dumped_with_dt_timestamp = '{"x": "1540806415.308495"}'
+    dumped_with_dt_normal = json.dumps({'x': dt.isoformat()})
+    dumped_with_dt_timestamp = json.dumps({'x': str(dt.timestamp())})
 
     instance = DataClass(x=dt)
 
