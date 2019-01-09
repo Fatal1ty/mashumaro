@@ -97,8 +97,6 @@ def test_json_use_enum(use_enum):
     def encode_enum(o):
         if isinstance(o, MyEnum):
             return str(o.value).upper()
-        else:
-            raise TypeError(type(o))
 
     def decode_enum(d):
         dd = {}
@@ -145,8 +143,6 @@ def test_json_use_bytes(use_bytes):
     def encode_bytes(o):
         if isinstance(o, bytes):
             return hexlify(o).decode()
-        else:
-            raise TypeError(type(o))
 
     def decode_bytes(d):
         dd = {}
@@ -194,8 +190,6 @@ def test_json_use_datetime(use_datetime):
     def encode_datetime(o):
         if isinstance(o, datetime):
             return str(o.timestamp())
-        else:
-            raise TypeError(type(o))
 
     def decode_datetime(d):
         dd = {}
