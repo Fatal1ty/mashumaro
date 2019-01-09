@@ -136,30 +136,6 @@ API
 
 Mashumaro provides a couple of mixins for each format.
 
-#### `DataClassJsonMixin.to_json()`
-
-Make a JSON formatted string from dataclass object based on the dataclass schema provided.
-
-#### `DataClassJsonMixin.from_json(data: str)`
-
-Make a new object from JSON formatted string based on the dataclass schema provided.
-
-#### `DataClassMessagePackMixin.to_msgpack()`
-
-Make a MessagePack formatted bytes object from dataclass object based on the dataclass schema provided.
-
-#### `DataClassMessagePackMixin.from_msgpack(data: bytes)`
-
-Make a new object from MessagePack formatted data based on the dataclass schema provided.
-
-#### `DataClassYAMLMixin.to_yaml()`
-
-Make an YAML formatted bytes object from dataclass object based on the dataclass schema provided.
-
-#### `DataClassYAMLMixin.from_yaml(data: bytes)`
-
-Make a new object from YAML formatted data based on the dataclass schema provided.
-
 #### `DataClassDictMixin.to_dict(use_bytes: bool, use_enum: bool, use_datetime: bool)`
 
 Make a dictionary from dataclass object based on the dataclass schema provided. Options include:
@@ -177,6 +153,40 @@ use_bytes: False     # False - load bytes/bytearray objects from base64 encoded 
 use_enum: False      # False - load enum objects from enum values, True - keep untouched
 use_datetime: False  # False - load datetime oriented objects from ISO 8601 formatted string, True - keep untouched
 ```
+
+#### `DataClassJsonMixin.to_json(encoder: Optional[Encoder], dict_params: Optional[Mapping], **encoder_kwargs)`
+
+Make a JSON formatted string from dataclass object based on the dataclass schema provided. Options include:
+```
+encoder        # function called for json encoding, defaults to json.dumps
+dict_params    # dictionary of parameter values passed underhood to `to_dict` function
+encoder_kwargs # keyword arguments for encoder function
+```
+
+#### `DataClassJsonMixin.from_json(data: str, decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
+
+Make a new object from JSON formatted string based on the dataclass schema provided. Options include:
+```
+decoder        # function called for json decoding, defaults to json.loads
+dict_params    # dictionary of parameter values passed underhood to `from_dict` function
+decoder_kwargs # keyword arguments for decoder function
+```
+
+#### `DataClassMessagePackMixin.to_msgpack()`
+
+Make a MessagePack formatted bytes object from dataclass object based on the dataclass schema provided.
+
+#### `DataClassMessagePackMixin.from_msgpack(data: bytes)`
+
+Make a new object from MessagePack formatted data based on the dataclass schema provided.
+
+#### `DataClassYAMLMixin.to_yaml()`
+
+Make an YAML formatted bytes object from dataclass object based on the dataclass schema provided.
+
+#### `DataClassYAMLMixin.from_yaml(data: bytes)`
+
+Make a new object from YAML formatted data based on the dataclass schema provided.
 
 
 TODO
