@@ -4,7 +4,6 @@
 
 [![Build Status](https://travis-ci.org/Fatal1ty/mashumaro.svg?branch=master)](https://travis-ci.org/Fatal1ty/mashumaro)
 [![Coverage Status](https://coveralls.io/repos/github/Fatal1ty/mashumaro/badge.svg?branch=master)](https://coveralls.io/github/Fatal1ty/mashumaro?branch=master)
-[![Requirements Status](https://requires.io/github/Fatal1ty/mashumaro/requirements.svg?branch=master)](https://requires.io/github/Fatal1ty/mashumaro/requirements/?branch=master)
 [![Latest Version](https://img.shields.io/pypi/v/mashumaro.svg)](https://pypi.python.org/pypi/mashumaro)
 [![Python Version](https://img.shields.io/pypi/pyversions/mashumaro.svg)](https://pypi.python.org/pypi/mashumaro)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
