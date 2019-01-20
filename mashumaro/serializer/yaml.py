@@ -9,4 +9,4 @@ class DataClassYAMLMixin(DataClassDictMixin):
 
     @classmethod
     def from_yaml(cls, data: bytes):
-        return cls.from_dict(yaml.load(data), use_bytes=False)
+        return cls.from_dict(yaml.safe_load(data), use_bytes=False)
