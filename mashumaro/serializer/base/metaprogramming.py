@@ -6,6 +6,7 @@ import builtins
 import datetime
 import collections
 import collections.abc
+from fractions import Fraction
 # noinspection PyUnresolvedReferences
 from base64 import encodebytes, decodebytes
 from contextlib import contextmanager
@@ -248,6 +249,8 @@ class CodeBuilder:
             return f'{value_name}.total_seconds()'
         elif origin_type is uuid.UUID:
             return f'str({value_name})'
+        elif origin_type is Fraction:
+            return f'str({value_name})'
 
         raise UnserializableField(fname, ftype, parent)
 
@@ -372,5 +375,7 @@ class CodeBuilder:
             return f'datetime.timedelta(seconds={value_name})'
         elif origin_type is uuid.UUID:
             return f'uuid.UUID({value_name})'
+        elif origin_type is Fraction:
+            return f'Fraction({value_name})'
 
         raise UnserializableField(fname, ftype, parent)

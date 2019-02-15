@@ -1,4 +1,5 @@
 import uuid
+import fractions
 import collections
 from enum import Enum
 from datetime import datetime, date, time, timedelta
@@ -67,6 +68,8 @@ class Fixture:
     TIMEDELTA = timedelta(3.14159265358979323846)
     UUID = uuid.UUID('3c25dd74-f208-46a2-9606-dd3919e975b7')
     UUID_STR = '3c25dd74-f208-46a2-9606-dd3919e975b7'
+    FRACTION = fractions.Fraction('1/3')
+    FRACTION_STR = '1/3'
 
 
 inner_values = [
@@ -97,6 +100,7 @@ inner_values = [
     (time, Fixture.TIME, Fixture.TIME),
     (timedelta, Fixture.TIMEDELTA, Fixture.TIMEDELTA.total_seconds()),
     (uuid.UUID, Fixture.UUID, Fixture.UUID_STR),
+    (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR)
 ]
 
 
