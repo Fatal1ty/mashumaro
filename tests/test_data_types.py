@@ -1,4 +1,5 @@
 import uuid
+import decimal
 import fractions
 import collections
 from enum import Enum
@@ -68,6 +69,8 @@ class Fixture:
     TIMEDELTA = timedelta(3.14159265358979323846)
     UUID = uuid.UUID('3c25dd74-f208-46a2-9606-dd3919e975b7')
     UUID_STR = '3c25dd74-f208-46a2-9606-dd3919e975b7'
+    DECIMAL = decimal.Decimal('1.33')
+    DECIMAL_STR = '1.33'
     FRACTION = fractions.Fraction('1/3')
     FRACTION_STR = '1/3'
 

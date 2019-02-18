@@ -6,6 +6,7 @@ import builtins
 import datetime
 import collections
 import collections.abc
+from decimal import Decimal
 from fractions import Fraction
 # noinspection PyUnresolvedReferences
 from base64 import encodebytes, decodebytes
@@ -249,6 +250,8 @@ class CodeBuilder:
             return f'{value_name}.total_seconds()'
         elif origin_type is uuid.UUID:
             return f'str({value_name})'
+        elif origin_type is Decimal:
+            return f'str({value_name})'
         elif origin_type is Fraction:
             return f'str({value_name})'
 
@@ -375,6 +378,8 @@ class CodeBuilder:
             return f'datetime.timedelta(seconds={value_name})'
         elif origin_type is uuid.UUID:
             return f'uuid.UUID({value_name})'
+        elif origin_type is Decimal:
+            return f'Decimal({value_name})'
         elif origin_type is Fraction:
             return f'Fraction({value_name})'
 

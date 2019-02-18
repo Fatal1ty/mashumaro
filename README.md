@@ -82,6 +82,7 @@ for built-in datetime oriented types:
 
 for other less popular built-in types:
 * uuid.UUID
+* decimal.Decimal
 * fractions.Fraction
 
 for other specific types like *NoneType* and for nested dataclasses itself.
