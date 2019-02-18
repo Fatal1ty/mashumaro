@@ -103,7 +103,8 @@ inner_values = [
     (time, Fixture.TIME, Fixture.TIME),
     (timedelta, Fixture.TIMEDELTA, Fixture.TIMEDELTA.total_seconds()),
     (uuid.UUID, Fixture.UUID, Fixture.UUID_STR),
-    (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR)
+    (decimal.Decimal, Fixture.DECIMAL, Fixture.DECIMAL_STR),
+    (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR),
 ]
 
 
