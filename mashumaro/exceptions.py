@@ -20,7 +20,7 @@ class MissingField(LookupError):
                f' is missing in {self.holder_class_name} instance'
 
 
-class UnserializableDataError(ValueError):
+class UnserializableDataError(TypeError):
     pass
 
 
