@@ -1,7 +1,7 @@
 from mashumaro.meta.helpers import type_name
 
 
-class MissingField(Exception):
+class MissingField(LookupError):
     def __init__(self, field_name, field_type, holder_class):
         self.field_name = field_name
         self.field_type = field_type
@@ -20,7 +20,7 @@ class MissingField(Exception):
                f' is missing in {self.holder_class_name} instance'
 
 
-class UnserializableDataError(Exception):
+class UnserializableDataError(TypeError):
     pass
 
 
