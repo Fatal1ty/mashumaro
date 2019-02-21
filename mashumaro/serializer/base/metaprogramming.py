@@ -172,6 +172,9 @@ class CodeBuilder:
             elif is_type_var(ftype):
                 raise UnserializableDataError(
                     'TypeVars are not supported by mashumaro')
+            else:
+                raise UnserializableDataError(
+                    f'{ftype} is not supported by mashumaro')
         elif issubclass(origin_type, typing.Collection):
             args = getattr(ftype, '__args__', ())
 
@@ -280,6 +283,9 @@ class CodeBuilder:
             elif is_type_var(ftype):
                 raise UnserializableDataError(
                     'TypeVars are not supported by mashumaro')
+            else:
+                raise UnserializableDataError(
+                    f'{ftype} is not supported by mashumaro')
         elif issubclass(origin_type, typing.Collection):
             args = getattr(ftype, '__args__', ())
 
