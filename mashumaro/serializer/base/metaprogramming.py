@@ -100,7 +100,6 @@ class CodeBuilder:
                         if self.defaults[fname] is MISSING:
                             self.add_line(f"if value is MISSING:")
                             with self.indent():
-                                self._add_type_modules(ftype)
                                 self.add_line(f"raise MissingField('{fname}',"
                                               f"{type_name(ftype)},cls)")
                             self.add_line("else:")
