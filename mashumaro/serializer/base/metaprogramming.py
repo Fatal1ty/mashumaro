@@ -56,8 +56,12 @@ class CodeBuilder:
             module = t.__module__
             if module not in self.modules:
                 self.modules.add(module)
-                self.add_line(f"import {module}")
-                self.add_line(f"globals()['{module}'] = {module}")
+                self.add_line(f"if '{module}' not in globals():")
+                with self.indent():
+                    self.add_line(f"import {module}")
+                self.add_line('else:')
+                with self.indent():
+                    self.add_line(f"global {module.split('.')[0]}")
             args = getattr(t, '__args__', ())
             if args:
                 self._add_type_modules(*args)
