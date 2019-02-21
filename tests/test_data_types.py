@@ -562,3 +562,10 @@ def test_empty_dataclass():
     assert DataClass().to_dict() == {}
     assert type(DataClass.from_dict({})) is DataClass
     assert DataClass.from_dict({}).__dict__ == {}
+
+
+def test_weird_field_type():
+    with pytest.raises(UnserializableDataError):
+        @dataclass
+        class _(DataClassDictMixin):
+            x: 123
