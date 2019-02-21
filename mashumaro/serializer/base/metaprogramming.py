@@ -32,11 +32,13 @@ class CodeBuilder:
         self.cls = cls
         self.lines = None            # type: typing.Optional[typing.List[str]]
         self.modules = None          # type: typing.Optional[typing.Set[str]]
+        self.globals = None          # type: typing.Set[str]
         self._current_indent = None  # type: typing.Optional[str]
 
     def reset(self):
         self.lines = []
         self.modules = INITIAL_MODULES.copy()
+        self.globals = set()
         self._current_indent = ''
 
     @property
@@ -59,9 +61,12 @@ class CodeBuilder:
                 self.add_line(f"if '{module}' not in globals():")
                 with self.indent():
                     self.add_line(f"import {module}")
-                self.add_line('else:')
-                with self.indent():
-                    self.add_line(f"global {module.split('.')[0]}")
+                root_module = module.split('.')[0]
+                if root_module not in self.globals:
+                    self.globals.add(root_module)
+                    self.add_line('else:')
+                    with self.indent():
+                        self.add_line(f"global {root_module}")
             args = getattr(t, '__args__', ())
             if args:
                 self._add_type_modules(*args)
