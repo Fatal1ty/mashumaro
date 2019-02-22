@@ -5,12 +5,12 @@ import decimal
 class SerializableType(ABC):
     @abstractmethod
     def _serialize(self):
-        pass
+        raise NotImplementedError
 
     @classmethod
     @abstractmethod
     def _deserialize(cls, value):
-        pass
+        raise NotImplementedError
 
 
 class SerializationStrategy(ABC):

@@ -587,3 +587,12 @@ def test_rounded_decimal(places, rounding):
         quantized = digit
     assert DataClass(digit).to_dict() == {'x': str(quantized)}
     assert DataClass.from_dict({'x': str(quantized)}) == DataClass(x=quantized)
+
+
+def test_abstract_serializable_type():
+    from mashumaro.types import SerializableType
+    with pytest.raises(NotImplementedError):
+        # noinspection PyTypeChecker
+        SerializableType._serialize(None)
+    with pytest.raises(NotImplementedError):
+        SerializableType._deserialize(None)
