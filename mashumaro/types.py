@@ -16,11 +16,11 @@ class SerializableType(ABC):
 class SerializationStrategy(ABC):
     @abstractmethod
     def _serialize(self, value):
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _deserialize(self, value):
-        pass
+        raise NotImplementedError
 
 
 class RoundedDecimal(SerializationStrategy):

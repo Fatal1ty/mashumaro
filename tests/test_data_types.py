@@ -29,7 +29,8 @@ from typing import (
 from mashumaro import DataClassDictMixin
 from mashumaro.exceptions import UnserializableField, UnserializableDataError,\
     MissingField
-from mashumaro.types import RoundedDecimal
+from mashumaro.types import RoundedDecimal, SerializableType,\
+    SerializationStrategy
 from .utils import same_types
 from .entities import (
     MyEnum,
@@ -590,9 +591,17 @@ def test_rounded_decimal(places, rounding):
 
 
 def test_abstract_serializable_type():
-    from mashumaro.types import SerializableType
     with pytest.raises(NotImplementedError):
         # noinspection PyTypeChecker
         SerializableType._serialize(None)
     with pytest.raises(NotImplementedError):
         SerializableType._deserialize(None)
+
+
+def test_abstract_serialization_strategy():
+    with pytest.raises(NotImplementedError):
+        # noinspection PyTypeChecker
+        SerializationStrategy._serialize(None, None)
+    with pytest.raises(NotImplementedError):
+        # noinspection PyTypeChecker
+        SerializationStrategy._deserialize(None, None)
