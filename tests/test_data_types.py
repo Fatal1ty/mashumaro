@@ -29,6 +29,7 @@ from typing import (
 from mashumaro import DataClassDictMixin
 from mashumaro.exceptions import UnserializableField, UnserializableDataError,\
     MissingField
+from mashumaro.types import RoundedDecimal
 from .utils import same_types
 from .entities import (
     MyEnum,
@@ -569,3 +570,20 @@ def test_weird_field_type():
         @dataclass
         class _(DataClassDictMixin):
             x: 123
+
+
+@pytest.mark.parametrize('rounding', [None, decimal.ROUND_UP,
+                                      decimal.ROUND_DOWN])
+@pytest.mark.parametrize('places', [None, 1, 2])
+def test_rounded_decimal(places, rounding):
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: RoundedDecimal(places=places, rounding=rounding)
+    digit = decimal.Decimal(0.35)
+    if places is not None:
+        exp = decimal.Decimal((0, (1,), -places))
+        quantized = digit.quantize(exp, rounding)
+    else:
+        quantized = digit
+    assert DataClass(digit).to_dict() == {'x': str(quantized)}
+    assert DataClass.from_dict({'x': str(quantized)}) == DataClass(x=quantized)
