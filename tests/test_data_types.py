@@ -29,6 +29,8 @@ from typing import (
 from mashumaro import DataClassDictMixin
 from mashumaro.exceptions import UnserializableField, UnserializableDataError,\
     MissingField
+from mashumaro.types import RoundedDecimal, SerializableType,\
+    SerializationStrategy
 from .utils import same_types
 from .entities import (
     MyEnum,
@@ -36,6 +38,7 @@ from .entities import (
     MyFlag,
     MyIntFlag,
     MyDataClass,
+    MutableString,
 )
 
 import pytest
@@ -73,6 +76,8 @@ class Fixture:
     DECIMAL_STR = '1.33'
     FRACTION = fractions.Fraction('1/3')
     FRACTION_STR = '1/3'
+    MUTABLE_STRING = MutableString(STR)
+    MUTABLE_STRING_STR = STR
 
 
 inner_values = [
@@ -105,6 +110,7 @@ inner_values = [
     (uuid.UUID, Fixture.UUID, Fixture.UUID_STR),
     (decimal.Decimal, Fixture.DECIMAL, Fixture.DECIMAL_STR),
     (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR),
+    (MutableString, Fixture.MUTABLE_STRING, Fixture.MUTABLE_STRING_STR),
 ]
 
 
@@ -562,3 +568,44 @@ def test_empty_dataclass():
     assert DataClass().to_dict() == {}
     assert type(DataClass.from_dict({})) is DataClass
     assert DataClass.from_dict({}).__dict__ == {}
+
+
+def test_weird_field_type():
+    with pytest.raises(UnserializableDataError):
+        @dataclass
+        class _(DataClassDictMixin):
+            x: 123
+
+
+@pytest.mark.parametrize('rounding', [None, decimal.ROUND_UP,
+                                      decimal.ROUND_DOWN])
+@pytest.mark.parametrize('places', [None, 1, 2])
+def test_rounded_decimal(places, rounding):
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: RoundedDecimal(places=places, rounding=rounding)
+    digit = decimal.Decimal(0.35)
+    if places is not None:
+        exp = decimal.Decimal((0, (1,), -places))
+        quantized = digit.quantize(exp, rounding)
+    else:
+        quantized = digit
+    assert DataClass(digit).to_dict() == {'x': str(quantized)}
+    assert DataClass.from_dict({'x': str(quantized)}) == DataClass(x=quantized)
+
+
+def test_abstract_serializable_type():
+    with pytest.raises(NotImplementedError):
+        # noinspection PyTypeChecker
+        SerializableType._serialize(None)
+    with pytest.raises(NotImplementedError):
+        SerializableType._deserialize(None)
+
+
+def test_abstract_serialization_strategy():
+    with pytest.raises(NotImplementedError):
+        # noinspection PyTypeChecker
+        SerializationStrategy._serialize(None, None)
+    with pytest.raises(NotImplementedError):
+        # noinspection PyTypeChecker
+        SerializationStrategy._deserialize(None, None)

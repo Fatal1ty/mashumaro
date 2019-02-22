@@ -8,6 +8,7 @@ import collections
 import collections.abc
 from decimal import Decimal
 from fractions import Fraction
+from contextlib import suppress
 # noinspection PyUnresolvedReferences
 from base64 import encodebytes, decodebytes
 from contextlib import contextmanager
@@ -18,6 +19,7 @@ from mashumaro.exceptions import MissingField, UnserializableField,\
     UnserializableDataError
 from mashumaro.meta.patch import patch_fromisoformat
 from mashumaro.meta.helpers import *
+from mashumaro.types import SerializableType, SerializationStrategy
 
 
 patch_fromisoformat()
@@ -32,11 +34,13 @@ class CodeBuilder:
         self.cls = cls
         self.lines = None            # type: typing.Optional[typing.List[str]]
         self.modules = None          # type: typing.Optional[typing.Set[str]]
+        self.globals = None          # type: typing.Set[str]
         self._current_indent = None  # type: typing.Optional[str]
 
     def reset(self):
         self.lines = []
         self.modules = INITIAL_MODULES.copy()
+        self.globals = set()
         self._current_indent = ''
 
     @property
@@ -56,8 +60,15 @@ class CodeBuilder:
             module = t.__module__
             if module not in self.modules:
                 self.modules.add(module)
-                self.add_line(f"import {module}")
-                self.add_line(f"globals()['{module}'] = {module}")
+                self.add_line(f"if '{module}' not in globals():")
+                with self.indent():
+                    self.add_line(f"import {module}")
+                root_module = module.split('.')[0]
+                if root_module not in self.globals:
+                    self.globals.add(root_module)
+                    self.add_line('else:')
+                    with self.indent():
+                        self.add_line(f"global {root_module}")
             args = getattr(t, '__args__', ())
             if args:
                 self._add_type_modules(*args)
@@ -100,9 +111,14 @@ class CodeBuilder:
                         if self.defaults[fname] is MISSING:
                             self.add_line(f"if value is MISSING:")
                             with self.indent():
-                                self._add_type_modules(ftype)
-                                self.add_line(f"raise MissingField('{fname}',"
-                                              f"{type_name(ftype)},cls)")
+                                if isinstance(ftype, SerializationStrategy):
+                                    self.add_line(
+                                        f"raise MissingField('{fname}',"
+                                        f"{type_name(ftype.__class__)},cls)")
+                                else:
+                                    self.add_line(
+                                        f"raise MissingField('{fname}',"
+                                        f"{type_name(ftype)},cls)")
                             self.add_line("else:")
                             with self.indent():
                                 unpacked_value = self._unpack_field_value(
@@ -155,6 +171,13 @@ class CodeBuilder:
         if is_dataclass(ftype):
             return f"{value_name}.to_dict(use_bytes, use_enum, use_datetime)"
 
+        with suppress(TypeError):
+            if issubclass(ftype, SerializableType):
+                return f'{value_name}._serialize()'
+        if isinstance(ftype, SerializationStrategy):
+            return f"self.__dataclass_fields__['{fname}'].type" \
+                f"._serialize({value_name})"
+
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
@@ -172,6 +195,9 @@ class CodeBuilder:
             elif is_type_var(ftype):
                 raise UnserializableDataError(
                     'TypeVars are not supported by mashumaro')
+            else:
+                raise UnserializableDataError(
+                    f'{ftype} as a field type is not supported by mashumaro')
         elif issubclass(origin_type, typing.Collection):
             args = getattr(ftype, '__args__', ())
 
@@ -263,6 +289,13 @@ class CodeBuilder:
             return f"{type_name(ftype)}.from_dict({value_name}, " \
                    f"use_bytes, use_enum, use_datetime)"
 
+        with suppress(TypeError):
+            if issubclass(ftype, SerializableType):
+                return f'{type_name(ftype)}._deserialize({value_name})'
+        if isinstance(ftype, SerializationStrategy):
+            return f"cls.__dataclass_fields__['{fname}'].type" \
+                f"._deserialize({value_name})"
+
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
@@ -280,6 +313,9 @@ class CodeBuilder:
             elif is_type_var(ftype):
                 raise UnserializableDataError(
                     'TypeVars are not supported by mashumaro')
+            else:
+                raise UnserializableDataError(
+                    f'{ftype} is not supported by mashumaro')
         elif issubclass(origin_type, typing.Collection):
             args = getattr(ftype, '__args__', ())
 
