@@ -2,6 +2,7 @@ from enum import Enum, IntEnum, Flag, IntFlag
 from dataclasses import dataclass
 
 from mashumaro import DataClassDictMixin
+from mashumaro.types import SerializableType
 
 
 class MyEnum(Enum):
@@ -28,3 +29,21 @@ class MyIntFlag(IntFlag):
 class MyDataClass(DataClassDictMixin):
     a: int
     b: int
+
+
+class MutableString(SerializableType):
+    def __init__(self, value: str):
+        self.characters = [c for c in value]
+
+    def _serialize(self) -> str:
+        return str(self)
+
+    @classmethod
+    def _deserialize(cls, value: str) -> 'MutableString':
+        return MutableString(value)
+
+    def __str__(self):
+        return ''.join(self.characters)
+
+    def __eq__(self, other):
+        return self.characters == other.characters

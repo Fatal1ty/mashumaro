@@ -38,6 +38,7 @@ from .entities import (
     MyFlag,
     MyIntFlag,
     MyDataClass,
+    MutableString,
 )
 
 import pytest
@@ -75,6 +76,8 @@ class Fixture:
     DECIMAL_STR = '1.33'
     FRACTION = fractions.Fraction('1/3')
     FRACTION_STR = '1/3'
+    MUTABLE_STRING = MutableString(STR)
+    MUTABLE_STRING_STR = STR
 
 
 inner_values = [
@@ -107,6 +110,7 @@ inner_values = [
     (uuid.UUID, Fixture.UUID, Fixture.UUID_STR),
     (decimal.Decimal, Fixture.DECIMAL, Fixture.DECIMAL_STR),
     (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR),
+    (MutableString, Fixture.MUTABLE_STRING, Fixture.MUTABLE_STRING_STR),
 ]
 
 
