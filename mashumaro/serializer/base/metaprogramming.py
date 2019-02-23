@@ -57,7 +57,9 @@ class CodeBuilder:
 
     def _add_type_modules(self, *types_):
         for t in types_:
-            module = t.__module__
+            module = getattr(t, '__module__', None)
+            if not module:
+                continue
             if module not in self.modules:
                 self.modules.add(module)
                 self.add_line(f"if '{module}' not in globals():")
