@@ -9,8 +9,10 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 
-When using dataclasses, you often need to dump and load objects according to the described scheme.
-This framework not only adds this ability to serialize in different formats, but also makes **serialization rapidly**.
+When using dataclasses, you often need to dump and load objects according to
+the described scheme.
+This framework not only adds this ability to serialize in different formats,
+but also makes **serialization rapidly**.
 
 Table of contens
 --------------------------------------------------------------------------------
@@ -20,6 +22,7 @@ Table of contens
 * [Usage example](#usage-example)
 * [How does it work?](#how-does-it-work)
 * [API](#api)
+* [User defined classes](#user-defined-classes)
 
 Installation
 --------------------------------------------------------------------------------
@@ -32,14 +35,16 @@ $ pip install mashumaro
 Supported serialization formats
 --------------------------------------------------------------------------------
 
-This framework adds methods for dumping to and loading from the following formats:
+This framework adds methods for dumping to and loading from the
+following formats:
 
 * plain dict
 * json
 * yaml
 * msgpack
 
-Plain dict can be useful when you need to pass a dict object to a third-party library, such as a client for MongoDB.
+Plain dict can be useful when you need to pass a dict object to a
+third-party library, such as a client for MongoDB.
 
 Supported field types
 --------------------------------------------------------------------------------
@@ -85,7 +90,9 @@ for other less popular built-in types:
 * decimal.Decimal
 * fractions.Fraction
 
-for other specific types like *NoneType* and for nested dataclasses itself.
+for specific types like *NoneType*, nested dataclasses itself and
+even [user defined classes](#user-defined-classes).
+
 
 Usage example
 --------------------------------------------------------------------------------
@@ -129,8 +136,10 @@ Pet.from_json('{"name": "Tom", "age": 5, "pet_type": "CAT"}')
 How does it work?
 --------------------------------------------------------------------------------
 
-This framework works by taking the schema of the data and generating a specific parser and builder for exactly that schema.
-This is much faster than inspection of field types on every call of parsing or building at runtime.
+This framework works by taking the schema of the data and generating a
+specific parser and builder for exactly that schema.
+This is much faster than inspection of field types on every call of parsing or
+building at runtime.
 
 API
 --------------------------------------------------------------------------------
@@ -139,7 +148,8 @@ Mashumaro provides a couple of mixins for each format.
 
 #### `DataClassDictMixin.to_dict(use_bytes: bool, use_enum: bool, use_datetime: bool)`
 
-Make a dictionary from dataclass object based on the dataclass schema provided. Options include:
+Make a dictionary from dataclass object based on the dataclass schema provided.
+Options include:
 ```python
 use_bytes: False     # False - convert bytes/bytearray objects to base64 encoded string, True - keep untouched
 use_enum: False      # False - convert enum objects to enum values, True - keep untouched
@@ -148,7 +158,8 @@ use_datetime: False  # False - convert datetime oriented objects to ISO 8601 for
 
 #### `DataClassDictMixin.from_dict(data: Mapping, use_bytes: bool, use_enum: bool, use_datetime: bool)`
 
-Make a new object from dict object based on the dataclass schema provided. Options include:
+Make a new object from dict object based on the dataclass schema provided.
+Options include:
 ```python
 use_bytes: False     # False - load bytes/bytearray objects from base64 encoded string, True - keep untouched
 use_enum: False      # False - load enum objects from enum values, True - keep untouched
@@ -157,7 +168,8 @@ use_datetime: False  # False - load datetime oriented objects from ISO 8601 form
 
 #### `DataClassJsonMixin.to_json(encoder: Optional[Encoder], dict_params: Optional[Mapping], **encoder_kwargs)`
 
-Make a JSON formatted string from dataclass object based on the dataclass schema provided. Options include:
+Make a JSON formatted string from dataclass object based on the dataclass
+schema provided. Options include:
 ```
 encoder        # function called for json encoding, defaults to json.dumps
 dict_params    # dictionary of parameter values passed underhood to `to_dict` function
@@ -166,7 +178,8 @@ encoder_kwargs # keyword arguments for encoder function
 
 #### `DataClassJsonMixin.from_json(data: str, decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
 
-Make a new object from JSON formatted string based on the dataclass schema provided. Options include:
+Make a new object from JSON formatted string based on the dataclass schema
+provided. Options include:
 ```
 decoder        # function called for json decoding, defaults to json.loads
 dict_params    # dictionary of parameter values passed underhood to `from_dict` function
@@ -175,20 +188,108 @@ decoder_kwargs # keyword arguments for decoder function
 
 #### `DataClassMessagePackMixin.to_msgpack()`
 
-Make a MessagePack formatted bytes object from dataclass object based on the dataclass schema provided.
+Make a MessagePack formatted bytes object from dataclass object based on the
+dataclass schema provided.
 
 #### `DataClassMessagePackMixin.from_msgpack(data: bytes)`
 
-Make a new object from MessagePack formatted data based on the dataclass schema provided.
+Make a new object from MessagePack formatted data based on the
+dataclass schema provided.
 
 #### `DataClassYAMLMixin.to_yaml()`
 
-Make an YAML formatted bytes object from dataclass object based on the dataclass schema provided.
+Make an YAML formatted bytes object from dataclass object based on the
+dataclass schema provided.
 
 #### `DataClassYAMLMixin.from_yaml(data: bytes)`
 
-Make a new object from YAML formatted data based on the dataclass schema provided.
+Make a new object from YAML formatted data based on the
+dataclass schema provided.
 
+User defined classes
+--------------------------------------------------------------------------------
+
+You can define and use custom classes with *mashumaro*. There are two options
+for customization. The first one is useful when you already have the separate
+custom class and you want to serialize instances of it with *mashumaro*.
+All what you need is to implement *SerializableType* interface:
+
+```python
+from typing import Dict
+from datetime import datetime
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.types import SerializableType
+
+class DateTime(datetime, SerializableType):
+    def _serialize(self) -> Dict[str, int]:
+        return {
+            "year": self.year,
+            "month": self.month,
+            "day": self.day,
+            "hour": self.hour,
+            "minute": self.minute,
+            "second": self.second,
+        }
+
+    @classmethod
+    def _deserialize(cls, value: Dict[str, int]) -> 'DateTime':
+        return DateTime(
+            year=value['year'],
+            month=value['month'],
+            day=value['day'],
+            hour=value['hour'],
+            minute=value['minute'],
+            second=value['second'],
+        )
+
+
+@dataclass
+class Holiday(DataClassDictMixin):
+    when: DateTime = DateTime.now()
+
+
+new_year = Holiday(when=DateTime(2019, 1, 1, 12))
+dictionary = new_year.to_dict()
+# {'x': {'year': 2019, 'month': 1, 'day': 1, 'hour': 0, 'minute': 0, 'second': 0}}
+assert Holiday.from_dict(dictionary) == new_year
+```
+
+The second option is useful when you want to change the serialization behaviour
+for a class depending on some defined parameters. For this case you can create
+the special class implementing *SerializationStrategy* interface:
+
+```python
+from datetime import datetime
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.types import SerializationStrategy
+
+class FormattedDateTime(SerializationStrategy):
+    def __init__(self, fmt):
+        self.fmt = fmt
+
+    def _serialize(self, value: datetime) -> str:
+        return value.strftime(self.fmt)
+
+    def _deserialize(self, value: str) -> datetime:
+        return datetime.strptime(value, self.fmt)
+
+
+@dataclass
+class DateTimeFormats(DataClassDictMixin):
+    short: FormattedDateTime(fmt='%d%m%Y%H%M%S') = datetime.now()
+    verbose: FormattedDateTime(fmt='%A %B %d, %Y, %H:%M:%S') = datetime.now()
+
+
+formats = DateTimeFormats(
+    short=datetime(2019, 1, 1, 12),
+    verbose=datetime(2019, 1, 1, 12),
+)
+dictionary = formats.to_dict()
+# {'short': '01012019120000', 'verbose': 'Tuesday January 01, 2019, 12:00:00'}
+assert DateTimeFormats.from_dict(dictionary) == formats
+```
 
 TODO
 --------------------------------------------------------------------------------
