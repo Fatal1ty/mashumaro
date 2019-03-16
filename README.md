@@ -176,7 +176,7 @@ dict_params    # dictionary of parameter values passed underhood to `to_dict` fu
 encoder_kwargs # keyword arguments for encoder function
 ```
 
-#### `DataClassJsonMixin.from_json(data: str, decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
+#### `DataClassJsonMixin.from_json(data: Union[str, bytes, bytearray], decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
 
 Make a new object from JSON formatted string based on the dataclass schema
 provided. Options include:
@@ -186,25 +186,45 @@ dict_params    # dictionary of parameter values passed underhood to `from_dict` 
 decoder_kwargs # keyword arguments for decoder function
 ```
 
-#### `DataClassMessagePackMixin.to_msgpack()`
+#### `DataClassMessagePackMixin.to_msgpack(encoder: Optional[Encoder], dict_params: Optional[Mapping], **encoder_kwargs)`
 
 Make a MessagePack formatted bytes object from dataclass object based on the
-dataclass schema provided.
+dataclass schema provided. Options include:
+```
+encoder        # function called for json encoding, defaults to msgpack.packb
+dict_params    # dictionary of parameter values passed underhood to `to_dict` function
+encoder_kwargs # keyword arguments for encoder function
+```
 
-#### `DataClassMessagePackMixin.from_msgpack(data: bytes)`
+#### `DataClassMessagePackMixin.from_msgpack(data: Union[str, bytes, bytearray], decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
 
 Make a new object from MessagePack formatted data based on the
-dataclass schema provided.
+dataclass schema provided. Options include:
+```
+decoder        # function called for json decoding, defaults to msgpack.unpackb
+dict_params    # dictionary of parameter values passed underhood to `from_dict` function
+decoder_kwargs # keyword arguments for decoder function
+```
 
-#### `DataClassYAMLMixin.to_yaml()`
+#### `DataClassYAMLMixin.to_yaml(encoder: Optional[Encoder], dict_params: Optional[Mapping], **encoder_kwargs)`
 
 Make an YAML formatted bytes object from dataclass object based on the
-dataclass schema provided.
+dataclass schema provided. Options include:
+```
+encoder        # function called for json encoding, defaults to yaml.dump
+dict_params    # dictionary of parameter values passed underhood to `to_dict` function
+encoder_kwargs # keyword arguments for encoder function
+```
 
-#### `DataClassYAMLMixin.from_yaml(data: bytes)`
+#### `DataClassYAMLMixin.from_yaml(data: Union[str, bytes], decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
 
 Make a new object from YAML formatted data based on the
-dataclass schema provided.
+dataclass schema provided. Options include:
+```
+decoder        # function called for json decoding, defaults to yaml.safe_load
+dict_params    # dictionary of parameter values passed underhood to `from_dict` function
+decoder_kwargs # keyword arguments for decoder function
+```
 
 User defined classes
 --------------------------------------------------------------------------------
