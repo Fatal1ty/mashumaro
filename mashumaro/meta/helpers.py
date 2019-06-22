@@ -1,5 +1,6 @@
 import types
 import typing
+import dataclasses
 
 from .macros import PY_36, PY_37
 
@@ -61,6 +62,20 @@ def is_type_var(t):
     return hasattr(t, '__constraints__')
 
 
+def is_class_var(t):
+    if PY_36:
+        return (
+            is_special_typing_primitive(t) and
+            type(t).__name__ == '_ClassVar'
+        )
+    if PY_37:
+        return get_type_origin(t) is typing.ClassVar
+
+
+def is_init_var(t):
+    return get_type_origin(t) is dataclasses.InitVar
+
+
 __all__ = [
     'get_imported_module_names',
     'get_type_origin',
@@ -69,4 +84,6 @@ __all__ = [
     'is_generic',
     'is_union',
     'is_type_var',
+    'is_class_var',
+    'is_init_var',
 ]
