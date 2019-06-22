@@ -12,7 +12,7 @@ from contextlib import suppress
 # noinspection PyUnresolvedReferences
 from base64 import encodebytes, decodebytes
 from contextlib import contextmanager
-from dataclasses import is_dataclass, MISSING
+from dataclasses import is_dataclass, MISSING, InitVar
 
 # noinspection PyUnresolvedReferences
 from mashumaro.exceptions import MissingField, UnserializableField,\
@@ -49,7 +49,13 @@ class CodeBuilder:
 
     @property
     def fields(self):
-        return typing.get_type_hints(self.cls)
+        fields = {}
+        for fname, ftype in typing.get_type_hints(self.cls).items():
+            origin_type = get_type_origin(ftype)
+            if origin_type in (InitVar, typing.ClassVar):
+                continue
+            fields[fname] = ftype
+        return fields
 
     @property
     def defaults(self):

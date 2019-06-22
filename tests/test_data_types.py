@@ -4,7 +4,7 @@ import fractions
 import collections
 from enum import Enum
 from datetime import datetime, date, time, timedelta
-from dataclasses import dataclass
+from dataclasses import dataclass, InitVar
 from queue import Queue
 from typing import (
     Hashable,
@@ -24,6 +24,7 @@ from typing import (
     AnyStr,
     Union,
     TypeVar,
+    ClassVar,
 )
 
 from mashumaro import DataClassDictMixin
@@ -609,3 +610,30 @@ def test_abstract_serialization_strategy():
     with pytest.raises(NotImplementedError):
         # noinspection PyTypeChecker
         SerializationStrategy._deserialize(None, None)
+
+
+def test_class_vars():
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: ClassVar[int] = None
+
+    assert DataClass().to_dict() == {}
+    assert DataClass.from_dict({}) == DataClass()
+
+
+def test_init_vars():
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: InitVar[int] = None
+        y: int = None
+
+        def __post_init__(self, x: int):
+            if self.y is None and x is not None:
+                self.y = x
+
+    assert DataClass().to_dict() == {'y': None}
+    assert DataClass(x=1).to_dict() == {'y': 1}
+    assert DataClass.from_dict({}) == DataClass()
+    assert DataClass.from_dict({'x': 1}) == DataClass()
