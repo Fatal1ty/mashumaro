@@ -70,6 +70,8 @@ def is_class_var(t):
         )
     if PY_37:
         return get_type_origin(t) is typing.ClassVar
+    else:
+        raise NotImplementedError
 
 
 def is_init_var(t):
