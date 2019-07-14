@@ -107,7 +107,7 @@ class PetType(Enum):
     CAT = 'CAT'
     MOUSE = 'MOUSE'
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class Pet(DataClassJSONMixin):
     name: str
     age: int
