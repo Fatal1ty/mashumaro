@@ -166,7 +166,7 @@ use_enum: False      # False - load enum objects from enum values, True - keep u
 use_datetime: False  # False - load datetime oriented objects from ISO 8601 formatted string, True - keep untouched
 ```
 
-#### `DataClassJsonMixin.to_json(encoder: Optional[Encoder], dict_params: Optional[Mapping], **encoder_kwargs)`
+#### `DataClassJSONMixin.to_json(encoder: Optional[Encoder], dict_params: Optional[Mapping], **encoder_kwargs)`
 
 Make a JSON formatted string from dataclass object based on the dataclass
 schema provided. Options include:
@@ -176,7 +176,7 @@ dict_params    # dictionary of parameter values passed underhood to `to_dict` fu
 encoder_kwargs # keyword arguments for encoder function
 ```
 
-#### `DataClassJsonMixin.from_json(data: Union[str, bytes, bytearray], decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
+#### `DataClassJSONMixin.from_json(data: Union[str, bytes, bytearray], decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
 
 Make a new object from JSON formatted string based on the dataclass schema
 provided. Options include:
