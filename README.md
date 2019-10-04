@@ -191,7 +191,7 @@ decoder_kwargs # keyword arguments for decoder function
 Make a MessagePack formatted bytes object from dataclass object based on the
 dataclass schema provided. Options include:
 ```
-encoder        # function called for json encoding, defaults to msgpack.packb
+encoder        # function called for MessagePack encoding, defaults to msgpack.packb
 dict_params    # dictionary of parameter values passed underhood to `to_dict` function
 encoder_kwargs # keyword arguments for encoder function
 ```
@@ -201,7 +201,7 @@ encoder_kwargs # keyword arguments for encoder function
 Make a new object from MessagePack formatted data based on the
 dataclass schema provided. Options include:
 ```
-decoder        # function called for json decoding, defaults to msgpack.unpackb
+decoder        # function called for MessagePack decoding, defaults to msgpack.unpackb
 dict_params    # dictionary of parameter values passed underhood to `from_dict` function
 decoder_kwargs # keyword arguments for decoder function
 ```
@@ -211,7 +211,7 @@ decoder_kwargs # keyword arguments for decoder function
 Make an YAML formatted bytes object from dataclass object based on the
 dataclass schema provided. Options include:
 ```
-encoder        # function called for json encoding, defaults to yaml.dump
+encoder        # function called for YAML encoding, defaults to yaml.dump
 dict_params    # dictionary of parameter values passed underhood to `to_dict` function
 encoder_kwargs # keyword arguments for encoder function
 ```
@@ -221,7 +221,7 @@ encoder_kwargs # keyword arguments for encoder function
 Make a new object from YAML formatted data based on the
 dataclass schema provided. Options include:
 ```
-decoder        # function called for json decoding, defaults to yaml.safe_load
+decoder        # function called for YAML decoding, defaults to yaml.safe_load
 dict_params    # dictionary of parameter values passed underhood to `from_dict` function
 decoder_kwargs # keyword arguments for decoder function
 ```
