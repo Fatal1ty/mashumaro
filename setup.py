@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="mashumaro",
-    version="1.7",
+    version="1.8",
     description="Fast serialization framework on top of dataclasses",
     long_description=open('README.md', encoding='utf8').read(),
     long_description_content_type='text/markdown',
@@ -16,6 +16,7 @@ setup(
         "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Development Status :: 5 - Production/Stable",
     ],
     license="Apache License, Version 2.0",
