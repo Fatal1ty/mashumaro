@@ -3,7 +3,7 @@ import decimal
 import fractions
 import collections
 from enum import Enum
-from datetime import datetime, date, time, timedelta
+from datetime import datetime, date, time, timedelta, timezone
 from dataclasses import dataclass, InitVar
 from queue import Queue
 from typing import (
@@ -71,6 +71,7 @@ class Fixture:
     DATE = DATETIME.date()
     TIME = DATETIME.time()
     TIMEDELTA = timedelta(3.14159265358979323846)
+    TIMEZONE = timezone(timedelta(hours=3))
     UUID = uuid.UUID('3c25dd74-f208-46a2-9606-dd3919e975b7')
     UUID_STR = '3c25dd74-f208-46a2-9606-dd3919e975b7'
     DECIMAL = decimal.Decimal('1.33')
@@ -108,6 +109,7 @@ inner_values = [
     (date, Fixture.DATE, Fixture.DATE),
     (time, Fixture.TIME, Fixture.TIME),
     (timedelta, Fixture.TIMEDELTA, Fixture.TIMEDELTA.total_seconds()),
+    (timezone, Fixture.TIMEZONE, 'UTC+03:00'),
     (uuid.UUID, Fixture.UUID, Fixture.UUID_STR),
     (decimal.Decimal, Fixture.DECIMAL, Fixture.DECIMAL_STR),
     (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR),

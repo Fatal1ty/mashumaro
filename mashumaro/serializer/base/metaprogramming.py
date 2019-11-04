@@ -20,7 +20,7 @@ from mashumaro.exceptions import MissingField, UnserializableField,\
 from mashumaro.meta.patch import patch_fromisoformat
 from mashumaro.meta.helpers import *
 from mashumaro.types import SerializableType, SerializationStrategy
-from mashumaro.serializer.base.converter import *
+from mashumaro.serializer.base.helpers import *
 
 
 patch_fromisoformat()
@@ -283,7 +283,7 @@ class CodeBuilder:
         elif origin_type is datetime.timedelta:
             return f'{value_name}.total_seconds()'
         elif origin_type is datetime.timezone:
-            return f'pack_timezone({value_name})'
+            return f'{value_name}.tzname(None)'
         elif origin_type is uuid.UUID:
             return f'str({value_name})'
         elif origin_type is Decimal:
@@ -423,7 +423,7 @@ class CodeBuilder:
         elif origin_type is datetime.timedelta:
             return f'datetime.timedelta(seconds={value_name})'
         elif origin_type is datetime.timezone:
-            return f'unpack_timezone({value_name})'
+            return f'parse_timezone({value_name})'
         elif origin_type is uuid.UUID:
             return f'uuid.UUID({value_name})'
         elif origin_type is Decimal:
