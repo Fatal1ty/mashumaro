@@ -84,6 +84,7 @@ for built-in datetime oriented types:
 * date
 * time
 * timedelta
+* timezone
 
 for other less popular built-in types:
 * uuid.UUID
