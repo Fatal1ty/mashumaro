@@ -90,6 +90,7 @@ for other less popular built-in types:
 * uuid.UUID
 * decimal.Decimal
 * fractions.Fraction
+* os.PathLike (loads to Path)
 
 for specific types like *NoneType*, nested dataclasses itself and
 even [user defined classes](#user-defined-classes).
