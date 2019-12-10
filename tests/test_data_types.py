@@ -6,6 +6,7 @@ from enum import Enum
 from datetime import datetime, date, time, timedelta, timezone
 from dataclasses import dataclass, InitVar
 from queue import Queue
+from pathlib import Path
 from typing import (
     Hashable,
     List,
@@ -80,6 +81,8 @@ class Fixture:
     FRACTION_STR = '1/3'
     MUTABLE_STRING = MutableString(STR)
     MUTABLE_STRING_STR = STR
+    PATH = Path('.')
+    PATH_STR = '.'
 
 
 inner_values = [
@@ -114,6 +117,7 @@ inner_values = [
     (decimal.Decimal, Fixture.DECIMAL, Fixture.DECIMAL_STR),
     (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR),
     (MutableString, Fixture.MUTABLE_STRING, Fixture.MUTABLE_STRING_STR),
+    (Path, Fixture.PATH, Fixture.PATH_STR)
 ]
 
 
