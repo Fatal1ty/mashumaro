@@ -1,3 +1,5 @@
+import os
+import pathlib
 import enum
 import uuid
 import typing
@@ -270,6 +272,8 @@ class CodeBuilder:
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
                     return f'[{inner_expr()} for value in {value_name}]'
+        elif issubclass(origin_type, os.PathLike):
+            return f'{value_name}.__fspath__()'
         elif issubclass(origin_type, enum.Enum):
             return f'{value_name} if use_enum else {value_name}.value'
         elif origin_type is int:
@@ -407,6 +411,8 @@ class CodeBuilder:
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
                     return f'[{inner_expr()} for value in {value_name}]'
+        elif issubclass(origin_type, os.PathLike):
+            return f'pathlib.Path({value_name})'
         elif issubclass(origin_type, enum.Enum):
             return f'{value_name} if use_enum ' \
                    f'else {type_name(origin_type)}({value_name})'
