@@ -563,6 +563,11 @@ def test_raises_missing_field():
     with pytest.raises(MissingField):
         DataClass.from_dict({})
 
+def test_loads_field_default():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = Fixture.INT
+    assert DataClass.from_dict({}).x == Fixture.INT
 
 def test_empty_dataclass():
     @dataclass
