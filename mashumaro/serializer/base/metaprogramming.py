@@ -14,7 +14,8 @@ from contextlib import suppress
 # noinspection PyUnresolvedReferences
 from base64 import encodebytes, decodebytes
 from contextlib import contextmanager
-from dataclasses import is_dataclass, MISSING
+# noinspection PyProtectedMember
+from dataclasses import is_dataclass, MISSING, _FIELDS
 
 # noinspection PyUnresolvedReferences
 from mashumaro.exceptions import MissingField, UnserializableField,\
@@ -51,17 +52,32 @@ class CodeBuilder:
         return self.cls.__dict__
 
     @property
-    def fields(self):
+    def annotations(self):
+        return self.namespace['__annotations__']
+
+    def __get_fields(self, recursive=True):
         fields = {}
         for fname, ftype in typing.get_type_hints(self.cls).items():
             if is_class_var(ftype) or is_init_var(ftype):
                 continue
-            fields[fname] = ftype
+            if recursive or fname in self.annotations:
+                fields[fname] = ftype
         return fields
 
     @property
+    def fields(self):
+        return self.__get_fields()
+
+    @property
     def defaults(self):
-        return {name: self.namespace.get(name, MISSING) for name in self.fields}
+        d = {}
+        for ancestor in self.cls.__mro__[-1:0:-1]:
+            if is_dataclass(ancestor):
+                for field in getattr(ancestor, _FIELDS).values():
+                    d[field.name] = field.default
+        for name in self.__get_fields(recursive=False):
+            d[name] = self.namespace.get(name, MISSING)
+        return d
 
     def _add_type_modules(self, *types_):
         for t in types_:

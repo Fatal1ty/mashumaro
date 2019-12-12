@@ -643,3 +643,32 @@ def test_init_vars():
     assert DataClass(x=1).to_dict() == {'y': 1}
     assert DataClass.from_dict({}) == DataClass()
     assert DataClass.from_dict({'x': 1}) == DataClass()
+
+
+def test_dataclass_with_defaults():
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int
+        y: int = 1
+
+    assert DataClass.from_dict({'x': 0}) == DataClass(x=0, y=1)
+
+
+def test_derived_dataclass_with_ancestors_defaults():
+
+    @dataclass
+    class A:
+        x: int
+        y: int = 1
+
+    @dataclass
+    class B(A, DataClassDictMixin):
+        z: int = 3
+
+    @dataclass
+    class C(B, DataClassDictMixin):
+        y: int = 4
+
+    assert B.from_dict({'x': 0}) == B(x=0, y=1, z=3)
+    assert C.from_dict({'x': 0}) == C(x=0, y=4, z=3)
