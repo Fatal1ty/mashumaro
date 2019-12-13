@@ -669,6 +669,12 @@ def test_derived_dataclass_with_ancestors_defaults():
     @dataclass
     class C(B, DataClassDictMixin):
         y: int = 4
+    
+    @dataclass
+    class D(C):
+        # No anotations here
+        pass
 
     assert B.from_dict({'x': 0}) == B(x=0, y=1, z=3)
     assert C.from_dict({'x': 0}) == C(x=0, y=4, z=3)
+    assert D.from_dict({'x': 0}) == D(x=0, y=4, z=3)
