@@ -53,7 +53,7 @@ class CodeBuilder:
 
     @property
     def annotations(self):
-        return self.namespace['__annotations__']
+        return self.namespace.get('__annotations__', {})
 
     def __get_fields(self, recursive=True):
         fields = {}
