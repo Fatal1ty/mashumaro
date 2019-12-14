@@ -70,7 +70,9 @@ class CodeBuilder:
     
     @staticmethod
     def __get_default(field):
-        return field.default_factory() if field.default_factory else field.default
+        if not isinstance(field.default_factory, type(MISSING)):
+            return field.default_factory() 
+        return field.default
     
     @property
     def defaults(self):
