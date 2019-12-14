@@ -4,7 +4,7 @@ import fractions
 import collections
 from enum import Enum
 from datetime import datetime, date, time, timedelta, timezone
-from dataclasses import dataclass, InitVar
+from dataclasses import dataclass, field, InitVar
 from queue import Queue
 from pathlib import Path
 from typing import (
@@ -673,7 +673,12 @@ def test_derived_dataclass_with_ancestors_defaults():
     @dataclass
     class D(C):
         pass
+    
+    @dataclass
+    class E(D, DataClassDictMixin):
+        map: Mapping[str, str] = field(default_factory=dict)
 
     assert B.from_dict({'x': 0}) == B(x=0, y=1, z=3)
     assert C.from_dict({'x': 0}) == C(x=0, y=4, z=3)
     assert D.from_dict({'x': 0}) == D(x=0, y=4, z=3)
+    assert E.from_dict({'x': 0}) == D(x=0, y=4, z=3, map={})
