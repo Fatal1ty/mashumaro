@@ -67,14 +67,18 @@ class CodeBuilder:
     @property
     def fields(self):
         return self.__get_fields()
-
+    
+    @staticmethod
+    def __get_default(field):
+        return field.default_factory() if field.default_factory else field.default
+    
     @property
     def defaults(self):
         d = {}
         for ancestor in self.cls.__mro__[-1:0:-1]:
             if is_dataclass(ancestor):
                 for field in getattr(ancestor, _FIELDS).values():
-                    d[field.name] = field.default
+                    d[field.name] = self.__get_default(field)
         for name in self.__get_fields(recursive=False):
             d[name] = self.namespace.get(name, MISSING)
         return d
