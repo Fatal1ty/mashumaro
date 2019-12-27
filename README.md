@@ -14,7 +14,7 @@ the described scheme.
 This framework not only adds this ability to serialize in different formats,
 but also makes **serialization rapidly**.
 
-Table of contens
+Table of contents
 --------------------------------------------------------------------------------
 * [Installation](#installation)
 * [Supported serialization formats](#supported-serialization-formats)
