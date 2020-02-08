@@ -35,4 +35,6 @@ class DataClassDictMixin:
         pass
 
 
-__all__ = [DataClassDictMixin]
+__all__ = [
+    'DataClassDictMixin'
+]
