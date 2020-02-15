@@ -38,7 +38,7 @@ class CodeBuilder:
         self.cls = cls
         self.lines = None            # type: typing.Optional[typing.List[str]]
         self.modules = None          # type: typing.Optional[typing.Set[str]]
-        self.globals = None          # type: typing.Set[str]
+        self.globals = None          # type: typing.Optional[typing.Set[str]]
         self._current_indent = None  # type: typing.Optional[str]
 
     def reset(self):
