@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Union, Any
+from typing import Dict, Union, Any, List
 from dataclasses import dataclass
 
 from mashumaro import DataClassJSONMixin
@@ -9,7 +9,7 @@ Rule = Dict[str, str]
 RemappingRules = Dict[str, Union[str, Rule]]
 
 
-def remapper(d: Dict[str, Any], rules: RemappingRules) -> Dict[str, Any]:
+def object_remapper(d: Dict[str, Any], rules: RemappingRules) -> Dict[str, Any]:
     result = {}
     for key, value in d.items():
         mapped_key = rules.get(key, key)
@@ -19,6 +19,13 @@ def remapper(d: Dict[str, Any], rules: RemappingRules) -> Dict[str, Any]:
         else:
             result[mapped_key] = value
     return result
+
+
+def remapper(data, rules):
+    if isinstance(data, dict):
+        return object_remapper(data, rules)
+    elif isinstance(data, list):
+        return [object_remapper(d, rules) for d in data]
 
 
 def remap_decoder(data: Union[str, bytes, bytearray],
@@ -44,12 +51,14 @@ class User(DataClassJSONMixin):
     username: str
     email: str
     company: Company
+    contractors: List[Company]
 
     __remapping__ = {
         "ID": "id",
         "USERNAME": "username",
         "EMAIL": "email",
         "COMPANY": ("company", Company.__remapping__),
+        "CONTRACTORS": ("contractors", Company.__remapping__),
     }
 
 
@@ -60,15 +69,27 @@ encoded_data = json.dumps(
         "EMAIL": "example@example.org",
         "COMPANY": {
             "ID": 1,
-            "NAME": "company"
-        }
+            "NAME": "company1"
+        },
+        "CONTRACTORS": [
+            {
+                "ID": 2,
+                "NAME": "company2"
+            }
+        ]
     }
 )
 
-company = Company(id=1, name="company")
-user = User(id=1, username="user", email="example@example.org", company=company)
+user = User(
+    id=1,
+    username="user",
+    email="example@example.org",
+    company=Company(id=1, name="company1"),
+    contractors=[Company(id=2, name="company2")]
+)
 
 assert User.from_json(
     data=encoded_data,
     decoder=remap_decoder,
-    rules=User.__remapping__) == user
+    rules=User.__remapping__
+) == user
