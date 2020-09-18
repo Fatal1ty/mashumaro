@@ -601,7 +601,7 @@ def test_rounded_decimal(places, rounding):
     assert DataClass.from_dict({'x': str(quantized)}) == DataClass(x=quantized)
 
 
-def test_abstract_serializable_type():
+def test_serializable_type():
     with pytest.raises(NotImplementedError):
         # noinspection PyTypeChecker
         SerializableType._serialize(None)
@@ -609,7 +609,7 @@ def test_abstract_serializable_type():
         SerializableType._deserialize(None)
 
 
-def test_abstract_serialization_strategy():
+def test_serialization_strategy():
     with pytest.raises(NotImplementedError):
         # noinspection PyTypeChecker
         SerializationStrategy._serialize(None, None)
