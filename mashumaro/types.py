@@ -1,24 +1,19 @@
-from abc import ABC, abstractmethod
 import decimal
 
 
-class SerializableType(ABC):
-    @abstractmethod
+class SerializableType:
     def _serialize(self):
         raise NotImplementedError
 
     @classmethod
-    @abstractmethod
     def _deserialize(cls, value):
         raise NotImplementedError
 
 
-class SerializationStrategy(ABC):
-    @abstractmethod
+class SerializationStrategy:
     def _serialize(self, value):
         raise NotImplementedError
 
-    @abstractmethod
     def _deserialize(self, value):
         raise NotImplementedError
 
