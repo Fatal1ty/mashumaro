@@ -2,7 +2,7 @@ import types
 import typing
 import dataclasses
 
-from .macros import PY_36, PY_37, PY_38
+from .macros import PY_36, PY_37, PY_38, PY_39
 
 
 def get_imported_module_names():
@@ -15,7 +15,7 @@ def get_type_origin(t):
     try:
         if PY_36:
             return t.__extra__
-        elif PY_37 or PY_38:
+        elif PY_37 or PY_38 or PY_39:
             return t.__origin__
     except AttributeError:
         return t
@@ -40,7 +40,7 @@ def is_special_typing_primitive(t):
 
 
 def is_generic(t):
-    if PY_37 or PY_38:
+    if PY_37 or PY_38 or PY_39:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
         return t.__class__ is typing._GenericAlias
@@ -68,7 +68,7 @@ def is_class_var(t):
             is_special_typing_primitive(t) and
             type(t).__name__ == '_ClassVar'
         )
-    if PY_37 or PY_38:
+    if PY_37 or PY_38 or PY_39:
         return get_type_origin(t) is typing.ClassVar
     else:
         raise NotImplementedError
@@ -77,7 +77,7 @@ def is_class_var(t):
 def is_init_var(t):
     if PY_36 or PY_37:
         return get_type_origin(t) is dataclasses.InitVar
-    elif PY_38:
+    elif PY_38 or PY_39:
         return isinstance(t, dataclasses.InitVar)
     else:
         raise NotImplementedError
