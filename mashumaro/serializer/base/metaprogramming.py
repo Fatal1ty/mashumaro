@@ -74,7 +74,10 @@ class CodeBuilder:
         for ancestor in self.cls.__mro__[-1:0:-1]:
             if is_dataclass(ancestor):
                 for field in getattr(ancestor, _FIELDS).values():
-                    d[field.name] = field.default
+                    if field.default is not MISSING:
+                        d[field.name] = field.default
+                    else:
+                        d[field.name] = field.default_factory
         for name in self.__get_fields(recursive=False):
             d[name] = self.namespace.get(name, MISSING)
         return d

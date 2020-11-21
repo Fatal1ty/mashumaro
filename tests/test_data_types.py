@@ -4,7 +4,7 @@ import fractions
 import collections
 from enum import Enum
 from datetime import datetime, date, time, timedelta, timezone
-from dataclasses import dataclass, InitVar
+from dataclasses import dataclass, InitVar, field
 from queue import Queue
 from pathlib import Path
 from typing import (
@@ -655,6 +655,26 @@ def test_dataclass_with_defaults():
     assert DataClass.from_dict({'x': 0}) == DataClass(x=0, y=1)
 
 
+def test_dataclass_with_field_and_default():
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(default=1)
+
+    assert DataClass.from_dict({}) == DataClass(x=1)
+    assert DataClass().to_dict() == {'x': 1}
+
+
+def test_dataclass_with_field_and_default_factory():
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: List[str] = field(default_factory=list)
+
+    assert DataClass.from_dict({}) == DataClass(x=[])
+    assert DataClass().to_dict() == {'x': []}
+
+
 def test_derived_dataclass_with_ancestors_defaults():
 
     @dataclass
@@ -677,3 +697,49 @@ def test_derived_dataclass_with_ancestors_defaults():
     assert B.from_dict({'x': 0}) == B(x=0, y=1, z=3)
     assert C.from_dict({'x': 0}) == C(x=0, y=4, z=3)
     assert D.from_dict({'x': 0}) == D(x=0, y=4, z=3)
+
+
+def test_derived_dataclass_with_ancestors_and_field_with_default():
+
+    @dataclass
+    class A:
+        x: int = field(default=1)
+
+    @dataclass
+    class B(A, DataClassDictMixin):
+        y: int = field(default=2)
+
+    @dataclass
+    class C(B, DataClassDictMixin):
+        z: int = field(default=3)
+
+    @dataclass
+    class D(C):
+        pass
+
+    assert B.from_dict({}) == B(x=1, y=2)
+    assert C.from_dict({}) == C(x=1, y=2, z=3)
+    assert D.from_dict({}) == D(x=1, y=2, z=3)
+
+
+def test_derived_dataclass_with_ancestors_and_field_with_default_factory():
+
+    @dataclass
+    class A:
+        x: List[int] = field(default_factory=lambda: [1])
+
+    @dataclass
+    class B(A, DataClassDictMixin):
+        y: List[int] = field(default_factory=lambda: [2])
+
+    @dataclass
+    class C(B, DataClassDictMixin):
+        z: List[int] = field(default_factory=lambda: [3])
+
+    @dataclass
+    class D(C):
+        pass
+
+    assert B.from_dict({}) == B(x=[1], y=[2])
+    assert C.from_dict({}) == C(x=[1], y=[2], z=[3])
+    assert D.from_dict({}) == D(x=[1], y=[2], z=[3])
