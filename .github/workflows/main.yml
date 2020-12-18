@@ -10,6 +10,7 @@ on:
 
 jobs:
   test:
+    name: Tests & coverage
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -23,7 +24,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install .
-        pip install pytest-cov
+        pip install pytest-cov coveralls
     - name: Run tests with coverage
       run: pytest --cov=.
     - name: Upload Coverage
