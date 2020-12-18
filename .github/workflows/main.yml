@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install .
-        pip install pytest-cov coveralls
+        pip install pytest-cov
     - name: Run tests with coverage
       run: pytest --cov=.
   finish:
@@ -31,6 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls
-      run: coveralls
+      run: |
+        pip install --upgrade coveralls
+        coveralls
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
