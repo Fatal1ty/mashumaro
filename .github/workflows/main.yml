@@ -26,7 +26,14 @@ jobs:
         pip install pytest-cov
     - name: Run tests with coverage
       run: pytest --cov=.
-  finish:
+    - name: Upload Coverage
+      run: coveralls
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
+        COVERALLS_PARALLEL: true
+  coveralls:
+    name: Finish Coveralls
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +43,7 @@ jobs:
         python-version: 3.6
     - name: Coveralls
       run: |
-        pip install --upgrade coveralls
-        coveralls
+        pip install coveralls
+        coveralls --finish
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
