@@ -42,9 +42,9 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.6
-    - name: Coveralls
-      run: |
-        pip install coveralls
-        coveralls --finish
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install dependencies
+      run: pip install coveralls
+    - name: Finish coveralls
+        run: coveralls --finish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
