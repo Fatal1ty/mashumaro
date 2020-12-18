@@ -30,7 +30,7 @@ from typing import (
 
 from mashumaro import DataClassDictMixin
 from mashumaro.exceptions import UnserializableField, UnserializableDataError,\
-    MissingField
+    MissingField, InvalidFieldValue
 from mashumaro.types import RoundedDecimal, SerializableType,\
     SerializationStrategy
 from .utils import same_types
@@ -743,3 +743,43 @@ def test_derived_dataclass_with_ancestors_and_field_with_default_factory():
     assert B.from_dict({}) == B(x=[1], y=[2])
     assert C.from_dict({}) == C(x=[1], y=[2], z=[3])
     assert D.from_dict({}) == D(x=[1], y=[2], z=[3])
+
+
+def test_invalid_field_value_deserialization():
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int
+
+    with pytest.raises(InvalidFieldValue):
+        DataClass.from_dict({'x': 'bad_value'})
+
+
+def test_invalid_field_value_deserialization_with_default():
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = 1
+
+    with pytest.raises(InvalidFieldValue):
+        DataClass.from_dict({'x': 'bad_value'})
+
+
+def test_invalid_field_value_deserialization_with_rounded_decimal():
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: RoundedDecimal()
+
+    with pytest.raises(InvalidFieldValue):
+        DataClass.from_dict({'x': 'bad_value'})
+
+
+def test_invalid_field_value_deserialization_with_rounded_decimal_with_default():
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: RoundedDecimal() = Fixture.DECIMAL
+
+    with pytest.raises(InvalidFieldValue):
+        DataClass.from_dict({'x': 'bad_value'})

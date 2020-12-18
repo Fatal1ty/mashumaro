@@ -19,7 +19,7 @@ from dataclasses import is_dataclass, MISSING, _FIELDS
 
 # noinspection PyUnresolvedReferences
 from mashumaro.exceptions import MissingField, UnserializableField,\
-    UnserializableDataError
+    UnserializableDataError, InvalidFieldValue
 from mashumaro.meta.patch import patch_fromisoformat
 from mashumaro.meta.helpers import *
 from mashumaro.types import SerializableType, SerializationStrategy
@@ -152,15 +152,39 @@ class CodeBuilder:
                             with self.indent():
                                 unpacked_value = self._unpack_field_value(
                                     fname, ftype, self.cls)
-                                self.add_line(
-                                    f"kwargs['{fname}'] = {unpacked_value}")
+                                self.add_line('try:')
+                                with self.indent():
+                                    self.add_line(
+                                        f"kwargs['{fname}'] = {unpacked_value}")
+                                self.add_line('except Exception as e:')
+                                with self.indent():
+                                    if isinstance(ftype, SerializationStrategy):
+                                        field_type = type_name(ftype.__class__)
+                                    else:
+                                        field_type = type_name(ftype)
+                                    self.add_line(
+                                        f"raise InvalidFieldValue('{fname}',"
+                                        f"{field_type},value,cls)"
+                                    )
                         else:
                             self.add_line("if value is not MISSING:")
                             with self.indent():
                                 unpacked_value = self._unpack_field_value(
                                     fname, ftype, self.cls)
-                                self.add_line(
-                                    f"kwargs['{fname}'] = {unpacked_value}")
+                                self.add_line('try:')
+                                with self.indent():
+                                    self.add_line(
+                                        f"kwargs['{fname}'] = {unpacked_value}")
+                                self.add_line('except Exception as e:')
+                                with self.indent():
+                                    if isinstance(ftype, SerializationStrategy):
+                                        field_type = type_name(ftype.__class__)
+                                    else:
+                                        field_type = type_name(ftype)
+                                    self.add_line(
+                                        f"raise InvalidFieldValue('{fname}',"
+                                        f"{field_type},value,cls)"
+                                    )
             self.add_line('except AttributeError:')
             with self.indent():
                 self.add_line('if not isinstance(d, dict):')
