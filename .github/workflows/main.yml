@@ -45,6 +45,6 @@ jobs:
     - name: Install dependencies
       run: pip install coveralls
     - name: Finish coveralls
-        run: coveralls --finish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: coveralls --finish
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
