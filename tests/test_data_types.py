@@ -769,7 +769,7 @@ def test_invalid_field_value_deserialization_with_rounded_decimal():
 
     @dataclass
     class DataClass(DataClassDictMixin):
-        x: RoundedDecimal
+        x: RoundedDecimal()
 
     with pytest.raises(InvalidFieldValue):
         DataClass.from_dict({'x': 'bad_value'})
