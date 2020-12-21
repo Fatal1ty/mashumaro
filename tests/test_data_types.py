@@ -1,3 +1,4 @@
+import os
 import uuid
 import decimal
 import fractions
@@ -6,7 +7,14 @@ from enum import Enum
 from datetime import datetime, date, time, timedelta, timezone
 from dataclasses import dataclass, InitVar, field
 from queue import Queue
-from pathlib import Path
+from pathlib import (
+    Path,
+    PosixPath,
+    WindowsPath,
+    PurePosixPath,
+    PureWindowsPath,
+    PurePath,
+)
 from typing import (
     Hashable,
     List,
@@ -81,8 +89,22 @@ class Fixture:
     FRACTION_STR = '1/3'
     MUTABLE_STRING = MutableString(STR)
     MUTABLE_STRING_STR = STR
-    PATH = Path('.')
-    PATH_STR = '.'
+    POSIX_PATH = PosixPath('/a/b/c')
+    POSIX_PATH_STR = '/a/b/c'
+    WINDOWS_PATH = PureWindowsPath('C:/Windows')
+    WINDOWS_PATH_STR = 'C:\\Windows'
+    PATH = Path('/a/b/c')
+    PATH_STR = '/a/b/c'
+    PURE_POSIX_PATH = PurePosixPath('/a/b/c')
+    PURE_POSIX_PATH_STR = '/a/b/c'
+    PURE_WINDOWS_PATH = PureWindowsPath('C:/Program Files')
+    PURE_WINDOWS_PATH_STR = 'C:\\Program Files'
+    PURE_PATH = PurePath('/a/b/c')
+    PURE_PATH_STR = '/a/b/c'
+
+
+if os.name != 'posix':
+    Fixture.PURE_WINDOWS_PATH = WindowsPath('C:/Program Files')
 
 
 inner_values = [
@@ -117,8 +139,17 @@ inner_values = [
     (decimal.Decimal, Fixture.DECIMAL, Fixture.DECIMAL_STR),
     (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR),
     (MutableString, Fixture.MUTABLE_STRING, Fixture.MUTABLE_STRING_STR),
-    (Path, Fixture.PATH, Fixture.PATH_STR)
+    (PosixPath, Fixture.POSIX_PATH, Fixture.POSIX_PATH_STR),
+    (Path, Fixture.PATH, Fixture.PATH_STR),
+    (PurePosixPath, Fixture.PURE_POSIX_PATH, Fixture.PURE_POSIX_PATH_STR),
+    (PureWindowsPath, Fixture.PURE_WINDOWS_PATH, Fixture.PURE_WINDOWS_PATH_STR),
+    (PurePath, Fixture.PURE_PATH, Fixture.PURE_PATH_STR),
 ]
+
+if os.name != 'posix':
+    inner_values.append(
+        (WindowsPath, Fixture.WINDOWS_PATH, Fixture.WINDOWS_PATH_STR)
+    )
 
 
 hashable_inner_values = [
