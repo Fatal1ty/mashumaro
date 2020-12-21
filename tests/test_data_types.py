@@ -90,8 +90,6 @@ class Fixture:
     FRACTION_STR = '1/3'
     MUTABLE_STRING = MutableString(STR)
     MUTABLE_STRING_STR = STR
-    PURE_PATH = PurePath('/a/b/c')
-    PURE_PATH_STR = '/a/b/c'
     CUSTOM_PATH = CustomPath('/a/b/c')
     CUSTOM_PATH_STR = '/a/b/c'
 
@@ -128,18 +126,19 @@ inner_values = [
     (decimal.Decimal, Fixture.DECIMAL, Fixture.DECIMAL_STR),
     (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR),
     (MutableString, Fixture.MUTABLE_STRING, Fixture.MUTABLE_STRING_STR),
-    (PurePath, Fixture.PURE_PATH, Fixture.PURE_PATH_STR),
 ]
 
 if os.name == 'posix':
     inner_values.extend([
         (Path, Path('/a/b/c'), '/a/b/c'),
+        (PurePath, PurePath('/a/b/c'), '/a/b/c'),
         (PosixPath, PosixPath('/a/b/c'), '/a/b/c'),
         (PurePosixPath, PurePosixPath('/a/b/c'), '/a/b/c'),
     ])
 else:
     inner_values.extend([
         (Path, Path('/a/b/c'), '\\a\\b\\c'),
+        (PurePath, PurePath('/a/b/c'), '\\a\\b\\c'),
         (WindowsPath, WindowsPath('C:/Windows'), 'C:\\Windows'),
         (PureWindowsPath, PureWindowsPath('C:/Program Files'), 'C:\\Program Files'),
     ])
