@@ -1,3 +1,4 @@
+from os import PathLike
 from enum import Enum, IntEnum, Flag, IntFlag
 from dataclasses import dataclass
 
@@ -47,3 +48,17 @@ class MutableString(SerializableType):
 
     def __eq__(self, other):
         return self.characters == other.characters
+
+
+class CustomPath(PathLike):
+    def __init__(self, *args: str):
+        self._path = '/'.join(args)
+
+    def __fspath__(self):
+        return self._path
+
+    def __str__(self):
+        return self._path
+
+    def __eq__(self, other):
+        return str(self) == str(other)

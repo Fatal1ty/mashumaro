@@ -49,6 +49,7 @@ from .entities import (
     MyIntFlag,
     MyDataClass,
     MutableString,
+    CustomPath,
 )
 
 import pytest
@@ -101,6 +102,8 @@ class Fixture:
     PURE_WINDOWS_PATH_STR = 'C:\\Program Files'
     PURE_PATH = PurePath('/a/b/c')
     PURE_PATH_STR = '/a/b/c'
+    CUSTOM_PATH = CustomPath('/a/b/c')
+    CUSTOM_PATH_STR = '/a/b/c'
 
 
 if os.name != 'posix':
@@ -814,3 +817,14 @@ def test_invalid_field_value_deserialization_with_rounded_decimal_with_default()
 
     with pytest.raises(InvalidFieldValue):
         DataClass.from_dict({'x': 'bad_value'})
+
+
+def test_custom_pathlike_type():
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: CustomPath
+
+    instance = DataClass(x=Fixture.CUSTOM_PATH)
+    assert instance.to_dict() == {'x': Fixture.CUSTOM_PATH_STR}
+    assert DataClass.from_dict({'x': Fixture.CUSTOM_PATH_STR}) == instance
