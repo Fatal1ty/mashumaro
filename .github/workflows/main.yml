@@ -10,7 +10,7 @@ on:
 
 jobs:
   test-posix:
-    name: Tests & coverage [posix]
+    name: Tests on Posix
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -34,7 +34,7 @@ jobs:
         COVERALLS_FLAG_NAME: posix-${{ matrix.python-version }}
         COVERALLS_PARALLEL: true
   test-windows:
-    name: Tests & coverage [windows]
+    name: Tests on Windows
     runs-on: windows-latest
     strategy:
       matrix:
