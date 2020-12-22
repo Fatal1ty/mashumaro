@@ -467,8 +467,10 @@ class CodeBuilder:
                 return f'pathlib.PureWindowsPath({value_name})'
             elif issubclass(origin_type, pathlib.PurePath):
                 return f'pathlib.PurePath({value_name})'
-            else:
+            elif origin_type is os.PathLike:
                 return f'pathlib.PurePath({value_name})'
+            else:
+                return f'{type_name(origin_type)}({value_name})'
         elif issubclass(origin_type, enum.Enum):
             return f'{value_name} if use_enum ' \
                    f'else {type_name(origin_type)}({value_name})'

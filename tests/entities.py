@@ -61,4 +61,4 @@ class CustomPath(PathLike):
         return self._path
 
     def __eq__(self, other):
-        return str(self).replace('\\', '/') == str(other).replace('\\', '/')
+        return isinstance(other, CustomPath) and self._path == other._path

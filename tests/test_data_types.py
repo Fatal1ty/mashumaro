@@ -126,6 +126,7 @@ inner_values = [
     (decimal.Decimal, Fixture.DECIMAL, Fixture.DECIMAL_STR),
     (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR),
     (MutableString, Fixture.MUTABLE_STRING, Fixture.MUTABLE_STRING_STR),
+    (CustomPath, Fixture.CUSTOM_PATH, Fixture.CUSTOM_PATH_STR),
 ]
 
 if os.name == 'posix':
@@ -806,14 +807,3 @@ def test_invalid_field_value_deserialization_with_rounded_decimal_with_default()
 
     with pytest.raises(InvalidFieldValue):
         DataClass.from_dict({'x': 'bad_value'})
-
-
-def test_custom_pathlike_type():
-
-    @dataclass
-    class DataClass(DataClassDictMixin):
-        x: CustomPath
-
-    instance = DataClass(x=Fixture.CUSTOM_PATH)
-    assert instance.to_dict() == {'x': Fixture.CUSTOM_PATH_STR}
-    assert DataClass.from_dict({'x': Fixture.CUSTOM_PATH_STR}) == instance
