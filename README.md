@@ -86,11 +86,20 @@ for built-in datetime oriented types:
 * `timedelta`
 * `timezone`
 
+for pathlike types:
+* `PurePath`
+* `Path`
+* `PurePosixPath`
+* `PosixPath`
+* `PureWindowsPath`
+* `WindowsPath`
+* `os.PathLike`
+
+
 for other less popular built-in types:
 * `uuid.UUID`
 * `decimal.Decimal`
 * `fractions.Fraction`
-* `os.PathLike`
 
 for specific types like *NoneType*, nested dataclasses itself and
 even [user defined classes](#user-defined-classes).
