@@ -50,47 +50,56 @@ Supported field types
 --------------------------------------------------------------------------------
 
 There is support for generic types from the standard *typing* module:
-* List
-* Tuple
-* Set
-* FrozenSet
-* Deque
-* Dict
-* Mapping
-* MutableMapping
-* ChainMap
-* Sequence
+* `List`
+* `Tuple`
+* `Set`
+* `FrozenSet`
+* `Deque`
+* `Dict`
+* `Mapping`
+* `MutableMapping`
+* `ChainMap`
+* `Sequence`
 
 for special primitives from the *typing* module:
-* Optional
-* Any
+* `Optional`
+* `Any`
 
 for enumerations based on classes from the standard *enum* module:
-* Enum
-* IntEnum
-* Flag
-* IntFlag
+* `Enum`
+* `IntEnum`
+* `Flag`
+* `IntFlag`
 
 for common built-in types:
-* int
-* float
-* bool
-* str
-* bytes
-* bytearray
+* `int`
+* `float`
+* `bool`
+* `str`
+* `bytes`
+* `bytearray`
 
 for built-in datetime oriented types:
-* datetime
-* date
-* time
-* timedelta
-* timezone
+* `datetime`
+* `date`
+* `time`
+* `timedelta`
+* `timezone`
+
+for pathlike types:
+* `PurePath`
+* `Path`
+* `PurePosixPath`
+* `PosixPath`
+* `PureWindowsPath`
+* `WindowsPath`
+* `os.PathLike`
+
 
 for other less popular built-in types:
-* uuid.UUID
-* decimal.Decimal
-* fractions.Fraction
-* os.PathLike (loads to Path)
+* `uuid.UUID`
+* `decimal.Decimal`
+* `fractions.Fraction`
 
 for specific types like *NoneType*, nested dataclasses itself and
 even [user defined classes](#user-defined-classes).

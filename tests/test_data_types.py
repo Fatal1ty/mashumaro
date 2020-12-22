@@ -1,3 +1,4 @@
+import os
 import uuid
 import decimal
 import fractions
@@ -6,7 +7,14 @@ from enum import Enum
 from datetime import datetime, date, time, timedelta, timezone
 from dataclasses import dataclass, InitVar, field
 from queue import Queue
-from pathlib import Path
+from pathlib import (
+    Path,
+    PosixPath,
+    WindowsPath,
+    PurePosixPath,
+    PureWindowsPath,
+    PurePath,
+)
 from typing import (
     Hashable,
     List,
@@ -41,6 +49,7 @@ from .entities import (
     MyIntFlag,
     MyDataClass,
     MutableString,
+    CustomPath,
 )
 
 import pytest
@@ -81,8 +90,8 @@ class Fixture:
     FRACTION_STR = '1/3'
     MUTABLE_STRING = MutableString(STR)
     MUTABLE_STRING_STR = STR
-    PATH = Path('.')
-    PATH_STR = '.'
+    CUSTOM_PATH = CustomPath('/a/b/c')
+    CUSTOM_PATH_STR = '/a/b/c'
 
 
 inner_values = [
@@ -117,8 +126,22 @@ inner_values = [
     (decimal.Decimal, Fixture.DECIMAL, Fixture.DECIMAL_STR),
     (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR),
     (MutableString, Fixture.MUTABLE_STRING, Fixture.MUTABLE_STRING_STR),
-    (Path, Fixture.PATH, Fixture.PATH_STR)
 ]
+
+if os.name == 'posix':
+    inner_values.extend([
+        (Path, Path('/a/b/c'), '/a/b/c'),
+        (PurePath, PurePath('/a/b/c'), '/a/b/c'),
+        (PosixPath, PosixPath('/a/b/c'), '/a/b/c'),
+        (PurePosixPath, PurePosixPath('/a/b/c'), '/a/b/c'),
+    ])
+else:
+    inner_values.extend([
+        (Path, Path('/a/b/c'), '\\a\\b\\c'),
+        (PurePath, PurePath('/a/b/c'), '\\a\\b\\c'),
+        (WindowsPath, WindowsPath('C:/Windows'), 'C:\\Windows'),
+        (PureWindowsPath, PureWindowsPath('C:/Program Files'), 'C:\\Program Files'),
+    ])
 
 
 hashable_inner_values = [
@@ -783,3 +806,14 @@ def test_invalid_field_value_deserialization_with_rounded_decimal_with_default()
 
     with pytest.raises(InvalidFieldValue):
         DataClass.from_dict({'x': 'bad_value'})
+
+
+def test_custom_pathlike_type():
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: CustomPath
+
+    instance = DataClass(x=Fixture.CUSTOM_PATH)
+    assert instance.to_dict() == {'x': Fixture.CUSTOM_PATH_STR}
+    assert DataClass.from_dict({'x': Fixture.CUSTOM_PATH_STR}) == instance

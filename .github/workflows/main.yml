@@ -9,8 +9,8 @@ on:
       - master
 
 jobs:
-  test:
-    name: Tests & coverage
+  test-posix:
+    name: Tests on Posix
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -31,11 +31,37 @@ jobs:
       run: coveralls
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
+        COVERALLS_FLAG_NAME: posix-${{ matrix.python-version }}
+        COVERALLS_PARALLEL: true
+  test-windows:
+    name: Tests on Windows
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8, 3.9]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        pip install .
+        pip install pytest-cov coveralls
+    - name: Run tests with coverage
+      run: pytest --cov=.
+    - name: Upload Coverage
+      run: coveralls
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_FLAG_NAME: windows-${{ matrix.python-version }}
         COVERALLS_PARALLEL: true
   coveralls:
     name: Finish Coveralls
-    needs: test
+    needs:
+    - test-posix
+    - test-windows
     runs-on: ubuntu-latest
     steps:
     - name: Set up Python

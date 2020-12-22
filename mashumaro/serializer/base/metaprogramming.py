@@ -455,7 +455,20 @@ class CodeBuilder:
                 if is_generic(ftype):
                     return f'[{inner_expr()} for value in {value_name}]'
         elif issubclass(origin_type, os.PathLike):
-            return f'pathlib.Path({value_name})'
+            if issubclass(origin_type, pathlib.PosixPath):
+                return f'pathlib.PosixPath({value_name})'
+            elif issubclass(origin_type, pathlib.WindowsPath):
+                return f'pathlib.WindowsPath({value_name})'
+            elif issubclass(origin_type, pathlib.Path):
+                return f'pathlib.Path({value_name})'
+            elif issubclass(origin_type, pathlib.PurePosixPath):
+                return f'pathlib.PurePosixPath({value_name})'
+            elif issubclass(origin_type, pathlib.PureWindowsPath):
+                return f'pathlib.PureWindowsPath({value_name})'
+            elif issubclass(origin_type, pathlib.PurePath):
+                return f'pathlib.PurePath({value_name})'
+            else:
+                return f'pathlib.PurePath({value_name})'
         elif issubclass(origin_type, enum.Enum):
             return f'{value_name} if use_enum ' \
                    f'else {type_name(origin_type)}({value_name})'
