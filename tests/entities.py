@@ -57,8 +57,5 @@ class CustomPath(PathLike):
     def __fspath__(self):
         return self._path
 
-    def __str__(self):
-        return self._path
-
     def __eq__(self, other):
         return isinstance(other, CustomPath) and self._path == other._path

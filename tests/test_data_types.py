@@ -135,6 +135,7 @@ if os.name == 'posix':
         (PurePath, PurePath('/a/b/c'), '/a/b/c'),
         (PosixPath, PosixPath('/a/b/c'), '/a/b/c'),
         (PurePosixPath, PurePosixPath('/a/b/c'), '/a/b/c'),
+        (os.PathLike, PurePosixPath('/a/b/c'), '/a/b/c'),
     ])
 else:
     inner_values.extend([
@@ -142,6 +143,7 @@ else:
         (PurePath, PurePath('/a/b/c'), '\\a\\b\\c'),
         (WindowsPath, WindowsPath('C:/Windows'), 'C:\\Windows'),
         (PureWindowsPath, PureWindowsPath('C:/Program Files'), 'C:\\Program Files'),
+        (os.PathLike, PureWindowsPath('/a/b/c'), '\\a\\b\\c'),
     ])
 
 
