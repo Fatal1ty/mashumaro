@@ -1,14 +1,17 @@
+import dataclasses
 import types
 import typing
-import dataclasses
 
 from .macros import PY_36, PY_37, PY_38, PY_39
 
 
 def get_imported_module_names():
     # noinspection PyUnresolvedReferences
-    return {value.__name__ for value in globals().values()
-            if isinstance(value, types.ModuleType)}
+    return {
+        value.__name__
+        for value in globals().values()
+        if isinstance(value, types.ModuleType)
+    }
 
 
 def get_type_origin(t):
@@ -59,14 +62,13 @@ def is_union(t):
 
 
 def is_type_var(t):
-    return hasattr(t, '__constraints__')
+    return hasattr(t, "__constraints__")
 
 
 def is_class_var(t):
     if PY_36:
         return (
-            is_special_typing_primitive(t) and
-            type(t).__name__ == '_ClassVar'
+            is_special_typing_primitive(t) and type(t).__name__ == "_ClassVar"
         )
     if PY_37 or PY_38 or PY_39:
         return get_type_origin(t) is typing.ClassVar
@@ -84,13 +86,13 @@ def is_init_var(t):
 
 
 __all__ = [
-    'get_imported_module_names',
-    'get_type_origin',
-    'type_name',
-    'is_special_typing_primitive',
-    'is_generic',
-    'is_union',
-    'is_type_var',
-    'is_class_var',
-    'is_init_var',
+    "get_imported_module_names",
+    "get_type_origin",
+    "type_name",
+    "is_special_typing_primitive",
+    "is_generic",
+    "is_union",
+    "is_type_var",
+    "is_class_var",
+    "is_init_var",
 ]

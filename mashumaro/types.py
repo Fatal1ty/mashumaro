@@ -40,7 +40,7 @@ class RoundedDecimal(SerializationStrategy):
 
 
 __all__ = [
-    'SerializableType',
-    'SerializationStrategy',
-    'RoundedDecimal',
+    "SerializableType",
+    "SerializationStrategy",
+    "RoundedDecimal",
 ]

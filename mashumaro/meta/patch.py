@@ -6,7 +6,8 @@ def patch_fromisoformat():
         # noinspection PyPackageRequirements
         # noinspection PyUnresolvedReferences
         from backports.datetime_fromisoformat import MonkeyPatch
+
         MonkeyPatch.patch_fromisoformat()
 
 
-__all__ = ['patch_fromisoformat']
+__all__ = ["patch_fromisoformat"]

@@ -1,30 +1,44 @@
-import os
-import pathlib
-import enum
-import uuid
-import typing
 # noinspection PyUnresolvedReferences
-import builtins
-import datetime
+import builtins  # noqa
 import collections
 import collections.abc
+import datetime
+import enum
+import os
+import pathlib
+import typing
+import uuid
+
+# noinspection PyUnresolvedReferences
+from base64 import decodebytes, encodebytes  # noqa
+from contextlib import contextmanager, suppress
+
+# noinspection PyProtectedMember
+from dataclasses import _FIELDS, MISSING, is_dataclass
 from decimal import Decimal
 from fractions import Fraction
-from contextlib import suppress
-# noinspection PyUnresolvedReferences
-from base64 import encodebytes, decodebytes
-from contextlib import contextmanager
-# noinspection PyProtectedMember
-from dataclasses import is_dataclass, MISSING, _FIELDS
 
 # noinspection PyUnresolvedReferences
-from mashumaro.exceptions import MissingField, UnserializableField,\
-    UnserializableDataError, InvalidFieldValue
+from mashumaro.exceptions import (  # noqa
+    InvalidFieldValue,
+    MissingField,
+    UnserializableDataError,
+    UnserializableField,
+)
+from mashumaro.meta.helpers import (
+    get_imported_module_names,
+    get_type_origin,
+    is_class_var,
+    is_generic,
+    is_init_var,
+    is_special_typing_primitive,
+    is_type_var,
+    is_union,
+    type_name,
+)
 from mashumaro.meta.patch import patch_fromisoformat
-from mashumaro.meta.helpers import *
+from mashumaro.serializer.base.helpers import *  # noqa
 from mashumaro.types import SerializableType, SerializationStrategy
-from mashumaro.serializer.base.helpers import *
-
 
 patch_fromisoformat()
 
@@ -36,16 +50,16 @@ INITIAL_MODULES = get_imported_module_names()
 class CodeBuilder:
     def __init__(self, cls):
         self.cls = cls
-        self.lines = None            # type: typing.Optional[typing.List[str]]
-        self.modules = None          # type: typing.Optional[typing.Set[str]]
-        self.globals = None          # type: typing.Optional[typing.Set[str]]
+        self.lines = None  # type: typing.Optional[typing.List[str]]
+        self.modules = None  # type: typing.Optional[typing.Set[str]]
+        self.globals = None  # type: typing.Optional[typing.Set[str]]
         self._current_indent = None  # type: typing.Optional[str]
 
     def reset(self):
         self.lines = []
         self.modules = INITIAL_MODULES.copy()
         self.globals = set()
-        self._current_indent = ''
+        self._current_indent = ""
 
     @property
     def namespace(self):
@@ -53,7 +67,7 @@ class CodeBuilder:
 
     @property
     def annotations(self):
-        return self.namespace.get('__annotations__', {})
+        return self.namespace.get("__annotations__", {})
 
     def __get_fields(self, recursive=True):
         fields = {}
@@ -84,7 +98,7 @@ class CodeBuilder:
 
     def _add_type_modules(self, *types_):
         for t in types_:
-            module = getattr(t, '__module__', None)
+            module = getattr(t, "__module__", None)
             if not module:
                 continue
             if module not in self.modules:
@@ -92,16 +106,16 @@ class CodeBuilder:
                 self.add_line(f"if '{module}' not in globals():")
                 with self.indent():
                     self.add_line(f"import {module}")
-                root_module = module.split('.')[0]
+                root_module = module.split(".")[0]
                 if root_module not in self.globals:
                     self.globals.add(root_module)
-                    self.add_line('else:')
+                    self.add_line("else:")
                     with self.indent():
                         self.add_line(f"global {root_module}")
-            args = getattr(t, '__args__', ())
+            args = getattr(t, "__args__", ())
             if args:
                 self._add_type_modules(*args)
-            constraints = getattr(t, '__constraints__', ())
+            constraints = getattr(t, "__constraints__", ())
             if constraints:
                 self._add_type_modules(*constraints)
 
@@ -110,7 +124,7 @@ class CodeBuilder:
 
     @contextmanager
     def indent(self):
-        self._current_indent += ' ' * 4
+        self._current_indent += " " * 4
         try:
             yield
         finally:
@@ -122,11 +136,13 @@ class CodeBuilder:
     def add_from_dict(self):
 
         self.reset()
-        self.add_line('@classmethod')
-        self.add_line("def from_dict(cls, d, use_bytes=False, use_enum=False, "
-                      "use_datetime=False):")
+        self.add_line("@classmethod")
+        self.add_line(
+            "def from_dict(cls, d, use_bytes=False, use_enum=False, "
+            "use_datetime=False):"
+        )
         with self.indent():
-            self.add_line('try:')
+            self.add_line("try:")
             with self.indent():
                 self.add_line("kwargs = {}")
                 for fname, ftype in self.fields.items():
@@ -138,27 +154,33 @@ class CodeBuilder:
                     self.add_line("else:")
                     with self.indent():
                         if self.defaults[fname] is MISSING:
-                            self.add_line(f"if value is MISSING:")
+                            self.add_line("if value is MISSING:")
                             with self.indent():
                                 if isinstance(ftype, SerializationStrategy):
                                     self.add_line(
                                         f"raise MissingField('{fname}',"
-                                        f"{type_name(ftype.__class__)},cls)")
+                                        f"{type_name(ftype.__class__)},cls)"
+                                    )
                                 else:
                                     self.add_line(
                                         f"raise MissingField('{fname}',"
-                                        f"{type_name(ftype)},cls)")
+                                        f"{type_name(ftype)},cls)"
+                                    )
                             self.add_line("else:")
                             with self.indent():
                                 unpacked_value = self._unpack_field_value(
-                                    fname, ftype, self.cls)
-                                self.add_line('try:')
+                                    fname, ftype, self.cls
+                                )
+                                self.add_line("try:")
                                 with self.indent():
                                     self.add_line(
-                                        f"kwargs['{fname}'] = {unpacked_value}")
-                                self.add_line('except Exception as e:')
+                                        f"kwargs['{fname}'] = {unpacked_value}"
+                                    )
+                                self.add_line("except Exception as e:")
                                 with self.indent():
-                                    if isinstance(ftype, SerializationStrategy):
+                                    if isinstance(
+                                        ftype, SerializationStrategy
+                                    ):
                                         field_type = type_name(ftype.__class__)
                                     else:
                                         field_type = type_name(ftype)
@@ -170,14 +192,18 @@ class CodeBuilder:
                             self.add_line("if value is not MISSING:")
                             with self.indent():
                                 unpacked_value = self._unpack_field_value(
-                                    fname, ftype, self.cls)
-                                self.add_line('try:')
+                                    fname, ftype, self.cls
+                                )
+                                self.add_line("try:")
                                 with self.indent():
                                     self.add_line(
-                                        f"kwargs['{fname}'] = {unpacked_value}")
-                                self.add_line('except Exception as e:')
+                                        f"kwargs['{fname}'] = {unpacked_value}"
+                                    )
+                                self.add_line("except Exception as e:")
                                 with self.indent():
-                                    if isinstance(ftype, SerializationStrategy):
+                                    if isinstance(
+                                        ftype, SerializationStrategy
+                                    ):
                                         field_type = type_name(ftype.__class__)
                                     else:
                                         field_type = type_name(ftype)
@@ -185,314 +211,379 @@ class CodeBuilder:
                                         f"raise InvalidFieldValue('{fname}',"
                                         f"{field_type},value,cls)"
                                     )
-            self.add_line('except AttributeError:')
+            self.add_line("except AttributeError:")
             with self.indent():
-                self.add_line('if not isinstance(d, dict):')
+                self.add_line("if not isinstance(d, dict):")
                 with self.indent():
-                    self.add_line(f"raise ValueError('Argument for "
-                                  f"{type_name(self.cls)}.from_dict method "
-                                  f"should be a dict instance') from None")
-                self.add_line('else:')
+                    self.add_line(
+                        f"raise ValueError('Argument for "
+                        f"{type_name(self.cls)}.from_dict method "
+                        f"should be a dict instance') from None"
+                    )
+                self.add_line("else:")
                 with self.indent():
-                    self.add_line('raise')
+                    self.add_line("raise")
             self.add_line("return cls(**kwargs)")
-        self.add_line(f"setattr(cls, 'from_dict', from_dict)")
+        self.add_line("setattr(cls, 'from_dict', from_dict)")
         self.compile()
 
     def add_to_dict(self):
 
         self.reset()
-        self.add_line("def to_dict(self, use_bytes=False, use_enum=False, "
-                      "use_datetime=False):")
+        self.add_line(
+            "def to_dict(self, use_bytes=False, use_enum=False, "
+            "use_datetime=False):"
+        )
         with self.indent():
             self.add_line("kwargs = {}")
             for fname, ftype in self.fields.items():
                 self.add_line(f"value = getattr(self, '{fname}')")
-                self.add_line('if value is None:')
+                self.add_line("if value is None:")
                 with self.indent():
                     self.add_line(f"kwargs['{fname}'] = None")
-                self.add_line('else:')
+                self.add_line("else:")
                 with self.indent():
                     packed_value = self._pack_value(fname, ftype, self.cls)
                     self.add_line(f"kwargs['{fname}'] = {packed_value}")
             self.add_line("return kwargs")
-        self.add_line(f"setattr(cls, 'to_dict', to_dict)")
+        self.add_line("setattr(cls, 'to_dict', to_dict)")
         self.compile()
 
-    def _pack_value(self, fname, ftype, parent, value_name='value'):
+    def _pack_value(self, fname, ftype, parent, value_name="value"):
 
         if is_dataclass(ftype):
             return f"{value_name}.to_dict(use_bytes, use_enum, use_datetime)"
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
-                return f'{value_name}._serialize()'
+                return f"{value_name}._serialize()"
         if isinstance(ftype, SerializationStrategy):
-            return f"self.__dataclass_fields__['{fname}'].type" \
+            return (
+                f"self.__dataclass_fields__['{fname}'].type"
                 f"._serialize({value_name})"
+            )
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
                 return value_name
             elif is_union(ftype):
-                args = getattr(ftype, '__args__', ())
+                args = getattr(ftype, "__args__", ())
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
                     return self._pack_value(fname, args[0], parent)
                 else:
                     raise UnserializableDataError(
-                        'Unions are not supported by mashumaro')
+                        "Unions are not supported by mashumaro"
+                    )
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(
-                    'AnyStr is not supported by mashumaro')
+                    "AnyStr is not supported by mashumaro"
+                )
             elif is_type_var(ftype):
                 raise UnserializableDataError(
-                    'TypeVars are not supported by mashumaro')
+                    "TypeVars are not supported by mashumaro"
+                )
             else:
                 raise UnserializableDataError(
-                    f'{ftype} as a field type is not supported by mashumaro')
+                    f"{ftype} as a field type is not supported by mashumaro"
+                )
         elif issubclass(origin_type, typing.Collection):
-            args = getattr(ftype, '__args__', ())
+            args = getattr(ftype, "__args__", ())
 
-            def inner_expr(arg_num=0, v_name='value'):
+            def inner_expr(arg_num=0, v_name="value"):
                 return self._pack_value(fname, args[arg_num], parent, v_name)
 
-            if issubclass(origin_type, (typing.List,
-                                        typing.Deque,
-                                        typing.Tuple,
-                                        typing.AbstractSet)):
+            if issubclass(
+                origin_type,
+                (typing.List, typing.Deque, typing.Tuple, typing.AbstractSet),
+            ):
                 if is_generic(ftype):
-                    return f'[{inner_expr()} for value in {value_name}]'
+                    return f"[{inner_expr()} for value in {value_name}]"
                 elif ftype is list:
                     raise UnserializableField(
-                        fname, ftype, parent, 'Use typing.List[T] instead')
+                        fname, ftype, parent, "Use typing.List[T] instead"
+                    )
                 elif ftype is collections.deque:
                     raise UnserializableField(
-                        fname, ftype, parent, 'Use typing.Deque[T] instead')
+                        fname, ftype, parent, "Use typing.Deque[T] instead"
+                    )
                 elif ftype is tuple:
                     raise UnserializableField(
-                        fname, ftype, parent, 'Use typing.Tuple[T] instead')
+                        fname, ftype, parent, "Use typing.Tuple[T] instead"
+                    )
                 elif ftype is set:
                     raise UnserializableField(
-                        fname, ftype, parent, 'Use typing.Set[T] instead')
+                        fname, ftype, parent, "Use typing.Set[T] instead"
+                    )
                 elif ftype is frozenset:
                     raise UnserializableField(
-                        fname, ftype, parent, 'Use typing.FrozenSet[T] instead')
+                        fname, ftype, parent, "Use typing.FrozenSet[T] instead"
+                    )
             elif issubclass(origin_type, typing.ChainMap):
                 if ftype is collections.ChainMap:
                     raise UnserializableField(
-                        fname, ftype, parent,
-                        'Use typing.ChainMap[KT,VT] instead'
+                        fname,
+                        ftype,
+                        parent,
+                        "Use typing.ChainMap[KT,VT] instead",
                     )
                 elif is_generic(ftype):
                     if is_dataclass(args[0]):
                         raise UnserializableDataError(
-                            'ChainMaps with dataclasses as keys '
-                            'are not supported by mashumaro')
+                            "ChainMaps with dataclasses as keys "
+                            "are not supported by mashumaro"
+                        )
                     else:
-                        return f'[{{{inner_expr(0,"key")}:{inner_expr(1)} ' \
-                               f'for key,value in m.items()}} ' \
-                               f'for m in value.maps]'
+                        return (
+                            f'[{{{inner_expr(0,"key")}:{inner_expr(1)} '
+                            f"for key,value in m.items()}} "
+                            f"for m in value.maps]"
+                        )
             elif issubclass(origin_type, typing.Mapping):
                 if ftype is dict:
                     raise UnserializableField(
-                        fname, ftype, parent,
-                        'Use typing.Dict[KT,VT] or Mapping[KT,VT] instead'
+                        fname,
+                        ftype,
+                        parent,
+                        "Use typing.Dict[KT,VT] or Mapping[KT,VT] instead",
                     )
                 elif is_generic(ftype):
                     if is_dataclass(args[0]):
                         raise UnserializableDataError(
-                            'Mappings with dataclasses as keys '
-                            'are not supported by mashumaro')
+                            "Mappings with dataclasses as keys "
+                            "are not supported by mashumaro"
+                        )
                     else:
-                        return f'{{{inner_expr(0,"key")}: {inner_expr(1)} ' \
-                               f'for key, value in {value_name}.items()}}'
+                        return (
+                            f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
+                            f"for key, value in {value_name}.items()}}"
+                        )
             elif issubclass(origin_type, typing.ByteString):
-                return f'{value_name} if use_bytes else ' \
-                       f'encodebytes({value_name}).decode()'
+                return (
+                    f"{value_name} if use_bytes else "
+                    f"encodebytes({value_name}).decode()"
+                )
             elif issubclass(origin_type, str):
                 return value_name
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
-                    return f'[{inner_expr()} for value in {value_name}]'
+                    return f"[{inner_expr()} for value in {value_name}]"
         elif issubclass(origin_type, os.PathLike):
-            return f'{value_name}.__fspath__()'
+            return f"{value_name}.__fspath__()"
         elif issubclass(origin_type, enum.Enum):
-            return f'{value_name} if use_enum else {value_name}.value'
+            return f"{value_name} if use_enum else {value_name}.value"
         elif origin_type is int:
-            return f'int({value_name})'
+            return f"int({value_name})"
         elif origin_type is float:
-            return f'float({value_name})'
+            return f"float({value_name})"
         elif origin_type in (bool, NoneType):
             return value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
-            return f'{value_name} if use_datetime else {value_name}.isoformat()'
+            return (
+                f"{value_name} if use_datetime else {value_name}.isoformat()"
+            )
         elif origin_type is datetime.timedelta:
-            return f'{value_name}.total_seconds()'
+            return f"{value_name}.total_seconds()"
         elif origin_type is datetime.timezone:
-            return f'{value_name}.tzname(None)'
+            return f"{value_name}.tzname(None)"
         elif origin_type is uuid.UUID:
-            return f'str({value_name})'
+            return f"str({value_name})"
         elif origin_type is Decimal:
-            return f'str({value_name})'
+            return f"str({value_name})"
         elif origin_type is Fraction:
-            return f'str({value_name})'
+            return f"str({value_name})"
 
         raise UnserializableField(fname, ftype, parent)
 
-    def _unpack_field_value(self, fname, ftype, parent, value_name='value'):
+    def _unpack_field_value(self, fname, ftype, parent, value_name="value"):
 
         if is_dataclass(ftype):
-            return f"{type_name(ftype)}.from_dict({value_name}, " \
-                   f"use_bytes, use_enum, use_datetime)"
+            return (
+                f"{type_name(ftype)}.from_dict({value_name}, "
+                f"use_bytes, use_enum, use_datetime)"
+            )
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
-                return f'{type_name(ftype)}._deserialize({value_name})'
+                return f"{type_name(ftype)}._deserialize({value_name})"
         if isinstance(ftype, SerializationStrategy):
-            return f"cls.__dataclass_fields__['{fname}'].type" \
+            return (
+                f"cls.__dataclass_fields__['{fname}'].type"
                 f"._deserialize({value_name})"
+            )
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
                 return value_name
             elif is_union(ftype):
-                args = getattr(ftype, '__args__', ())
+                args = getattr(ftype, "__args__", ())
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
                     return self._unpack_field_value(fname, args[0], parent)
                 else:
                     raise UnserializableDataError(
-                        'Unions are not supported by mashumaro')
+                        "Unions are not supported by mashumaro"
+                    )
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(
-                    'AnyStr is not supported by mashumaro')
+                    "AnyStr is not supported by mashumaro"
+                )
             elif is_type_var(ftype):
                 raise UnserializableDataError(
-                    'TypeVars are not supported by mashumaro')
+                    "TypeVars are not supported by mashumaro"
+                )
             else:
                 raise UnserializableDataError(
-                    f'{ftype} as a field type is not supported by mashumaro')
+                    f"{ftype} as a field type is not supported by mashumaro"
+                )
         elif issubclass(origin_type, typing.Collection):
-            args = getattr(ftype, '__args__', ())
+            args = getattr(ftype, "__args__", ())
 
-            def inner_expr(arg_num=0, v_name='value'):
+            def inner_expr(arg_num=0, v_name="value"):
                 return self._unpack_field_value(
-                    fname, args[arg_num], parent, v_name)
+                    fname, args[arg_num], parent, v_name
+                )
 
             if issubclass(origin_type, typing.List):
                 if is_generic(ftype):
-                    return f'[{inner_expr()} for value in {value_name}]'
+                    return f"[{inner_expr()} for value in {value_name}]"
                 elif ftype is list:
                     raise UnserializableField(
-                        fname, ftype, parent, 'Use typing.List[T] instead')
+                        fname, ftype, parent, "Use typing.List[T] instead"
+                    )
             elif issubclass(origin_type, typing.Deque):
                 if is_generic(ftype):
-                    return f'collections.deque([{inner_expr()} ' \
-                           f'for value in {value_name}])'
+                    return (
+                        f"collections.deque([{inner_expr()} "
+                        f"for value in {value_name}])"
+                    )
                 elif ftype is collections.deque:
                     raise UnserializableField(
-                        fname, ftype, parent, 'Use typing.Deque[T] instead')
+                        fname, ftype, parent, "Use typing.Deque[T] instead"
+                    )
             elif issubclass(origin_type, typing.Tuple):
                 if is_generic(ftype):
-                    return f'tuple([{inner_expr()} for value in {value_name}])'
+                    return f"tuple([{inner_expr()} for value in {value_name}])"
                 elif ftype is tuple:
                     raise UnserializableField(
-                        fname, ftype, parent, 'Use typing.Tuple[T] instead')
+                        fname, ftype, parent, "Use typing.Tuple[T] instead"
+                    )
             elif issubclass(origin_type, typing.FrozenSet):
                 if is_generic(ftype):
-                    return f'frozenset([{inner_expr()} ' \
-                           f'for value in {value_name}])'
+                    return (
+                        f"frozenset([{inner_expr()} "
+                        f"for value in {value_name}])"
+                    )
                 elif ftype is frozenset:
                     raise UnserializableField(
-                        fname, ftype, parent, 'Use typing.FrozenSet[T] instead')
+                        fname, ftype, parent, "Use typing.FrozenSet[T] instead"
+                    )
             elif issubclass(origin_type, typing.AbstractSet):
                 if is_generic(ftype):
-                    return f'set([{inner_expr()} for value in {value_name}])'
+                    return f"set([{inner_expr()} for value in {value_name}])"
                 elif ftype is set:
                     raise UnserializableField(
-                        fname, ftype, parent, 'Use typing.Set[T] instead')
+                        fname, ftype, parent, "Use typing.Set[T] instead"
+                    )
             elif issubclass(origin_type, typing.ChainMap):
                 if ftype is collections.ChainMap:
                     raise UnserializableField(
-                        fname, ftype, parent,
-                        'Use typing.ChainMap[KT,VT] instead'
+                        fname,
+                        ftype,
+                        parent,
+                        "Use typing.ChainMap[KT,VT] instead",
                     )
                 elif is_generic(ftype):
                     if is_dataclass(args[0]):
                         raise UnserializableDataError(
-                            'ChainMaps with dataclasses as keys '
-                            'are not supported by mashumaro')
+                            "ChainMaps with dataclasses as keys "
+                            "are not supported by mashumaro"
+                        )
                     else:
-                        return f'collections.ChainMap(' \
-                               f'*[{{{inner_expr(0,"key")}:{inner_expr(1)} ' \
-                               f'for key, value in m.items()}} ' \
-                               f'for m in {value_name}])'
+                        return (
+                            f"collections.ChainMap("
+                            f'*[{{{inner_expr(0,"key")}:{inner_expr(1)} '
+                            f"for key, value in m.items()}} "
+                            f"for m in {value_name}])"
+                        )
             elif issubclass(origin_type, typing.Mapping):
                 if ftype is dict:
                     raise UnserializableField(
-                        fname, ftype, parent,
-                        'Use typing.Dict[KT,VT] or Mapping[KT,VT] instead'
+                        fname,
+                        ftype,
+                        parent,
+                        "Use typing.Dict[KT,VT] or Mapping[KT,VT] instead",
                     )
                 elif is_generic(ftype):
                     if is_dataclass(args[0]):
                         raise UnserializableDataError(
-                            'Mappings with dataclasses as keys '
-                            'are not supported by mashumaro')
+                            "Mappings with dataclasses as keys "
+                            "are not supported by mashumaro"
+                        )
                     else:
-                        return f'{{{inner_expr(0,"key")}: {inner_expr(1)} ' \
-                               f'for key, value in {value_name}.items()}}'
+                        return (
+                            f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
+                            f"for key, value in {value_name}.items()}}"
+                        )
             elif issubclass(origin_type, typing.ByteString):
                 if origin_type is bytes:
-                    return f'{value_name} if use_bytes else ' \
-                           f'decodebytes({value_name}.encode())'
+                    return (
+                        f"{value_name} if use_bytes else "
+                        f"decodebytes({value_name}.encode())"
+                    )
                 elif origin_type is bytearray:
-                    return f'bytearray({value_name} if use_bytes else ' \
-                           f'decodebytes({value_name}.encode()))'
+                    return (
+                        f"bytearray({value_name} if use_bytes else "
+                        f"decodebytes({value_name}.encode()))"
+                    )
             elif issubclass(origin_type, str):
                 return value_name
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
-                    return f'[{inner_expr()} for value in {value_name}]'
+                    return f"[{inner_expr()} for value in {value_name}]"
         elif issubclass(origin_type, os.PathLike):
             if issubclass(origin_type, pathlib.PosixPath):
-                return f'pathlib.PosixPath({value_name})'
+                return f"pathlib.PosixPath({value_name})"
             elif issubclass(origin_type, pathlib.WindowsPath):
-                return f'pathlib.WindowsPath({value_name})'
+                return f"pathlib.WindowsPath({value_name})"
             elif issubclass(origin_type, pathlib.Path):
-                return f'pathlib.Path({value_name})'
+                return f"pathlib.Path({value_name})"
             elif issubclass(origin_type, pathlib.PurePosixPath):
-                return f'pathlib.PurePosixPath({value_name})'
+                return f"pathlib.PurePosixPath({value_name})"
             elif issubclass(origin_type, pathlib.PureWindowsPath):
-                return f'pathlib.PureWindowsPath({value_name})'
+                return f"pathlib.PureWindowsPath({value_name})"
             elif issubclass(origin_type, pathlib.PurePath):
-                return f'pathlib.PurePath({value_name})'
+                return f"pathlib.PurePath({value_name})"
             elif origin_type is os.PathLike:
-                return f'pathlib.PurePath({value_name})'
+                return f"pathlib.PurePath({value_name})"
             else:
-                return f'{type_name(origin_type)}({value_name})'
+                return f"{type_name(origin_type)}({value_name})"
         elif issubclass(origin_type, enum.Enum):
-            return f'{value_name} if use_enum ' \
-                   f'else {type_name(origin_type)}({value_name})'
+            return (
+                f"{value_name} if use_enum "
+                f"else {type_name(origin_type)}({value_name})"
+            )
         elif origin_type is int:
-            return f'int({value_name})'
+            return f"int({value_name})"
         elif origin_type is float:
-            return f'float({value_name})'
+            return f"float({value_name})"
         elif origin_type in (bool, NoneType):
             return value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
-            return f'{value_name} if use_datetime else ' \
-                   f'datetime.{origin_type.__name__}.' \
-                   f'fromisoformat({value_name})'
+            return (
+                f"{value_name} if use_datetime else "
+                f"datetime.{origin_type.__name__}."
+                f"fromisoformat({value_name})"
+            )
         elif origin_type is datetime.timedelta:
-            return f'datetime.timedelta(seconds={value_name})'
+            return f"datetime.timedelta(seconds={value_name})"
         elif origin_type is datetime.timezone:
-            return f'parse_timezone({value_name})'
+            return f"parse_timezone({value_name})"
         elif origin_type is uuid.UUID:
-            return f'uuid.UUID({value_name})'
+            return f"uuid.UUID({value_name})"
         elif origin_type is Decimal:
-            return f'Decimal({value_name})'
+            return f"Decimal({value_name})"
         elif origin_type is Fraction:
-            return f'Fraction({value_name})'
+            return f"Fraction({value_name})"
 
         raise UnserializableField(fname, ftype, parent)

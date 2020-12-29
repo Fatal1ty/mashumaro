@@ -1,11 +1,4 @@
-from typing import (
-    List,
-    Deque,
-    Tuple,
-    Set,
-    ChainMap,
-    Mapping,
-)
+from typing import ChainMap, Deque, List, Mapping, Set, Tuple
 
 
 def same_types(first, second):
@@ -14,12 +7,14 @@ def same_types(first, second):
     elif isinstance(first, ChainMap):
         return all(map(lambda x: same_types(*x), zip(first.maps, second.maps)))
     elif isinstance(first, Mapping):
-        return (all(map(lambda x: same_types(*x),
-                        zip(first.keys(), second.keys()))) and
-                all(map(lambda x: same_types(*x),
-                        zip(first.values(), second.values()))))
+        return all(
+            map(lambda x: same_types(*x), zip(first.keys(), second.keys()))
+        ) and all(
+            map(lambda x: same_types(*x), zip(first.values(), second.values()))
+        )
     elif isinstance(first, Set):
-        return all(map(lambda x: same_types(*x),
-                       zip(sorted(first), sorted(second))))
+        return all(
+            map(lambda x: same_types(*x), zip(sorted(first), sorted(second)))
+        )
     else:
         return type(first) is type(second)

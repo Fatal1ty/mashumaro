@@ -1,14 +1,14 @@
-from os import PathLike
-from enum import Enum, IntEnum, Flag, IntFlag
 from dataclasses import dataclass
+from enum import Enum, Flag, IntEnum, IntFlag
+from os import PathLike
 
 from mashumaro import DataClassDictMixin
 from mashumaro.types import SerializableType
 
 
 class MyEnum(Enum):
-    a = 'letter a'
-    b = 'letter b'
+    a = "letter a"
+    b = "letter b"
 
 
 class MyIntEnum(IntEnum):
@@ -40,11 +40,11 @@ class MutableString(SerializableType):
         return str(self)
 
     @classmethod
-    def _deserialize(cls, value: str) -> 'MutableString':
+    def _deserialize(cls, value: str) -> "MutableString":
         return MutableString(value)
 
     def __str__(self):
-        return ''.join(self.characters)
+        return "".join(self.characters)
 
     def __eq__(self, other):
         return self.characters == other.characters
@@ -52,7 +52,7 @@ class MutableString(SerializableType):
 
 class CustomPath(PathLike):
     def __init__(self, *args: str):
-        self._path = '/'.join(args)
+        self._path = "/".join(args)
 
     def __fspath__(self):
         return self._path

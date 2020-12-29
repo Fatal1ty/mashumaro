@@ -1,10 +1,12 @@
-from typing import Mapping
+from typing import Mapping, Type, TypeVar
 
 from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
+T = TypeVar("T", bound="DataClassDictMixin")
+
 
 class DataClassDictMixin:
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls: Type[T], **kwargs):
         builder = CodeBuilder(cls)
         exc = None
         try:
@@ -19,22 +21,22 @@ class DataClassDictMixin:
             raise exc
 
     def to_dict(
-            self,
-            use_bytes: bool = False,
-            use_enum: bool = False,
-            use_datetime: bool = False) -> dict:
+        self: T,
+        use_bytes: bool = False,
+        use_enum: bool = False,
+        use_datetime: bool = False,
+    ) -> dict:
         pass
 
     @classmethod
     def from_dict(
-            cls,
-            d: Mapping,
-            use_bytes: bool = False,
-            use_enum: bool = False,
-            use_datetime: bool = False) -> 'DataClassDictMixin':
+        cls: Type[T],
+        d: Mapping,
+        use_bytes: bool = False,
+        use_enum: bool = False,
+        use_datetime: bool = False,
+    ) -> T:
         pass
 
 
-__all__ = [
-    'DataClassDictMixin'
-]
+__all__ = ["DataClassDictMixin"]

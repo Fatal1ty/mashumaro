@@ -1,15 +1,16 @@
 import json
-from typing import Dict, Union, Any, List
 from dataclasses import dataclass
+from typing import Any, Dict, List, Union
 
 from mashumaro import DataClassJSONMixin
-
 
 Rule = Dict[str, str]
 RemappingRules = Dict[str, Union[str, Rule]]
 
 
-def object_remapper(d: Dict[str, Any], rules: RemappingRules) -> Dict[str, Any]:
+def object_remapper(
+    d: Dict[str, Any], rules: RemappingRules
+) -> Dict[str, Any]:
     result = {}
     for key, value in d.items():
         mapped_key = rules.get(key, key)
@@ -28,8 +29,9 @@ def remapper(data, rules):
         return [object_remapper(d, rules) for d in data]
 
 
-def remap_decoder(data: Union[str, bytes, bytearray],
-                  rules: RemappingRules) -> Dict[Any, Any]:
+def remap_decoder(
+    data: Union[str, bytes, bytearray], rules: RemappingRules
+) -> Dict[Any, Any]:
     d = json.loads(data)
     return remapper(d, rules)
 
@@ -67,16 +69,8 @@ encoded_data = json.dumps(
         "ID": 1,
         "USERNAME": "user",
         "EMAIL": "example@example.org",
-        "COMPANY": {
-            "ID": 1,
-            "NAME": "company1"
-        },
-        "CONTRACTORS": [
-            {
-                "ID": 2,
-                "NAME": "company2"
-            }
-        ]
+        "COMPANY": {"ID": 1, "NAME": "company1"},
+        "CONTRACTORS": [{"ID": 2, "NAME": "company2"}],
     }
 )
 
@@ -85,11 +79,12 @@ user = User(
     username="user",
     email="example@example.org",
     company=Company(id=1, name="company1"),
-    contractors=[Company(id=2, name="company2")]
+    contractors=[Company(id=2, name="company2")],
 )
 
-assert User.from_json(
-    data=encoded_data,
-    decoder=remap_decoder,
-    rules=User.__remapping__
-) == user
+assert (
+    User.from_json(
+        data=encoded_data, decoder=remap_decoder, rules=User.__remapping__
+    )
+    == user
+)
