@@ -5,6 +5,7 @@ import yaml
 
 from mashumaro.serializer.base import DataClassDictMixin
 
+
 DEFAULT_DICT_PARAMS = {
     "use_bytes": False,
     "use_enum": False,

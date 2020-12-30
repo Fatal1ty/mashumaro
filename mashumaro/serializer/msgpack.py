@@ -7,6 +7,7 @@ from typing_extensions import Protocol
 
 from mashumaro.serializer.base import DataClassDictMixin
 
+
 DEFAULT_DICT_PARAMS = {
     "use_bytes": True,
     "use_enum": False,
@@ -17,13 +18,11 @@ T = TypeVar("T", bound="DataClassMessagePackMixin")
 
 
 class Encoder(Protocol):
-    def __call__(self, o, **kwargs) -> EncodedData:
-        pass
+    def __call__(self, o, **kwargs) -> EncodedData: ...
 
 
 class Decoder(Protocol):
-    def __call__(self, packed: EncodedData, **kwargs) -> Dict[Any, Any]:
-        pass
+    def __call__(self, packed: EncodedData, **kwargs) -> Dict[Any, Any]: ...
 
 
 class DataClassMessagePackMixin(DataClassDictMixin):

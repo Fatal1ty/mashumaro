@@ -6,6 +6,7 @@ from typing_extensions import Protocol
 
 from mashumaro.serializer.base import DataClassDictMixin
 
+
 DEFAULT_DICT_PARAMS = {
     "use_bytes": False,
     "use_enum": False,
@@ -16,13 +17,11 @@ T = TypeVar("T", bound="DataClassJSONMixin")
 
 
 class Encoder(Protocol):
-    def __call__(self, obj, **kwargs) -> EncodedData:
-        pass
+    def __call__(self, obj, **kwargs) -> EncodedData: ...
 
 
 class Decoder(Protocol):
-    def __call__(self, s: EncodedData, **kwargs) -> Dict[Any, Any]:
-        pass
+    def __call__(self, s: EncodedData, **kwargs) -> Dict[Any, Any]: ...
 
 
 class DataClassJSONMixin(DataClassDictMixin):
