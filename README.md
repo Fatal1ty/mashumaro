@@ -22,7 +22,11 @@ Table of contents
 * [Usage example](#usage-example)
 * [How does it work?](#how-does-it-work)
 * [API](#api)
-* [User defined classes](#user-defined-classes)
+* [Customization](#customization)
+    * [User defined classes](#user-defined-classes)
+        * [Serializable Interface](#serializable-interface)
+        * [Serialization Strategy](#serialization-strategy)
+    * [Using field metadata](#using-field-metadata)
 
 Installation
 --------------------------------------------------------------------------------
@@ -79,7 +83,7 @@ for common built-in types:
 * `bytes`
 * `bytearray`
 
-for built-in datetime oriented types:
+for built-in datetime oriented types (see [more](#using-field-metadata) details):
 * `datetime`
 * `date`
 * `time`
@@ -103,7 +107,6 @@ for other less popular built-in types:
 
 for specific types like *NoneType*, nested dataclasses itself and
 even [user defined classes](#user-defined-classes).
-
 
 Usage example
 --------------------------------------------------------------------------------
@@ -237,11 +240,17 @@ dict_params    # dictionary of parameter values passed underhood to `from_dict` 
 decoder_kwargs # keyword arguments for decoder function
 ```
 
-User defined classes
+Customization
 --------------------------------------------------------------------------------
 
+### User defined classes
+
 You can define and use custom classes with *mashumaro*. There are two options
-for customization. The first one is useful when you already have the separate
+for customization.
+
+#### Serializable Interface
+
+The first one is useful when you already have the separate
 custom class and you want to serialize instances of it with *mashumaro*.
 All what you need is to implement *SerializableType* interface:
 
@@ -286,6 +295,8 @@ dictionary = new_year.to_dict()
 assert Holiday.from_dict(dictionary) == new_year
 ```
 
+#### Serialization Strategy
+
 The second option is useful when you want to change the serialization behaviour
 for a class depending on some defined parameters. For this case you can create
 the special class implementing *SerializationStrategy* interface:
@@ -322,11 +333,30 @@ dictionary = formats.to_dict()
 assert DateTimeFormats.from_dict(dictionary) == formats
 ```
 
+### Using field metadata
+
+In some cases creating a new class just for one little thing could be
+excessive. You can configure some serialization aspects using
+`field`'s `metadata` attribute:
+
+```python
+class DataClass(DataClassDictMixin):
+    x: datetime = field(metadata={"engine": "ciso8601"})
+```
+
+At this time there are next options to choose from:
+| Option name | Value type    | Description                   | Applicable field types     | Possible values        |
+| ----------- |:-------------:|:------------------------------|:---------------------------|:-----------------------|
+| `engine`    | `str`         | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way for most cases, but you can choose an alternative. | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum)|
+
+More options are on the way.
+
 TODO
 --------------------------------------------------------------------------------
 
+* Add hooks
+* add Union support (try to match types on each call)
 * write benchmarks
 * add optional validation
-* add Union support (try to match types on each call)
 * write custom useful types such as URL, Email etc
 * write documentation
