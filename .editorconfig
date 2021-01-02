@@ -16,7 +16,7 @@ max_line_length=79
 [Makefile]
 indent_style = tab
 
-[*.{yml,yaml,feature,json}]
+[*.{yml,yaml,feature,json,toml}]
 indent_size = 2
 
 [*.{tsv,csv}]
