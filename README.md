@@ -349,7 +349,8 @@ At this time there are next options to choose from:
 | ----------- |:-------------:|:------------------------------|:---------------------------|:-----------------------|
 | `engine`    | `str`         | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum)|
 
-More options are on the way.
+More options are on the way. If you know which option would be useful for many,
+please don't hesitate to create an issue or pull request.
 
 TODO
 --------------------------------------------------------------------------------
