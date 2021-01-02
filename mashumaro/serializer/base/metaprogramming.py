@@ -100,13 +100,14 @@ class CodeBuilder:
                 if field.default is not MISSING:
                     d[name] = field.default
                 else:
-                    d[name] = field.default_factory
+                    # https://github.com/python/mypy/issues/6910
+                    d[name] = field.default_factory  # type: ignore
             else:
                 d[name] = field
         return d
 
     @property
-    def metadatas(self) -> typing.Dict[str, typing.Dict[str, typing.Any]]:
+    def metadatas(self) -> typing.Dict[str, typing.Mapping[str, typing.Any]]:
         d = {}
         for name in self.__get_field_types(recursive=False):
             field = self.namespace.get(name, MISSING)
@@ -600,21 +601,26 @@ class CodeBuilder:
         elif origin_type in (bool, NoneType):
             return value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
-            if origin_type is datetime.datetime:
-                if metadata is not None:
-                    engine = metadata.get("engine")
-                    if engine == "ciso8601":
-                        self.ensure_module_imported("ciso8601")
-                        return (
-                            f"{value_name} if use_datetime else "
-                            f"ciso8601.parse_datetime({value_name})"
-                        )
-                    elif engine == "pendulum":
-                        self.ensure_module_imported("pendulum")
-                        return (
-                            f"{value_name} if use_datetime else "
-                            f"pendulum.parse({value_name})"
-                        )
+            if metadata is not None:
+                engine = metadata.get("engine")
+                datetime_parser: typing.Optional[str] = None
+                if engine == "ciso8601":
+                    self.ensure_module_imported("ciso8601")
+                    datetime_parser = "ciso8601.parse_datetime"
+                elif engine == "pendulum":
+                    self.ensure_module_imported("pendulum")
+                    datetime_parser = "pendulum.parse"
+                if datetime_parser:
+                    if origin_type is datetime.date:
+                        suffix = ".date()"
+                    elif origin_type is datetime.time:
+                        suffix = ".time()"
+                    else:
+                        suffix = ""
+                    return (
+                        f"{value_name} if use_datetime else "
+                        f"{datetime_parser}({value_name}){suffix}"
+                    )
             return (
                 f"{value_name} if use_datetime else "
                 f"datetime.{origin_type.__name__}."
