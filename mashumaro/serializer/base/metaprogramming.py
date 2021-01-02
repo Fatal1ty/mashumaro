@@ -110,7 +110,7 @@ class CodeBuilder:
         d = {}
         for name in self.__get_field_types(recursive=False):
             field = self.namespace.get(name, MISSING)
-            if field is not MISSING:
+            if isinstance(field, Field):
                 if field.metadata is not MISSING:
                     d[name] = field.metadata
                 else:
