@@ -1,10 +1,9 @@
 from types import MappingProxyType
-from typing import Callable, Dict, Mapping, Optional, Type, TypeVar, Union
+from typing import Callable, Dict, Mapping, Type, TypeVar, Union
 
 import yaml
 
 from mashumaro.serializer.base import DataClassDictMixin
-
 
 DEFAULT_DICT_PARAMS = {
     "use_bytes": False,
