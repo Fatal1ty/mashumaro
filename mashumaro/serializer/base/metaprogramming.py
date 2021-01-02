@@ -14,7 +14,7 @@ from base64 import decodebytes, encodebytes  # noqa
 from contextlib import contextmanager, suppress
 
 # noinspection PyProtectedMember
-from dataclasses import _FIELDS, MISSING, is_dataclass, Field
+from dataclasses import _FIELDS, MISSING, Field, is_dataclass
 from decimal import Decimal
 from fractions import Fraction
 
@@ -50,23 +50,23 @@ INITIAL_MODULES = get_imported_module_names()
 class CodeBuilder:
     def __init__(self, cls):
         self.cls = cls
-        self.lines = None  # type: typing.Optional[typing.List[str]]
-        self.modules = None  # type: typing.Optional[typing.Set[str]]
-        self.globals = None  # type: typing.Optional[typing.Set[str]]
-        self._current_indent = None  # type: typing.Optional[str]
+        self.lines: typing.List[str] = []
+        self.modules: typing.Set[str] = set()
+        self.globals: typing.Set[str] = set()
+        self._current_indent: str = ""
 
-    def reset(self):
+    def reset(self) -> None:
         self.lines = []
         self.modules = INITIAL_MODULES.copy()
         self.globals = set()
         self._current_indent = ""
 
     @property
-    def namespace(self):
+    def namespace(self) -> typing.Dict[typing.Any, typing.Any]:
         return self.cls.__dict__
 
     @property
-    def annotations(self):
+    def annotations(self) -> typing.Dict[str, typing.Any]:
         return self.namespace.get("__annotations__", {})
 
     def __get_field_types(
@@ -105,22 +105,24 @@ class CodeBuilder:
                 d[name] = field
         return d
 
-    def _add_type_modules(self, *types_):
+    @property
+    def metadatas(self) -> typing.Dict[str, typing.Dict[str, typing.Any]]:
+        d = {}
+        for name in self.__get_field_types(recursive=False):
+            field = self.namespace.get(name, MISSING)
+            if field is not MISSING:
+                if field.metadata is not MISSING:
+                    d[name] = field.metadata
+                else:
+                    d[name] = field.default_factory
+        return d
+
+    def _add_type_modules(self, *types_) -> None:
         for t in types_:
             module = getattr(t, "__module__", None)
             if not module:
-                continue
-            if module not in self.modules:
-                self.modules.add(module)
-                self.add_line(f"if '{module}' not in globals():")
-                with self.indent():
-                    self.add_line(f"import {module}")
-                root_module = module.split(".")[0]
-                if root_module not in self.globals:
-                    self.globals.add(root_module)
-                    self.add_line("else:")
-                    with self.indent():
-                        self.add_line(f"global {root_module}")
+                return
+            self.ensure_module_imported(module)
             args = getattr(t, "__args__", ())
             if args:
                 self._add_type_modules(*args)
@@ -128,21 +130,34 @@ class CodeBuilder:
             if constraints:
                 self._add_type_modules(*constraints)
 
-    def add_line(self, line):
+    def ensure_module_imported(self, module: str) -> None:
+        if module not in self.modules:
+            self.modules.add(module)
+            self.add_line(f"if '{module}' not in globals():")
+            with self.indent():
+                self.add_line(f"import {module}")
+            root_module = module.split(".")[0]
+            if root_module not in self.globals:
+                self.globals.add(root_module)
+                self.add_line("else:")
+                with self.indent():
+                    self.add_line(f"global {root_module}")
+
+    def add_line(self, line) -> None:
         self.lines.append(f"{self._current_indent}{line}")
 
     @contextmanager
-    def indent(self):
+    def indent(self) -> typing.Generator[None, None, None]:
         self._current_indent += " " * 4
         try:
             yield
         finally:
             self._current_indent = self._current_indent[:-4]
 
-    def compile(self):
+    def compile(self) -> None:
         exec("\n".join(self.lines), globals(), self.__dict__)
 
-    def add_from_dict(self):
+    def add_from_dict(self) -> None:
 
         self.reset()
         self.add_line("@classmethod")
@@ -155,6 +170,7 @@ class CodeBuilder:
             with self.indent():
                 self.add_line("kwargs = {}")
                 for fname, ftype in self.field_types.items():
+                    metadata = self.metadatas.get(fname)
                     self._add_type_modules(ftype)
                     self.add_line(f"value = d.get('{fname}', MISSING)")
                     self.add_line("if value is None:")
@@ -178,7 +194,10 @@ class CodeBuilder:
                             self.add_line("else:")
                             with self.indent():
                                 unpacked_value = self._unpack_field_value(
-                                    fname, ftype, self.cls
+                                    fname=fname,
+                                    ftype=ftype,
+                                    parent=self.cls,
+                                    metadata=metadata,
                                 )
                                 self.add_line("try:")
                                 with self.indent():
@@ -201,7 +220,10 @@ class CodeBuilder:
                             self.add_line("if value is not MISSING:")
                             with self.indent():
                                 unpacked_value = self._unpack_field_value(
-                                    fname, ftype, self.cls
+                                    fname=fname,
+                                    ftype=ftype,
+                                    parent=self.cls,
+                                    metadata=metadata,
                                 )
                                 self.add_line("try:")
                                 with self.indent():
@@ -236,7 +258,7 @@ class CodeBuilder:
         self.add_line("setattr(cls, 'from_dict', from_dict)")
         self.compile()
 
-    def add_to_dict(self):
+    def add_to_dict(self) -> None:
 
         self.reset()
         self.add_line(
@@ -404,7 +426,9 @@ class CodeBuilder:
 
         raise UnserializableField(fname, ftype, parent)
 
-    def _unpack_field_value(self, fname, ftype, parent, value_name="value"):
+    def _unpack_field_value(
+        self, fname, ftype, parent, value_name="value", metadata=None
+    ):
 
         if is_dataclass(ftype):
             return (
@@ -579,6 +603,21 @@ class CodeBuilder:
         elif origin_type in (bool, NoneType):
             return value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
+            if origin_type is datetime.datetime:
+                if metadata is not None:
+                    engine = metadata.get("engine")
+                    if engine == "ciso8601":
+                        self.ensure_module_imported("ciso8601")
+                        return (
+                            f"{value_name} if use_datetime else "
+                            f"ciso8601.parse_datetime({value_name})"
+                        )
+                    elif engine == "pendulum":
+                        self.ensure_module_imported("pendulum")
+                        return (
+                            f"{value_name} if use_datetime else "
+                            f"pendulum.parse({value_name})"
+                        )
             return (
                 f"{value_name} if use_datetime else "
                 f"datetime.{origin_type.__name__}."
