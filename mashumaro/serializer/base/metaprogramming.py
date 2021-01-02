@@ -14,7 +14,7 @@ from base64 import decodebytes, encodebytes  # noqa
 from contextlib import contextmanager, suppress
 
 # noinspection PyProtectedMember
-from dataclasses import _FIELDS, MISSING, is_dataclass
+from dataclasses import _FIELDS, MISSING, is_dataclass, Field
 from decimal import Decimal
 from fractions import Fraction
 
@@ -69,7 +69,9 @@ class CodeBuilder:
     def annotations(self):
         return self.namespace.get("__annotations__", {})
 
-    def __get_fields(self, recursive=True):
+    def __get_field_types(
+        self, recursive=True
+    ) -> typing.Dict[str, typing.Any]:
         fields = {}
         for fname, ftype in typing.get_type_hints(self.cls).items():
             if is_class_var(ftype) or is_init_var(ftype):
@@ -79,11 +81,11 @@ class CodeBuilder:
         return fields
 
     @property
-    def fields(self):
-        return self.__get_fields()
+    def field_types(self) -> typing.Dict[str, typing.Any]:
+        return self.__get_field_types()
 
     @property
-    def defaults(self):
+    def defaults(self) -> typing.Dict[str, typing.Any]:
         d = {}
         for ancestor in self.cls.__mro__[-1:0:-1]:
             if is_dataclass(ancestor):
@@ -92,8 +94,15 @@ class CodeBuilder:
                         d[field.name] = field.default
                     else:
                         d[field.name] = field.default_factory
-        for name in self.__get_fields(recursive=False):
-            d[name] = self.namespace.get(name, MISSING)
+        for name in self.__get_field_types(recursive=False):
+            field = self.namespace.get(name, MISSING)
+            if isinstance(field, Field):
+                if field.default is not MISSING:
+                    d[name] = field.default
+                else:
+                    d[name] = field.default_factory
+            else:
+                d[name] = field
         return d
 
     def _add_type_modules(self, *types_):
@@ -145,7 +154,7 @@ class CodeBuilder:
             self.add_line("try:")
             with self.indent():
                 self.add_line("kwargs = {}")
-                for fname, ftype in self.fields.items():
+                for fname, ftype in self.field_types.items():
                     self._add_type_modules(ftype)
                     self.add_line(f"value = d.get('{fname}', MISSING)")
                     self.add_line("if value is None:")
@@ -236,7 +245,7 @@ class CodeBuilder:
         )
         with self.indent():
             self.add_line("kwargs = {}")
-            for fname, ftype in self.fields.items():
+            for fname, ftype in self.field_types.items():
                 self.add_line(f"value = getattr(self, '{fname}')")
                 self.add_line("if value is None:")
                 with self.indent():

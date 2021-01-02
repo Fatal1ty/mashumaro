@@ -729,6 +729,15 @@ def test_dataclass_with_field_and_default():
     assert DataClass().to_dict() == {"x": 1}
 
 
+def test_dataclass_with_field_and_no_default():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(metadata={})
+
+    with pytest.raises(MissingField):
+        assert DataClass.from_dict({})
+
+
 def test_dataclass_with_field_and_default_factory():
     @dataclass
     class DataClass(DataClassDictMixin):
