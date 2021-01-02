@@ -111,10 +111,7 @@ class CodeBuilder:
         for name in self.__get_field_types(recursive=False):
             field = self.namespace.get(name, MISSING)
             if isinstance(field, Field):
-                if field.metadata is not MISSING:
-                    d[name] = field.metadata
-                else:
-                    d[name] = field.default_factory
+                d[name] = field.metadata
         return d
 
     def _add_type_modules(self, *types_) -> None:
