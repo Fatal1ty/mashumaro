@@ -355,7 +355,7 @@ please don't hesitate to create an issue or pull request.
 TODO
 --------------------------------------------------------------------------------
 
-* Add hooks
+* add hooks
 * add Union support (try to match types on each call)
 * write benchmarks
 * add optional validation
