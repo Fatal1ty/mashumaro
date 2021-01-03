@@ -602,21 +602,46 @@ class CodeBuilder:
             return value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
             if metadata is not None:
-                engine = metadata.get("engine")
+                deserialize = metadata.get("deserialize")
                 datetime_parser: typing.Optional[str] = None
-                if engine == "ciso8601":
+                if deserialize == "ciso8601":
                     self.ensure_module_imported("ciso8601")
                     datetime_parser = "ciso8601.parse_datetime"
-                elif engine == "pendulum":
+                elif deserialize == "pendulum":
                     self.ensure_module_imported("pendulum")
                     datetime_parser = "pendulum.parse"
-                if datetime_parser:
-                    if origin_type is datetime.date:
-                        suffix = ".date()"
-                    elif origin_type is datetime.time:
-                        suffix = ".time()"
-                    else:
-                        suffix = ""
+                elif callable(deserialize):
+                    self.ensure_module_imported(deserialize.__module__)
+                    try:
+                        datetime_parser = (
+                            f"{deserialize.__module__}."
+                            f"{deserialize.__qualname__}"
+                        )
+                    except AttributeError:
+                        if hasattr(deserialize, "__dict__"):
+                            raise UnserializableField(
+                                fname,
+                                ftype,
+                                parent,
+                                "Using callable class instances in field "
+                                "metadata deserialize option isn't supported "
+                                "yet",
+                            )
+                if not datetime_parser:
+                    raise UnserializableField(
+                        fname,
+                        ftype,
+                        parent,
+                        f"Unsupported field metadata deserialize "
+                        f"option value: {deserialize}",
+                    )
+                else:
+                    suffix = ""
+                    if not callable(deserialize):
+                        if origin_type is datetime.date:
+                            suffix = ".date()"
+                        elif origin_type is datetime.time:
+                            suffix = ".time()"
                     return (
                         f"{value_name} if use_datetime else "
                         f"{datetime_parser}({value_name}){suffix}"
