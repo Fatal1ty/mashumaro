@@ -1,6 +1,11 @@
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, date, time
+from datetime import date, datetime, time, timezone
+
+import ciso8601
+import pytest
+
 from mashumaro import DataClassDictMixin
+from mashumaro.exceptions import UnserializableField
 
 
 def test_ciso8601_datetime_parser():
@@ -61,3 +66,39 @@ def test_pendulum_time_parser():
     should_be = DataClass(x=time(3, 4, 5))
     instance = DataClass.from_dict({"x": "2009-W01 030405"})
     assert instance == should_be
+
+
+def test_global_function_datetime_parser():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: datetime = field(
+            metadata={"deserialize": ciso8601.parse_datetime_as_naive}
+        )
+
+    should_be = DataClass(x=datetime(2021, 1, 2, 3, 4, 5))
+    instance = DataClass.from_dict({"x": "2021-01-02T03:04:05+03:00"})
+    assert instance == should_be
+
+
+class DateTimeParser:
+    @classmethod
+    def parse(cls, s: str) -> datetime:
+        return datetime.fromisoformat(s)
+
+
+def test_classmethod_datetime_parser():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: datetime = field(metadata={"deserialize": DateTimeParser.parse})
+
+    should_be = DataClass(x=datetime(2021, 1, 2, 3, 4, 5))
+    instance = DataClass.from_dict({"x": "2021-01-02T03:04:05"})
+    assert instance == should_be
+
+
+def test_unsupported_datetime_parser_engine():
+    with pytest.raises(UnserializableField):
+
+        @dataclass
+        class DataClass(DataClassDictMixin):
+            x: datetime = field(metadata={"deserialize": "unsupported"})
