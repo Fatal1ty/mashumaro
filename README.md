@@ -83,7 +83,7 @@ for common built-in types:
 * `bytes`
 * `bytearray`
 
-for built-in datetime oriented types (see [more](#using-field-metadata) details):
+for built-in datetime oriented types (see [more](#deserialize-option) details):
 * `datetime`
 * `date`
 * `time`
