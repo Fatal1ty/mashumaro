@@ -341,6 +341,11 @@ excessive. You can configure some serialization aspects using
 `field`'s `metadata` attribute:
 
 ```python
+from datetime import datetime
+from dataclasses import field
+from mashumaro import DataClassDictMixin
+import ciso8601
+
 class DataClassA(DataClassDictMixin):
     x: datetime = field(
         metadata={"deserialize": "ciso8601"}
