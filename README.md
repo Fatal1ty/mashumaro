@@ -27,6 +27,7 @@ Table of contents
         * [Serializable Interface](#serializable-interface)
         * [Serialization Strategy](#serialization-strategy)
     * [Using field metadata](#using-field-metadata)
+        * [`deserialize` option](#deserialize-option)
 
 Installation
 --------------------------------------------------------------------------------
