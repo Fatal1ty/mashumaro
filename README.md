@@ -344,10 +344,22 @@ class DataClass(DataClassDictMixin):
     x: datetime = field(metadata={"deserialize": "ciso8601"})
 ```
 
-At this time there are next options to choose from:
-| Option name      | Value type    | Description                   | Applicable field types     | Possible values        |
-| ---------------- |:-------------:|:------------------------------|:---------------------------|:-----------------------|
-| `deserialize`    | `str`         | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum)|
+Next section describes all supported options.
+
+#### `deserialize` option
+
+This option allows you to change the default deserialization method. When using
+this option, the deserialization behaviour depends on what type of value the
+option has. It could be either `Callable[[Any], Any]` or `str`.
+`Callable[[Any], Any]` is a generic way to specify a global function,
+classmethod or a method of a class instance. `str` value sets the engine to use
+for deserialization. Keep in mind that all possible engines depend on the
+field type that this option is used with. At this moment there are next
+deserialization engines to choose from:
+
+| Applicable field types     | Supported engines        | Description
+|:-------------------------- |:-------------------------|:------------------------------|
+| `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
 
 More options are on the way. If you know which option would be useful for many,
 please don't hesitate to create an issue or pull request.
