@@ -8,6 +8,17 @@ from mashumaro import DataClassDictMixin
 from mashumaro.exceptions import UnserializableField
 
 
+class DateTimeParser:
+    @classmethod
+    def parse(cls, s: str) -> datetime:
+        return datetime.fromisoformat(s)
+
+
+class CallableDateTimeParser:
+    def __call__(self, s):  # pragma no cover
+        pass
+
+
 def test_ciso8601_datetime_parser():
     @dataclass
     class DataClass(DataClassDictMixin):
@@ -78,17 +89,6 @@ def test_global_function_datetime_parser():
     should_be = DataClass(x=datetime(2021, 1, 2, 3, 4, 5))
     instance = DataClass.from_dict({"x": "2021-01-02T03:04:05+03:00"})
     assert instance == should_be
-
-
-class DateTimeParser:
-    @classmethod
-    def parse(cls, s: str) -> datetime:
-        return datetime.fromisoformat(s)
-
-
-class CallableDateTimeParser:
-    def __call__(self, s: str) -> datetime:
-        return datetime.fromisoformat(s)
 
 
 def test_classmethod_datetime_parser():
