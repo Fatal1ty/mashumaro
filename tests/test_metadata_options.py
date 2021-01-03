@@ -109,10 +109,17 @@ def test_unsupported_datetime_parser_engine():
             x: datetime = field(metadata={"deserialize": "unsupported"})
 
 
-def test_callable_class_instance_datetime_parser_engine():
+def test_callable_class_instance_datetime_parser():
     instance = CallableDateTimeParser()
     with pytest.raises(UnserializableField):
 
         @dataclass
         class DataClass(DataClassDictMixin):
             x: datetime = field(metadata={"deserialize": instance})
+
+
+def test_lambda_datetime_parser():
+    with pytest.raises(UnserializableField):
+        @dataclass
+        class DataClass(DataClassDictMixin):
+            x: datetime = field(metadata={"deserialize": lambda x: x})
