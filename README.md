@@ -342,10 +342,14 @@ excessive. You can configure some serialization aspects using
 
 ```python
 class DataClassA(DataClassDictMixin):
-    x: datetime = field(metadata={"deserialize": "ciso8601"})
+    x: datetime = field(
+        metadata={"deserialize": "ciso8601"}
+    )
 
 class DataClassB(DataClassDictMixin):
-    x: datetime = field(metadata={"deserialize": ciso8601.parse_datetime_as_naive})
+    x: datetime = field(
+        metadata={"deserialize": ciso8601.parse_datetime_as_naive}
+    )
 ```
 
 Next section describes all supported options.
