@@ -361,7 +361,7 @@ deserialization engines to choose from:
 |:-------------------------- |:-------------------------|:------------------------------|
 | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
 
-:warning: Using callables as the option value could be problematic in some
+> :warning: Using callables as the option value could be problematic in some
 cases. If you're experiencing difficulties, please create an issue or pull
 request.
 
