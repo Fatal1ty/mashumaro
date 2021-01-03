@@ -86,6 +86,11 @@ class DateTimeParser:
         return datetime.fromisoformat(s)
 
 
+class CallableDateTimeParser:
+    def __call__(self, s: str) -> datetime:
+        return datetime.fromisoformat(s)
+
+
 def test_classmethod_datetime_parser():
     @dataclass
     class DataClass(DataClassDictMixin):
@@ -102,3 +107,12 @@ def test_unsupported_datetime_parser_engine():
         @dataclass
         class DataClass(DataClassDictMixin):
             x: datetime = field(metadata={"deserialize": "unsupported"})
+
+
+def test_callable_class_instance_datetime_parser_engine():
+    instance = CallableDateTimeParser()
+    with pytest.raises(UnserializableField):
+
+        @dataclass
+        class DataClass(DataClassDictMixin):
+            x: datetime = field(metadata={"deserialize": instance})
