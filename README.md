@@ -334,6 +334,10 @@ dictionary = formats.to_dict()
 assert DateTimeFormats.from_dict(dictionary) == formats
 ```
 
+> ⚠️ Since PEP-563 [breaks](https://github.com/Fatal1ty/mashumaro/issues/10)
+> `SerializationStrategy`, it will be implemented differently sometime in a
+> future version 2.x.
+
 ### Using field metadata
 
 In some cases creating a new class just for one little thing could be
