@@ -24,7 +24,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install .
-        pip install pytest-cov coveralls
+        pip install -r requirements-dev.txt
     - name: Run tests with coverage
       run: pytest --cov=.
     - name: Upload Coverage
@@ -48,7 +48,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install .
-        pip install pytest-cov coveralls
+        pip install -r requirements-dev.txt
     - name: Run tests with coverage
       run: pytest --cov=.
     - name: Upload Coverage

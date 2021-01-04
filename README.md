@@ -22,7 +22,12 @@ Table of contents
 * [Usage example](#usage-example)
 * [How does it work?](#how-does-it-work)
 * [API](#api)
-* [User defined classes](#user-defined-classes)
+* [Customization](#customization)
+    * [User defined classes](#user-defined-classes)
+        * [Serializable Interface](#serializable-interface)
+        * [Serialization Strategy](#serialization-strategy)
+    * [Using field metadata](#using-field-metadata)
+        * [`deserialize` option](#deserialize-option)
 
 Installation
 --------------------------------------------------------------------------------
@@ -79,7 +84,7 @@ for common built-in types:
 * `bytes`
 * `bytearray`
 
-for built-in datetime oriented types:
+for built-in datetime oriented types (see [more](#deserialize-option) details):
 * `datetime`
 * `date`
 * `time`
@@ -103,7 +108,6 @@ for other less popular built-in types:
 
 for specific types like *NoneType*, nested dataclasses itself and
 even [user defined classes](#user-defined-classes).
-
 
 Usage example
 --------------------------------------------------------------------------------
@@ -237,11 +241,17 @@ dict_params    # dictionary of parameter values passed underhood to `from_dict` 
 decoder_kwargs # keyword arguments for decoder function
 ```
 
-User defined classes
+Customization
 --------------------------------------------------------------------------------
 
+### User defined classes
+
 You can define and use custom classes with *mashumaro*. There are two options
-for customization. The first one is useful when you already have the separate
+for customization.
+
+#### Serializable Interface
+
+The first one is useful when you already have the separate
 custom class and you want to serialize instances of it with *mashumaro*.
 All what you need is to implement *SerializableType* interface:
 
@@ -286,6 +296,8 @@ dictionary = new_year.to_dict()
 assert Holiday.from_dict(dictionary) == new_year
 ```
 
+#### Serialization Strategy
+
 The second option is useful when you want to change the serialization behaviour
 for a class depending on some defined parameters. For this case you can create
 the special class implementing *SerializationStrategy* interface:
@@ -322,11 +334,69 @@ dictionary = formats.to_dict()
 assert DateTimeFormats.from_dict(dictionary) == formats
 ```
 
+### Using field metadata
+
+In some cases creating a new class just for one little thing could be
+excessive. You can configure some serialization aspects using
+`field`'s `metadata` attribute:
+
+```python
+from datetime import datetime
+from dataclasses import dataclass, field
+from typing import List
+from mashumaro import DataClassDictMixin
+import ciso8601
+import dateutil
+
+@dataclass
+class A(DataClassDictMixin):
+    x: datetime = field(
+        metadata={"deserialize": "pendulum"}
+    )
+
+class B(DataClassDictMixin):
+    x: datetime = field(
+        metadata={"deserialize": ciso8601.parse_datetime_as_naive}
+    )
+
+@dataclass
+class C(DataClassDictMixin):
+    dt: List[datetime] = field(
+        metadata={
+            "deserialize": lambda l: list(map(dateutil.parser.isoparse, l))
+        }
+    )
+```
+
+Next section describes all supported options.
+
+#### `deserialize` option
+
+This option allows you to change the default deserialization method. When using
+this option, the deserialization behaviour depends on what type of value the
+option has. It could be either `Callable[[Any], Any]` or `str`.
+
+A value of type `Callable[[Any], Any]` is a generic way to specify any callable
+object like a function, a class method, a class instance method, an instance
+of a callable class or even a lambda function to be called for deserialization.
+
+A value of type `str` sets a specific engine for deserialization. Keep in mind
+that all possible engines depend on the field type that this option is used
+with. At this moment there are next deserialization engines to choose from:
+
+| Applicable field types     | Supported engines        | Description
+|:-------------------------- |:-------------------------|:------------------------------|
+| `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
+
+More options are on the way. If you know which option would be useful for many,
+please don't hesitate to create an issue or pull request.
+
 TODO
 --------------------------------------------------------------------------------
 
+* add hooks
+* add Union support (try to match types on each call)
 * write benchmarks
 * add optional validation
-* add Union support (try to match types on each call)
 * write custom useful types such as URL, Email etc
 * write documentation

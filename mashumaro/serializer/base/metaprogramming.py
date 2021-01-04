@@ -14,7 +14,7 @@ from base64 import decodebytes, encodebytes  # noqa
 from contextlib import contextmanager, suppress
 
 # noinspection PyProtectedMember
-from dataclasses import _FIELDS, MISSING, is_dataclass, Field
+from dataclasses import _FIELDS, MISSING, Field, is_dataclass
 from decimal import Decimal
 from fractions import Fraction
 
@@ -50,23 +50,23 @@ INITIAL_MODULES = get_imported_module_names()
 class CodeBuilder:
     def __init__(self, cls):
         self.cls = cls
-        self.lines = None  # type: typing.Optional[typing.List[str]]
-        self.modules = None  # type: typing.Optional[typing.Set[str]]
-        self.globals = None  # type: typing.Optional[typing.Set[str]]
-        self._current_indent = None  # type: typing.Optional[str]
+        self.lines: typing.List[str] = []
+        self.modules: typing.Set[str] = set()
+        self.globals: typing.Set[str] = set()
+        self._current_indent: str = ""
 
-    def reset(self):
+    def reset(self) -> None:
         self.lines = []
         self.modules = INITIAL_MODULES.copy()
         self.globals = set()
         self._current_indent = ""
 
     @property
-    def namespace(self):
+    def namespace(self) -> typing.Dict[typing.Any, typing.Any]:
         return self.cls.__dict__
 
     @property
-    def annotations(self):
+    def annotations(self) -> typing.Dict[str, typing.Any]:
         return self.namespace.get("__annotations__", {})
 
     def __get_field_types(
@@ -100,27 +100,31 @@ class CodeBuilder:
                 if field.default is not MISSING:
                     d[name] = field.default
                 else:
-                    d[name] = field.default_factory
+                    # https://github.com/python/mypy/issues/6910
+                    d[name] = field.default_factory  # type: ignore
             else:
                 d[name] = field
         return d
 
-    def _add_type_modules(self, *types_):
+    @property
+    def metadatas(self) -> typing.Dict[str, typing.Mapping[str, typing.Any]]:
+        d = {}
+        for ancestor in self.cls.__mro__[-1:0:-1]:
+            if is_dataclass(ancestor):
+                for field in getattr(ancestor, _FIELDS).values():
+                    d[field.name] = field.metadata
+        for name in self.__get_field_types(recursive=False):
+            field = self.namespace.get(name, MISSING)
+            if isinstance(field, Field):
+                d[name] = field.metadata
+        return d
+
+    def _add_type_modules(self, *types_) -> None:
         for t in types_:
             module = getattr(t, "__module__", None)
             if not module:
-                continue
-            if module not in self.modules:
-                self.modules.add(module)
-                self.add_line(f"if '{module}' not in globals():")
-                with self.indent():
-                    self.add_line(f"import {module}")
-                root_module = module.split(".")[0]
-                if root_module not in self.globals:
-                    self.globals.add(root_module)
-                    self.add_line("else:")
-                    with self.indent():
-                        self.add_line(f"global {root_module}")
+                return
+            self.ensure_module_imported(module)
             args = getattr(t, "__args__", ())
             if args:
                 self._add_type_modules(*args)
@@ -128,21 +132,34 @@ class CodeBuilder:
             if constraints:
                 self._add_type_modules(*constraints)
 
-    def add_line(self, line):
+    def ensure_module_imported(self, module: str) -> None:
+        if module not in self.modules:
+            self.modules.add(module)
+            self.add_line(f"if '{module}' not in globals():")
+            with self.indent():
+                self.add_line(f"import {module}")
+            root_module = module.split(".")[0]
+            if root_module not in self.globals:
+                self.globals.add(root_module)
+                self.add_line("else:")
+                with self.indent():
+                    self.add_line(f"global {root_module}")
+
+    def add_line(self, line) -> None:
         self.lines.append(f"{self._current_indent}{line}")
 
     @contextmanager
-    def indent(self):
+    def indent(self) -> typing.Generator[None, None, None]:
         self._current_indent += " " * 4
         try:
             yield
         finally:
             self._current_indent = self._current_indent[:-4]
 
-    def compile(self):
+    def compile(self) -> None:
         exec("\n".join(self.lines), globals(), self.__dict__)
 
-    def add_from_dict(self):
+    def add_from_dict(self) -> None:
 
         self.reset()
         self.add_line("@classmethod")
@@ -155,6 +172,7 @@ class CodeBuilder:
             with self.indent():
                 self.add_line("kwargs = {}")
                 for fname, ftype in self.field_types.items():
+                    metadata = self.metadatas.get(fname)
                     self._add_type_modules(ftype)
                     self.add_line(f"value = d.get('{fname}', MISSING)")
                     self.add_line("if value is None:")
@@ -178,7 +196,10 @@ class CodeBuilder:
                             self.add_line("else:")
                             with self.indent():
                                 unpacked_value = self._unpack_field_value(
-                                    fname, ftype, self.cls
+                                    fname=fname,
+                                    ftype=ftype,
+                                    parent=self.cls,
+                                    metadata=metadata,
                                 )
                                 self.add_line("try:")
                                 with self.indent():
@@ -201,7 +222,10 @@ class CodeBuilder:
                             self.add_line("if value is not MISSING:")
                             with self.indent():
                                 unpacked_value = self._unpack_field_value(
-                                    fname, ftype, self.cls
+                                    fname=fname,
+                                    ftype=ftype,
+                                    parent=self.cls,
+                                    metadata=metadata,
                                 )
                                 self.add_line("try:")
                                 with self.indent():
@@ -236,7 +260,7 @@ class CodeBuilder:
         self.add_line("setattr(cls, 'from_dict', from_dict)")
         self.compile()
 
-    def add_to_dict(self):
+    def add_to_dict(self) -> None:
 
         self.reset()
         self.add_line(
@@ -404,7 +428,17 @@ class CodeBuilder:
 
         raise UnserializableField(fname, ftype, parent)
 
-    def _unpack_field_value(self, fname, ftype, parent, value_name="value"):
+    def _unpack_field_value(
+        self, fname, ftype, parent, value_name="value", metadata=None
+    ):
+
+        deserialize_option: typing.Optional[typing.Any] = None
+        overridden: typing.Optional[str] = None
+        if metadata is not None:
+            deserialize_option = metadata.get("deserialize")
+            if callable(deserialize_option):
+                setattr(self.cls, f"__{fname}_deserialize", deserialize_option)
+                overridden = f"cls.__{fname}_deserialize({value_name})"
 
         if is_dataclass(ftype):
             return (
@@ -424,11 +458,13 @@ class CodeBuilder:
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
-                return value_name
+                return overridden or value_name
             elif is_union(ftype):
                 args = getattr(ftype, "__args__", ())
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
-                    return self._unpack_field_value(fname, args[0], parent)
+                    return self._unpack_field_value(
+                        fname, args[0], parent, metadata=metadata
+                    )
                 else:
                     raise UnserializableDataError(
                         "Unions are not supported by mashumaro"
@@ -455,7 +491,10 @@ class CodeBuilder:
 
             if issubclass(origin_type, typing.List):
                 if is_generic(ftype):
-                    return f"[{inner_expr()} for value in {value_name}]"
+                    return (
+                        overridden
+                        or f"[{inner_expr()} for value in {value_name}]"
+                    )
                 elif ftype is list:
                     raise UnserializableField(
                         fname, ftype, parent, "Use typing.List[T] instead"
@@ -463,7 +502,8 @@ class CodeBuilder:
             elif issubclass(origin_type, typing.Deque):
                 if is_generic(ftype):
                     return (
-                        f"collections.deque([{inner_expr()} "
+                        overridden
+                        or f"collections.deque([{inner_expr()} "
                         f"for value in {value_name}])"
                     )
                 elif ftype is collections.deque:
@@ -472,7 +512,10 @@ class CodeBuilder:
                     )
             elif issubclass(origin_type, typing.Tuple):
                 if is_generic(ftype):
-                    return f"tuple([{inner_expr()} for value in {value_name}])"
+                    return (
+                        overridden
+                        or f"tuple([{inner_expr()} for value in {value_name}])"
+                    )
                 elif ftype is tuple:
                     raise UnserializableField(
                         fname, ftype, parent, "Use typing.Tuple[T] instead"
@@ -480,7 +523,8 @@ class CodeBuilder:
             elif issubclass(origin_type, typing.FrozenSet):
                 if is_generic(ftype):
                     return (
-                        f"frozenset([{inner_expr()} "
+                        overridden
+                        or f"frozenset([{inner_expr()} "
                         f"for value in {value_name}])"
                     )
                 elif ftype is frozenset:
@@ -489,7 +533,10 @@ class CodeBuilder:
                     )
             elif issubclass(origin_type, typing.AbstractSet):
                 if is_generic(ftype):
-                    return f"set([{inner_expr()} for value in {value_name}])"
+                    return (
+                        overridden
+                        or f"set([{inner_expr()} for value in {value_name}])"
+                    )
                 elif ftype is set:
                     raise UnserializableField(
                         fname, ftype, parent, "Use typing.Set[T] instead"
@@ -510,7 +557,8 @@ class CodeBuilder:
                         )
                     else:
                         return (
-                            f"collections.ChainMap("
+                            overridden
+                            or f"collections.ChainMap("
                             f'*[{{{inner_expr(0,"key")}:{inner_expr(1)} '
                             f"for key, value in m.items()}} "
                             f"for m in {value_name}])"
@@ -531,27 +579,40 @@ class CodeBuilder:
                         )
                     else:
                         return (
-                            f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
+                            overridden
+                            or f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
                             f"for key, value in {value_name}.items()}}"
                         )
             elif issubclass(origin_type, typing.ByteString):
                 if origin_type is bytes:
+                    specific = f"decodebytes({value_name}.encode())"
                     return (
                         f"{value_name} if use_bytes else "
-                        f"decodebytes({value_name}.encode())"
+                        f"{overridden or specific}"
                     )
                 elif origin_type is bytearray:
-                    return (
+                    if overridden:
+                        overridden = (
+                            f"bytearray({value_name}) if use_bytes else "
+                            f"{overridden}"
+                        )
+                    specific = (
                         f"bytearray({value_name} if use_bytes else "
                         f"decodebytes({value_name}.encode()))"
                     )
+                    return overridden or specific
             elif issubclass(origin_type, str):
-                return value_name
+                return overridden or value_name
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
-                    return f"[{inner_expr()} for value in {value_name}]"
+                    return (
+                        overridden
+                        or f"[{inner_expr()} for value in {value_name}]"
+                    )
         elif issubclass(origin_type, os.PathLike):
-            if issubclass(origin_type, pathlib.PosixPath):
+            if overridden:
+                return overridden
+            elif issubclass(origin_type, pathlib.PosixPath):
                 return f"pathlib.PosixPath({value_name})"
             elif issubclass(origin_type, pathlib.WindowsPath):
                 return f"pathlib.WindowsPath({value_name})"
@@ -568,31 +629,55 @@ class CodeBuilder:
             else:
                 return f"{type_name(origin_type)}({value_name})"
         elif issubclass(origin_type, enum.Enum):
-            return (
-                f"{value_name} if use_enum "
-                f"else {type_name(origin_type)}({value_name})"
-            )
+            specific = f"{type_name(origin_type)}({value_name})"
+            return f"{value_name} if use_enum else {overridden or specific}"
         elif origin_type is int:
-            return f"int({value_name})"
+            return overridden or f"int({value_name})"
         elif origin_type is float:
-            return f"float({value_name})"
+            return overridden or f"float({value_name})"
         elif origin_type in (bool, NoneType):
-            return value_name
+            return overridden or value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
+            if overridden:
+                return f"{value_name} if use_datetime else {overridden}"
+            elif deserialize_option is not None:
+                if deserialize_option == "ciso8601":
+                    self.ensure_module_imported("ciso8601")
+                    datetime_parser = "ciso8601.parse_datetime"
+                elif deserialize_option == "pendulum":
+                    self.ensure_module_imported("pendulum")
+                    datetime_parser = "pendulum.parse"
+                else:
+                    raise UnserializableField(
+                        fname,
+                        ftype,
+                        parent,
+                        f"Unsupported deserialization engine "
+                        f'"{deserialize_option}"',
+                    )
+                suffix = ""
+                if origin_type is datetime.date:
+                    suffix = ".date()"
+                elif origin_type is datetime.time:
+                    suffix = ".time()"
+                return (
+                    f"{value_name} if use_datetime else "
+                    f"{datetime_parser}({value_name}){suffix}"
+                )
             return (
                 f"{value_name} if use_datetime else "
                 f"datetime.{origin_type.__name__}."
                 f"fromisoformat({value_name})"
             )
         elif origin_type is datetime.timedelta:
-            return f"datetime.timedelta(seconds={value_name})"
+            return overridden or f"datetime.timedelta(seconds={value_name})"
         elif origin_type is datetime.timezone:
-            return f"parse_timezone({value_name})"
+            return overridden or f"parse_timezone({value_name})"
         elif origin_type is uuid.UUID:
-            return f"uuid.UUID({value_name})"
+            return overridden or f"uuid.UUID({value_name})"
         elif origin_type is Decimal:
-            return f"Decimal({value_name})"
+            return overridden or f"Decimal({value_name})"
         elif origin_type is Fraction:
-            return f"Fraction({value_name})"
+            return overridden or f"Fraction({value_name})"
 
         raise UnserializableField(fname, ftype, parent)
