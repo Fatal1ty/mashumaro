@@ -85,19 +85,6 @@ def is_init_var(t):
         raise NotImplementedError
 
 
-def is_lambda(t):
-    _lambda = lambda: 0  # noqa
-    return isinstance(t, type(_lambda)) and t.__name__ == _lambda.__name__
-
-
-def is_callable_class_instance(t):
-    return (
-        callable(t)
-        and hasattr(t, "__dict__")
-        and not hasattr(t, "__qualname__")
-    )
-
-
 __all__ = [
     "get_imported_module_names",
     "get_type_origin",
@@ -108,6 +95,4 @@ __all__ = [
     "is_type_var",
     "is_class_var",
     "is_init_var",
-    "is_lambda",
-    "is_callable_class_instance",
 ]

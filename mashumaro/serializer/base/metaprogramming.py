@@ -28,11 +28,9 @@ from mashumaro.exceptions import (  # noqa
 from mashumaro.meta.helpers import (
     get_imported_module_names,
     get_type_origin,
-    is_callable_class_instance,
     is_class_var,
     is_generic,
     is_init_var,
-    is_lambda,
     is_special_typing_primitive,
     is_type_var,
     is_union,
@@ -111,6 +109,10 @@ class CodeBuilder:
     @property
     def metadatas(self) -> typing.Dict[str, typing.Mapping[str, typing.Any]]:
         d = {}
+        for ancestor in self.cls.__mro__[-1:0:-1]:
+            if is_dataclass(ancestor):
+                for field in getattr(ancestor, _FIELDS).values():
+                    d[field.name] = field.metadata
         for name in self.__get_field_types(recursive=False):
             field = self.namespace.get(name, MISSING)
             if isinstance(field, Field):
@@ -435,28 +437,8 @@ class CodeBuilder:
         if metadata is not None:
             deserialize_option = metadata.get("deserialize")
             if callable(deserialize_option):
-                if is_lambda(deserialize_option):
-                    raise UnserializableField(
-                        fname,
-                        ftype,
-                        parent,
-                        "Lambda functions as a deserialization method "
-                        "aren't supported yet",
-                    )
-                elif is_callable_class_instance(deserialize_option):
-                    raise UnserializableField(
-                        fname,
-                        ftype,
-                        parent,
-                        "Сallable class instances as a deserialization "
-                        "method aren't supported yet",
-                    )
-                self.ensure_module_imported(deserialize_option.__module__)
-                overridden = (
-                    f"{deserialize_option.__module__}."
-                    f"{deserialize_option.__qualname__}"
-                    f"({value_name})"
-                )
+                setattr(self.cls, f"__{fname}_deserialize", deserialize_option)
+                overridden = f"cls.__{fname}_deserialize({value_name})"
 
         if is_dataclass(ftype):
             return (
@@ -656,33 +638,32 @@ class CodeBuilder:
         elif origin_type in (bool, NoneType):
             return overridden or value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
-            if deserialize_option is not None:
-                if overridden:
-                    return f"{value_name} if use_datetime else {overridden}"
+            if overridden:
+                return f"{value_name} if use_datetime else {overridden}"
+            elif deserialize_option is not None:
+                if deserialize_option == "ciso8601":
+                    self.ensure_module_imported("ciso8601")
+                    datetime_parser = "ciso8601.parse_datetime"
+                elif deserialize_option == "pendulum":
+                    self.ensure_module_imported("pendulum")
+                    datetime_parser = "pendulum.parse"
                 else:
-                    if deserialize_option == "ciso8601":
-                        self.ensure_module_imported("ciso8601")
-                        datetime_parser = "ciso8601.parse_datetime"
-                    elif deserialize_option == "pendulum":
-                        self.ensure_module_imported("pendulum")
-                        datetime_parser = "pendulum.parse"
-                    else:
-                        raise UnserializableField(
-                            fname,
-                            ftype,
-                            parent,
-                            f"Unsupported deserialization engine "
-                            f'"{deserialize_option}"',
-                        )
-                    suffix = ""
-                    if origin_type is datetime.date:
-                        suffix = ".date()"
-                    elif origin_type is datetime.time:
-                        suffix = ".time()"
-                    return (
-                        f"{value_name} if use_datetime else "
-                        f"{datetime_parser}({value_name}){suffix}"
+                    raise UnserializableField(
+                        fname,
+                        ftype,
+                        parent,
+                        f"Unsupported deserialization engine "
+                        f'"{deserialize_option}"',
                     )
+                suffix = ""
+                if origin_type is datetime.date:
+                    suffix = ".date()"
+                elif origin_type is datetime.time:
+                    suffix = ".time()"
+                return (
+                    f"{value_name} if use_datetime else "
+                    f"{datetime_parser}({value_name}){suffix}"
+                )
             return (
                 f"{value_name} if use_datetime else "
                 f"datetime.{origin_type.__name__}."

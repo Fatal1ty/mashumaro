@@ -8,17 +8,6 @@ from mashumaro import DataClassDictMixin
 from mashumaro.exceptions import UnserializableField
 
 
-class DateTimeParser:
-    @classmethod
-    def parse(cls, s: str) -> datetime:
-        return datetime.fromisoformat(s)
-
-
-class CallableDateTimeParser:
-    def __call__(self, s):  # pragma no cover
-        pass
-
-
 def test_ciso8601_datetime_parser():
     @dataclass
     class DataClass(DataClassDictMixin):
@@ -79,6 +68,14 @@ def test_pendulum_time_parser():
     assert instance == should_be
 
 
+def test_unsupported_datetime_parser_engine():
+    with pytest.raises(UnserializableField):
+
+        @dataclass
+        class DataClass(DataClassDictMixin):
+            x: datetime = field(metadata={"deserialize": "unsupported"})
+
+
 def test_global_function_datetime_parser():
     @dataclass
     class DataClass(DataClassDictMixin):
@@ -91,35 +88,88 @@ def test_global_function_datetime_parser():
     assert instance == should_be
 
 
-def test_classmethod_datetime_parser():
+def test_local_function_datetime_parser():
+    def parse_dt(s):
+        return ciso8601.parse_datetime_as_naive(s)
+
     @dataclass
     class DataClass(DataClassDictMixin):
-        x: datetime = field(metadata={"deserialize": DateTimeParser.parse})
+        x: datetime = field(metadata={"deserialize": parse_dt})
+
+    should_be = DataClass(x=datetime(2021, 1, 2, 3, 4, 5))
+    instance = DataClass.from_dict({"x": "2021-01-02T03:04:05+03:00"})
+    assert instance == should_be
+
+
+def test_class_method_datetime_parser():
+    class DateTimeParser:
+        @classmethod
+        def parse_dt(cls, s: str) -> datetime:
+            return datetime.fromisoformat(s)
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: datetime = field(metadata={"deserialize": DateTimeParser.parse_dt})
 
     should_be = DataClass(x=datetime(2021, 1, 2, 3, 4, 5))
     instance = DataClass.from_dict({"x": "2021-01-02T03:04:05"})
     assert instance == should_be
 
 
-def test_unsupported_datetime_parser_engine():
-    with pytest.raises(UnserializableField):
+def test_class_instance_method_datetime_parser():
+    class DateTimeParser:
+        def __call__(self, s: str) -> datetime:
+            return datetime.fromisoformat(s)
 
-        @dataclass
-        class DataClass(DataClassDictMixin):
-            x: datetime = field(metadata={"deserialize": "unsupported"})
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: datetime = field(metadata={"deserialize": DateTimeParser()})
+
+    should_be = DataClass(x=datetime(2021, 1, 2, 3, 4, 5))
+    instance = DataClass.from_dict({"x": "2021-01-02T03:04:05"})
+    assert instance == should_be
 
 
 def test_callable_class_instance_datetime_parser():
-    instance = CallableDateTimeParser()
-    with pytest.raises(UnserializableField):
+    class CallableDateTimeParser:
+        def __call__(self, s):
+            return ciso8601.parse_datetime(s)
 
-        @dataclass
-        class DataClass(DataClassDictMixin):
-            x: datetime = field(metadata={"deserialize": instance})
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: datetime = field(metadata={"deserialize": CallableDateTimeParser()})
+
+    should_be = DataClass(x=datetime(2021, 1, 2, 3, 4, 5, tzinfo=timezone.utc))
+    instance = DataClass.from_dict({"x": "2021-01-02T03:04:05Z"})
+    assert instance == should_be
 
 
 def test_lambda_datetime_parser():
-    with pytest.raises(UnserializableField):
-        @dataclass
-        class DataClass(DataClassDictMixin):
-            x: datetime = field(metadata={"deserialize": lambda x: x})
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: datetime = field(
+            metadata={"deserialize": lambda s: ciso8601.parse_datetime(s)}
+        )
+
+    should_be = DataClass(x=datetime(2021, 1, 2, 3, 4, 5, tzinfo=timezone.utc))
+    instance = DataClass.from_dict({"x": "2021-01-02T03:04:05Z"})
+    assert instance == should_be
+
+
+def test_derived_dataclass_metadata_deserialize_option():
+    @dataclass
+    class A:
+        x: datetime = field(metadata={"deserialize": ciso8601.parse_datetime})
+
+    @dataclass
+    class B(A, DataClassDictMixin):
+        y: datetime = field(metadata={"deserialize": ciso8601.parse_datetime})
+
+    should_be = B(
+        x=datetime(2021, 1, 2, 3, 4, 5, tzinfo=timezone.utc),
+        y=datetime(2021, 1, 2, 3, 4, 5, tzinfo=timezone.utc),
+    )
+    instance = B.from_dict(
+        {"x": "2021-01-02T03:04:05Z", "y": "2021-01-02T03:04:05Z"}
+    )
+    assert instance == should_be

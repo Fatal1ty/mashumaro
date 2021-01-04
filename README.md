@@ -342,18 +342,29 @@ excessive. You can configure some serialization aspects using
 
 ```python
 from datetime import datetime
-from dataclasses import field
+from dataclasses import dataclass, field
+from typing import List
 from mashumaro import DataClassDictMixin
 import ciso8601
+import dateutil
 
-class DataClassA(DataClassDictMixin):
+@dataclass
+class A(DataClassDictMixin):
     x: datetime = field(
-        metadata={"deserialize": "ciso8601"}
+        metadata={"deserialize": "pendulum"}
     )
 
-class DataClassB(DataClassDictMixin):
+class B(DataClassDictMixin):
     x: datetime = field(
         metadata={"deserialize": ciso8601.parse_datetime_as_naive}
+    )
+
+@dataclass
+class C(DataClassDictMixin):
+    dt: List[datetime] = field(
+        metadata={
+            "deserialize": lambda l: list(map(dateutil.parser.isoparse, l))
+        }
     )
 ```
 
@@ -364,14 +375,10 @@ Next section describes all supported options.
 This option allows you to change the default deserialization method. When using
 this option, the deserialization behaviour depends on what type of value the
 option has. It could be either `Callable[[Any], Any]` or `str`.
-A value of type `Callable[[Any], Any]` is a generic way to specify a global
-function, class method or a method of a class instance to be called for
-deserialization. Lambda functions and callable class instances aren't supported
-yet.
 
-> :warning: Using callables as the option value could be problematic in some
-cases. If you're experiencing difficulties, please create an issue or pull
-request.
+A value of type `Callable[[Any], Any]` is a generic way to specify any callable
+object like a function, a class method, a class instance method, an instance
+of a callable class or even a lambda function to be called for deserialization.
 
 A value of type `str` sets a specific engine for deserialization. Keep in mind
 that all possible engines depend on the field type that this option is used
