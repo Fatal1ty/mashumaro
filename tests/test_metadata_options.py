@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timezone
+from pathlib import Path
 
 import ciso8601
 import pytest
@@ -172,4 +173,28 @@ def test_derived_dataclass_metadata_deserialize_option():
     instance = B.from_dict(
         {"x": "2021-01-02T03:04:05Z", "y": "2021-01-02T03:04:05Z"}
     )
+    assert instance == should_be
+
+
+def test_bytearray_overridden():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: bytearray = field(
+            metadata={"deserialize": lambda s: s.upper().encode()}
+        )
+
+    should_be = DataClass(x=bytearray(b"ABC"))
+    instance = DataClass.from_dict({"x": "abc"})
+    assert instance == should_be
+
+
+def test_path_like_overridden():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Path = field(
+            metadata={"deserialize": lambda s: Path(str(s).upper())}
+        )
+
+    should_be = DataClass(x=Path("/ABC"))
+    instance = DataClass.from_dict({"x": "/abc"})
     assert instance == should_be
