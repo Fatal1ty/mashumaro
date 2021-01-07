@@ -28,6 +28,7 @@ Table of contents
         * [Serialization Strategy](#serialization-strategy)
     * [Using field metadata](#using-field-metadata)
         * [`deserialize` option](#deserialize-option)
+        * [`serialize` option](#serialize-option)
 
 Installation
 --------------------------------------------------------------------------------
@@ -341,8 +342,29 @@ assert DateTimeFormats.from_dict(dictionary) == formats
 ### Using field metadata
 
 In some cases creating a new class just for one little thing could be
-excessive. You can configure some serialization aspects using
-`field`'s `metadata` attribute:
+excessive. You can use `dataclasses.field` as a field value and configure some
+serialization aspects through its `metadata` argument. Next section describes
+all supported options to use in `metadata` mapping.
+
+#### `deserialize` option
+
+This option allows you to change the default deserialization method. When using
+this option, the deserialization behaviour depends on what type of value the
+option has. It could be either `Callable[[Any], Any]` or `str`.
+
+A value of type `Callable[[Any], Any]` is a generic way to specify any callable
+object like a function, a class method, a class instance method, an instance
+of a callable class or even a lambda function to be called for deserialization.
+
+A value of type `str` sets a specific engine for deserialization. Keep in mind
+that all possible engines depend on the field type that this option is used
+with. At this moment there are next deserialization engines to choose from:
+
+| Applicable field types     | Supported engines        | Description
+|:-------------------------- |:-------------------------|:------------------------------|
+| `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
+
+Example:
 
 ```python
 from datetime import datetime
@@ -372,25 +394,24 @@ class C(DataClassDictMixin):
     )
 ```
 
-Next section describes all supported options.
+#### `serialize` option
 
-#### `deserialize` option
+This option allows you to change the default serialization method through
+a value of type `Callable[[Any], Any]` that could be any callable object like
+a function, a class method, a class instance method, an instance of a callable
+class or even a lambda function.
 
-This option allows you to change the default deserialization method. When using
-this option, the deserialization behaviour depends on what type of value the
-option has. It could be either `Callable[[Any], Any]` or `str`.
+Example:
 
-A value of type `Callable[[Any], Any]` is a generic way to specify any callable
-object like a function, a class method, a class instance method, an instance
-of a callable class or even a lambda function to be called for deserialization.
-
-A value of type `str` sets a specific engine for deserialization. Keep in mind
-that all possible engines depend on the field type that this option is used
-with. At this moment there are next deserialization engines to choose from:
-
-| Applicable field types     | Supported engines        | Description
-|:-------------------------- |:-------------------------|:------------------------------|
-| `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
+```python
+@dataclass
+class A(DataClassDictMixin):
+    dt: datetime = field(
+        metadata={
+            "serialize": lambda v: v.strftime('%Y-%m-%d %H:%M:%S')
+        }
+    )
+```
 
 More options are on the way. If you know which option would be useful for many,
 please don't hesitate to create an issue or pull request.
