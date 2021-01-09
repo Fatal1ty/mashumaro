@@ -270,19 +270,38 @@ class CodeBuilder:
         with self.indent():
             self.add_line("kwargs = {}")
             for fname, ftype in self.field_types.items():
+                metadata = self.metadatas.get(fname)
                 self.add_line(f"value = getattr(self, '{fname}')")
                 self.add_line("if value is None:")
                 with self.indent():
                     self.add_line(f"kwargs['{fname}'] = None")
                 self.add_line("else:")
                 with self.indent():
-                    packed_value = self._pack_value(fname, ftype, self.cls)
+                    packed_value = self._pack_value(
+                        fname=fname,
+                        ftype=ftype,
+                        parent=self.cls,
+                        metadata=metadata,
+                    )
                     self.add_line(f"kwargs['{fname}'] = {packed_value}")
             self.add_line("return kwargs")
         self.add_line("setattr(cls, 'to_dict', to_dict)")
         self.compile()
 
-    def _pack_value(self, fname, ftype, parent, value_name="value"):
+    def _pack_value(
+        self, fname, ftype, parent, value_name="value", metadata=None
+    ):
+
+        overridden: typing.Optional[str] = None
+        if metadata is not None:
+            serialize_option = metadata.get("serialize")
+            if callable(serialize_option):
+                setattr(
+                    self.cls,
+                    f"__{fname}_serialize",
+                    staticmethod(serialize_option),
+                )
+                overridden = f"self.__{fname}_serialize(self.{fname})"
 
         if is_dataclass(ftype):
             return f"{value_name}.to_dict(use_bytes, use_enum, use_datetime)"
@@ -299,7 +318,7 @@ class CodeBuilder:
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
-                return value_name
+                return overridden or value_name
             elif is_union(ftype):
                 args = getattr(ftype, "__args__", ())
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
@@ -331,7 +350,10 @@ class CodeBuilder:
                 (typing.List, typing.Deque, typing.Tuple, typing.AbstractSet),
             ):
                 if is_generic(ftype):
-                    return f"[{inner_expr()} for value in {value_name}]"
+                    return (
+                        overridden
+                        or f"[{inner_expr()} for value in {value_name}]"
+                    )
                 elif ftype is list:
                     raise UnserializableField(
                         fname, ftype, parent, "Use typing.List[T] instead"
@@ -368,7 +390,8 @@ class CodeBuilder:
                         )
                     else:
                         return (
-                            f'[{{{inner_expr(0,"key")}:{inner_expr(1)} '
+                            overridden
+                            or f'[{{{inner_expr(0,"key")}:{inner_expr(1)} '
                             f"for key,value in m.items()}} "
                             f"for m in value.maps]"
                         )
@@ -388,43 +411,50 @@ class CodeBuilder:
                         )
                     else:
                         return (
-                            f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
+                            overridden
+                            or f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
                             f"for key, value in {value_name}.items()}}"
                         )
             elif issubclass(origin_type, typing.ByteString):
+                specific = f"encodebytes({value_name}).decode()"
                 return (
-                    f"{value_name} if use_bytes else "
-                    f"encodebytes({value_name}).decode()"
+                    f"{value_name} if use_bytes else {overridden or specific}"
                 )
             elif issubclass(origin_type, str):
-                return value_name
+                return overridden or value_name
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
-                    return f"[{inner_expr()} for value in {value_name}]"
+                    return (
+                        overridden
+                        or f"[{inner_expr()} for value in {value_name}]"
+                    )
         elif issubclass(origin_type, os.PathLike):
-            return f"{value_name}.__fspath__()"
+            return overridden or f"{value_name}.__fspath__()"
         elif issubclass(origin_type, enum.Enum):
-            return f"{value_name} if use_enum else {value_name}.value"
+            specific = f"{value_name}.value"
+            return f"{value_name} if use_enum else {overridden or specific}"
         elif origin_type is int:
-            return f"int({value_name})"
+            return overridden or f"int({value_name})"
         elif origin_type is float:
-            return f"float({value_name})"
+            return overridden or f"float({value_name})"
         elif origin_type in (bool, NoneType):
-            return value_name
+            return overridden or value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
+            if overridden:
+                return f"{value_name} if use_datetime else {overridden}"
             return (
                 f"{value_name} if use_datetime else {value_name}.isoformat()"
             )
         elif origin_type is datetime.timedelta:
-            return f"{value_name}.total_seconds()"
+            return overridden or f"{value_name}.total_seconds()"
         elif origin_type is datetime.timezone:
-            return f"{value_name}.tzname(None)"
+            return overridden or f"{value_name}.tzname(None)"
         elif origin_type is uuid.UUID:
-            return f"str({value_name})"
+            return overridden or f"str({value_name})"
         elif origin_type is Decimal:
-            return f"str({value_name})"
+            return overridden or f"str({value_name})"
         elif origin_type is Fraction:
-            return f"str({value_name})"
+            return overridden or f"str({value_name})"
 
         raise UnserializableField(fname, ftype, parent)
 
