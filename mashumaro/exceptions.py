@@ -78,3 +78,7 @@ class InvalidFieldValue(ValueError):
         if self.msg:
             s += f": {self.msg}"
         return s
+
+
+class BadHookSignature(TypeError):
+    pass
