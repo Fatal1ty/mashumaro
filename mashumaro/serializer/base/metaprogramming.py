@@ -20,6 +20,7 @@ from fractions import Fraction
 
 # noinspection PyUnresolvedReferences
 from mashumaro.exceptions import (  # noqa
+    BadHookSignature,
     InvalidFieldValue,
     MissingField,
     UnserializableDataError,
@@ -45,6 +46,12 @@ patch_fromisoformat()
 
 NoneType = type(None)
 INITIAL_MODULES = get_imported_module_names()
+
+
+__PRE_SERIALIZE__ = "__pre_serialize__"
+__PRE_DESERIALIZE__ = "__pre_deserialize__"
+__POST_SERIALIZE__ = "__post_serialize__"
+__POST_DESERIALIZE__ = "__post_deserialize__"
 
 
 class CodeBuilder:
@@ -168,6 +175,15 @@ class CodeBuilder:
             "use_datetime=False):"
         )
         with self.indent():
+            pre_deserialize = self.namespace.get(__PRE_DESERIALIZE__)
+            if pre_deserialize:
+                if not isinstance(pre_deserialize, classmethod):
+                    raise BadHookSignature(
+                        f"`{__PRE_DESERIALIZE__}` must be a class method with "
+                        f"Callable[[Dict[Any, Any]], Dict[Any, Any]] signature"
+                    )
+                else:
+                    self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
             self.add_line("try:")
             with self.indent():
                 self.add_line("kwargs = {}")
@@ -256,7 +272,20 @@ class CodeBuilder:
                 self.add_line("else:")
                 with self.indent():
                     self.add_line("raise")
-            self.add_line("return cls(**kwargs)")
+            post_deserialize = self.namespace.get(__POST_DESERIALIZE__)
+            if post_deserialize:
+                if not isinstance(post_deserialize, classmethod):
+                    raise BadHookSignature(
+                        f"`{__POST_DESERIALIZE__}` must be a class method "
+                        f"with Callable[[{type_name(self.cls)}], "
+                        f"{type_name(self.cls)}] signature"
+                    )
+                else:
+                    self.add_line(
+                        f"return cls.{__POST_DESERIALIZE__}(cls(**kwargs))"
+                    )
+            else:
+                self.add_line("return cls(**kwargs)")
         self.add_line("setattr(cls, 'from_dict', from_dict)")
         self.compile()
 
@@ -268,6 +297,9 @@ class CodeBuilder:
             "use_datetime=False):"
         )
         with self.indent():
+            pre_serialize = self.namespace.get(__PRE_SERIALIZE__)
+            if pre_serialize:
+                self.add_line(f"self = self.{__PRE_SERIALIZE__}()")
             self.add_line("kwargs = {}")
             for fname, ftype in self.field_types.items():
                 metadata = self.metadatas.get(fname)
@@ -284,7 +316,11 @@ class CodeBuilder:
                         metadata=metadata,
                     )
                     self.add_line(f"kwargs['{fname}'] = {packed_value}")
-            self.add_line("return kwargs")
+            post_serialize = self.namespace.get(__POST_SERIALIZE__)
+            if post_serialize:
+                self.add_line(f"return self.{__POST_SERIALIZE__}(kwargs)")
+            else:
+                self.add_line("return kwargs")
         self.add_line("setattr(cls, 'to_dict', to_dict)")
         self.compile()
 
