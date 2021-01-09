@@ -198,3 +198,15 @@ def test_path_like_overridden():
     should_be = DataClass(x=Path("/ABC"))
     instance = DataClass.from_dict({"x": "/abc"})
     assert instance == should_be
+
+
+def test_serialize_option():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: datetime = field(
+            metadata={"serialize": lambda v: v.strftime("%Y-%m-%d %H:%M:%S")}
+        )
+
+    should_be = {"x": "2021-01-02 03:04:05"}
+    instance = DataClass(x=datetime(2021, 1, 2, 3, 4, 5, tzinfo=timezone.utc))
+    assert instance.to_dict() == should_be

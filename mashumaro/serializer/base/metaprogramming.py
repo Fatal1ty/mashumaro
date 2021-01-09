@@ -296,11 +296,12 @@ class CodeBuilder:
         if metadata is not None:
             serialize_option = metadata.get("serialize")
             if callable(serialize_option):
-                setattr(self.cls, f"__{fname}_serialize", serialize_option)
-                self._add_type_modules(self.cls)
-                overridden = (
-                    f"{type_name(parent)}.__{fname}_serialize({value_name})"
+                setattr(
+                    self.cls,
+                    f"__{fname}_serialize",
+                    staticmethod(serialize_option),
                 )
+                overridden = f"self.__{fname}_serialize(self.{fname})"
 
         if is_dataclass(ftype):
             return f"{value_name}.to_dict(use_bytes, use_enum, use_datetime)"
