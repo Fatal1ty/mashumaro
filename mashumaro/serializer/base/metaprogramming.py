@@ -4,6 +4,7 @@ import collections
 import collections.abc
 import datetime
 import enum
+import ipaddress
 import os
 import pathlib
 import typing
@@ -487,6 +488,15 @@ class CodeBuilder:
             return overridden or f"{value_name}.tzname(None)"
         elif origin_type is uuid.UUID:
             return overridden or f"str({value_name})"
+        elif origin_type in [
+            ipaddress.IPv4Address,
+            ipaddress.IPv6Address,
+            ipaddress.IPv4Network,
+            ipaddress.IPv6Network,
+            ipaddress.IPv4Interface,
+            ipaddress.IPv6Interface,
+        ]:
+            return overridden or f"str({value_name})"
         elif origin_type is Decimal:
             return overridden or f"str({value_name})"
         elif origin_type is Fraction:
@@ -741,6 +751,18 @@ class CodeBuilder:
             return overridden or f"parse_timezone({value_name})"
         elif origin_type is uuid.UUID:
             return overridden or f"uuid.UUID({value_name})"
+        elif origin_type is ipaddress.IPv4Address:
+            return overridden or f"ipaddress.IPv4Address({value_name})"
+        elif origin_type is ipaddress.IPv6Address:
+            return overridden or f"ipaddress.IPv6Address({value_name})"
+        elif origin_type is ipaddress.IPv4Network:
+            return overridden or f"ipaddress.IPv4Network({value_name})"
+        elif origin_type is ipaddress.IPv6Network:
+            return overridden or f"ipaddress.IPv6Network({value_name})"
+        elif origin_type is ipaddress.IPv4Interface:
+            return overridden or f"ipaddress.IPv4Interface({value_name})"
+        elif origin_type is ipaddress.IPv6Interface:
+            return overridden or f"ipaddress.IPv6Interface({value_name})"
         elif origin_type is Decimal:
             return overridden or f"Decimal({value_name})"
         elif origin_type is Fraction:
