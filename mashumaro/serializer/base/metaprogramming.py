@@ -20,11 +20,11 @@ from fractions import Fraction
 
 # noinspection PyUnresolvedReferences
 from mashumaro.exceptions import (  # noqa
+    BadHookSignature,
     InvalidFieldValue,
     MissingField,
     UnserializableDataError,
     UnserializableField,
-    BadHookSignature,
 )
 from mashumaro.meta.helpers import (
     get_imported_module_names,
@@ -177,12 +177,9 @@ class CodeBuilder:
         with self.indent():
             pre_deserialize = self.namespace.get(__PRE_DESERIALIZE__)
             if pre_deserialize:
-                if not isinstance(
-                    pre_deserialize, (classmethod, staticmethod)
-                ):
+                if not isinstance(pre_deserialize, classmethod):
                     raise BadHookSignature(
-                        f"`{__PRE_DESERIALIZE__}` must be a class or static "
-                        f"method with "
+                        f"`{__PRE_DESERIALIZE__}` must be a class method with "
                         f"Callable[[Dict[Any, Any]], Dict[Any, Any]] signature"
                     )
                 else:
@@ -277,12 +274,10 @@ class CodeBuilder:
                     self.add_line("raise")
             post_deserialize = self.namespace.get(__POST_DESERIALIZE__)
             if post_deserialize:
-                if not isinstance(
-                    post_deserialize, (classmethod, staticmethod)
-                ):
+                if not isinstance(post_deserialize, classmethod):
                     raise BadHookSignature(
-                        f"`{__POST_DESERIALIZE__}` must be a class or static "
-                        f"method with Callable[[{type_name(self.cls)}], "
+                        f"`{__POST_DESERIALIZE__}` must be a class method "
+                        f"with Callable[[{type_name(self.cls)}], "
                         f"{type_name(self.cls)}] signature"
                     )
                 else:

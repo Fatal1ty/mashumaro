@@ -62,7 +62,6 @@ from .entities import (
 )
 from .utils import same_types
 
-
 NoneType = type(None)
 
 
