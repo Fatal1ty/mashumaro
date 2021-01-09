@@ -14,7 +14,7 @@ def test_bad_pre_deserialize_hook():
             x: int
 
             def __pre_deserialize__(self, d: Dict[Any, Any]) -> Dict[Any, Any]:
-                pass
+                pass  # pragma no cover
 
 
 def test_bad_post_deserialize_hook():
@@ -24,7 +24,7 @@ def test_bad_post_deserialize_hook():
             x: int
 
             def __post_deserialize__(self, obj: "DataClass") -> "DataClass":
-                pass
+                pass  # pragma no cover
 
 
 def test_pre_deserialize_hook():
