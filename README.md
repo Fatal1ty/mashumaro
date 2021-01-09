@@ -27,8 +27,8 @@ Table of contents
         * [Serializable Interface](#serializable-interface)
         * [Serialization Strategy](#serialization-strategy)
     * [Using field metadata](#using-field-metadata)
-        * [`deserialize` option](#deserialize-option)
         * [`serialize` option](#serialize-option)
+        * [`deserialize` option](#deserialize-option)
 
 Installation
 --------------------------------------------------------------------------------
@@ -346,6 +346,25 @@ excessive. You can use `dataclasses.field` as a field value and configure some
 serialization aspects through its `metadata` argument. Next section describes
 all supported options to use in `metadata` mapping.
 
+#### `serialize` option
+
+This option allows you to change the default serialization method through
+a value of type `Callable[[Any], Any]` that could be any callable object like
+a function, a class method, a class instance method, an instance of a callable
+class or even a lambda function.
+
+Example:
+
+```python
+@dataclass
+class A(DataClassDictMixin):
+    dt: datetime = field(
+        metadata={
+            "serialize": lambda v: v.strftime('%Y-%m-%d %H:%M:%S')
+        }
+    )
+```
+
 #### `deserialize` option
 
 This option allows you to change the default deserialization method. When using
@@ -390,25 +409,6 @@ class C(DataClassDictMixin):
     dt: List[datetime] = field(
         metadata={
             "deserialize": lambda l: list(map(dateutil.parser.isoparse, l))
-        }
-    )
-```
-
-#### `serialize` option
-
-This option allows you to change the default serialization method through
-a value of type `Callable[[Any], Any]` that could be any callable object like
-a function, a class method, a class instance method, an instance of a callable
-class or even a lambda function.
-
-Example:
-
-```python
-@dataclass
-class A(DataClassDictMixin):
-    dt: datetime = field(
-        metadata={
-            "serialize": lambda v: v.strftime('%Y-%m-%d %H:%M:%S')
         }
     )
 ```
