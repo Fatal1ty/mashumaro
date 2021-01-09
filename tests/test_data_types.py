@@ -63,6 +63,9 @@ from .entities import (
 from .utils import same_types
 
 
+NoneType = type(None)
+
+
 class Fixture:
     INT = 123
     FLOAT = 1.23
@@ -100,6 +103,7 @@ class Fixture:
     MUTABLE_STRING_STR = STR
     CUSTOM_PATH = CustomPath("/a/b/c")
     CUSTOM_PATH_STR = "/a/b/c"
+    CUSTOM_SERIALIZE = "_FOOBAR_"
 
 
 inner_values = [
@@ -124,7 +128,7 @@ inner_values = [
     (MyFlag, Fixture.FLAG, Fixture.FLAG),
     (MyIntFlag, Fixture.INT_FLAG, Fixture.INT_FLAG),
     (MyDataClass, Fixture.DATA_CLASS, Fixture.DICT),
-    (type(None), Fixture.NONE, Fixture.NONE),
+    (NoneType, Fixture.NONE, Fixture.NONE),
     (datetime, Fixture.DATETIME, Fixture.DATETIME),
     (date, Fixture.DATE, Fixture.DATE),
     (time, Fixture.TIME, Fixture.TIME),
@@ -848,3 +852,68 @@ def test_invalid_field_value_deserialization_with_rounded_decimal_with_default()
 
     with pytest.raises(InvalidFieldValue):
         DataClass.from_dict({"x": "bad_value"})
+
+
+@pytest.mark.parametrize("use_datetime", [True, False])
+@pytest.mark.parametrize("use_enum", [True, False])
+@pytest.mark.parametrize("use_bytes", [True, False])
+@pytest.mark.parametrize(
+    "value_info",
+    [
+        v
+        for v in inner_values
+        if v[0] not in [MyDataClass, NoneType, MutableString]
+    ],
+)
+def test_serialize_deserialize_options(
+    value_info, use_bytes, use_enum, use_datetime
+):
+    x_type, x_value, x_value_dumped = value_info
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: x_type = field(
+            metadata={
+                "serialize": lambda v: Fixture.CUSTOM_SERIALIZE,
+                "deserialize": lambda v: x_value
+                if v == Fixture.CUSTOM_SERIALIZE
+                else f"!{Fixture.CUSTOM_SERIALIZE}",
+            }
+        )
+
+    instance = DataClass(x_value)
+    if x_value_dumped is Fixture.BYTES:
+        v_dumped = Fixture.BYTES if use_bytes else Fixture.CUSTOM_SERIALIZE
+    elif x_value_dumped is Fixture.BYTE_ARRAY:
+        v_dumped = (
+            Fixture.BYTE_ARRAY if use_bytes else Fixture.CUSTOM_SERIALIZE
+        )
+    elif isinstance(x_value_dumped, Enum):
+        v_dumped = x_value_dumped if use_enum else Fixture.CUSTOM_SERIALIZE
+    elif isinstance(x_value_dumped, (datetime, date, time)):
+        v_dumped = x_value_dumped if use_datetime else Fixture.CUSTOM_SERIALIZE
+    else:
+        v_dumped = Fixture.CUSTOM_SERIALIZE
+    dumped = {"x": v_dumped}
+    instance_dumped = instance.to_dict(
+        use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
+    )
+    instance_loaded = DataClass.from_dict(
+        dumped,
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime,
+    )
+    assert instance_dumped == dumped
+    assert instance_loaded == instance
+    instance_dumped = instance.to_dict(
+        use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
+    )
+    instance_loaded = DataClass.from_dict(
+        dumped,
+        use_bytes=use_bytes,
+        use_enum=use_enum,
+        use_datetime=use_datetime,
+    )
+    assert same_types(instance_dumped, dumped)
+    assert same_types(instance_loaded.x, x_value)

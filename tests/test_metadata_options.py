@@ -200,7 +200,7 @@ def test_path_like_overridden():
     assert instance == should_be
 
 
-def test_serialize_option():
+def test_datetime_serialize_option():
     @dataclass
     class DataClass(DataClassDictMixin):
         x: datetime = field(
