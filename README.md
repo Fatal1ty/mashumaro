@@ -111,7 +111,12 @@ for other less popular built-in types:
 * `uuid.UUID`
 * `decimal.Decimal`
 * `fractions.Fraction`
-* `IPv4Address`, `IPv6Address`, `IPv4Network`, `IPv6Network`, `IPv4Interface` & `IPv6Interface` from `ipaddress`
+* `ipaddress.IPv4Address`
+* `ipaddress.IPv6Address`
+* `ipaddress.IPv4Network`
+* `ipaddress.IPv6Network`
+* `ipaddress.IPv4Interface`
+* `ipaddress.IPv6Interface`
 
 for specific types like *NoneType*, nested dataclasses itself and
 even [user defined classes](#user-defined-classes).
