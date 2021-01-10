@@ -424,6 +424,23 @@ class C(DataClassDictMixin):
     )
 ```
 
+If you don't want to remember the names of the options you can use
+`field_params` helper function:
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import DataClassDictMixin, field_options
+
+@dataclass
+class A(DataClassDictMixin):
+    x: int = field(
+        metadata=field_options(
+            serialize=str,
+            deserialize=int
+        )
+    )
+```
+
 More options are on the way. If you know which option would be useful for many,
 please don't hesitate to create an issue or pull request.
 
