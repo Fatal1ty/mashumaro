@@ -5,10 +5,10 @@ def test_field_options_helper():
     assert field_options() == {"serialize": None, "deserialize": None}
 
     def serialize(x):
-        return x
+        return x  # pragma no cover
 
     def deserialize(x):
-        return x
+        return x  # pragma no cover
 
     assert (
         field_options(
