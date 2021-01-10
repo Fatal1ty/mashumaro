@@ -2,6 +2,7 @@ import collections
 import decimal
 import fractions
 import os
+import ipaddress
 import uuid
 from dataclasses import InitVar, dataclass, field
 from datetime import date, datetime, time, timedelta, timezone
@@ -94,6 +95,18 @@ class Fixture:
     TIMEZONE = timezone(timedelta(hours=3))
     UUID = uuid.UUID("3c25dd74-f208-46a2-9606-dd3919e975b7")
     UUID_STR = "3c25dd74-f208-46a2-9606-dd3919e975b7"
+    IP4ADDRESS_STR = "127.0.0.1"
+    IP4ADDRESS = ipaddress.IPv4Address(IP4ADDRESS_STR)
+    IP6ADDRESS_STR = "::1"
+    IP6ADDRESS = ipaddress.IPv6Address(IP6ADDRESS_STR)
+    IP4NETWORK_STR = "127.0.0.0/8"
+    IP4NETWORK = ipaddress.IPv4Network(IP4NETWORK_STR)
+    IP6NETWORK_STR = "::/128"
+    IP6NETWORK = ipaddress.IPv6Network(IP6NETWORK_STR)
+    IP4INTERFACE_STR = "192.168.1.1/24"
+    IP4INTERFACE = ipaddress.IPv4Interface(IP4INTERFACE_STR)
+    IP6INTERFACE_STR = "::1/128"
+    IP6INTERFACE = ipaddress.IPv6Interface(IP6INTERFACE_STR)
     DECIMAL = decimal.Decimal("1.33")
     DECIMAL_STR = "1.33"
     FRACTION = fractions.Fraction("1/3")
@@ -134,6 +147,12 @@ inner_values = [
     (timedelta, Fixture.TIMEDELTA, Fixture.TIMEDELTA.total_seconds()),
     (timezone, Fixture.TIMEZONE, "UTC+03:00"),
     (uuid.UUID, Fixture.UUID, Fixture.UUID_STR),
+    (ipaddress.IPv4Address, Fixture.IP4ADDRESS, Fixture.IP4ADDRESS_STR),
+    (ipaddress.IPv6Address, Fixture.IP6ADDRESS, Fixture.IP6ADDRESS_STR),
+    (ipaddress.IPv4Network, Fixture.IP4NETWORK, Fixture.IP4NETWORK_STR),
+    (ipaddress.IPv6Network, Fixture.IP6NETWORK, Fixture.IP6NETWORK_STR),
+    (ipaddress.IPv4Interface, Fixture.IP4INTERFACE, Fixture.IP4INTERFACE_STR),
+    (ipaddress.IPv6Interface, Fixture.IP6INTERFACE, Fixture.IP6INTERFACE_STR),
     (decimal.Decimal, Fixture.DECIMAL, Fixture.DECIMAL_STR),
     (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR),
     (MutableString, Fixture.MUTABLE_STRING, Fixture.MUTABLE_STRING_STR),
