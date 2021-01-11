@@ -483,8 +483,8 @@ class A(DataClassJSONMixin):
         obj.abc = 456
         return obj
 
-print(DataClass.from_dict({"ABC": 123}))    # DataClass(abc=456)
-print(DataClass.from_json('{"ABC": 123}'))  # DataClass(abc=456)
+print(DataClass.from_dict({"abc": 123}))    # DataClass(abc=456)
+print(DataClass.from_json('{"abc": 123}'))  # DataClass(abc=456)
 ```
 
 #### Before serialization
