@@ -77,30 +77,3 @@ def test_get_class_that_define_method():
     assert get_class_that_define_method("foo", B) == A
     assert get_class_that_define_method("bar", B) == A
     assert get_class_that_define_method("foobar", B) == B
-
-
-def test_hook_stub_is_not_called(mocker):
-    pre_deserialize_hook = mocker.patch.object(
-        DataClassDictMixin, "__pre_deserialize__"
-    )
-    post_deserialize_hook = mocker.patch.object(
-        DataClassDictMixin, "__post_deserialize__"
-    )
-    pre_serialize_hook = mocker.patch.object(
-        DataClassDictMixin, "__pre_serialize__"
-    )
-    post_serialize_hook = mocker.patch.object(
-        DataClassDictMixin, "__post_serialize__"
-    )
-
-    @dataclass
-    class A(DataClassDictMixin):
-        a: int
-
-    obj = A.from_dict({"a": 1})
-    obj.to_dict()
-
-    pre_deserialize_hook.assert_not_called()
-    post_deserialize_hook.assert_not_called()
-    pre_serialize_hook.assert_not_called()
-    post_serialize_hook.assert_not_called()
