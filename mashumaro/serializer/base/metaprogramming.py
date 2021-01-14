@@ -325,6 +325,39 @@ class CodeBuilder:
         self.add_line("setattr(cls, 'to_dict', to_dict)")
         self.compile()
 
+    def add_pack_union(self, fname, ftype, parent, variant_types, value_name):
+        self._add_type_modules(*variant_types)
+        self.add_line("def resolve_union(value):")
+        with self.indent():
+            for variant in variant_types:
+                if is_generic(variant):
+                    variant_name = get_type_origin(variant).__name__
+                else:
+                    variant_name = type_name(variant)
+                self.add_line(f"if isinstance(value, {variant_name}):")
+                with self.indent():
+                    self.add_line("try:")
+                    with self.indent():
+                        packed = self._pack_value(
+                            fname, variant, parent, value_name
+                        )
+                        self.add_line(f"return {packed}")
+                    self.add_line(
+                        "except (TypeError, AttributeError, "
+                        "ValueError, LookupError) as e:"
+                    )
+                    with self.indent():
+                        self.add_line("pass")
+            else:
+                variant_type_names = ", ".join(
+                    [type_name(v) for v in variant_types]
+                )
+                self.add_line(
+                    f"raise ValueError('Union value could not be "
+                    f"encoded using types ({variant_type_names})')"
+                )
+            return "resolve_union(value)"
+
     def _pack_value(
         self, fname, ftype, parent, value_name="value", metadata=None
     ):
@@ -361,8 +394,8 @@ class CodeBuilder:
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
                     return self._pack_value(fname, args[0], parent)
                 else:
-                    raise UnserializableDataError(
-                        "Unions are not supported by mashumaro"
+                    return self.add_pack_union(
+                        fname, ftype, parent, args, value_name
                     )
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(
@@ -504,6 +537,41 @@ class CodeBuilder:
 
         raise UnserializableField(fname, ftype, parent)
 
+    def add_unpack_union(
+        self, fname, ftype, parent, variant_types, value_name
+    ):
+        self.add_line("def resolve_union(value):")
+        with self.indent():
+            for variant in variant_types:
+                if is_generic(variant):
+                    variant_name = get_type_origin(variant).__name__
+                else:
+                    variant_name = type_name(variant)
+                self.add_line("try:")
+                with self.indent():
+                    packed = self._unpack_field_value(
+                        fname, variant, parent, value_name
+                    )
+                    self.add_line(f"packed = {packed}")
+                    self.add_line(f"if isinstance(packed, {variant_name}):")
+                    with self.indent():
+                        self.add_line("return packed")
+                self.add_line(
+                    "except (TypeError, AttributeError, ValueError,"
+                    "LookupError) as e:"
+                )
+                with self.indent():
+                    self.add_line("pass")
+            else:
+                variant_type_names = ", ".join(
+                    [type_name(v) for v in variant_types]
+                )
+                self.add_line(
+                    f"raise ValueError('Union value could not be "
+                    f"decoded using types ({variant_type_names})')"
+                )
+            return "resolve_union(value)"
+
     def _unpack_field_value(
         self, fname, ftype, parent, value_name="value", metadata=None
     ):
@@ -542,8 +610,8 @@ class CodeBuilder:
                         fname, args[0], parent, metadata=metadata
                     )
                 else:
-                    raise UnserializableDataError(
-                        "Unions are not supported by mashumaro"
+                    return self.add_unpack_union(
+                        fname, ftype, parent, args, value_name
                     )
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(

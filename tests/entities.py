@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
+from typing import Union, List
 
 from mashumaro import DataClassDictMixin
 from mashumaro.types import SerializableType
@@ -27,9 +28,20 @@ class MyIntFlag(IntFlag):
 
 
 @dataclass
+class CustomShape(DataClassDictMixin):
+    name: str
+    num_corners: int
+
+
+@dataclass
+class ShapeCollection(DataClassDictMixin):
+    shapes: List[Union[str, CustomShape]]
+
+
+@dataclass
 class MyDataClass(DataClassDictMixin):
     a: int
-    b: int
+    b: Union[int, str]
 
 
 class MutableString(SerializableType):

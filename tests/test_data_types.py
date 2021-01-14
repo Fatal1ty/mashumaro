@@ -34,7 +34,6 @@ from typing import (
     Set,
     Tuple,
     TypeVar,
-    Union,
 )
 
 import pytest
@@ -78,6 +77,7 @@ class Fixture:
     CHAIN_MAP = collections.ChainMap({"a": 1, "b": 2}, {"c": 3, "d": 4})
     MAPS_LIST = [{"a": 1, "b": 2}, {"c": 3, "d": 4}]
     DICT = {"a": 1, "b": 2}
+    MIXED_DICT = {"a": 1, "b": "two"}
     BYTES = b"123"
     BYTES_BASE64 = "MTIz\n"
     BYTE_ARRAY = bytearray(b"123")
@@ -86,7 +86,7 @@ class Fixture:
     INT_ENUM = MyIntEnum.a
     FLAG = MyFlag.a
     INT_FLAG = MyIntFlag.a
-    DATA_CLASS = MyDataClass(a=1, b=2)
+    DATA_CLASS = MyDataClass(a=1, b="two")
     NONE = None
     DATETIME = datetime(2018, 10, 29, 12, 46, 55, 308495)
     DATE = DATETIME.date()
@@ -139,8 +139,8 @@ inner_values = [
     (MyIntEnum, Fixture.INT_ENUM, Fixture.INT_ENUM),
     (MyFlag, Fixture.FLAG, Fixture.FLAG),
     (MyIntFlag, Fixture.INT_FLAG, Fixture.INT_FLAG),
-    (MyDataClass, Fixture.DATA_CLASS, Fixture.DICT),
-    (NoneType, Fixture.NONE, Fixture.NONE),
+    (MyDataClass, Fixture.DATA_CLASS, Fixture.MIXED_DICT),
+    (type(None), Fixture.NONE, Fixture.NONE),
     (datetime, Fixture.DATETIME, Fixture.DATETIME),
     (date, Fixture.DATE, Fixture.DATE),
     (time, Fixture.TIME, Fixture.TIME),
@@ -209,7 +209,7 @@ unsupported_field_types = [
 
 
 T = TypeVar("T", int, str)
-unsupported_typing_primitives = [AnyStr, Union[int, str], T]
+unsupported_typing_primitives = [AnyStr, T]
 
 
 x_factory_mapping = {
@@ -863,7 +863,7 @@ def test_invalid_field_value_deserialization_with_rounded_decimal():
         DataClass.from_dict({"x": "bad_value"})
 
 
-def test_invalid_field_value_deserialization_with_rounded_decimal_with_default():
+def test_invalid_field_value_deser_with_rounded_decimal_with_default():
     @dataclass
     class DataClass(DataClassDictMixin):
         x: RoundedDecimal() = Fixture.DECIMAL
