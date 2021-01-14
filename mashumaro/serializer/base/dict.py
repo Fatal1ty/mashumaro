@@ -1,4 +1,4 @@
-from typing import Any, Dict, Mapping, Type, TypeVar
+from typing import Mapping, Type, TypeVar
 
 from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
@@ -36,20 +36,6 @@ class DataClassDictMixin:
         use_enum: bool = False,
         use_datetime: bool = False,
     ) -> T:
-        ...
-
-    @classmethod
-    def __pre_deserialize__(cls: Type[T], d: Dict[Any, Any]) -> Dict[Any, Any]:
-        ...
-
-    @classmethod
-    def __post_deserialize__(cls: Type[T], obj: T) -> T:
-        ...
-
-    def __pre_serialize__(self: T) -> T:
-        ...
-
-    def __post_serialize__(self: T, d: Dict[Any, Any]) -> Dict[Any, Any]:
         ...
 
 

@@ -176,15 +176,8 @@ class CodeBuilder:
             "use_datetime=False):"
         )
         with self.indent():
-            pre_deserialize = self.namespace.get(__PRE_DESERIALIZE__)
-            if pre_deserialize:
-                if not isinstance(pre_deserialize, classmethod):
-                    raise BadHookSignature(
-                        f"`{__PRE_DESERIALIZE__}` must be a class method with "
-                        f"Callable[[Dict[Any, Any]], Dict[Any, Any]] signature"
-                    )
-                else:
-                    self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
+            if callable(getattr(self.cls, __PRE_DESERIALIZE__, None)):
+                self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
             self.add_line("try:")
             with self.indent():
                 self.add_line("kwargs = {}")
@@ -273,18 +266,10 @@ class CodeBuilder:
                 self.add_line("else:")
                 with self.indent():
                     self.add_line("raise")
-            post_deserialize = self.namespace.get(__POST_DESERIALIZE__)
-            if post_deserialize:
-                if not isinstance(post_deserialize, classmethod):
-                    raise BadHookSignature(
-                        f"`{__POST_DESERIALIZE__}` must be a class method "
-                        f"with Callable[[{type_name(self.cls)}], "
-                        f"{type_name(self.cls)}] signature"
-                    )
-                else:
-                    self.add_line(
-                        f"return cls.{__POST_DESERIALIZE__}(cls(**kwargs))"
-                    )
+            if callable(getattr(self.cls, __POST_DESERIALIZE__, None)):
+                self.add_line(
+                    f"return cls.{__POST_DESERIALIZE__}(cls(**kwargs))"
+                )
             else:
                 self.add_line("return cls(**kwargs)")
         self.add_line("setattr(cls, 'from_dict', from_dict)")
@@ -298,8 +283,7 @@ class CodeBuilder:
             "use_datetime=False):"
         )
         with self.indent():
-            pre_serialize = self.namespace.get(__PRE_SERIALIZE__)
-            if pre_serialize:
+            if callable(getattr(self.cls, __PRE_SERIALIZE__, None)):
                 self.add_line(f"self = self.{__PRE_SERIALIZE__}()")
             self.add_line("kwargs = {}")
             for fname, ftype in self.field_types.items():
@@ -317,8 +301,7 @@ class CodeBuilder:
                         metadata=metadata,
                     )
                     self.add_line(f"kwargs['{fname}'] = {packed_value}")
-            post_serialize = self.namespace.get(__POST_SERIALIZE__)
-            if post_serialize:
+            if callable(getattr(self.cls, __POST_SERIALIZE__, None)):
                 self.add_line(f"return self.{__POST_SERIALIZE__}(kwargs)")
             else:
                 self.add_line("return kwargs")
