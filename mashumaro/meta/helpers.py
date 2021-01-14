@@ -85,6 +85,12 @@ def is_init_var(t):
         raise NotImplementedError
 
 
+def get_class_that_define_method(method_name, cls):
+    for cls in cls.__mro__:
+        if method_name in cls.__dict__:
+            return cls
+
+
 __all__ = [
     "get_imported_module_names",
     "get_type_origin",
@@ -95,4 +101,5 @@ __all__ = [
     "is_type_var",
     "is_class_var",
     "is_init_var",
+    "get_class_that_define_method",
 ]
