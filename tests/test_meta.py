@@ -10,6 +10,7 @@ from mashumaro.meta.helpers import (
     is_generic,
     is_init_var,
 )
+from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
 
 def test_is_generic_unsupported_python():
@@ -77,3 +78,8 @@ def test_get_class_that_define_method():
     assert get_class_that_define_method("foo", B) == A
     assert get_class_that_define_method("bar", B) == A
     assert get_class_that_define_method("foobar", B) == B
+
+
+def test_get_unknown_declared_hook():
+    builder = CodeBuilder(object)
+    assert builder.get_declared_hook("unknown_name") is None

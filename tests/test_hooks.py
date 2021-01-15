@@ -111,17 +111,17 @@ def test_hook_in_parent_class(mocker):
     class A:
         @classmethod
         def __pre_deserialize__(cls, d):
-            return d
+            return d  # pragma no cover
 
         @classmethod
         def __post_deserialize__(cls, obj):
-            return obj
+            return obj  # pragma no cover
 
         def __pre_serialize__(self):
-            return self
+            return self  # pragma no cover
 
         def __post_serialize__(self, d):
-            return d
+            return d  # pragma no cover
 
     @dataclass
     class B(A, DataClassDictMixin):
