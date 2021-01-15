@@ -50,7 +50,7 @@ jobs:
     - name: Run tests with coverage
       run: pytest --cov=.
     - name: Upload Coverage
-      run: coveralls
+      run: coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_FLAG_NAME: posix-${{ matrix.python-version }}
@@ -76,7 +76,7 @@ jobs:
     - name: Run tests with coverage
       run: pytest --cov=.
     - name: Upload Coverage
-      run: coveralls
+      run: coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_FLAG_NAME: windows-${{ matrix.python-version }}
@@ -95,6 +95,6 @@ jobs:
     - name: Install dependencies
       run: pip install coveralls
     - name: Finish coveralls
-      run: coveralls --finish
+      run: coveralls --service=github --finish
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
