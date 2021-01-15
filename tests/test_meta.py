@@ -62,18 +62,18 @@ def test_no_code_builder():
 def test_get_class_that_define_method():
     class A:
         def foo(self):
-            pass
+            pass  # pragma no cover
 
         @classmethod
         def bar(cls):
-            pass
+            pass  # pragma no cover
 
         def foobar(self):
-            pass
+            pass  # pragma no cover
 
     class B(A):
         def foobar(self):
-            pass
+            pass  # pragma no cover
 
     assert get_class_that_define_method("foo", B) == A
     assert get_class_that_define_method("bar", B) == A
