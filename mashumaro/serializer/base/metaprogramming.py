@@ -28,6 +28,7 @@ from mashumaro.exceptions import (  # noqa
     UnserializableField,
 )
 from mashumaro.meta.helpers import (
+    get_class_that_define_method,
     get_imported_module_names,
     get_type_origin,
     is_class_var,
@@ -53,6 +54,8 @@ __PRE_SERIALIZE__ = "__pre_serialize__"
 __PRE_DESERIALIZE__ = "__pre_deserialize__"
 __POST_SERIALIZE__ = "__post_serialize__"
 __POST_DESERIALIZE__ = "__post_deserialize__"
+
+DataClassDictMixinPath = "mashumaro.serializer.base.dict.DataClassDictMixin"
 
 
 class CodeBuilder:
@@ -167,6 +170,13 @@ class CodeBuilder:
     def compile(self) -> None:
         exec("\n".join(self.lines), globals(), self.__dict__)
 
+    def get_declared_hook(self, method_name: str):
+        if not hasattr(self.cls, method_name):
+            return
+        cls = get_class_that_define_method(method_name, self.cls)
+        if type_name(cls) != DataClassDictMixinPath:
+            return cls.__dict__[method_name]
+
     def add_from_dict(self) -> None:
 
         self.reset()
@@ -176,7 +186,7 @@ class CodeBuilder:
             "use_datetime=False):"
         )
         with self.indent():
-            pre_deserialize = self.namespace.get(__PRE_DESERIALIZE__)
+            pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
             if pre_deserialize:
                 if not isinstance(pre_deserialize, classmethod):
                     raise BadHookSignature(
@@ -273,7 +283,7 @@ class CodeBuilder:
                 self.add_line("else:")
                 with self.indent():
                     self.add_line("raise")
-            post_deserialize = self.namespace.get(__POST_DESERIALIZE__)
+            post_deserialize = self.get_declared_hook(__POST_DESERIALIZE__)
             if post_deserialize:
                 if not isinstance(post_deserialize, classmethod):
                     raise BadHookSignature(
@@ -298,7 +308,7 @@ class CodeBuilder:
             "use_datetime=False):"
         )
         with self.indent():
-            pre_serialize = self.namespace.get(__PRE_SERIALIZE__)
+            pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
             if pre_serialize:
                 self.add_line(f"self = self.{__PRE_SERIALIZE__}()")
             self.add_line("kwargs = {}")
@@ -317,7 +327,7 @@ class CodeBuilder:
                         metadata=metadata,
                     )
                     self.add_line(f"kwargs['{fname}'] = {packed_value}")
-            post_serialize = self.namespace.get(__POST_SERIALIZE__)
+            post_serialize = self.get_declared_hook(__POST_SERIALIZE__)
             if post_serialize:
                 self.add_line(f"return self.{__POST_SERIALIZE__}(kwargs)")
             else:
