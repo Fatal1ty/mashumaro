@@ -5,10 +5,10 @@ import pytest
 
 from mashumaro import DataClassDictMixin
 from mashumaro.meta.helpers import (
+    get_class_that_define_method,
     is_class_var,
     is_generic,
     is_init_var,
-    get_class_that_define_method,
 )
 
 
