@@ -386,7 +386,9 @@ class CodeBuilder:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
                 )
-        elif issubclass(origin_type, typing.Collection):
+        elif issubclass(origin_type, typing.Collection) and not issubclass(
+            origin_type, enum.Enum
+        ):
             args = getattr(ftype, "__args__", ())
 
             def inner_expr(arg_num=0, v_name="value"):
@@ -567,7 +569,9 @@ class CodeBuilder:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
                 )
-        elif issubclass(origin_type, typing.Collection):
+        elif issubclass(origin_type, typing.Collection) and not issubclass(
+            origin_type, enum.Enum
+        ):
             args = getattr(ftype, "__args__", ())
 
             def inner_expr(arg_num=0, v_name="value"):
