@@ -38,6 +38,7 @@ from mashumaro.meta.helpers import (
     is_type_var,
     is_union,
     type_name,
+    with_instance_check,
 )
 from mashumaro.meta.patch import patch_fromisoformat
 from mashumaro.serializer.base.helpers import *  # noqa
@@ -699,19 +700,39 @@ class CodeBuilder:
             if overridden:
                 return overridden
             elif issubclass(origin_type, pathlib.PosixPath):
-                return f"pathlib.PosixPath({value_name})"
+                return with_instance_check(
+                    f"pathlib.PosixPath({value_name})", origin_type, value_name
+                )
             elif issubclass(origin_type, pathlib.WindowsPath):
-                return f"pathlib.WindowsPath({value_name})"
+                return with_instance_check(
+                    f"pathlib.WindowsPath({value_name})",
+                    origin_type,
+                    value_name,
+                )
             elif issubclass(origin_type, pathlib.Path):
-                return f"pathlib.Path({value_name})"
+                return with_instance_check(
+                    f"pathlib.Path({value_name})", origin_type, value_name
+                )
             elif issubclass(origin_type, pathlib.PurePosixPath):
-                return f"pathlib.PurePosixPath({value_name})"
+                return with_instance_check(
+                    f"pathlib.PurePosixPath({value_name})",
+                    origin_type,
+                    value_name,
+                )
             elif issubclass(origin_type, pathlib.PureWindowsPath):
-                return f"pathlib.PureWindowsPath({value_name})"
+                return with_instance_check(
+                    f"pathlib.PureWindowsPath({value_name})",
+                    origin_type,
+                    value_name,
+                )
             elif issubclass(origin_type, pathlib.PurePath):
-                return f"pathlib.PurePath({value_name})"
+                return with_instance_check(
+                    f"pathlib.PurePath({value_name})", origin_type, value_name
+                )
             elif origin_type is os.PathLike:
-                return f"pathlib.PurePath({value_name})"
+                return with_instance_check(
+                    f"pathlib.PurePath({value_name})", origin_type, value_name
+                )
             else:
                 return f"{type_name(origin_type)}({value_name})"
         elif issubclass(origin_type, enum.Enum):
@@ -760,22 +781,44 @@ class CodeBuilder:
         elif origin_type is datetime.timezone:
             return overridden or f"parse_timezone({value_name})"
         elif origin_type is uuid.UUID:
-            return overridden or f"uuid.UUID({value_name})"
+            return overridden or with_instance_check(
+                f"uuid.UUID({value_name})", origin_type, value_name
+            )
         elif origin_type is ipaddress.IPv4Address:
-            return overridden or f"ipaddress.IPv4Address({value_name})"
+            return overridden or with_instance_check(
+                f"ipaddress.IPv4Address({value_name})", origin_type, value_name
+            )
         elif origin_type is ipaddress.IPv6Address:
-            return overridden or f"ipaddress.IPv6Address({value_name})"
+            return overridden or with_instance_check(
+                f"ipaddress.IPv6Address({value_name})", origin_type, value_name
+            )
         elif origin_type is ipaddress.IPv4Network:
-            return overridden or f"ipaddress.IPv4Network({value_name})"
+            return overridden or with_instance_check(
+                f"ipaddress.IPv4Network({value_name})", origin_type, value_name
+            )
         elif origin_type is ipaddress.IPv6Network:
-            return overridden or f"ipaddress.IPv6Network({value_name})"
+            return overridden or with_instance_check(
+                f"ipaddress.IPv6Network({value_name})", origin_type, value_name
+            )
         elif origin_type is ipaddress.IPv4Interface:
-            return overridden or f"ipaddress.IPv4Interface({value_name})"
+            return overridden or with_instance_check(
+                f"ipaddress.IPv4Interface({value_name})",
+                origin_type,
+                value_name,
+            )
         elif origin_type is ipaddress.IPv6Interface:
-            return overridden or f"ipaddress.IPv6Interface({value_name})"
+            return overridden or with_instance_check(
+                f"ipaddress.IPv6Interface({value_name})",
+                origin_type,
+                value_name,
+            )
         elif origin_type is Decimal:
-            return overridden or f"Decimal({value_name})"
+            return overridden or with_instance_check(
+                f"Decimal({value_name})", origin_type, value_name
+            )
         elif origin_type is Fraction:
-            return overridden or f"Fraction({value_name})"
+            return overridden or with_instance_check(
+                f"Fraction({value_name})", origin_type, value_name
+            )
 
         raise UnserializableField(fname, ftype, parent)

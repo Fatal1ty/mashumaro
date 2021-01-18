@@ -91,6 +91,12 @@ def get_class_that_define_method(method_name, cls):
             return cls
 
 
+def with_instance_check(
+    statement: str, origin_type, value_name: str = "value"
+) -> str:
+    return f"{value_name} if isinstance({value_name}, {type_name(origin_type)}) else {statement}"
+
+
 __all__ = [
     "get_imported_module_names",
     "get_type_origin",
