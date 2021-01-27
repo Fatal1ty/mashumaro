@@ -60,6 +60,7 @@ from .entities import (
     MyFlag,
     MyIntEnum,
     MyIntFlag,
+    MyStrEnum,
 )
 from .utils import same_types
 
@@ -84,6 +85,7 @@ class Fixture:
     STR = "123"
     ENUM = MyEnum.a
     INT_ENUM = MyIntEnum.a
+    STR_ENUM = MyStrEnum.a
     FLAG = MyFlag.a
     INT_FLAG = MyIntFlag.a
     DATA_CLASS = MyDataClass(a=1, b=2)
@@ -136,6 +138,7 @@ inner_values = [
     (bytearray, Fixture.BYTE_ARRAY, Fixture.BYTE_ARRAY),
     (str, Fixture.STR, Fixture.STR),
     (MyEnum, Fixture.ENUM, Fixture.ENUM),
+    (MyStrEnum, Fixture.STR_ENUM, Fixture.STR_ENUM),
     (MyIntEnum, Fixture.INT_ENUM, Fixture.INT_ENUM),
     (MyFlag, Fixture.FLAG, Fixture.FLAG),
     (MyIntFlag, Fixture.INT_FLAG, Fixture.INT_FLAG),
