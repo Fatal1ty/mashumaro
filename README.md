@@ -49,10 +49,10 @@ Supported serialization formats
 This framework adds methods for dumping to and loading from the
 following formats:
 
-* plain dict
-* json
-* yaml
-* msgpack
+* [plain dict](https://docs.python.org/3/library/stdtypes.html#mapping-types-dict)
+* [JSON](https://www.json.org)
+* [YAML](https://yaml.org)
+* [MessagePack](https://msgpack.org)
 
 Plain dict can be useful when you need to pass a dict object to a
 third-party library, such as a client for MongoDB.
