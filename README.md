@@ -172,6 +172,8 @@ building at runtime.
 Benchmark
 --------------------------------------------------------------------------------
 
+<img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load.png" width="400"><img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump.png" width="400">
+
 <table>
   <col>
   <colgroup span="2"></colgroup>
