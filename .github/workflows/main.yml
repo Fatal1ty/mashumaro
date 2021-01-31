@@ -48,7 +48,7 @@ jobs:
         pip install .
         pip install -r requirements-dev.txt
     - name: Run tests with coverage
-      run: pytest --cov=mashumaro,tests
+      run: pytest --cov=mashumaro --cov=tests
     - name: Upload Coverage
       run: coveralls --service=github
       env:
@@ -74,7 +74,7 @@ jobs:
         pip install .
         pip install -r requirements-dev.txt
     - name: Run tests with coverage
-      run: pytest --cov=mashumaro,tests
+      run: pytest --cov=mashumaro --cov=tests
     - name: Upload Coverage
       run: coveralls --service=github
       env:
