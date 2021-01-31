@@ -21,6 +21,7 @@ Table of contents
 * [Supported field types](#supported-field-types)
 * [Usage example](#usage-example)
 * [How does it work?](#how-does-it-work)
+* [Benchmark](#benchmark)
 * [API](#api)
 * [Customization](#customization)
     * [User defined classes](#user-defined-classes)
@@ -167,6 +168,68 @@ This framework works by taking the schema of the data and generating a
 specific parser and builder for exactly that schema.
 This is much faster than inspection of field types on every call of parsing or
 building at runtime.
+
+Benchmark
+--------------------------------------------------------------------------------
+
+<table>
+  <col>
+  <colgroup span="2"></colgroup>
+  <colgroup span="2"></colgroup>
+  <tr>
+    <th rowspan="2">Framework</th>
+    <th colspan="2" scope="colgroup">From dict</th>
+    <th colspan="2" scope="colgroup">To dict</th>
+</tr>
+<tr>
+    <th scope="col">Time</th>
+    <th scope="col">Slowdown factor</th>
+    <th scope="col">Time</th>
+    <th scope="col">Slowdown factor</th>
+</tr>
+<tr>
+    <th scope="row"><a href="https://github.com/Fatal1ty/mashumaro">mashumaro</a></th>
+    <td>0.04316</td>
+    <td>1x</td>
+    <td>0.02751</td>
+    <td>1x</td>
+</tr>
+<tr>
+    <th scope="row"><a href="https://github.com/Tinche/cattrs">cattrs</a></th>
+    <td>0.06518</td>
+    <td>1.51x</td>
+    <td>0.04856</td>
+    <td>1.77x</td>
+</tr>
+<tr>
+    <th scope="row"><a href="https://github.com/samuelcolvin/pydantic/">pydantic</a></th>
+    <td>0.23339</td>
+    <td>5.41x</td>
+    <td>0.11464</td>
+    <td>4.17x</td>
+</tr>
+<tr>
+    <th scope="row"><a href="https://github.com/marshmallow-code/marshmallow">marshmallow</a></th>
+    <td>0.24699</td>
+    <td>5.72x</td>
+    <td>0.09425</td>
+    <td>3.43x</td>
+</tr>
+<tr>
+    <th scope="row"><a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.asdict">dataclasses</a></th>
+    <td>—</td>
+    <td>—</td>
+    <td>0.22689</td>
+    <td>5.26x</td>
+</tr>
+<tr>
+    <th scope="row"><a href="https://github.com/konradhalas/dacite">dacite</a></th>
+    <td>0.91482</td>
+    <td>21.2x</td>
+    <td>—</td>
+    <td>—</td>
+</tr>
+</table>
 
 API
 --------------------------------------------------------------------------------
@@ -532,7 +595,6 @@ TODO
 --------------------------------------------------------------------------------
 
 * add Union support (try to match types on each call)
-* write benchmarks
 * add optional validation
 * write custom useful types such as URL, Email etc
 * write documentation
