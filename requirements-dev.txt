@@ -11,3 +11,12 @@ black>=20.8b1
 # third party features
 ciso8601>=2.1.3
 pendulum>=2.1.2
+
+# benchmark
+termtables>=0.2.3
+pytablewriter[html]>=0.58.0
+matplotlib>=3.3.4
+cattrs==1.1.2
+pydantic==1.7.3
+dacite==1.6.0
+marshmallow==3.10.0
