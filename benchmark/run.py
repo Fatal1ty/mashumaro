@@ -245,7 +245,7 @@ labels = ["mashumaro", "cattrs", "pydantic", "dacite", "marshmallow"]
 bar = plt.bar(x, height=y, tick_label=labels, label="a")
 plt.title = "Load time"
 plt.show()
-fig.savefig("charts/load.png")
+# fig.savefig("charts/load.png")
 
 # Serialization plot
 
@@ -266,4 +266,4 @@ labels = ["mashumaro", "cattrs", "pydantic", "dataclasses", "marshmallow"]
 bar = plt.bar(x, height=y, tick_label=labels, label="a")
 plt.title = "Dump time"
 plt.show()
-fig.savefig("charts/dump.png")
+# fig.savefig("charts/dump.png")

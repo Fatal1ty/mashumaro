@@ -172,6 +172,13 @@ building at runtime.
 Benchmark
 --------------------------------------------------------------------------------
 
+* macOS 11.1 Big Sur
+* Apple M1
+* 16GB RAM
+
+Load and dump [sample data](https://github.com/Fatal1ty/mashumaro/blob/master/benchmark/sample.py) 1.000 times in 5 runs.
+The following figures show the best overall time in each case.
+
 <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load.png" width="400"><img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump.png" width="400">
 
 <table>
@@ -232,6 +239,16 @@ Benchmark
     <td>—</td>
 </tr>
 </table>
+
+To run benchmark in your environment:
+```bash
+git clone git@github.com:Fatal1ty/mashumaro.git
+cd mashumaro
+python3 -m venv env && source env/bin/activate
+pip install -e .
+pip install -r requirements-dev.txt
+python benchmark/run.py
+```
 
 API
 --------------------------------------------------------------------------------
