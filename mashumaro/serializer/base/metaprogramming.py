@@ -384,6 +384,11 @@ class CodeBuilder:
                 f"self.__dataclass_fields__['{fname}'].type"
                 f"._serialize({value_name})"
             )
+        if type_name(ftype) in self.cls._serializable_encoders:
+            return (
+                f"self._serializable_encoders['{type_name(ftype)}']"
+                f"._serialize({value_name})"
+            )
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
@@ -619,6 +624,11 @@ class CodeBuilder:
             return overridden or (
                 f"cls.__dataclass_fields__['{fname}'].type"
                 f"._deserialize({value_name})"
+            )
+        if type_name(ftype) in self.cls._serializable_encoders:
+            return (
+                f"cls._serializable_encoders['{type_name(ftype)}']"
+                "._deserialize({value_name})"
             )
 
         origin_type = get_type_origin(ftype)
