@@ -436,13 +436,13 @@ assert DateTimeFormats.from_dict(dictionary) == formats
 ### Field options
 
 In some cases creating a new class just for one little thing could be
-excessive. You can use `dataclasses.field` as a field value and configure some
-serialization aspects through its `metadata` argument. Next section describes
-all supported options to use in `metadata` mapping.
+excessive. You can use [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field)
+function as a default field value to configure some serialization aspects through its
+`metadata` parameter. Next section describes all supported options to use in `metadata` mapping.
 
 #### `serialize` option
 
-This option allows you to change the default serialization method through
+This option allows you to change the serialization method through
 a value of type `Callable[[Any], Any]` that could be any callable object like
 a function, a class method, a class instance method, an instance of a callable
 class or even a lambda function.
@@ -461,7 +461,7 @@ class A(DataClassDictMixin):
 
 #### `deserialize` option
 
-This option allows you to change the default deserialization method. When using
+This option allows you to change the deserialization method. When using
 this option, the deserialization behaviour depends on what type of value the
 option has. It could be either `Callable[[Any], Any]` or `str`.
 
