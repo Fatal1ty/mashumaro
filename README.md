@@ -75,6 +75,7 @@ There is support for generic types from the standard *typing* module:
 
 for special primitives from the *typing* module:
 * `Optional`
+* `Union`
 * `Any`
 
 for enumerations based on classes from the standard *enum* module:
