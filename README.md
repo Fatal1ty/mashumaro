@@ -613,7 +613,5 @@ print(obj.to_json())  # '{"user": "name"}'
 TODO
 --------------------------------------------------------------------------------
 
-* add Union support (try to match types on each call)
 * add optional validation
 * write custom useful types such as URL, Email etc
-* write documentation

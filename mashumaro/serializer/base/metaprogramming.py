@@ -58,19 +58,41 @@ __POST_DESERIALIZE__ = "__post_deserialize__"
 DataClassDictMixinPath = "mashumaro.serializer.base.dict.DataClassDictMixin"
 
 
+class CodeLines:
+    def __init__(self):
+        self._lines: typing.List[str] = []
+        self._current_indent: str = ""
+
+    def append(self, line: str):
+        self._lines.append(f"{self._current_indent}{line}")
+
+    @contextmanager
+    def indent(self) -> typing.Generator[None, None, None]:
+        self._current_indent += " " * 4
+        try:
+            yield
+        finally:
+            self._current_indent = self._current_indent[:-4]
+
+    def as_text(self) -> str:
+        return "\n".join(self._lines)
+
+    def reset(self):
+        self._lines = []
+        self._current_indent = ""
+
+
 class CodeBuilder:
     def __init__(self, cls):
         self.cls = cls
-        self.lines: typing.List[str] = []
+        self.lines: CodeLines = CodeLines()
         self.modules: typing.Set[str] = set()
         self.globals: typing.Set[str] = set()
-        self._current_indent: str = ""
 
     def reset(self) -> None:
-        self.lines = []
+        self.lines.reset()
         self.modules = INITIAL_MODULES.copy()
         self.globals = set()
-        self._current_indent = ""
 
     @property
     def namespace(self) -> typing.Dict[typing.Any, typing.Any]:
@@ -156,19 +178,16 @@ class CodeBuilder:
                 with self.indent():
                     self.add_line(f"global {root_module}")
 
-    def add_line(self, line) -> None:
-        self.lines.append(f"{self._current_indent}{line}")
+    def add_line(self, line: str) -> None:
+        self.lines.append(line)
 
     @contextmanager
     def indent(self) -> typing.Generator[None, None, None]:
-        self._current_indent += " " * 4
-        try:
+        with self.lines.indent():
             yield
-        finally:
-            self._current_indent = self._current_indent[:-4]
 
     def compile(self) -> None:
-        exec("\n".join(self.lines), globals(), self.__dict__)
+        exec(self.lines.as_text(), globals(), self.__dict__)
 
     def get_declared_hook(self, method_name: str):
         if not hasattr(self.cls, method_name):
@@ -351,13 +370,16 @@ class CodeBuilder:
                 overridden = f"self.__{fname}_serialize(self.{fname})"
 
         if is_dataclass(ftype):
-            return f"{value_name}.to_dict(use_bytes, use_enum, use_datetime)"
+            return (
+                overridden
+                or f"{value_name}.to_dict(use_bytes, use_enum, use_datetime)"
+            )
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
                 return f"{value_name}._serialize()"
         if isinstance(ftype, SerializationStrategy):
-            return (
+            return overridden or (
                 f"self.__dataclass_fields__['{fname}'].type"
                 f"._serialize({value_name})"
             )
@@ -371,8 +393,12 @@ class CodeBuilder:
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
                     return self._pack_value(fname, args[0], parent)
                 else:
-                    raise UnserializableDataError(
-                        "Unions are not supported by mashumaro"
+                    method_name = self._add_pack_union(
+                        fname, ftype, args, parent
+                    )
+                    return (
+                        f"self.{method_name}({value_name},"
+                        f"use_bytes,use_enum,use_datetime)"
                     )
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(
@@ -529,7 +555,7 @@ class CodeBuilder:
                 overridden = f"cls.__{fname}_deserialize({value_name})"
 
         if is_dataclass(ftype):
-            return (
+            return overridden or (
                 f"{type_name(ftype)}.from_dict({value_name}, "
                 f"use_bytes, use_enum, use_datetime)"
             )
@@ -538,7 +564,7 @@ class CodeBuilder:
             if issubclass(ftype, SerializableType):
                 return f"{type_name(ftype)}._deserialize({value_name})"
         if isinstance(ftype, SerializationStrategy):
-            return (
+            return overridden or (
                 f"cls.__dataclass_fields__['{fname}'].type"
                 f"._deserialize({value_name})"
             )
@@ -554,8 +580,12 @@ class CodeBuilder:
                         fname, args[0], parent, metadata=metadata
                     )
                 else:
-                    raise UnserializableDataError(
-                        "Unions are not supported by mashumaro"
+                    method_name = self._add_unpack_union(
+                        fname, ftype, args, parent
+                    )
+                    return (
+                        f"cls.{method_name}({value_name},"
+                        f"use_bytes,use_enum,use_datetime)"
                     )
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(
@@ -783,3 +813,59 @@ class CodeBuilder:
             return overridden or f"Fraction({value_name})"
 
         raise UnserializableField(fname, ftype, parent)
+
+    def _add_pack_union(self, fname, ftype, args, parent) -> str:
+        lines = CodeLines()
+        method_name = (
+            f"__pack_union_{parent.__name__}_{fname}__"
+            f"{str(uuid.uuid4().hex)}"
+        )
+        lines.append(
+            f"def {method_name}"
+            f"(self,value,use_bytes=False,use_enum=False,use_datetime=False):"
+        )
+        with lines.indent():
+            for packer in [
+                self._pack_value(fname, arg_type, parent) for arg_type in args
+            ]:
+                lines.append("try:")
+                with lines.indent():
+                    lines.append(f"return {packer}")
+                lines.append("except:")
+                with lines.indent():
+                    lines.append("pass")
+            lines.append(
+                f"raise InvalidFieldValue('{fname}',{ftype},value,cls)"
+            )
+        lines.append(f"setattr(cls, '{method_name}', {method_name})")
+        exec(lines.as_text(), globals(), self.__dict__)
+        return method_name
+
+    def _add_unpack_union(self, fname, ftype, args, parent) -> str:
+        lines = CodeLines()
+        method_name = (
+            f"__unpack_union_{parent.__name__}_{fname}__"
+            f"{str(uuid.uuid4().hex)}"
+        )
+        lines.append("@classmethod")
+        lines.append(
+            f"def {method_name}"
+            f"(cls,value,use_bytes=False,use_enum=False,use_datetime=False):"
+        )
+        with lines.indent():
+            for unpacker in [
+                self._unpack_field_value(fname, arg_type, parent)
+                for arg_type in args
+            ]:
+                lines.append("try:")
+                with lines.indent():
+                    lines.append(f"return {unpacker}")
+                lines.append("except:")
+                with lines.indent():
+                    lines.append("pass")
+            lines.append(
+                f"raise InvalidFieldValue('{fname}',{ftype},value,cls)"
+            )
+        lines.append(f"setattr(cls, '{method_name}', {method_name})")
+        exec(lines.as_text(), globals(), self.__dict__)
+        return method_name
