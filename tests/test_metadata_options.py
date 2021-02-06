@@ -8,6 +8,8 @@ import pytest
 from mashumaro import DataClassDictMixin
 from mashumaro.exceptions import UnserializableField
 
+from .entities import MutableString, ThirdPartyType
+
 
 def test_ciso8601_datetime_parser():
     @dataclass
@@ -210,3 +212,35 @@ def test_datetime_serialize_option():
     should_be = {"x": "2021-01-02 03:04:05"}
     instance = DataClass(x=datetime(2021, 1, 2, 3, 4, 5, tzinfo=timezone.utc))
     assert instance.to_dict() == should_be
+
+
+def test_serializable_type_overridden():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: ThirdPartyType = field(
+            metadata={
+                "deserialize": lambda v: ThirdPartyType(v),
+                "serialize": lambda v: v.value,
+            }
+        )
+
+    should_be = DataClass(x=ThirdPartyType(123))
+    instance = DataClass.from_dict({"x": 123})
+    assert instance == should_be
+    assert instance.to_dict() == {"x": 123}
+
+
+def test_third_party_type_overridden():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MutableString = field(
+            metadata={
+                "deserialize": lambda s: MutableString(s.upper()),
+                "serialize": lambda v: str(v).lower(),
+            }
+        )
+
+    should_be = DataClass(x=MutableString("ABC"))
+    instance = DataClass.from_dict({"x": "abc"})
+    assert instance == should_be
+    assert instance.to_dict() == {"x": "abc"}

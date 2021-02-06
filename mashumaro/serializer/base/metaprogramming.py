@@ -377,7 +377,7 @@ class CodeBuilder:
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
-                return f"{value_name}._serialize()"
+                return overridden or f"{value_name}._serialize()"
         if isinstance(ftype, SerializationStrategy):
             return overridden or (
                 f"self.__dataclass_fields__['{fname}'].type"
@@ -539,6 +539,8 @@ class CodeBuilder:
             return overridden or f"str({value_name})"
         elif origin_type is Fraction:
             return overridden or f"str({value_name})"
+        elif overridden:
+            return overridden
 
         raise UnserializableField(fname, ftype, parent)
 
@@ -562,7 +564,10 @@ class CodeBuilder:
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
-                return f"{type_name(ftype)}._deserialize({value_name})"
+                return (
+                    overridden
+                    or f"{type_name(ftype)}._deserialize({value_name})"
+                )
         if isinstance(ftype, SerializationStrategy):
             return overridden or (
                 f"cls.__dataclass_fields__['{fname}'].type"
@@ -811,6 +816,8 @@ class CodeBuilder:
             return overridden or f"Decimal({value_name})"
         elif origin_type is Fraction:
             return overridden or f"Fraction({value_name})"
+        elif overridden:
+            return overridden
 
         raise UnserializableField(fname, ftype, parent)
 

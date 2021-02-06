@@ -71,3 +71,11 @@ class CustomPath(PathLike):
 class MyDataClassWithUnion(DataClassDictMixin):
     a: Union[int, str]
     b: Union[MyEnum, int]
+
+
+class ThirdPartyType:
+    def __init__(self, value):
+        self.value = value
+
+    def __eq__(self, other):
+        return isinstance(other, ThirdPartyType) and self.value == other.value
