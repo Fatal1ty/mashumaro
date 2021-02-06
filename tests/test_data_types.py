@@ -56,6 +56,7 @@ from .entities import (
     CustomPath,
     MutableString,
     MyDataClass,
+    MyDataClassWithUnion,
     MyEnum,
     MyFlag,
     MyIntEnum,
@@ -89,6 +90,7 @@ class Fixture:
     FLAG = MyFlag.a
     INT_FLAG = MyIntFlag.a
     DATA_CLASS = MyDataClass(a=1, b=2)
+    DATA_CLASS_WITH_UNION = MyDataClassWithUnion(a=1, b=2)
     NONE = None
     DATETIME = datetime(2018, 10, 29, 12, 46, 55, 308495)
     DATE = DATETIME.date()
@@ -143,6 +145,7 @@ inner_values = [
     (MyFlag, Fixture.FLAG, Fixture.FLAG),
     (MyIntFlag, Fixture.INT_FLAG, Fixture.INT_FLAG),
     (MyDataClass, Fixture.DATA_CLASS, Fixture.DICT),
+    (MyDataClassWithUnion, Fixture.DATA_CLASS_WITH_UNION, Fixture.DICT),
     (NoneType, Fixture.NONE, Fixture.NONE),
     (datetime, Fixture.DATETIME, Fixture.DATETIME),
     (date, Fixture.DATE, Fixture.DATE),
@@ -212,7 +215,7 @@ unsupported_field_types = [
 
 
 T = TypeVar("T", int, str)
-unsupported_typing_primitives = [AnyStr, Union[int, str], T]
+unsupported_typing_primitives = [AnyStr, T]
 
 
 x_factory_mapping = {

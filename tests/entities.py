@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
+from typing import Union
 
 from mashumaro import DataClassDictMixin
 from mashumaro.types import SerializableType
@@ -64,3 +65,9 @@ class CustomPath(PathLike):
 
     def __eq__(self, other):
         return isinstance(other, CustomPath) and self._path == other._path
+
+
+@dataclass
+class MyDataClassWithUnion(DataClassDictMixin):
+    a: Union[int, str]
+    b: Union[MyEnum, int]

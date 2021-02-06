@@ -75,6 +75,7 @@ There is support for generic types from the standard *typing* module:
 
 for special primitives from the *typing* module:
 * `Optional`
+* `Union`
 * `Any`
 
 for enumerations based on classes from the standard *enum* module:
@@ -613,7 +614,5 @@ print(obj.to_json())  # '{"user": "name"}'
 TODO
 --------------------------------------------------------------------------------
 
-* add Union support (try to match types on each call)
 * add optional validation
 * write custom useful types such as URL, Email etc
-* write documentation
