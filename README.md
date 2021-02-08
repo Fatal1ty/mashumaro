@@ -508,7 +508,7 @@ class C(DataClassDictMixin):
 ```
 
 If you don't want to remember the names of the options you can use
-`field_params` helper function:
+`field_options` helper function:
 
 ```python
 from dataclasses import dataclass, field
