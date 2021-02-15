@@ -244,3 +244,24 @@ def test_third_party_type_overridden():
     instance = DataClass.from_dict({"x": "abc"})
     assert instance == should_be
     assert instance.to_dict() == {"x": "abc"}
+
+
+def test_non_serializable_class_options():
+    @dataclass
+    class DataClassA:
+        name: str
+        unique_id: int
+
+    @dataclass
+    class DataClassB(DataClassDictMixin):
+        objA: DataClassA = field(
+            metadata={"serialize": lambda v: None, "deserialize": lambda v: None}
+        )
+        name: str
+    instance = DataClassB(name="testing", objA={"name": "testingA", "unique_id" :123})
+    assert instance
+    should_be = {"name": "testing", "objA": None}
+    assert instance.to_dict() == should_be
+    dct = {"name": "testing", "objA": {"name": "testingA", "unique_id": 123}}
+    instance = DataClassB.from_dict(dct)
+    assert instance.objA is None

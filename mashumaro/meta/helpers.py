@@ -29,7 +29,7 @@ def type_name(t):
         return str(t)
     else:
         try:
-            return f"{t.__module__}.{t.__qualname__}"
+            return f"{t.__module__}.{t.__name__}"
         except AttributeError:
             return str(t)
 
