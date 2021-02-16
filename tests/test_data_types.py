@@ -21,6 +21,7 @@ from typing import (
     AnyStr,
     ChainMap,
     ClassVar,
+    Counter,
     Deque,
     Dict,
     FrozenSet,
@@ -34,8 +35,12 @@ from typing import (
     Set,
     Tuple,
     TypeVar,
-    Union,
 )
+
+try:
+    from typing import OrderedDict  # New in version 3.7.2
+except ImportError:
+    OrderedDict = Dict
 
 import pytest
 
@@ -80,6 +85,8 @@ class Fixture:
     CHAIN_MAP = collections.ChainMap({"a": 1, "b": 2}, {"c": 3, "d": 4})
     MAPS_LIST = [{"a": 1, "b": 2}, {"c": 3, "d": 4}]
     DICT = {"a": 1, "b": 2}
+    ORDERED_DICT = collections.OrderedDict(a=1, b=2)
+    COUNTER = collections.Counter(a=1, b=2)
     BYTES = b"123"
     BYTES_BASE64 = "MTIz\n"
     BYTE_ARRAY = bytearray(b"123")
@@ -134,6 +141,8 @@ inner_values = [
     (ChainMap[str, int], Fixture.CHAIN_MAP, Fixture.MAPS_LIST),
     (Dict[str, int], Fixture.DICT, Fixture.DICT),
     (Mapping[str, int], Fixture.DICT, Fixture.DICT),
+    (OrderedDict[str, int], Fixture.ORDERED_DICT, Fixture.DICT),
+    (Counter[str], Fixture.COUNTER, Fixture.DICT),
     (MutableMapping[str, int], Fixture.DICT, Fixture.DICT),
     (Sequence[int], Fixture.LIST, Fixture.LIST),
     (bytes, Fixture.BYTES, Fixture.BYTES),
@@ -199,7 +208,7 @@ hashable_inner_values = [
 
 
 generic_sequence_types = [List, Deque, Tuple, Set, FrozenSet]
-generic_mapping_types = [Dict, Mapping, MutableMapping]
+generic_mapping_types = [Dict, Mapping, OrderedDict, MutableMapping]
 
 
 unsupported_field_types = [
@@ -211,6 +220,8 @@ unsupported_field_types = [
     collections.ChainMap,
     dict,
     Queue,
+    collections.OrderedDict,
+    collections.Counter,
 ]
 
 
@@ -228,12 +239,14 @@ x_factory_mapping = {
     Dict: lambda items: {k: v for k, v in items},
     Mapping: lambda items: {k: v for k, v in items},
     MutableMapping: lambda items: {k: v for k, v in items},
+    OrderedDict: lambda items: {k: v for k, v in items},
+    Counter: lambda items: collections.Counter({k: v for k, v in items}),
     ChainMap: lambda items: collections.ChainMap(*({k: v} for k, v in items)),
 }
 
 
 # noinspection PyCallingNonCallable
-def check_one_arg_generic(
+def check_collection_generic(
     type_, value_info, use_bytes, use_enum, use_datetime
 ):
     x_type, x_value, x_value_dumped = value_info
@@ -283,18 +296,26 @@ def check_one_arg_generic(
 
 
 # noinspection PyCallingNonCallable
-def check_two_args_generic(
+def check_mapping_generic(
     type_, key_info, value_info, use_bytes, use_enum, use_datetime
 ):
     k_type, k_value, k_value_dumped = key_info
     v_type, v_value, v_value_dumped = value_info
 
+    if type_ is Counter:
+        x_type = type_[k_type]
+    else:
+        x_type = type_[k_type, v_type]
+
     @dataclass
     class DataClass(DataClassDictMixin):
-        x: type_[k_type, v_type]
+        x: x_type
 
     x_factory = x_factory_mapping[type_]
-    x = x_factory([(k_value, v_value) for _ in range(3)])
+    if type_ is Counter:
+        x = x_factory([(k_value, 1) for _ in range(3)])
+    else:
+        x = x_factory([(k_value, v_value) for _ in range(3)])
     instance = DataClass(x)
     if k_value_dumped is Fixture.BYTES:
         k_dumped = Fixture.BYTES if use_bytes else Fixture.BYTES_BASE64
@@ -325,6 +346,8 @@ def check_two_args_generic(
         dumped = {
             "x": x_factory([(k_dumped, v_dumped) for _ in range(3)]).maps
         }
+    elif type_ is Counter:
+        dumped = {"x": x_factory([(k_dumped, 1) for _ in range(3)])}
     else:
         dumped = {"x": x_factory([(k_dumped, v_dumped) for _ in range(3)])}
     instance_dumped = instance.to_dict(
@@ -405,7 +428,9 @@ def test_one_level(value_info, use_bytes, use_enum, use_datetime):
 @pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
 def test_with_generic_list(value_info, use_bytes, use_enum, use_datetime):
-    check_one_arg_generic(List, value_info, use_bytes, use_enum, use_datetime)
+    check_collection_generic(
+        List, value_info, use_bytes, use_enum, use_datetime
+    )
 
 
 @pytest.mark.parametrize("use_datetime", [True, False])
@@ -413,7 +438,9 @@ def test_with_generic_list(value_info, use_bytes, use_enum, use_datetime):
 @pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
 def test_with_generic_deque(value_info, use_bytes, use_enum, use_datetime):
-    check_one_arg_generic(Deque, value_info, use_bytes, use_enum, use_datetime)
+    check_collection_generic(
+        Deque, value_info, use_bytes, use_enum, use_datetime
+    )
 
 
 @pytest.mark.parametrize("use_datetime", [True, False])
@@ -421,7 +448,9 @@ def test_with_generic_deque(value_info, use_bytes, use_enum, use_datetime):
 @pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
 def test_with_generic_tuple(value_info, use_bytes, use_enum, use_datetime):
-    check_one_arg_generic(Tuple, value_info, use_bytes, use_enum, use_datetime)
+    check_collection_generic(
+        Tuple, value_info, use_bytes, use_enum, use_datetime
+    )
 
 
 @pytest.mark.parametrize("use_datetime", [True, False])
@@ -429,7 +458,9 @@ def test_with_generic_tuple(value_info, use_bytes, use_enum, use_datetime):
 @pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", hashable_inner_values)
 def test_with_generic_set(value_info, use_bytes, use_enum, use_datetime):
-    check_one_arg_generic(Set, value_info, use_bytes, use_enum, use_datetime)
+    check_collection_generic(
+        Set, value_info, use_bytes, use_enum, use_datetime
+    )
 
 
 @pytest.mark.parametrize("use_datetime", [True, False])
@@ -437,7 +468,7 @@ def test_with_generic_set(value_info, use_bytes, use_enum, use_datetime):
 @pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", hashable_inner_values)
 def test_with_generic_frozenset(value_info, use_bytes, use_enum, use_datetime):
-    check_one_arg_generic(
+    check_collection_generic(
         FrozenSet, value_info, use_bytes, use_enum, use_datetime
     )
 
@@ -449,7 +480,7 @@ def test_with_generic_frozenset(value_info, use_bytes, use_enum, use_datetime):
 def test_with_generic_mutable_set(
     value_info, use_bytes, use_enum, use_datetime
 ):
-    check_one_arg_generic(
+    check_collection_generic(
         MutableSet, value_info, use_bytes, use_enum, use_datetime
     )
 
@@ -462,7 +493,7 @@ def test_with_generic_mutable_set(
 def test_with_generic_dict(
     key_info, value_info, use_bytes, use_enum, use_datetime
 ):
-    check_two_args_generic(
+    check_mapping_generic(
         Dict, key_info, value_info, use_bytes, use_enum, use_datetime
     )
 
@@ -475,8 +506,34 @@ def test_with_generic_dict(
 def test_with_generic_mapping(
     key_info, value_info, use_bytes, use_enum, use_datetime
 ):
-    check_two_args_generic(
+    check_mapping_generic(
         Mapping, key_info, value_info, use_bytes, use_enum, use_datetime
+    )
+
+
+@pytest.mark.parametrize("use_datetime", [True, False])
+@pytest.mark.parametrize("use_enum", [True, False])
+@pytest.mark.parametrize("use_bytes", [True, False])
+@pytest.mark.parametrize("value_info", inner_values)
+@pytest.mark.parametrize("key_info", hashable_inner_values)
+def test_with_generic_ordered_dict(
+    key_info, value_info, use_bytes, use_enum, use_datetime
+):
+    check_mapping_generic(
+        OrderedDict, key_info, value_info, use_bytes, use_enum, use_datetime
+    )
+
+
+@pytest.mark.parametrize("use_datetime", [True, False])
+@pytest.mark.parametrize("use_enum", [True, False])
+@pytest.mark.parametrize("use_bytes", [True, False])
+@pytest.mark.parametrize("value_info", inner_values)
+@pytest.mark.parametrize("key_info", hashable_inner_values)
+def test_with_generic_counter(
+    key_info, value_info, use_bytes, use_enum, use_datetime
+):
+    check_mapping_generic(
+        Counter, key_info, value_info, use_bytes, use_enum, use_datetime
     )
 
 
@@ -488,7 +545,7 @@ def test_with_generic_mapping(
 def test_with_generic_mutable_mapping(
     key_info, value_info, use_bytes, use_enum, use_datetime
 ):
-    check_two_args_generic(
+    check_mapping_generic(
         MutableMapping, key_info, value_info, use_bytes, use_enum, use_datetime
     )
 
@@ -501,7 +558,7 @@ def test_with_generic_mutable_mapping(
 def test_with_generic_chain_map(
     key_info, value_info, use_bytes, use_enum, use_datetime
 ):
-    check_two_args_generic(
+    check_mapping_generic(
         ChainMap, key_info, value_info, use_bytes, use_enum, use_datetime
     )
 
@@ -557,6 +614,18 @@ def test_data_class_as_mapping_key(generic_type):
         @dataclass
         class _(DataClassDictMixin):
             x: generic_type[Key, int]
+
+
+def test_data_class_as_mapping_key_for_counter():
+    @dataclass
+    class Key(DataClassDictMixin):
+        pass
+
+    with pytest.raises(UnserializableDataError):
+
+        @dataclass
+        class _(DataClassDictMixin):
+            x: Counter[Key]
 
 
 def test_data_class_as_chain_map_key():

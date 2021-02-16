@@ -214,7 +214,7 @@ def test_datetime_serialize_option():
     assert instance.to_dict() == should_be
 
 
-def test_serializable_type_overridden():
+def test_third_party_type_overridden():
     @dataclass
     class DataClass(DataClassDictMixin):
         x: ThirdPartyType = field(
@@ -230,7 +230,7 @@ def test_serializable_type_overridden():
     assert instance.to_dict() == {"x": 123}
 
 
-def test_third_party_type_overridden():
+def test_serializable_type_overridden():
     @dataclass
     class DataClass(DataClassDictMixin):
         x: MutableString = field(

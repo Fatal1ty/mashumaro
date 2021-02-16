@@ -70,6 +70,8 @@ There is support for generic types from the standard *typing* module:
 * `Dict`
 * `Mapping`
 * `MutableMapping`
+* `OrderedDict`
+* `Counter`
 * `ChainMap`
 * `Sequence`
 
