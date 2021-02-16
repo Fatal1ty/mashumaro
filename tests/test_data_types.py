@@ -208,7 +208,7 @@ hashable_inner_values = [
 
 
 generic_sequence_types = [List, Deque, Tuple, Set, FrozenSet]
-generic_mapping_types = [Dict, Mapping, MutableMapping]
+generic_mapping_types = [Dict, Mapping, OrderedDict, MutableMapping]
 
 
 unsupported_field_types = [
