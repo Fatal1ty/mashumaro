@@ -21,6 +21,7 @@ from typing import (
     AnyStr,
     ChainMap,
     ClassVar,
+    Counter,
     Deque,
     Dict,
     FrozenSet,
@@ -34,9 +35,12 @@ from typing import (
     Set,
     Tuple,
     TypeVar,
-    OrderedDict,
-    Counter,
 )
+
+try:
+    from typing import OrderedDict  # New in version 3.7.2
+except ImportError:
+    OrderedDict = Dict
 
 import pytest
 
