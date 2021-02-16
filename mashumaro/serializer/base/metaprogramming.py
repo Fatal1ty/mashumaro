@@ -417,8 +417,13 @@ class CodeBuilder:
         ):
             args = getattr(ftype, "__args__", ())
 
-            def inner_expr(arg_num=0, v_name="value"):
-                return self._pack_value(fname, args[arg_num], parent, v_name)
+            def inner_expr(arg_num=0, v_name="value", v_type=None):
+                if v_type:
+                    return self._pack_value(fname, v_type, parent, v_name)
+                else:
+                    return self._pack_value(
+                        fname, args[arg_num], parent, v_name
+                    )
 
             if issubclass(
                 origin_type,
@@ -469,6 +474,47 @@ class CodeBuilder:
                             or f'[{{{inner_expr(0,"key")}:{inner_expr(1)} '
                             f"for key,value in m.items()}} "
                             f"for m in value.maps]"
+                        )
+            elif issubclass(origin_type, typing.OrderedDict):
+                if ftype is collections.OrderedDict:
+                    raise UnserializableField(
+                        fname,
+                        ftype,
+                        parent,
+                        "Use typing.OrderedDict[KT,VT] instead",
+                    )
+                elif is_generic(ftype):
+                    if is_dataclass(args[0]):
+                        raise UnserializableDataError(
+                            "OrderedDict with dataclasses as keys "
+                            "are not supported by mashumaro"
+                        )
+                    else:
+                        return (
+                            overridden
+                            or f'{{{inner_expr(0, "key")}: {inner_expr(1)} '
+                            f"for key, value in {value_name}.items()}}"
+                        )
+            elif issubclass(origin_type, typing.Counter):
+                if ftype is collections.Counter:
+                    raise UnserializableField(
+                        fname,
+                        ftype,
+                        parent,
+                        "Use typing.Counter[KT] instead",
+                    )
+                elif is_generic(ftype):
+                    if is_dataclass(args[0]):
+                        raise UnserializableDataError(
+                            "Counter with dataclasses as keys "
+                            "are not supported by mashumaro"
+                        )
+                    else:
+                        return (
+                            overridden
+                            or f'{{{inner_expr(0, "key")}: '
+                            f"{inner_expr(1, v_type=int)} "
+                            f"for key, value in {value_name}.items()}}"
                         )
             elif issubclass(origin_type, typing.Mapping):
                 if ftype is dict:
@@ -609,10 +655,15 @@ class CodeBuilder:
         ):
             args = getattr(ftype, "__args__", ())
 
-            def inner_expr(arg_num=0, v_name="value"):
-                return self._unpack_field_value(
-                    fname, args[arg_num], parent, v_name
-                )
+            def inner_expr(arg_num=0, v_name="value", v_type=None):
+                if v_type:
+                    return self._unpack_field_value(
+                        fname, v_type, parent, v_name
+                    )
+                else:
+                    return self._unpack_field_value(
+                        fname, args[arg_num], parent, v_name
+                    )
 
             if issubclass(origin_type, typing.List):
                 if is_generic(ftype):
@@ -687,6 +738,49 @@ class CodeBuilder:
                             f'*[{{{inner_expr(0,"key")}:{inner_expr(1)} '
                             f"for key, value in m.items()}} "
                             f"for m in {value_name}])"
+                        )
+            elif issubclass(origin_type, typing.OrderedDict):
+                if ftype is collections.OrderedDict:
+                    raise UnserializableField(
+                        fname,
+                        ftype,
+                        parent,
+                        "Use typing.OrderedDict[KT,VT] instead",
+                    )
+                elif is_generic(ftype):
+                    if is_dataclass(args[0]):
+                        raise UnserializableDataError(
+                            "OrderedDict with dataclasses as keys "
+                            "are not supported by mashumaro"
+                        )
+                    else:
+                        return (
+                            overridden
+                            or f"collections.OrderedDict("
+                            f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
+                            f"for key, value in {value_name}.items()}})"
+                        )
+            elif issubclass(origin_type, typing.Counter):
+                if ftype is collections.Counter:
+                    raise UnserializableField(
+                        fname,
+                        ftype,
+                        parent,
+                        "Use typing.Counter[KT] instead",
+                    )
+                elif is_generic(ftype):
+                    if is_dataclass(args[0]):
+                        raise UnserializableDataError(
+                            "Counter with dataclasses as keys "
+                            "are not supported by mashumaro"
+                        )
+                    else:
+                        return (
+                            overridden
+                            or f"collections.Counter("
+                            f'{{{inner_expr(0,"key")}: '
+                            f"{inner_expr(1, v_type=int)} "
+                            f"for key, value in {value_name}.items()}})"
                         )
             elif issubclass(origin_type, typing.Mapping):
                 if ftype is dict:
