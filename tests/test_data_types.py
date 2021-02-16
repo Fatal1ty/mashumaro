@@ -220,6 +220,8 @@ unsupported_field_types = [
     collections.ChainMap,
     dict,
     Queue,
+    collections.OrderedDict,
+    collections.Counter,
 ]
 
 
