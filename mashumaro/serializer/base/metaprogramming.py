@@ -39,6 +39,7 @@ from mashumaro.meta.helpers import (
     is_union,
     type_name,
 )
+from mashumaro.meta.macros import PY_37_MIN
 from mashumaro.meta.patch import patch_fromisoformat
 from mashumaro.serializer.base.helpers import *  # noqa
 from mashumaro.types import SerializableType, SerializationStrategy
@@ -475,7 +476,7 @@ class CodeBuilder:
                             f"for key,value in m.items()}} "
                             f"for m in value.maps]"
                         )
-            elif issubclass(origin_type, typing.OrderedDict):
+            elif PY_37_MIN and issubclass(origin_type, typing.OrderedDict):
                 if ftype is collections.OrderedDict:
                     raise UnserializableField(
                         fname,
@@ -739,7 +740,7 @@ class CodeBuilder:
                             f"for key, value in m.items()}} "
                             f"for m in {value_name}])"
                         )
-            elif issubclass(origin_type, typing.OrderedDict):
+            elif PY_37_MIN and issubclass(origin_type, typing.OrderedDict):
                 if ftype is collections.OrderedDict:
                     raise UnserializableField(
                         fname,
