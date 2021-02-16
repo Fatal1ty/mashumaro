@@ -412,6 +412,9 @@ class CodeBuilder:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
                 )
+        # put before typing.Collection because of py36 bug
+        elif origin_type in (bool, NoneType):
+            return overridden or value_name
         elif issubclass(origin_type, typing.Collection) and not issubclass(
             origin_type, enum.Enum
         ):
@@ -470,6 +473,9 @@ class CodeBuilder:
                             f"for key,value in m.items()}} "
                             f"for m in value.maps]"
                         )
+            # put before typing.Mapping because of py36 bug
+            elif issubclass(origin_type, str):
+                return overridden or value_name
             elif issubclass(origin_type, typing.Mapping):
                 if ftype is dict:
                     raise UnserializableField(
@@ -495,8 +501,6 @@ class CodeBuilder:
                 return (
                     f"{value_name} if use_bytes else {overridden or specific}"
                 )
-            elif issubclass(origin_type, str):
-                return overridden or value_name
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
                     return (
@@ -512,8 +516,6 @@ class CodeBuilder:
             return overridden or f"int({value_name})"
         elif origin_type is float:
             return overridden or f"float({value_name})"
-        elif origin_type in (bool, NoneType):
-            return overridden or value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
             if overridden:
                 return f"{value_name} if use_datetime else {overridden}"
@@ -604,6 +606,9 @@ class CodeBuilder:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
                 )
+        # put before typing.Collection because of py36 bug
+        elif origin_type in (bool, NoneType):
+            return overridden or value_name
         elif issubclass(origin_type, typing.Collection) and not issubclass(
             origin_type, enum.Enum
         ):
@@ -688,6 +693,9 @@ class CodeBuilder:
                             f"for key, value in m.items()}} "
                             f"for m in {value_name}])"
                         )
+            # put before typing.Mapping because of py36 bug
+            elif issubclass(origin_type, str):
+                return overridden or value_name
             elif issubclass(origin_type, typing.Mapping):
                 if ftype is dict:
                     raise UnserializableField(
@@ -726,8 +734,6 @@ class CodeBuilder:
                         f"decodebytes({value_name}.encode()))"
                     )
                     return overridden or specific
-            elif issubclass(origin_type, str):
-                return overridden or value_name
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
                     return (
@@ -760,8 +766,6 @@ class CodeBuilder:
             return overridden or f"int({value_name})"
         elif origin_type is float:
             return overridden or f"float({value_name})"
-        elif origin_type in (bool, NoneType):
-            return overridden or value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
             if overridden:
                 return f"{value_name} if use_datetime else {overridden}"
