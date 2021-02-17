@@ -27,6 +27,7 @@ from mashumaro.exceptions import (  # noqa
     UnserializableDataError,
     UnserializableField,
 )
+from mashumaro.features import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
 from mashumaro.meta.helpers import (
     get_class_that_define_method,
     get_imported_module_names,
@@ -188,7 +189,11 @@ class CodeBuilder:
             yield
 
     def compile(self) -> None:
-        exec(self.lines.as_text(), globals(), self.__dict__)
+        code = self.lines.as_text()
+        if self.get_config().debug:
+            print(self.cls)
+            print(code)
+        exec(code, globals(), self.__dict__)
 
     def get_declared_hook(self, method_name: str):
         if not hasattr(self.cls, method_name):
@@ -320,12 +325,47 @@ class CodeBuilder:
         self.add_line("setattr(cls, 'from_dict', from_dict)")
         self.compile()
 
+    def get_config(self, cls=None) -> typing.Type[BaseConfig]:
+        if cls is None:
+            cls = self.cls
+        config_cls = getattr(cls, "Config", BaseConfig)
+        if not issubclass(config_cls, BaseConfig):
+            config_cls = type(
+                "Config",
+                (BaseConfig, config_cls),
+                {**BaseConfig.__dict__, **config_cls.__dict__},
+            )
+        return config_cls
+
+    def get_to_dict_flags(self, cls=None) -> str:
+        config = self.get_config(cls)
+        code_generation_options = config.code_generation_options
+        pluggable_flags = []
+        if TO_DICT_ADD_OMIT_NONE_FLAG in code_generation_options:
+            pluggable_flags.append("omit_none")
+        return ",".join(
+            ["use_bytes", "use_enum", "use_datetime", *pluggable_flags]
+        )
+
     def add_to_dict(self) -> None:
 
         self.reset()
+        pluggable_flags = []
+        omit_none_feature = (
+            TO_DICT_ADD_OMIT_NONE_FLAG
+            in self.get_config().code_generation_options
+        )
+        if omit_none_feature:
+            pluggable_flags.append("omit_none")
+        if pluggable_flags:
+            pluggable_flags_str = ", " + ", ".join(
+                [f"{f}=False" for f in pluggable_flags]
+            )
+        else:
+            pluggable_flags_str = ""
         self.add_line(
             "def to_dict(self, use_bytes=False, use_enum=False, "
-            "use_datetime=False):"
+            f"use_datetime=False{pluggable_flags_str}):"
         )
         with self.indent():
             pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
@@ -337,7 +377,12 @@ class CodeBuilder:
                 self.add_line(f"value = getattr(self, '{fname}')")
                 self.add_line("if value is None:")
                 with self.indent():
-                    self.add_line(f"kwargs['{fname}'] = None")
+                    if omit_none_feature:
+                        self.add_line("if not omit_none:")
+                        with self.indent():
+                            self.add_line(f"kwargs['{fname}'] = None")
+                    else:
+                        self.add_line(f"kwargs['{fname}'] = None")
                 self.add_line("else:")
                 with self.indent():
                     packed_value = self._pack_value(
@@ -371,10 +416,8 @@ class CodeBuilder:
                 overridden = f"self.__{fname}_serialize(self.{fname})"
 
         if is_dataclass(ftype):
-            return (
-                overridden
-                or f"{value_name}.to_dict(use_bytes, use_enum, use_datetime)"
-            )
+            flags = self.get_to_dict_flags(ftype)
+            return overridden or f"{value_name}.to_dict({flags})"
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
