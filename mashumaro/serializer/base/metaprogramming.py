@@ -392,10 +392,12 @@ class CodeBuilder:
             elif is_union(ftype):
                 args = getattr(ftype, "__args__", ())
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
-                    return self._pack_value(fname, args[0], parent)
+                    return self._pack_value(
+                        fname, args[0], parent, metadata=metadata
+                    )
                 else:
                     method_name = self._add_pack_union(
-                        fname, ftype, args, parent
+                        fname, ftype, args, parent, metadata
                     )
                     return (
                         f"self.{method_name}({value_name},"
@@ -633,7 +635,7 @@ class CodeBuilder:
                     )
                 else:
                     method_name = self._add_unpack_union(
-                        fname, ftype, args, parent
+                        fname, ftype, args, parent, metadata
                     )
                     return (
                         f"cls.{method_name}({value_name},"
@@ -916,7 +918,7 @@ class CodeBuilder:
 
         raise UnserializableField(fname, ftype, parent)
 
-    def _add_pack_union(self, fname, ftype, args, parent) -> str:
+    def _add_pack_union(self, fname, ftype, args, parent, metadata) -> str:
         lines = CodeLines()
         method_name = (
             f"__pack_union_{parent.__name__}_{fname}__"
@@ -928,7 +930,8 @@ class CodeBuilder:
         )
         with lines.indent():
             for packer in [
-                self._pack_value(fname, arg_type, parent) for arg_type in args
+                self._pack_value(fname, arg_type, parent, metadata=metadata)
+                for arg_type in args
             ]:
                 lines.append("try:")
                 with lines.indent():
@@ -943,7 +946,7 @@ class CodeBuilder:
         exec(lines.as_text(), globals(), self.__dict__)
         return method_name
 
-    def _add_unpack_union(self, fname, ftype, args, parent) -> str:
+    def _add_unpack_union(self, fname, ftype, args, parent, metadata) -> str:
         lines = CodeLines()
         method_name = (
             f"__unpack_union_{parent.__name__}_{fname}__"
@@ -956,7 +959,9 @@ class CodeBuilder:
         )
         with lines.indent():
             for unpacker in [
-                self._unpack_field_value(fname, arg_type, parent)
+                self._unpack_field_value(
+                    fname, arg_type, parent, metadata=metadata
+                )
                 for arg_type in args
             ]:
                 lines.append("try:")
