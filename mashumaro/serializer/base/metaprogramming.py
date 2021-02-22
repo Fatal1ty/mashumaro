@@ -19,6 +19,8 @@ from dataclasses import _FIELDS, MISSING, Field, is_dataclass
 from decimal import Decimal
 from fractions import Fraction
 
+from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
+
 # noinspection PyUnresolvedReferences
 from mashumaro.exceptions import (  # noqa
     BadHookSignature,
@@ -27,7 +29,6 @@ from mashumaro.exceptions import (  # noqa
     UnserializableDataError,
     UnserializableField,
 )
-from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
 from mashumaro.meta.helpers import (
     get_class_that_define_method,
     get_imported_module_names,
