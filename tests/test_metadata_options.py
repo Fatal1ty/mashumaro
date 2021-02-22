@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timezone
 from pathlib import Path
+from typing import Optional, Union
 
 import ciso8601
 import pytest
@@ -244,3 +245,35 @@ def test_serializable_type_overridden():
     instance = DataClass.from_dict({"x": "abc"})
     assert instance == should_be
     assert instance.to_dict() == {"x": "abc"}
+
+
+def test_optional_overridden():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Optional[ThirdPartyType] = field(
+            metadata={
+                "deserialize": lambda v: ThirdPartyType(v),
+                "serialize": lambda v: v.value,
+            }
+        )
+
+    instance = DataClass.from_dict({"x": 123})
+    assert instance
+    assert instance.x.value == 123
+    dct = instance.to_dict()
+    assert dct["x"] == 123
+
+
+def test_union_overridden():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Union[int, str, float, ThirdPartyType] = field(
+            metadata={
+                "deserialize": lambda v: ThirdPartyType(v),
+                "serialize": lambda v: v.value,
+            }
+        )
+
+    instance = DataClass.from_dict({"x": 1})
+    assert instance == DataClass(x=ThirdPartyType(value=1))
+    assert instance.to_dict() == {"x": 1}
