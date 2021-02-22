@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
-from typing import Union
+from typing import Optional, Union
 
 from mashumaro import DataClassDictMixin
+from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
 from mashumaro.types import SerializableType
 
 
@@ -71,6 +72,21 @@ class CustomPath(PathLike):
 class MyDataClassWithUnion(DataClassDictMixin):
     a: Union[int, str]
     b: Union[MyEnum, int]
+
+
+@dataclass
+class MyDataClassWithOptional(DataClassDictMixin):
+    a: Optional[int] = None
+    b: Optional[int] = None
+
+
+@dataclass
+class MyDataClassWithOptionalAndOmitNoneFlag(DataClassDictMixin):
+    a: Optional[int] = None
+    b: Optional[int] = None
+
+    class Config(BaseConfig):
+        code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
 
 
 class ThirdPartyType:

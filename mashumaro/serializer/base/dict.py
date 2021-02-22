@@ -25,6 +25,8 @@ class DataClassDictMixin:
         use_bytes: bool = False,
         use_enum: bool = False,
         use_datetime: bool = False,
+        # omit_none: bool = False  # exists with the code generation option
+        **kwargs,
     ) -> dict:
         ...
 
