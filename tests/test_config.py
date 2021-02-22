@@ -23,6 +23,17 @@ def test_debug_true_option(mocker):
     mocked_print.assert_called()
 
 
+def test_config_without_base_config_base(mocker):
+    mocked_print = mocker.patch("builtins.print")
+
+    @dataclass
+    class _(DataClassDictMixin):
+        class Config:
+            debug = True
+
+    mocked_print.assert_called()
+
+
 def test_debug_false_option(mocker):
     mocked_print = mocker.patch("builtins.print")
 
