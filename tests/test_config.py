@@ -6,6 +6,11 @@ import pytest
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
 
+from .entities import (
+    MyDataClassWithOptional,
+    MyDataClassWithOptionalAndOmitNoneFlag,
+)
+
 
 def test_debug_true_option(mocker):
     mocked_print = mocker.patch("builtins.print")
@@ -49,3 +54,37 @@ def test_no_omit_none_code_generation_flag():
     assert DataClass().to_dict() == {"x": None}
     with pytest.raises(TypeError):
         DataClass().to_dict(omit_none=True)
+
+
+def test_omit_none_flag_for_inner_class_without_it():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Optional[MyDataClassWithOptional] = None
+
+        class Config(BaseConfig):
+            code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
+
+    assert DataClass().to_dict() == {"x": None}
+    assert DataClass().to_dict(omit_none=True) == {}
+
+    empty_x = MyDataClassWithOptional()
+    assert DataClass(empty_x).to_dict() == {"x": {"a": None, "b": None}}
+    assert DataClass(empty_x).to_dict(omit_none=True) == {
+        "x": {"a": None, "b": None}
+    }
+
+
+def test_omit_none_flag_for_inner_class_with_it():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Optional[MyDataClassWithOptionalAndOmitNoneFlag] = None
+
+        class Config(BaseConfig):
+            code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
+
+    assert DataClass().to_dict() == {"x": None}
+    assert DataClass().to_dict(omit_none=True) == {}
+
+    empty_x = MyDataClassWithOptionalAndOmitNoneFlag()
+    assert DataClass(empty_x).to_dict() == {"x": {"a": None, "b": None}}
+    assert DataClass(empty_x).to_dict(omit_none=True) == {"x": {}}
