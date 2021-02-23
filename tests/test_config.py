@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Union
 
 import pytest
 
@@ -99,3 +99,16 @@ def test_omit_none_flag_for_inner_class_with_it():
     empty_x = MyDataClassWithOptionalAndOmitNoneFlag()
     assert DataClass(empty_x).to_dict() == {"x": {"a": None, "b": None}}
     assert DataClass(empty_x).to_dict(omit_none=True) == {"x": {}}
+
+
+def test_passing_omit_none_into_union():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        a: Optional[int] = None
+        b: Optional[Union[int, MyDataClassWithOptionalAndOmitNoneFlag]] = None
+
+        class Config(BaseConfig):
+            code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
+
+    instance = DataClass(b=MyDataClassWithOptionalAndOmitNoneFlag(a=1))
+    assert instance.to_dict(omit_none=True) == {"b": {"a": 1}}
