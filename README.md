@@ -24,20 +24,20 @@ Table of contents
 * [Benchmark](#benchmark)
 * [API](#api)
 * [Customization](#customization)
-    * [User defined classes](#user-defined-classes)
-        * [Serializable Interface](#serializable-interface)
-        * [Serialization Strategy](#serialization-strategy)
+    * [Serializable Interface](#serializable-interface)
     * [Field options](#field-options)
         * [`serialize` option](#serialize-option)
         * [`deserialize` option](#deserialize-option)
+        * [`serialization_strategy` option](#serialization_strategy-option)
     * [Serialization hooks](#serialization-hooks)
         * [Before deserialization](#before-deserialization)
         * [After deserialization](#after-deserialization)
         * [Before serialization](#before-serialization)
         * [After serialization](#after-serialization)
-    * [Config class](#config-class)
-        * [debug option](#debug-option)
-        * [omit_none option](#omit_none-option)
+    * [Config options](#config-options)
+        * [`debug` config option](#debug-config-option)
+        * [`omit_none` config option](#omit_none-config-option)
+        * [`serialization_strategy` config option](#serialization_strategy-config-option)
 
 Installation
 --------------------------------------------------------------------------------
@@ -344,16 +344,11 @@ decoder_kwargs # keyword arguments for decoder function
 Customization
 --------------------------------------------------------------------------------
 
-### User defined classes
+### Serializable Interface
 
-You can define and use custom classes with *mashumaro*. There are two options
-for customization.
-
-#### Serializable Interface
-
-The first one is useful when you already have the separate
-custom class and you want to serialize instances of it with *mashumaro*.
-All what you need is to implement *SerializableType* interface:
+If you already have a separate custom class, and you want to serialize
+instances of it with *mashumaro*, you can achieve this by implementing
+*SerializableType* interface:
 
 ```python
 from typing import Dict
@@ -396,54 +391,14 @@ dictionary = new_year.to_dict()
 assert Holiday.from_dict(dictionary) == new_year
 ```
 
-#### Serialization Strategy
-
-The second option is useful when you want to change the serialization behaviour
-for a class depending on some defined parameters. For this case you can create
-the special class implementing *SerializationStrategy* interface:
-
-```python
-from datetime import datetime
-from dataclasses import dataclass
-from mashumaro import DataClassDictMixin
-from mashumaro.types import SerializationStrategy
-
-class FormattedDateTime(SerializationStrategy):
-    def __init__(self, fmt):
-        self.fmt = fmt
-
-    def _serialize(self, value: datetime) -> str:
-        return value.strftime(self.fmt)
-
-    def _deserialize(self, value: str) -> datetime:
-        return datetime.strptime(value, self.fmt)
-
-
-@dataclass
-class DateTimeFormats(DataClassDictMixin):
-    short: FormattedDateTime(fmt='%d%m%Y%H%M%S') = datetime.now()
-    verbose: FormattedDateTime(fmt='%A %B %d, %Y, %H:%M:%S') = datetime.now()
-
-
-formats = DateTimeFormats(
-    short=datetime(2019, 1, 1, 12),
-    verbose=datetime(2019, 1, 1, 12),
-)
-dictionary = formats.to_dict()
-# {'short': '01012019120000', 'verbose': 'Tuesday January 01, 2019, 12:00:00'}
-assert DateTimeFormats.from_dict(dictionary) == formats
-```
-
-> ⚠️ Since PEP-563 [breaks](https://github.com/Fatal1ty/mashumaro/issues/10)
-> `SerializationStrategy`, it will be implemented differently sometime in a
-> future version 2.x.
-
 ### Field options
 
 In some cases creating a new class just for one little thing could be
-excessive. You can use [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field)
-function as a default field value to configure some serialization aspects through its
-`metadata` parameter. Next section describes all supported options to use in `metadata` mapping.
+excessive. Moreover, you may need to deal with third party classes that you are
+not allowed to change. You can use[`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field)
+function as a default field value to configure some serialization aspects
+through its `metadata` parameter. Next section describes all supported options
+to use in `metadata` mapping.
 
 #### `serialize` option
 
@@ -512,6 +467,54 @@ class C(DataClassDictMixin):
     )
 ```
 
+#### `serialization_strategy` option
+
+This option is useful when you want to change the serialization behaviour
+for a class depending on some defined parameters. For this case you can create
+the special class implementing *SerializationStrategy* interface:
+
+```python
+from dataclasses import dataclass, field
+from datetime import datetime
+from mashumaro import DataClassDictMixin
+from mashumaro.types import SerializationStrategy
+
+class FormattedDateTime(SerializationStrategy):
+    def __init__(self, fmt):
+        self.fmt = fmt
+
+    def serialize(self, value: datetime) -> str:
+        return value.strftime(self.fmt)
+
+    def deserialize(self, value: str) -> datetime:
+        return datetime.strptime(value, self.fmt)
+
+@dataclass
+class DateTimeFormats(DataClassDictMixin):
+    short: datetime = field(
+        metadata={
+            "serialization_strategy": FormattedDateTime(
+                fmt="%d%m%Y%H%M%S",
+            )
+        }
+    )
+    verbose: datetime = field(
+        metadata={
+            "serialization_strategy": FormattedDateTime(
+                fmt="%A %B %d, %Y, %H:%M:%S",
+            )
+        }
+    )
+
+formats = DateTimeFormats(
+    short=datetime(2019, 1, 1, 12),
+    verbose=datetime(2019, 1, 1, 12),
+)
+dictionary = formats.to_dict()
+# {'short': '01012019120000', 'verbose': 'Tuesday January 01, 2019, 12:00:00'}
+assert DateTimeFormats.from_dict(dictionary) == formats
+```
+
 If you don't want to remember the names of the options you can use
 `field_options` helper function:
 
@@ -524,7 +527,8 @@ class A(DataClassDictMixin):
     x: int = field(
         metadata=field_options(
             serialize=str,
-            deserialize=int
+            deserialize=int,
+            ...
         )
     )
 ```
@@ -616,9 +620,9 @@ print(obj.to_dict())  # {"user": "name"}
 print(obj.to_json())  # '{"user": "name"}'
 ```
 
-### Config class
+### Config options
 
-If inheritance doesn't mean nothing for you, you'll fall in love with the
+If inheritance is not an empty word for you, you'll fall in love with the
 `Config` class. You can register `serialize` and `deserialize` methods, define
 code generation options and other things just in one place. Or in some
 classes in different ways if you need flexibility. Inheritance is always on the
@@ -651,12 +655,12 @@ class ModelB(BaseModel):
 
 Next section describes all supported options to use in the config.
 
-#### `debug` option
+#### `debug` config option
 
 If you enable the `debug` option the generated code for your data class
 will be printed.
 
-#### `omit_none` option
+#### `omit_none` config option
 
 If you want to skip `None` values on serialization you can add `omit_none`
 parameter to `to_dict` method using the `code_generation_options` list:
@@ -682,6 +686,53 @@ class Model(DataClassDictMixin):
         code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
 
 Model(x=Inner(), a=1).to_dict(omit_none=True)  # {'x': {'x': None}, 'a': 1}
+```
+
+#### `serialization_strategy` config option
+
+You can register custom `SerializationStrategy`, `serialize` and `deserialize`
+methods for specific types just in one place. It could be configured using
+a dictionary with types as keys. The value could be either a
+`SerializationStrategy` instance or a dictionary with `serialize` and
+`deserialize` values with the same meaning as in the
+[field options](#field-options).
+```python
+from dataclasses import dataclass
+from datetime import datetime, date
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+from mashumaro.types import SerializationStrategy
+
+class FormattedDateTime(SerializationStrategy):
+    def __init__(self, fmt):
+        self.fmt = fmt
+
+    def serialize(self, value: datetime) -> str:
+        return value.strftime(self.fmt)
+
+    def deserialize(self, value: str) -> datetime:
+        return datetime.strptime(value, self.fmt)
+
+@dataclass
+class DataClass(DataClassDictMixin):
+
+    datetime: datetime
+    date: date
+
+    class Config(BaseConfig):
+        serialization_strategy = {
+            datetime: FormattedDateTime("%Y"),
+            date: {
+                # you can use specific str values for datetime here as well
+                "deserialize": "pendulum",
+                "serialize": date.isoformat,
+            },
+        }
+
+instance = DataClass.from_dict({"datetime": "2021", "date": "2021"})
+# DataClass(datetime=datetime.datetime(2021, 1, 1, 0, 0), date=Date(2021, 1, 1))
+dictionary = instance.to_dict()
+# {'datetime': '2021', 'date': '2021-01-01'}
 ```
 
 TODO
