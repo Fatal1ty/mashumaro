@@ -5,6 +5,7 @@ import pytest
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
+from mashumaro.types import SerializationStrategy
 
 from .entities import (
     MyDataClassWithOptional,
@@ -118,3 +119,30 @@ def test_passing_omit_none_into_union():
 
     instance = DataClass(b=MyDataClassWithOptionalAndOmitNoneFlag(a=1))
     assert instance.to_dict(omit_none=True) == {"b": {"a": 1}}
+
+
+def test_serialization_strategy():
+    class TestSerializationStrategy(SerializationStrategy):
+        def serialize(self, value):
+            return [value]
+
+        def deserialize(self, value):
+            return value[0]
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        a: int
+        b: str
+
+        class Config(BaseConfig):
+            serialization_strategy = {
+                int: TestSerializationStrategy(),
+                str: {
+                    "serialize": lambda v: [v],
+                    "deserialize": lambda v: v[0],
+                },
+            }
+
+    instance = DataClass(a=123, b="abc")
+    assert DataClass.from_dict({"a": [123], "b": ["abc"]}) == instance
+    assert instance.to_dict() == {"a": [123], "b": ["abc"]}

@@ -11,10 +11,10 @@ class SerializableType:
 
 
 class SerializationStrategy:
-    def _serialize(self, value):
+    def serialize(self, value):
         raise NotImplementedError
 
-    def _deserialize(self, value):
+    def deserialize(self, value):
         raise NotImplementedError
 
 
@@ -26,7 +26,7 @@ class RoundedDecimal(SerializationStrategy):
             self.exp = None
         self.rounding = rounding
 
-    def _serialize(self, value) -> str:
+    def serialize(self, value) -> str:
         if self.exp:
             if self.rounding:
                 return str(value.quantize(self.exp, rounding=self.rounding))
@@ -35,7 +35,7 @@ class RoundedDecimal(SerializationStrategy):
         else:
             return str(value)
 
-    def _deserialize(self, value: str) -> decimal.Decimal:
+    def deserialize(self, value: str) -> decimal.Decimal:
         return decimal.Decimal(str(value))
 
 
