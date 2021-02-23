@@ -236,16 +236,10 @@ class CodeBuilder:
                         if self.defaults[fname] is MISSING:
                             self.add_line("if value is MISSING:")
                             with self.indent():
-                                if isinstance(ftype, SerializationStrategy):
-                                    self.add_line(
-                                        f"raise MissingField('{fname}',"
-                                        f"{type_name(ftype.__class__)},cls)"
-                                    )
-                                else:
-                                    self.add_line(
-                                        f"raise MissingField('{fname}',"
-                                        f"{type_name(ftype)},cls)"
-                                    )
+                                self.add_line(
+                                    f"raise MissingField('{fname}',"
+                                    f"{type_name(ftype)},cls)"
+                                )
                             self.add_line("else:")
                             with self.indent():
                                 unpacked_value = self._unpack_field_value(
@@ -261,12 +255,7 @@ class CodeBuilder:
                                     )
                                 self.add_line("except Exception as e:")
                                 with self.indent():
-                                    if isinstance(
-                                        ftype, SerializationStrategy
-                                    ):
-                                        field_type = type_name(ftype.__class__)
-                                    else:
-                                        field_type = type_name(ftype)
+                                    field_type = type_name(ftype)
                                     self.add_line(
                                         f"raise InvalidFieldValue('{fname}',"
                                         f"{field_type},value,cls)"
@@ -287,12 +276,7 @@ class CodeBuilder:
                                     )
                                 self.add_line("except Exception as e:")
                                 with self.indent():
-                                    if isinstance(
-                                        ftype, SerializationStrategy
-                                    ):
-                                        field_type = type_name(ftype.__class__)
-                                    else:
-                                        field_type = type_name(ftype)
+                                    field_type = type_name(ftype)
                                     self.add_line(
                                         f"raise InvalidFieldValue('{fname}',"
                                         f"{field_type},value,cls)"
@@ -414,16 +398,27 @@ class CodeBuilder:
         self, fname, ftype, parent, value_name="value", metadata=None
     ):
 
+        serialize_option: typing.Optional[typing.Any] = None
         overridden: typing.Optional[str] = None
         if metadata is not None:
             serialize_option = metadata.get("serialize")
-            if callable(serialize_option):
-                setattr(
-                    self.cls,
-                    f"__{fname}_serialize",
-                    staticmethod(serialize_option),
-                )
-                overridden = f"self.__{fname}_serialize(self.{fname})"
+            if serialize_option is None:
+                strategy = metadata.get("serialization_strategy")
+                if isinstance(strategy, SerializationStrategy):
+                    serialize_option = strategy.serialize
+        if serialize_option is None:
+            strategy = self.get_config().serialization_strategy.get(ftype)
+            if isinstance(strategy, dict):
+                serialize_option = strategy.get("serialize")
+            elif isinstance(strategy, SerializationStrategy):
+                serialize_option = strategy.serialize
+        if callable(serialize_option):
+            setattr(
+                self.cls,
+                f"__{fname}_serialize",
+                staticmethod(serialize_option),
+            )
+            overridden = f"self.__{fname}_serialize(self.{fname})"
 
         if is_dataclass(ftype):
             flags = self.get_to_dict_flags(ftype)
@@ -432,11 +427,6 @@ class CodeBuilder:
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
                 return overridden or f"{value_name}._serialize()"
-        if isinstance(ftype, SerializationStrategy):
-            return overridden or (
-                f"self.__dataclass_fields__['{fname}'].type"
-                f"._serialize({value_name})"
-            )
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
@@ -654,9 +644,19 @@ class CodeBuilder:
         overridden: typing.Optional[str] = None
         if metadata is not None:
             deserialize_option = metadata.get("deserialize")
-            if callable(deserialize_option):
-                setattr(self.cls, f"__{fname}_deserialize", deserialize_option)
-                overridden = f"cls.__{fname}_deserialize({value_name})"
+            if deserialize_option is None:
+                strategy = metadata.get("serialization_strategy")
+                if isinstance(strategy, SerializationStrategy):
+                    deserialize_option = strategy.deserialize
+        if deserialize_option is None:
+            strategy = self.get_config().serialization_strategy.get(ftype)
+            if isinstance(strategy, dict):
+                deserialize_option = strategy.get("deserialize")
+            elif isinstance(strategy, SerializationStrategy):
+                deserialize_option = strategy.deserialize
+        if callable(deserialize_option):
+            setattr(self.cls, f"__{fname}_deserialize", deserialize_option)
+            overridden = f"cls.__{fname}_deserialize({value_name})"
 
         if is_dataclass(ftype):
             return overridden or (
@@ -670,11 +670,6 @@ class CodeBuilder:
                     overridden
                     or f"{type_name(ftype)}._deserialize({value_name})"
                 )
-        if isinstance(ftype, SerializationStrategy):
-            return overridden or (
-                f"cls.__dataclass_fields__['{fname}'].type"
-                f"._deserialize({value_name})"
-            )
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
