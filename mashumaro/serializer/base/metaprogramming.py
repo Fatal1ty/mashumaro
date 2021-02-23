@@ -348,13 +348,11 @@ class CodeBuilder:
             ["use_bytes", "use_enum", "use_datetime", *pluggable_flags]
         )
 
-    def add_to_dict(self) -> None:
-
-        self.reset()
+    def get_to_dict_default_flag_values(self, cls=None) -> str:
         pluggable_flags = []
         omit_none_feature = (
             TO_DICT_ADD_OMIT_NONE_FLAG
-            in self.get_config().code_generation_options
+            in self.get_config(cls).code_generation_options
         )
         if omit_none_feature:
             pluggable_flags.append("omit_none")
@@ -364,9 +362,20 @@ class CodeBuilder:
             )
         else:
             pluggable_flags_str = ""
+        return (
+            f"use_bytes=False, use_enum=False, use_datetime=False"
+            f"{pluggable_flags_str}"
+        )
+
+    def add_to_dict(self) -> None:
+
+        self.reset()
+        omit_none_feature = (
+            TO_DICT_ADD_OMIT_NONE_FLAG
+            in self.get_config().code_generation_options
+        )
         self.add_line(
-            "def to_dict(self, use_bytes=False, use_enum=False, "
-            f"use_datetime=False{pluggable_flags_str}):"
+            f"def to_dict(self, {self.get_to_dict_default_flag_values()}):"
         )
         with self.indent():
             pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
@@ -445,7 +454,7 @@ class CodeBuilder:
                     )
                     return (
                         f"self.{method_name}({value_name},"
-                        f"use_bytes,use_enum,use_datetime)"
+                        f"{self.get_to_dict_flags()})"
                     )
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(
@@ -970,7 +979,7 @@ class CodeBuilder:
         )
         lines.append(
             f"def {method_name}"
-            f"(self,value,use_bytes=False,use_enum=False,use_datetime=False):"
+            f"(self,value, {self.get_to_dict_default_flag_values()}):"
         )
         with lines.indent():
             for packer in [
