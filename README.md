@@ -35,6 +35,9 @@ Table of contents
         * [After deserialization](#after-deserialization)
         * [Before serialization](#before-serialization)
         * [After serialization](#after-serialization)
+    * [Config class](#config-class)
+        * [debug option](#debug-option)
+        * [omit_none option](#omit_none-option)
 
 Installation
 --------------------------------------------------------------------------------
@@ -611,6 +614,74 @@ class A(DataClassJSONMixin):
 obj = DataClass(user="name", password="secret")
 print(obj.to_dict())  # {"user": "name"}
 print(obj.to_json())  # '{"user": "name"}'
+```
+
+### Config class
+
+If inheritance doesn't mean nothing for you, you'll fall in love with the
+`Config` class. You can register `serialize` and `deserialize` methods, define
+code generation options and other things just in one place. Or in some
+classes in different ways if you need flexibility. Inheritance is always on the
+first place.
+
+There is a base class `BaseConfig` that you can inherit for the sake of
+convenience, but it's not mandatory.
+
+In the following example you can see how
+the `debug` flag is changed from class to class: `ModelA` will have debug mode enabled but
+`ModelB` will not.
+
+```python
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+
+class BaseModel(DataClassDictMixin):
+    class Config(BaseConfig):
+        debug = True
+
+class ModelA(BaseModel):
+    a: int
+
+class ModelB(BaseModel):
+    b: int
+
+    class Config(BaseConfig):
+        debug = False
+```
+
+Next section describes all supported options to use in the config.
+
+#### `debug` option
+
+If you enable the `debug` option the generated code for your data class
+will be printed.
+
+#### `omit_none` option
+
+If you want to skip `None` values on serialization you can add `omit_none`
+parameter to `to_dict` method using the `code_generation_options` list:
+
+```python
+from dataclasses import dataclass
+from typing import Optional
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig, TO_DICT_ADD_OMIT_NONE_FLAG
+
+@dataclass
+class Inner(DataClassDictMixin):
+    x: int = None
+    # "x" won't be omitted since there is no TO_DICT_ADD_OMIT_NONE_FLAG here
+
+@dataclass
+class Model(DataClassDictMixin):
+    x: Inner
+    a: int = None
+    b: str = None  # will be omitted
+
+    class Config(BaseConfig):
+        code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
+
+Model(x=Inner(), a=1).to_dict(omit_none=True)  # {'x': {'x': None}, 'a': 1}
 ```
 
 TODO
