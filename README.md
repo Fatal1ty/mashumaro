@@ -29,15 +29,15 @@ Table of contents
         * [`serialize` option](#serialize-option)
         * [`deserialize` option](#deserialize-option)
         * [`serialization_strategy` option](#serialization_strategy-option)
+    * [Config options](#config-options)
+        * [`debug` config option](#debug-config-option)
+        * [`omit_none` config option](#omit_none-config-option)
+        * [`serialization_strategy` config option](#serialization_strategy-config-option)
     * [Serialization hooks](#serialization-hooks)
         * [Before deserialization](#before-deserialization)
         * [After deserialization](#after-deserialization)
         * [Before serialization](#before-serialization)
         * [After serialization](#after-serialization)
-    * [Config options](#config-options)
-        * [`debug` config option](#debug-config-option)
-        * [`omit_none` config option](#omit_none-config-option)
-        * [`serialization_strategy` config option](#serialization_strategy-config-option)
 
 Installation
 --------------------------------------------------------------------------------
@@ -536,90 +536,6 @@ class A(DataClassDictMixin):
 More options are on the way. If you know which option would be useful for many,
 please don't hesitate to create an issue or pull request.
 
-### Serialization hooks
-
-In some cases you need to prepare input / output data or do some extraordinary
-actions at different stages of the deserialization / serialization lifecycle.
-You can do this with different types of hooks.
-
-#### Before deserialization
-
-For doing something with a dictionary that will be passed to deserialization
-you can use `__pre_deserialize__` class method:
-
-```python
-@dataclass
-class A(DataClassJSONMixin):
-    abc: int
-
-    @classmethod
-    def __pre_deserialize__(cls, d: Dict[Any, Any]) -> Dict[Any, Any]:
-        return {k.lower(): v for k, v in d.items()}
-
-print(DataClass.from_dict({"ABC": 123}))    # DataClass(abc=123)
-print(DataClass.from_json('{"ABC": 123}'))  # DataClass(abc=123)
-```
-
-#### After deserialization
-
-For doing something with a dataclass instance that was created as a result
-of deserialization you can use `__post_deserialize__` class method:
-
-```python
-@dataclass
-class A(DataClassJSONMixin):
-    abc: int
-
-    @classmethod
-    def __post_deserialize__(cls, obj: 'A') -> 'A':
-        obj.abc = 456
-        return obj
-
-print(DataClass.from_dict({"abc": 123}))    # DataClass(abc=456)
-print(DataClass.from_json('{"abc": 123}'))  # DataClass(abc=456)
-```
-
-#### Before serialization
-
-For doing something before serialization you can use `__pre_serialize__`
-method:
-
-```python
-@dataclass
-class A(DataClassJSONMixin):
-    abc: int
-    counter: ClassVar[int] = 0
-
-    def __pre_serialize__(self) -> 'A':
-        self.counter += 1
-        return self
-
-obj = DataClass(abc=123)
-obj.to_dict()
-obj.to_json()
-print(obj.counter)  # 2
-```
-
-#### After serialization
-
-For doing something with a dictionary that was created as a result of
-serialization you can use `__post_serialize__` method:
-
-```python
-@dataclass
-class A(DataClassJSONMixin):
-    user: str
-    password: str
-
-    def __post_serialize__(self, d: Dict[Any, Any]) -> Dict[Any, Any]:
-        d.pop('password')
-        return d
-
-obj = DataClass(user="name", password="secret")
-print(obj.to_dict())  # {"user": "name"}
-print(obj.to_json())  # '{"user": "name"}'
-```
-
 ### Config options
 
 If inheritance is not an empty word for you, you'll fall in love with the
@@ -733,6 +649,90 @@ instance = DataClass.from_dict({"datetime": "2021", "date": "2021"})
 # DataClass(datetime=datetime.datetime(2021, 1, 1, 0, 0), date=Date(2021, 1, 1))
 dictionary = instance.to_dict()
 # {'datetime': '2021', 'date': '2021-01-01'}
+```
+
+### Serialization hooks
+
+In some cases you need to prepare input / output data or do some extraordinary
+actions at different stages of the deserialization / serialization lifecycle.
+You can do this with different types of hooks.
+
+#### Before deserialization
+
+For doing something with a dictionary that will be passed to deserialization
+you can use `__pre_deserialize__` class method:
+
+```python
+@dataclass
+class A(DataClassJSONMixin):
+    abc: int
+
+    @classmethod
+    def __pre_deserialize__(cls, d: Dict[Any, Any]) -> Dict[Any, Any]:
+        return {k.lower(): v for k, v in d.items()}
+
+print(DataClass.from_dict({"ABC": 123}))    # DataClass(abc=123)
+print(DataClass.from_json('{"ABC": 123}'))  # DataClass(abc=123)
+```
+
+#### After deserialization
+
+For doing something with a dataclass instance that was created as a result
+of deserialization you can use `__post_deserialize__` class method:
+
+```python
+@dataclass
+class A(DataClassJSONMixin):
+    abc: int
+
+    @classmethod
+    def __post_deserialize__(cls, obj: 'A') -> 'A':
+        obj.abc = 456
+        return obj
+
+print(DataClass.from_dict({"abc": 123}))    # DataClass(abc=456)
+print(DataClass.from_json('{"abc": 123}'))  # DataClass(abc=456)
+```
+
+#### Before serialization
+
+For doing something before serialization you can use `__pre_serialize__`
+method:
+
+```python
+@dataclass
+class A(DataClassJSONMixin):
+    abc: int
+    counter: ClassVar[int] = 0
+
+    def __pre_serialize__(self) -> 'A':
+        self.counter += 1
+        return self
+
+obj = DataClass(abc=123)
+obj.to_dict()
+obj.to_json()
+print(obj.counter)  # 2
+```
+
+#### After serialization
+
+For doing something with a dictionary that was created as a result of
+serialization you can use `__post_serialize__` method:
+
+```python
+@dataclass
+class A(DataClassJSONMixin):
+    user: str
+    password: str
+
+    def __post_serialize__(self, d: Dict[Any, Any]) -> Dict[Any, Any]:
+        d.pop('password')
+        return d
+
+obj = DataClass(user="name", password="secret")
+print(obj.to_dict())  # {"user": "name"}
+print(obj.to_json())  # '{"user": "name"}'
 ```
 
 TODO
