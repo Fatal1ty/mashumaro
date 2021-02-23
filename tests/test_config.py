@@ -30,6 +30,8 @@ def test_config_without_base_config_base(mocker):
 
     @dataclass
     class _(DataClassDictMixin):
+        x: Union[int, str]
+
         class Config:
             debug = True
 
@@ -41,6 +43,8 @@ def test_debug_false_option(mocker):
 
     @dataclass
     class _(DataClassDictMixin):
+        x: Union[int, str]
+
         class Config(BaseConfig):
             debug = False
 
