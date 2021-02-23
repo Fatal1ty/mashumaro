@@ -8,6 +8,7 @@ import pytest
 
 from mashumaro import DataClassDictMixin
 from mashumaro.exceptions import UnserializableField
+from mashumaro.types import SerializationStrategy
 
 from .entities import MutableString, ThirdPartyType
 
@@ -277,3 +278,22 @@ def test_union_overridden():
     instance = DataClass.from_dict({"x": 1})
     assert instance == DataClass(x=ThirdPartyType(value=1))
     assert instance.to_dict() == {"x": 1}
+
+
+def test_serialization_strategy():
+    class TestSerializationStrategy(SerializationStrategy):
+        def serialize(self, value):
+            return [value]
+
+        def deserialize(self, value):
+            return value[0]
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(
+            metadata={"serialization_strategy": TestSerializationStrategy()}
+        )
+
+    instance = DataClass(x=123)
+    assert DataClass.from_dict({"x": [123]}) == instance
+    assert instance.to_dict() == {"x": [123]}

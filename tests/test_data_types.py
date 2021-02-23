@@ -45,6 +45,7 @@ except ImportError:
 import pytest
 
 from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
 from mashumaro.exceptions import (
     InvalidFieldValue,
     MissingField,
@@ -754,7 +755,12 @@ def test_weird_field_type():
 def test_rounded_decimal(places, rounding):
     @dataclass
     class DataClass(DataClassDictMixin):
-        x: RoundedDecimal(places=places, rounding=rounding)
+        x: decimal.Decimal
+
+        class Config(BaseConfig):
+            serialization_strategy = {
+                decimal.Decimal: RoundedDecimal(places, rounding)
+            }
 
     digit = decimal.Decimal(0.35)
     if places is not None:
@@ -777,10 +783,10 @@ def test_serializable_type():
 def test_serialization_strategy():
     with pytest.raises(NotImplementedError):
         # noinspection PyTypeChecker
-        SerializationStrategy._serialize(None, None)
+        SerializationStrategy.serialize(None, None)
     with pytest.raises(NotImplementedError):
         # noinspection PyTypeChecker
-        SerializationStrategy._deserialize(None, None)
+        SerializationStrategy.deserialize(None, None)
 
 
 def test_class_vars():
@@ -932,7 +938,10 @@ def test_invalid_field_value_deserialization_with_default():
 def test_invalid_field_value_deserialization_with_rounded_decimal():
     @dataclass
     class DataClass(DataClassDictMixin):
-        x: RoundedDecimal()
+        x: decimal.Decimal
+
+        class Config(BaseConfig):
+            serialization_strategy = {decimal.Decimal: RoundedDecimal()}
 
     with pytest.raises(InvalidFieldValue):
         DataClass.from_dict({"x": "bad_value"})
@@ -941,7 +950,10 @@ def test_invalid_field_value_deserialization_with_rounded_decimal():
 def test_invalid_field_value_deserialization_with_rounded_decimal_with_default():
     @dataclass
     class DataClass(DataClassDictMixin):
-        x: RoundedDecimal() = Fixture.DECIMAL
+        x: decimal.Decimal = Fixture.DECIMAL
+
+        class Config(BaseConfig):
+            serialization_strategy = {decimal.Decimal: RoundedDecimal()}
 
     with pytest.raises(InvalidFieldValue):
         DataClass.from_dict({"x": "bad_value"})
