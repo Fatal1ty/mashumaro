@@ -996,6 +996,9 @@ class CodeBuilder:
                 f"raise InvalidFieldValue('{fname}',{ftype},value,cls)"
             )
         lines.append(f"setattr(cls, '{method_name}', {method_name})")
+        if self.get_config().debug:
+            print(self.cls)
+            print(lines.as_text())
         exec(lines.as_text(), globals(), self.__dict__)
         return method_name
 
@@ -1027,5 +1030,8 @@ class CodeBuilder:
                 f"raise InvalidFieldValue('{fname}',{ftype},value,cls)"
             )
         lines.append(f"setattr(cls, '{method_name}', {method_name})")
+        if self.get_config().debug:
+            print(self.cls)
+            print(lines.as_text())
         exec(lines.as_text(), globals(), self.__dict__)
         return method_name
