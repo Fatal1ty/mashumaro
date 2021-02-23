@@ -17,6 +17,8 @@ def test_debug_true_option(mocker):
 
     @dataclass
     class _(DataClassDictMixin):
+        x: Union[int, str]
+
         class Config(BaseConfig):
             debug = True
 
