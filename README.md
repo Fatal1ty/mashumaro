@@ -71,9 +71,9 @@ There is support for generic types from the standard *typing* module:
 * `FrozenSet`
 * `Deque`
 * `Dict`
+* `OrderedDict`
 * `Mapping`
 * `MutableMapping`
-* `OrderedDict`
 * `Counter`
 * `ChainMap`
 * `Sequence`
