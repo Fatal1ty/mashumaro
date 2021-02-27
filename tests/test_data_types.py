@@ -40,7 +40,7 @@ from typing import (
 try:
     from typing import OrderedDict  # New in version 3.7.2
 except ImportError:
-    OrderedDict = Dict
+    OrderedDict = Dict  # type: ignore
 
 import pytest
 
@@ -87,7 +87,7 @@ class Fixture:
     MAPS_LIST = [{"a": 1, "b": 2}, {"c": 3, "d": 4}]
     DICT = {"a": 1, "b": 2}
     ORDERED_DICT = collections.OrderedDict(a=1, b=2)
-    COUNTER = collections.Counter(a=1, b=2)
+    COUNTER: Counter[str] = collections.Counter(a=1, b=2)
     BYTES = b"123"
     BYTES_BASE64 = "MTIz\n"
     BYTE_ARRAY = bytearray(b"123")

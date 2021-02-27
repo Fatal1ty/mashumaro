@@ -15,7 +15,7 @@ from base64 import decodebytes, encodebytes  # noqa
 from contextlib import contextmanager, suppress
 
 # noinspection PyProtectedMember
-from dataclasses import _FIELDS, MISSING, Field, is_dataclass
+from dataclasses import _FIELDS, MISSING, Field, is_dataclass  # type: ignore
 from decimal import Decimal
 from fractions import Fraction
 

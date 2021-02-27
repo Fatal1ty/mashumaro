@@ -1,7 +1,8 @@
 from types import MappingProxyType
-from typing import Callable, Dict, Mapping, Type, TypeVar, Union
+from typing import Any, Dict, Mapping, Type, TypeVar, Union
 
 import yaml
+from typing_extensions import Protocol
 
 from mashumaro.serializer.base import DataClassDictMixin
 
@@ -11,15 +12,23 @@ DEFAULT_DICT_PARAMS = {
     "use_datetime": False,
 }
 EncodedData = Union[str, bytes]
-Encoder = Callable[[Dict], EncodedData]
-Decoder = Callable[[EncodedData], Dict]
 T = TypeVar("T", bound="DataClassYAMLMixin")
+
+
+class Encoder(Protocol):  # pragma no cover
+    def __call__(self, o, **kwargs) -> EncodedData:
+        ...
+
+
+class Decoder(Protocol):  # pragma no cover
+    def __call__(self, packed: EncodedData, **kwargs) -> Dict[Any, Any]:
+        ...
 
 
 class DataClassYAMLMixin(DataClassDictMixin):
     def to_yaml(
         self: T,
-        encoder: Encoder = yaml.dump,
+        encoder: Encoder = yaml.dump,  # type: ignore
         dict_params: Mapping = MappingProxyType({}),
         **encoder_kwargs,
     ) -> EncodedData:
@@ -33,7 +42,7 @@ class DataClassYAMLMixin(DataClassDictMixin):
     def from_yaml(
         cls: Type[T],
         data: EncodedData,
-        decoder: Decoder = yaml.safe_load,
+        decoder: Decoder = yaml.safe_load,  # type: ignore
         dict_params: Mapping = MappingProxyType({}),
         **decoder_kwargs,
     ) -> T:

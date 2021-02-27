@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, ClassVar, Dict
+from typing import Any, ClassVar, Dict, no_type_check
 
 import pytest
 
@@ -13,6 +13,7 @@ def test_bad_pre_deserialize_hook():
         class DataClass(DataClassDictMixin):
             x: int
 
+            @no_type_check
             def __pre_deserialize__(self, d: Dict[Any, Any]) -> Dict[Any, Any]:
                 pass  # pragma no cover
 
@@ -23,6 +24,7 @@ def test_bad_post_deserialize_hook():
         class DataClass(DataClassDictMixin):
             x: int
 
+            @no_type_check
             def __post_deserialize__(self, obj: "DataClass") -> "DataClass":
                 pass  # pragma no cover
 
@@ -59,7 +61,7 @@ def test_pre_serialize_hook():
         counter: ClassVar[int] = 0
 
         def __pre_serialize__(self) -> "DataClass":
-            self.counter += 1
+            DataClass.counter += 1
             return self
 
     instance = DataClass(x=123)
