@@ -458,6 +458,37 @@ class CodeBuilder:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
                 )
+        elif origin_type is int:
+            return overridden or f"int({value_name})"
+        elif origin_type is float:
+            return overridden or f"float({value_name})"
+        elif origin_type in (bool, NoneType):
+            return overridden or value_name
+        elif origin_type in (datetime.datetime, datetime.date, datetime.time):
+            if overridden:
+                return f"{value_name} if use_datetime else {overridden}"
+            return (
+                f"{value_name} if use_datetime else {value_name}.isoformat()"
+            )
+        elif origin_type is datetime.timedelta:
+            return overridden or f"{value_name}.total_seconds()"
+        elif origin_type is datetime.timezone:
+            return overridden or f"{value_name}.tzname(None)"
+        elif origin_type is uuid.UUID:
+            return overridden or f"str({value_name})"
+        elif origin_type in [
+            ipaddress.IPv4Address,
+            ipaddress.IPv6Address,
+            ipaddress.IPv4Network,
+            ipaddress.IPv6Network,
+            ipaddress.IPv4Interface,
+            ipaddress.IPv6Interface,
+        ]:
+            return overridden or f"str({value_name})"
+        elif origin_type is Decimal:
+            return overridden or f"str({value_name})"
+        elif origin_type is Fraction:
+            return overridden or f"str({value_name})"
         elif issubclass(origin_type, typing.Collection) and not issubclass(
             origin_type, enum.Enum
         ):
@@ -471,7 +502,14 @@ class CodeBuilder:
                         fname, args[arg_num], parent, v_name
                     )
 
-            if issubclass(
+            if issubclass(origin_type, typing.ByteString):
+                specific = f"encodebytes({value_name}).decode()"
+                return (
+                    f"{value_name} if use_bytes else {overridden or specific}"
+                )
+            elif issubclass(origin_type, str):
+                return overridden or value_name
+            elif issubclass(
                 origin_type,
                 (typing.List, typing.Deque, typing.Tuple, typing.AbstractSet),
             ):
@@ -582,13 +620,6 @@ class CodeBuilder:
                             or f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
                             f"for key, value in {value_name}.items()}}"
                         )
-            elif issubclass(origin_type, typing.ByteString):
-                specific = f"encodebytes({value_name}).decode()"
-                return (
-                    f"{value_name} if use_bytes else {overridden or specific}"
-                )
-            elif issubclass(origin_type, str):
-                return overridden or value_name
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
                     return (
@@ -600,37 +631,6 @@ class CodeBuilder:
         elif issubclass(origin_type, enum.Enum):
             specific = f"{value_name}.value"
             return f"{value_name} if use_enum else {overridden or specific}"
-        elif origin_type is int:
-            return overridden or f"int({value_name})"
-        elif origin_type is float:
-            return overridden or f"float({value_name})"
-        elif origin_type in (bool, NoneType):
-            return overridden or value_name
-        elif origin_type in (datetime.datetime, datetime.date, datetime.time):
-            if overridden:
-                return f"{value_name} if use_datetime else {overridden}"
-            return (
-                f"{value_name} if use_datetime else {value_name}.isoformat()"
-            )
-        elif origin_type is datetime.timedelta:
-            return overridden or f"{value_name}.total_seconds()"
-        elif origin_type is datetime.timezone:
-            return overridden or f"{value_name}.tzname(None)"
-        elif origin_type is uuid.UUID:
-            return overridden or f"str({value_name})"
-        elif origin_type in [
-            ipaddress.IPv4Address,
-            ipaddress.IPv6Address,
-            ipaddress.IPv4Network,
-            ipaddress.IPv6Network,
-            ipaddress.IPv4Interface,
-            ipaddress.IPv6Interface,
-        ]:
-            return overridden or f"str({value_name})"
-        elif origin_type is Decimal:
-            return overridden or f"str({value_name})"
-        elif origin_type is Fraction:
-            return overridden or f"str({value_name})"
         elif overridden:
             return overridden
 
@@ -701,6 +701,66 @@ class CodeBuilder:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
                 )
+        elif origin_type is int:
+            return overridden or f"int({value_name})"
+        elif origin_type is float:
+            return overridden or f"float({value_name})"
+        elif origin_type in (bool, NoneType):
+            return overridden or value_name
+        elif origin_type in (datetime.datetime, datetime.date, datetime.time):
+            if overridden:
+                return f"{value_name} if use_datetime else {overridden}"
+            elif deserialize_option is not None:
+                if deserialize_option == "ciso8601":
+                    self.ensure_module_imported("ciso8601")
+                    datetime_parser = "ciso8601.parse_datetime"
+                elif deserialize_option == "pendulum":
+                    self.ensure_module_imported("pendulum")
+                    datetime_parser = "pendulum.parse"
+                else:
+                    raise UnserializableField(
+                        fname,
+                        ftype,
+                        parent,
+                        f"Unsupported deserialization engine "
+                        f'"{deserialize_option}"',
+                    )
+                suffix = ""
+                if origin_type is datetime.date:
+                    suffix = ".date()"
+                elif origin_type is datetime.time:
+                    suffix = ".time()"
+                return (
+                    f"{value_name} if use_datetime else "
+                    f"{datetime_parser}({value_name}){suffix}"
+                )
+            return (
+                f"{value_name} if use_datetime else "
+                f"datetime.{origin_type.__name__}."
+                f"fromisoformat({value_name})"
+            )
+        elif origin_type is datetime.timedelta:
+            return overridden or f"datetime.timedelta(seconds={value_name})"
+        elif origin_type is datetime.timezone:
+            return overridden or f"parse_timezone({value_name})"
+        elif origin_type is uuid.UUID:
+            return overridden or f"uuid.UUID({value_name})"
+        elif origin_type is ipaddress.IPv4Address:
+            return overridden or f"ipaddress.IPv4Address({value_name})"
+        elif origin_type is ipaddress.IPv6Address:
+            return overridden or f"ipaddress.IPv6Address({value_name})"
+        elif origin_type is ipaddress.IPv4Network:
+            return overridden or f"ipaddress.IPv4Network({value_name})"
+        elif origin_type is ipaddress.IPv6Network:
+            return overridden or f"ipaddress.IPv6Network({value_name})"
+        elif origin_type is ipaddress.IPv4Interface:
+            return overridden or f"ipaddress.IPv4Interface({value_name})"
+        elif origin_type is ipaddress.IPv6Interface:
+            return overridden or f"ipaddress.IPv6Interface({value_name})"
+        elif origin_type is Decimal:
+            return overridden or f"Decimal({value_name})"
+        elif origin_type is Fraction:
+            return overridden or f"Fraction({value_name})"
         elif issubclass(origin_type, typing.Collection) and not issubclass(
             origin_type, enum.Enum
         ):
@@ -716,7 +776,27 @@ class CodeBuilder:
                         fname, args[arg_num], parent, v_name
                     )
 
-            if issubclass(origin_type, typing.List):
+            if issubclass(origin_type, typing.ByteString):
+                if origin_type is bytes:
+                    specific = f"decodebytes({value_name}.encode())"
+                    return (
+                        f"{value_name} if use_bytes else "
+                        f"{overridden or specific}"
+                    )
+                elif origin_type is bytearray:
+                    if overridden:
+                        overridden = (
+                            f"bytearray({value_name}) if use_bytes else "
+                            f"{overridden}"
+                        )
+                    specific = (
+                        f"bytearray({value_name} if use_bytes else "
+                        f"decodebytes({value_name}.encode()))"
+                    )
+                    return overridden or specific
+            elif issubclass(origin_type, str):
+                return overridden or value_name
+            elif issubclass(origin_type, typing.List):
                 if is_generic(ftype):
                     return (
                         overridden
@@ -853,26 +933,6 @@ class CodeBuilder:
                             or f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
                             f"for key, value in {value_name}.items()}}"
                         )
-            elif issubclass(origin_type, typing.ByteString):
-                if origin_type is bytes:
-                    specific = f"decodebytes({value_name}.encode())"
-                    return (
-                        f"{value_name} if use_bytes else "
-                        f"{overridden or specific}"
-                    )
-                elif origin_type is bytearray:
-                    if overridden:
-                        overridden = (
-                            f"bytearray({value_name}) if use_bytes else "
-                            f"{overridden}"
-                        )
-                    specific = (
-                        f"bytearray({value_name} if use_bytes else "
-                        f"decodebytes({value_name}.encode()))"
-                    )
-                    return overridden or specific
-            elif issubclass(origin_type, str):
-                return overridden or value_name
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
                     return (
@@ -901,66 +961,6 @@ class CodeBuilder:
         elif issubclass(origin_type, enum.Enum):
             specific = f"{type_name(origin_type)}({value_name})"
             return f"{value_name} if use_enum else {overridden or specific}"
-        elif origin_type is int:
-            return overridden or f"int({value_name})"
-        elif origin_type is float:
-            return overridden or f"float({value_name})"
-        elif origin_type in (bool, NoneType):
-            return overridden or value_name
-        elif origin_type in (datetime.datetime, datetime.date, datetime.time):
-            if overridden:
-                return f"{value_name} if use_datetime else {overridden}"
-            elif deserialize_option is not None:
-                if deserialize_option == "ciso8601":
-                    self.ensure_module_imported("ciso8601")
-                    datetime_parser = "ciso8601.parse_datetime"
-                elif deserialize_option == "pendulum":
-                    self.ensure_module_imported("pendulum")
-                    datetime_parser = "pendulum.parse"
-                else:
-                    raise UnserializableField(
-                        fname,
-                        ftype,
-                        parent,
-                        f"Unsupported deserialization engine "
-                        f'"{deserialize_option}"',
-                    )
-                suffix = ""
-                if origin_type is datetime.date:
-                    suffix = ".date()"
-                elif origin_type is datetime.time:
-                    suffix = ".time()"
-                return (
-                    f"{value_name} if use_datetime else "
-                    f"{datetime_parser}({value_name}){suffix}"
-                )
-            return (
-                f"{value_name} if use_datetime else "
-                f"datetime.{origin_type.__name__}."
-                f"fromisoformat({value_name})"
-            )
-        elif origin_type is datetime.timedelta:
-            return overridden or f"datetime.timedelta(seconds={value_name})"
-        elif origin_type is datetime.timezone:
-            return overridden or f"parse_timezone({value_name})"
-        elif origin_type is uuid.UUID:
-            return overridden or f"uuid.UUID({value_name})"
-        elif origin_type is ipaddress.IPv4Address:
-            return overridden or f"ipaddress.IPv4Address({value_name})"
-        elif origin_type is ipaddress.IPv6Address:
-            return overridden or f"ipaddress.IPv6Address({value_name})"
-        elif origin_type is ipaddress.IPv4Network:
-            return overridden or f"ipaddress.IPv4Network({value_name})"
-        elif origin_type is ipaddress.IPv6Network:
-            return overridden or f"ipaddress.IPv6Network({value_name})"
-        elif origin_type is ipaddress.IPv4Interface:
-            return overridden or f"ipaddress.IPv4Interface({value_name})"
-        elif origin_type is ipaddress.IPv6Interface:
-            return overridden or f"ipaddress.IPv6Interface({value_name})"
-        elif origin_type is Decimal:
-            return overridden or f"Decimal({value_name})"
-        elif origin_type is Fraction:
-            return overridden or f"Fraction({value_name})"
         elif overridden:
             return overridden
 
