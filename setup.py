@@ -24,6 +24,7 @@ setup(
     author_email="random.gauss@gmail.com",
     url="https://github.com/Fatal1ty/mashumaro",
     packages=find_packages(include=("mashumaro", "mashumaro.*")),
+    package_data={"mashumaro": ["py.typed"]},
     python_requires=">=3.6",
     install_requires=[
         "dataclasses;python_version=='3.6'",
@@ -32,4 +33,5 @@ setup(
         "backports-datetime-fromisoformat;python_version=='3.6'",
         "typing_extensions",
     ],
+    zip_safe=False,
 )
