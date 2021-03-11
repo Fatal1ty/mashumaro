@@ -418,7 +418,7 @@ class CodeBuilder:
                 f"__{fname}_serialize",
                 staticmethod(serialize_option),
             )
-            overridden = f"self.__{fname}_serialize(self.{fname})"
+            overridden = f"self.__{fname}_serialize({value_name})"
 
         if is_dataclass(ftype):
             flags = self.get_to_dict_flags(ftype)
