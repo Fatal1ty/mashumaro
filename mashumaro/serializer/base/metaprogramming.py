@@ -13,13 +13,18 @@ import uuid
 # noinspection PyUnresolvedReferences
 from base64 import decodebytes, encodebytes  # noqa
 from contextlib import contextmanager, suppress
+from types import MappingProxyType
 
 # noinspection PyProtectedMember
 from dataclasses import _FIELDS, MISSING, Field, is_dataclass  # type: ignore
 from decimal import Decimal
 from fractions import Fraction
 
-from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
+from mashumaro.config import (
+    TO_DICT_ADD_OMIT_NONE_FLAG,
+    TO_DICT_ADD_BY_ALIAS_FLAG,
+    BaseConfig,
+)
 
 # noinspection PyUnresolvedReferences
 from mashumaro.exceptions import (  # noqa
@@ -225,62 +230,10 @@ class CodeBuilder:
             with self.indent():
                 self.add_line("kwargs = {}")
                 for fname, ftype in self.field_types.items():
-                    metadata = self.metadatas.get(fname)
                     self._add_type_modules(ftype)
-                    self.add_line(f"value = d.get('{fname}', MISSING)")
-                    self.add_line("if value is None:")
-                    with self.indent():
-                        self.add_line(f"kwargs['{fname}'] = None")
-                    self.add_line("else:")
-                    with self.indent():
-                        if self.defaults[fname] is MISSING:
-                            self.add_line("if value is MISSING:")
-                            with self.indent():
-                                self.add_line(
-                                    f"raise MissingField('{fname}',"
-                                    f"{type_name(ftype)},cls)"
-                                )
-                            self.add_line("else:")
-                            with self.indent():
-                                unpacked_value = self._unpack_field_value(
-                                    fname=fname,
-                                    ftype=ftype,
-                                    parent=self.cls,
-                                    metadata=metadata,
-                                )
-                                self.add_line("try:")
-                                with self.indent():
-                                    self.add_line(
-                                        f"kwargs['{fname}'] = {unpacked_value}"
-                                    )
-                                self.add_line("except Exception as e:")
-                                with self.indent():
-                                    field_type = type_name(ftype)
-                                    self.add_line(
-                                        f"raise InvalidFieldValue('{fname}',"
-                                        f"{field_type},value,cls)"
-                                    )
-                        else:
-                            self.add_line("if value is not MISSING:")
-                            with self.indent():
-                                unpacked_value = self._unpack_field_value(
-                                    fname=fname,
-                                    ftype=ftype,
-                                    parent=self.cls,
-                                    metadata=metadata,
-                                )
-                                self.add_line("try:")
-                                with self.indent():
-                                    self.add_line(
-                                        f"kwargs['{fname}'] = {unpacked_value}"
-                                    )
-                                self.add_line("except Exception as e:")
-                                with self.indent():
-                                    field_type = type_name(ftype)
-                                    self.add_line(
-                                        f"raise InvalidFieldValue('{fname}',"
-                                        f"{field_type},value,cls)"
-                                    )
+                    metadata = self.metadatas.get(fname, {})
+                    alias = metadata.get("alias")
+                    self._from_dict_set_value(fname, ftype, metadata, alias)
             self.add_line("except AttributeError:")
             with self.indent():
                 self.add_line("if not isinstance(d, dict):")
@@ -310,6 +263,58 @@ class CodeBuilder:
         self.add_line("setattr(cls, 'from_dict', from_dict)")
         self.compile()
 
+    def _from_dict_set_value(self, fname, ftype, metadata, alias=None):
+        self.add_line(f"value = d.get('{alias or fname}', MISSING)")
+        self.add_line("if value is None:")
+        with self.indent():
+            self.add_line(f"kwargs['{fname}'] = None")
+        if self.defaults[fname] is MISSING:
+            self.add_line("elif value is MISSING:")
+            with self.indent():
+                self.add_line(
+                    f"raise MissingField('{fname}',"
+                    f"{type_name(ftype)},cls)"
+                )
+            self.add_line("else:")
+            with self.indent():
+                unpacked_value = self._unpack_field_value(
+                    fname=fname,
+                    ftype=ftype,
+                    parent=self.cls,
+                    metadata=metadata,
+                )
+                self.add_line("try:")
+                with self.indent():
+                    self.add_line(
+                        f"kwargs['{fname}'] = {unpacked_value}"
+                    )
+                self.add_line("except Exception as e:")
+                with self.indent():
+                    field_type = type_name(ftype)
+                    self.add_line(
+                        f"raise InvalidFieldValue('{fname}',"
+                        f"{field_type},value,cls)"
+                    )
+        else:
+            self.add_line("elif value is not MISSING:")
+            with self.indent():
+                unpacked_value = self._unpack_field_value(
+                    fname=fname,
+                    ftype=ftype,
+                    parent=self.cls,
+                    metadata=metadata,
+                )
+                self.add_line("try:")
+                with self.indent():
+                    self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+                self.add_line("except Exception as e:")
+                with self.indent():
+                    field_type = type_name(ftype)
+                    self.add_line(
+                        f"raise InvalidFieldValue('{fname}',"
+                        f"{field_type},value,cls)"
+                    )
+
     def get_config(self, cls=None) -> typing.Type[BaseConfig]:
         if cls is None:
             cls = self.cls
@@ -328,6 +333,8 @@ class CodeBuilder:
         pluggable_flags = []
         if TO_DICT_ADD_OMIT_NONE_FLAG in code_generation_options:
             pluggable_flags.append("omit_none")
+        if TO_DICT_ADD_BY_ALIAS_FLAG in code_generation_options:
+            pluggable_flags.append("by_alias")
         return ",".join(
             ["use_bytes", "use_enum", "use_datetime", *pluggable_flags]
         )
@@ -340,6 +347,12 @@ class CodeBuilder:
         )
         if omit_none_feature:
             pluggable_flags.append("omit_none")
+        by_alias_feature = (
+            TO_DICT_ADD_BY_ALIAS_FLAG
+            in self.get_config().code_generation_options
+        )
+        if by_alias_feature:
+            pluggable_flags.append("by_alias")
         if pluggable_flags:
             pluggable_flags_str = ", " + ", ".join(
                 [f"{f}=False" for f in pluggable_flags]
@@ -351,13 +364,11 @@ class CodeBuilder:
             f"{pluggable_flags_str}"
         )
 
-    def add_to_dict(self) -> None:
+    def is_code_generation_option_enabled(self, option: str, cls=None):
+        return option in self.get_config(cls).code_generation_options
 
+    def add_to_dict(self) -> None:
         self.reset()
-        omit_none_feature = (
-            TO_DICT_ADD_OMIT_NONE_FLAG
-            in self.get_config().code_generation_options
-        )
         self.add_line(
             f"def to_dict(self, {self.get_to_dict_default_flag_values()}):"
         )
@@ -367,25 +378,8 @@ class CodeBuilder:
                 self.add_line(f"self = self.{__PRE_SERIALIZE__}()")
             self.add_line("kwargs = {}")
             for fname, ftype in self.field_types.items():
-                metadata = self.metadatas.get(fname)
-                self.add_line(f"value = getattr(self, '{fname}')")
-                self.add_line("if value is None:")
-                with self.indent():
-                    if omit_none_feature:
-                        self.add_line("if not omit_none:")
-                        with self.indent():
-                            self.add_line(f"kwargs['{fname}'] = None")
-                    else:
-                        self.add_line(f"kwargs['{fname}'] = None")
-                self.add_line("else:")
-                with self.indent():
-                    packed_value = self._pack_value(
-                        fname=fname,
-                        ftype=ftype,
-                        parent=self.cls,
-                        metadata=metadata,
-                    )
-                    self.add_line(f"kwargs['{fname}'] = {packed_value}")
+                metadata = self.metadatas.get(fname, {})
+                self._to_dict_set_value(fname, ftype, metadata)
             post_serialize = self.get_declared_hook(__POST_SERIALIZE__)
             if post_serialize:
                 self.add_line(f"return self.{__POST_SERIALIZE__}(kwargs)")
@@ -394,18 +388,78 @@ class CodeBuilder:
         self.add_line("setattr(cls, 'to_dict', to_dict)")
         self.compile()
 
+    def _to_dict_set_value(self, fname, ftype, metadata):
+        omit_none_feature = self.is_code_generation_option_enabled(
+            TO_DICT_ADD_OMIT_NONE_FLAG
+        )
+        by_alias_feature = self.is_code_generation_option_enabled(
+            TO_DICT_ADD_BY_ALIAS_FLAG
+        )
+        alias = metadata.get("alias")
+        serialize_by_alias = self.get_config().serialize_by_alias
+        if serialize_by_alias and alias is not None:
+            fname_or_alias = alias
+        else:
+            fname_or_alias = fname
+
+        self.add_line(f"value = getattr(self, '{fname}')")
+        self.add_line("if value is None:")
+        with self.indent():
+            if omit_none_feature:
+                self.add_line("if not omit_none:")
+                with self.indent():
+                    if by_alias_feature and alias is not None:
+                        self.add_line('if by_alias:')
+                        with self.indent():
+                            self.add_line(f"kwargs['{alias}'] = None")
+                        self.add_line('else:')
+                        with self.indent():
+                            self.add_line(f"kwargs['{fname}'] = None")
+                    else:
+                        self.add_line(f"kwargs['{fname_or_alias}'] = None")
+            else:
+                if by_alias_feature and alias is not None:
+                    self.add_line('if by_alias:')
+                    with self.indent():
+                        self.add_line(f"kwargs['{alias}'] = None")
+                    self.add_line('else:')
+                    with self.indent():
+                        self.add_line(f"kwargs['{fname}'] = None")
+                else:
+                    self.add_line(f"kwargs['{fname_or_alias}'] = None")
+        self.add_line("else:")
+        with self.indent():
+            packed_value = self._pack_value(
+                fname=fname,
+                ftype=ftype,
+                parent=self.cls,
+                metadata=metadata,
+            )
+            if by_alias_feature and alias is not None:
+                self.add_line("if by_alias:")
+                with self.indent():
+                    self.add_line(f"kwargs['{alias}'] = {packed_value}")
+                self.add_line("else:")
+                with self.indent():
+                    self.add_line(f"kwargs['{fname}'] = {packed_value}")
+            else:
+                self.add_line(f"kwargs['{fname_or_alias}'] = {packed_value}")
+
     def _pack_value(
-        self, fname, ftype, parent, value_name="value", metadata=None
+        self,
+        fname,
+        ftype,
+        parent,
+        value_name="value",
+        metadata=MappingProxyType({}),
     ):
 
-        serialize_option: typing.Optional[typing.Any] = None
         overridden: typing.Optional[str] = None
-        if metadata is not None:
-            serialize_option = metadata.get("serialize")
-            if serialize_option is None:
-                strategy = metadata.get("serialization_strategy")
-                if isinstance(strategy, SerializationStrategy):
-                    serialize_option = strategy.serialize
+        serialize_option = metadata.get("serialize")
+        if serialize_option is None:
+            strategy = metadata.get("serialization_strategy")
+            if isinstance(strategy, SerializationStrategy):
+                serialize_option = strategy.serialize
         if serialize_option is None:
             strategy = self.get_config().serialization_strategy.get(ftype)
             if isinstance(strategy, dict):
@@ -637,17 +691,20 @@ class CodeBuilder:
         raise UnserializableField(fname, ftype, parent)
 
     def _unpack_field_value(
-        self, fname, ftype, parent, value_name="value", metadata=None
+        self,
+        fname,
+        ftype,
+        parent,
+        value_name="value",
+        metadata=MappingProxyType({}),
     ):
 
-        deserialize_option: typing.Optional[typing.Any] = None
         overridden: typing.Optional[str] = None
-        if metadata is not None:
-            deserialize_option = metadata.get("deserialize")
-            if deserialize_option is None:
-                strategy = metadata.get("serialization_strategy")
-                if isinstance(strategy, SerializationStrategy):
-                    deserialize_option = strategy.deserialize
+        deserialize_option = metadata.get("deserialize")
+        if deserialize_option is None:
+            strategy = metadata.get("serialization_strategy")
+            if isinstance(strategy, SerializationStrategy):
+                deserialize_option = strategy.deserialize
         if deserialize_option is None:
             strategy = self.get_config().serialization_strategy.get(ftype)
             if isinstance(strategy, dict):

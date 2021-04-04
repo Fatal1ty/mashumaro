@@ -7,11 +7,13 @@ def field_options(
     serialize: Optional[Callable[[Any], Any]] = None,
     deserialize: Optional[Union[str, Callable[[Any], Any]]] = None,
     serialization_strategy: Optional[SerializationStrategy] = None,
+    alias: Optional[str] = None,
 ):
     return {
         "serialize": serialize,
         "deserialize": deserialize,
         "serialization_strategy": serialization_strategy,
+        "alias": alias,
     }
 
 
