@@ -272,8 +272,7 @@ class CodeBuilder:
             self.add_line("elif value is MISSING:")
             with self.indent():
                 self.add_line(
-                    f"raise MissingField('{fname}',"
-                    f"{type_name(ftype)},cls)"
+                    f"raise MissingField('{fname}'," f"{type_name(ftype)},cls)"
                 )
             self.add_line("else:")
             with self.indent():
@@ -285,9 +284,7 @@ class CodeBuilder:
                 )
                 self.add_line("try:")
                 with self.indent():
-                    self.add_line(
-                        f"kwargs['{fname}'] = {unpacked_value}"
-                    )
+                    self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
                 self.add_line("except Exception as e:")
                 with self.indent():
                     field_type = type_name(ftype)
@@ -409,20 +406,20 @@ class CodeBuilder:
                 self.add_line("if not omit_none:")
                 with self.indent():
                     if by_alias_feature and alias is not None:
-                        self.add_line('if by_alias:')
+                        self.add_line("if by_alias:")
                         with self.indent():
                             self.add_line(f"kwargs['{alias}'] = None")
-                        self.add_line('else:')
+                        self.add_line("else:")
                         with self.indent():
                             self.add_line(f"kwargs['{fname}'] = None")
                     else:
                         self.add_line(f"kwargs['{fname_or_alias}'] = None")
             else:
                 if by_alias_feature and alias is not None:
-                    self.add_line('if by_alias:')
+                    self.add_line("if by_alias:")
                     with self.indent():
                         self.add_line(f"kwargs['{alias}'] = None")
-                    self.add_line('else:')
+                    self.add_line("else:")
                     with self.indent():
                         self.add_line(f"kwargs['{fname}'] = None")
                 else:
