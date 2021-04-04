@@ -1,14 +1,10 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
 from typing import Optional, Union
 
 from mashumaro import DataClassDictMixin
-from mashumaro.config import (
-    TO_DICT_ADD_BY_ALIAS_FLAG,
-    TO_DICT_ADD_OMIT_NONE_FLAG,
-    BaseConfig,
-)
+from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
 from mashumaro.types import SerializableType
 
 
@@ -91,19 +87,6 @@ class MyDataClassWithOptionalAndOmitNoneFlag(DataClassDictMixin):
 
     class Config(BaseConfig):
         code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
-
-
-@dataclass
-class MyDataClassWithAlias(DataClassDictMixin):
-    a: int = field(metadata={"alias": "alias_a"})
-
-
-@dataclass
-class MyDataClassWithAliasAndSerializeByAliasFlag(DataClassDictMixin):
-    a: int = field(metadata={"alias": "alias_a"})
-
-    class Config(BaseConfig):
-        code_generation_options = [TO_DICT_ADD_BY_ALIAS_FLAG]
 
 
 class ThirdPartyType:
