@@ -13,16 +13,16 @@ import uuid
 # noinspection PyUnresolvedReferences
 from base64 import decodebytes, encodebytes  # noqa
 from contextlib import contextmanager, suppress
-from types import MappingProxyType
 
 # noinspection PyProtectedMember
 from dataclasses import _FIELDS, MISSING, Field, is_dataclass  # type: ignore
 from decimal import Decimal
 from fractions import Fraction
+from types import MappingProxyType
 
 from mashumaro.config import (
-    TO_DICT_ADD_OMIT_NONE_FLAG,
     TO_DICT_ADD_BY_ALIAS_FLAG,
+    TO_DICT_ADD_OMIT_NONE_FLAG,
     BaseConfig,
 )
 
