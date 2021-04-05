@@ -329,9 +329,9 @@ class CodeBuilder:
         code_generation_options = config.code_generation_options
         pluggable_flags = []
         if TO_DICT_ADD_OMIT_NONE_FLAG in code_generation_options:
-            pluggable_flags.append("omit_none")
+            pluggable_flags.append("omit_none=omit_none")
         if TO_DICT_ADD_BY_ALIAS_FLAG in code_generation_options:
-            pluggable_flags.append("by_alias")
+            pluggable_flags.append("by_alias=by_alias")
         return ",".join(
             ["use_bytes", "use_enum", "use_datetime", *pluggable_flags]
         )
@@ -351,7 +351,7 @@ class CodeBuilder:
         if by_alias_feature:
             pluggable_flags.append("by_alias")
         if pluggable_flags:
-            pluggable_flags_str = ", " + ", ".join(
+            pluggable_flags_str = ", *, " + ", ".join(
                 [f"{f}=False" for f in pluggable_flags]
             )
         else:

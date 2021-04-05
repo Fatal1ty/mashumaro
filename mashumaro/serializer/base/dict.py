@@ -25,7 +25,10 @@ class DataClassDictMixin:
         use_bytes: bool = False,
         use_enum: bool = False,
         use_datetime: bool = False,
-        # omit_none: bool = False  # exists with the code generation option
+        # *
+        # keyword-only flags that are exist with the code generation options:
+        # omit_none: bool = False
+        # by_alias: bool = False
         **kwargs,
     ) -> dict:
         ...

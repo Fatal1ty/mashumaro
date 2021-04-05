@@ -4,23 +4,17 @@ from typing import Optional
 import pytest
 
 from mashumaro import DataClassDictMixin
-from mashumaro.config import BaseConfig, TO_DICT_ADD_BY_ALIAS_FLAG
+from mashumaro.config import (
+    BaseConfig,
+    TO_DICT_ADD_BY_ALIAS_FLAG,
+    TO_DICT_ADD_OMIT_NONE_FLAG,
+)
 from mashumaro.exceptions import MissingField
 
 
 @dataclass
 class Aliased(DataClassDictMixin):
     a: int = field(metadata={"alias": "alias_a"})
-
-
-@dataclass
-class AliasedWithDefault(DataClassDictMixin):
-    a: int = field(default=111, metadata={"alias": "alias_a"})
-
-
-@dataclass
-class AliasedWithDefaultNone(DataClassDictMixin):
-    a: Optional[int] = field(default=None, metadata={"alias": "alias_a"})
 
 
 @dataclass
@@ -38,10 +32,44 @@ def test_alias():
 
 
 def test_alias_with_default():
-    assert AliasedWithDefault.from_dict(
-        {"alias_a": 123}
-    ) == AliasedWithDefault(a=123)
-    assert AliasedWithDefault.from_dict({}) == AliasedWithDefault(a=111)
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        a: int = field(default=111, metadata={"alias": "alias_a"})
+
+    assert DataClass.from_dict({"alias_a": 123}) == DataClass(a=123)
+    assert DataClass.from_dict({}) == DataClass(a=111)
+
+
+def test_alias_with_omit_none():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        a: Optional[int] = field(default=None, metadata={"alias": "alias_a"})
+
+        class Config(BaseConfig):
+            code_generation_options = [
+                TO_DICT_ADD_BY_ALIAS_FLAG,
+                TO_DICT_ADD_OMIT_NONE_FLAG,
+            ]
+
+    instance = DataClass()
+    assert instance.to_dict(omit_none=True) == {}
+    assert instance.to_dict(by_alias=True) == {"alias_a": None}
+    assert instance.to_dict(omit_none=True, by_alias=True) == {}
+    instance = DataClass(a=123)
+    assert instance.to_dict(omit_none=True) == {"a": 123}
+    assert instance.to_dict(by_alias=True) == {"alias_a": 123}
+    assert instance.to_dict(omit_none=True, by_alias=True) == {"alias_a": 123}
+
+
+def test_serialize_by_alias_config_option():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        a: int = field(metadata={"alias": "alias_a"})
+
+        class Config(BaseConfig):
+            serialize_by_alias = True
+
+    assert DataClass(123).to_dict() == {"alias_a": 123}
 
 
 def test_serialize_by_alias_code_generation_flag():
