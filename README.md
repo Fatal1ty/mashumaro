@@ -29,10 +29,15 @@ Table of contents
         * [`serialize` option](#serialize-option)
         * [`deserialize` option](#deserialize-option)
         * [`serialization_strategy` option](#serialization_strategy-option)
+        * [`alias` option](#alias-option)
     * [Config options](#config-options)
         * [`debug` config option](#debug-config-option)
-        * [`omit_none` config option](#omit_none-config-option)
+        * [`code_generation_options` config option](#code_generation_options-config-option)
         * [`serialization_strategy` config option](#serialization_strategy-config-option)
+        * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
+    * [Code generation options](#config-options)
+        * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
+        * [Add `by_alias` keyword argument](#add-by-alias-keyword-argument)
     * [Serialization hooks](#serialization-hooks)
         * [Before deserialization](#before-deserialization)
         * [After deserialization](#after-deserialization)
@@ -515,6 +520,10 @@ dictionary = formats.to_dict()
 assert DateTimeFormats.from_dict(dictionary) == formats
 ```
 
+#### `alias` option
+
+WIP
+
 If you don't want to remember the names of the options you can use
 `field_options` helper function:
 
@@ -576,33 +585,19 @@ Next section describes all supported options to use in the config.
 If you enable the `debug` option the generated code for your data class
 will be printed.
 
-#### `omit_none` config option
+#### `code_generation_options` config option
 
-If you want to skip `None` values on serialization you can add `omit_none`
-parameter to `to_dict` method using the `code_generation_options` list:
+Some users may need functionality that wouldn't exist without extra cost such
+as valuable cpu time to execute additional instructions. Since not everyone
+needs such instructions, they can be enabled by a constant in the list,
+so the fastest basic behavior of the library will always remain by default.
+The following table provides a brief overview of all the available constants
+described below.
 
-```python
-from dataclasses import dataclass
-from typing import Optional
-from mashumaro import DataClassDictMixin
-from mashumaro.config import BaseConfig, TO_DICT_ADD_OMIT_NONE_FLAG
-
-@dataclass
-class Inner(DataClassDictMixin):
-    x: int = None
-    # "x" won't be omitted since there is no TO_DICT_ADD_OMIT_NONE_FLAG here
-
-@dataclass
-class Model(DataClassDictMixin):
-    x: Inner
-    a: int = None
-    b: str = None  # will be omitted
-
-    class Config(BaseConfig):
-        code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
-
-Model(x=Inner(), a=1).to_dict(omit_none=True)  # {'x': {'x': None}, 'a': 1}
-```
+| Constant                                                        | Description
+|:--------------------------------------------------------------- |:------------------------------------------------------------|
+| [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_dict` method. |
+| [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-omit_none-keyword-argument)  | Adds `by_alias` keyword-only arguments to `to_dict` method. |
 
 #### `serialization_strategy` config option
 
@@ -612,6 +607,7 @@ a dictionary with types as keys. The value could be either a
 `SerializationStrategy` instance or a dictionary with `serialize` and
 `deserialize` values with the same meaning as in the
 [field options](#field-options).
+
 ```python
 from dataclasses import dataclass
 from datetime import datetime, date
@@ -650,6 +646,59 @@ instance = DataClass.from_dict({"datetime": "2021", "date": "2021"})
 dictionary = instance.to_dict()
 # {'datetime': '2021', 'date': '2021-01-01'}
 ```
+
+#### `serialize_by_alias` config option
+
+If you want to serialize all the fields by its aliases, this option enables this.
+You may also consider a more flexible but less fast [`by_alias`](#add-by-alias-keyword-argument) keyword argument.
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import DataClassDictMixin, field_options
+from mashumaro.config import BaseConfig
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    field_a: int = field(metadata=field_options(alias="FieldA"))
+
+    class Config(BaseConfig):
+        serialize_by_alias = True
+
+DataClass(field_a=1).to_dict()  # {'FieldA': 1}
+```
+
+### Code generation options
+
+#### Add `omit_none` keyword argument
+
+If you want to skip `None` values on serialization you can add `omit_none`
+parameter to `to_dict` method using the `code_generation_options` list:
+
+```python
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig, TO_DICT_ADD_OMIT_NONE_FLAG
+
+@dataclass
+class Inner(DataClassDictMixin):
+    x: int = None
+    # "x" won't be omitted since there is no TO_DICT_ADD_OMIT_NONE_FLAG here
+
+@dataclass
+class Model(DataClassDictMixin):
+    x: Inner
+    a: int = None
+    b: str = None  # will be omitted
+
+    class Config(BaseConfig):
+        code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
+
+Model(x=Inner(), a=1).to_dict(omit_none=True)  # {'x': {'x': None}, 'a': 1}
+```
+
+#### Add `by_alias` keyword argument
+
+WIP.
 
 ### Serialization hooks
 
