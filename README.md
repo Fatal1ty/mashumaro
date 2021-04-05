@@ -37,7 +37,7 @@ Table of contents
         * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
     * [Code generation options](#config-options)
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
-        * [Add `by_alias` keyword argument](#add-by-alias-keyword-argument)
+        * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
     * [Serialization hooks](#serialization-hooks)
         * [Before deserialization](#before-deserialization)
         * [After deserialization](#after-deserialization)
@@ -597,7 +597,7 @@ described below.
 | Constant                                                        | Description
 |:--------------------------------------------------------------- |:------------------------------------------------------------|
 | [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_dict` method. |
-| [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-omit_none-keyword-argument)  | Adds `by_alias` keyword-only arguments to `to_dict` method. |
+| [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-by_alias-keyword-argument)   | Adds `by_alias` keyword-only arguments to `to_dict` method. |
 
 #### `serialization_strategy` config option
 
@@ -649,8 +649,8 @@ dictionary = instance.to_dict()
 
 #### `serialize_by_alias` config option
 
-If you want to serialize all the fields by its aliases, this option enables this.
-You may also consider a more flexible but less fast [`by_alias`](#add-by-alias-keyword-argument) keyword argument.
+All the fields with aliases will be serialized by them when this option is enabled.
+The more flexible but less fast way to do the same is using [`by_alias`](#add-by_alias-keyword-argument) keyword argument.
 
 ```python
 from dataclasses import dataclass, field
