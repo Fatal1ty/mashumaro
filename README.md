@@ -649,7 +649,7 @@ dictionary = instance.to_dict()
 
 #### `serialize_by_alias` config option
 
-All the fields with aliases will be serialized by them when this option is enabled.
+All the fields with [aliases](#alias-option) will be serialized by them when this option is enabled.
 The more flexible but less fast way to do the same is using [`by_alias`](#add-by_alias-keyword-argument) keyword argument.
 
 ```python
