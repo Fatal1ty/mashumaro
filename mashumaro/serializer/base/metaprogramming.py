@@ -210,6 +210,7 @@ class CodeBuilder:
 
     def add_from_dict(self) -> None:
 
+        config = self.get_config()
         self.reset()
         self.add_line("@classmethod")
         self.add_line(
@@ -233,6 +234,8 @@ class CodeBuilder:
                     self._add_type_modules(ftype)
                     metadata = self.metadatas.get(fname, {})
                     alias = metadata.get("alias")
+                    if alias is None:
+                        alias = config.aliases.get(fname)
                     self._from_dict_set_value(fname, ftype, metadata, alias)
             self.add_line("except AttributeError:")
             with self.indent():
@@ -392,7 +395,10 @@ class CodeBuilder:
         by_alias_feature = self.is_code_generation_option_enabled(
             TO_DICT_ADD_BY_ALIAS_FLAG
         )
+        config = self.get_config()
         alias = metadata.get("alias")
+        if alias is None:
+            alias = config.aliases.get(fname)
         serialize_by_alias = self.get_config().serialize_by_alias
         if serialize_by_alias and alias is not None:
             fname_or_alias = alias

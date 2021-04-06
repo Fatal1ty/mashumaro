@@ -136,3 +136,17 @@ def test_serialize_by_alias_flag_for_inner_class_with_it():
     instance = DataClass(AliasedWithSerializeByAliasFlag(a=1))
     assert instance.to_dict() == {"x": {"a": 1}}
     assert instance.to_dict(by_alias=True) == {"alias_x": {"alias_a": 1}}
+
+
+def test_aliases_in_config():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        a: int = 111
+
+        class Config(BaseConfig):
+            aliases = {"a": "alias_a"}
+            serialize_by_alias = True
+
+    assert DataClass.from_dict({"alias_a": 123}) == DataClass(a=123)
+    assert DataClass.from_dict({}) == DataClass(a=111)
+    assert DataClass(a=123).to_dict() == {"alias_a": 123}

@@ -15,4 +15,5 @@ class BaseConfig:
     debug: bool = False
     code_generation_options: List[str] = []
     serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
+    aliases: Dict[str, str] = {}
     serialize_by_alias: bool = False

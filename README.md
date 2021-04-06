@@ -34,6 +34,7 @@ Table of contents
         * [`debug` config option](#debug-config-option)
         * [`code_generation_options` config option](#code_generation_options-config-option)
         * [`serialization_strategy` config option](#serialization_strategy-config-option)
+        * [`aliases` config option](#aliases-config-option)
         * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
     * [Code generation options](#config-options)
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
@@ -541,6 +542,9 @@ x = DataClass.from_dict({"FieldA": 1, "#invalid": 2})  # DataClass(a=1, b=2)
 x.to_dict()  # {"a": 1, "b": 2}  # no aliases on serialization by default
 ```
 
+If you want to write all the field aliases in one place there is
+[such a config option](#aliases-config-option).
+
 If you want to serialize all the fields by aliases you have two options to do so:
 * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
 * [`by_alias` keyword argument in `to_dict` method](#add-by_alias-keyword-argument)
@@ -670,6 +674,31 @@ instance = DataClass.from_dict({"datetime": "2021", "date": "2021"})
 # DataClass(datetime=datetime.datetime(2021, 1, 1, 0, 0), date=Date(2021, 1, 1))
 dictionary = instance.to_dict()
 # {'datetime': '2021', 'date': '2021-01-01'}
+```
+
+#### `aliases` config option
+
+Sometimes it's better to write the field aliases in one place. You can mix
+aliases here with [aliases in the field options](#alias-option), but the last ones will always
+take precedence.
+
+```python
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    field_a: int
+    field_b: int
+
+    class Config(BaseConfig):
+        aliases = {
+            "field_a": "FieldA",
+            "field_b": "FieldB",
+        }
+
+DataClass.from_dict({"FieldA": 1, "FieldB": 2})  # DataClass(a=1, b=2)
 ```
 
 #### `serialize_by_alias` config option
