@@ -522,7 +522,32 @@ assert DateTimeFormats.from_dict(dictionary) == formats
 
 #### `alias` option
 
-WIP
+In some cases it's better to have different names for a field in your class and
+in its serialized view. For example, a third-party legacy API you are working
+with might operate with camel case style, but you stick to snake case style in
+your code base. Or even you want to load data with keys that are invalid
+identifiers in Python. This problem is easily solved by using aliases:
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import DataClassDictMixin, field_options
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    a: int = field(metadata=field_options(alias="FieldA"))
+    b: int = field(metadata=field_options(alias="#invalid"))
+
+x = DataClass.from_dict({"FieldA": 1, "#invalid": 2})  # DataClass(a=1, b=2)
+x.to_dict()  # {"a": 1, "b": 2}  # no aliases on serialization by default
+```
+
+If you want to serialize all the fields by aliases you have two options to do so:
+* [`serialize_by_alias` config option](#serialize_by_alias-config-option)
+* [`by_alias` keyword argument in `to_dict` method](#add-by_alias-keyword-argument)
+
+It's hard to imagine when it might be necessary to serialize only specific
+fields by alias, but such functionality is easily added to the library. Open
+the issue if you need it.
 
 If you don't want to remember the names of the options you can use
 `field_options` helper function:
@@ -649,8 +674,9 @@ dictionary = instance.to_dict()
 
 #### `serialize_by_alias` config option
 
-All the fields with [aliases](#alias-option) will be serialized by them when this option is enabled.
-The more flexible but less fast way to do the same is using [`by_alias`](#add-by_alias-keyword-argument) keyword argument.
+All the fields with [aliases](#alias-option) will be serialized by them when
+this option is enabled. The more flexible but less fast way to do the same
+is using [`by_alias`](#add-by_alias-keyword-argument) keyword argument.
 
 ```python
 from dataclasses import dataclass, field
@@ -671,8 +697,9 @@ DataClass(field_a=1).to_dict()  # {'FieldA': 1}
 
 #### Add `omit_none` keyword argument
 
-If you want to skip `None` values on serialization you can add `omit_none`
-parameter to `to_dict` method using the `code_generation_options` list:
+If you want to have control over whether to skip `None` values on serialization
+you can add `omit_none` parameter to `to_dict` method using the
+`code_generation_options` list:
 
 ```python
 from dataclasses import dataclass
@@ -698,7 +725,30 @@ Model(x=Inner(), a=1).to_dict(omit_none=True)  # {'x': {'x': None}, 'a': 1}
 
 #### Add `by_alias` keyword argument
 
-WIP.
+If you want to have control over whether to serialize fields by alias you can
+add `by_alias` parameter to `to_dict` method using the
+`code_generation_options` list. On the other hand if serialization by alias is
+always needed, the best solution is to use the [`serialize_by_alias`](#serialize_by_alias-config-option)
+config option.
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import DataClassDictMixin, field_options
+from mashumaro.config import BaseConfig, TO_DICT_ADD_BY_ALIAS_FLAG
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    field_a: int = field(metadata=field_options(alias="FieldA"))
+
+    class Config(BaseConfig):
+        code_generation_options = [TO_DICT_ADD_BY_ALIAS_FLAG]
+
+DataClass(field_a=1).to_dict()  # {'field_a': 1}
+DataClass(field_a=1).to_dict(by_alias=True)  # {'FieldA': 1}
+```
+
+Keep in mind, if you're serializing data in JSON or another format, then you
+need to pass "by_alias" argument to [`dict_params`](#dataclassjsonmixinto_jsonencoder-optionalencoder-dict_params-optionalmapping-encoder_kwargs) dictionary.
 
 ### Serialization hooks
 
