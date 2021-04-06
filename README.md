@@ -725,11 +725,11 @@ Model(x=Inner(), a=1).to_dict(omit_none=True)  # {'x': {'x': None}, 'a': 1}
 
 #### Add `by_alias` keyword argument
 
-If you want to have control over whether to serialize fields by alias you can
-add `by_alias` parameter to `to_dict` method using the
-`code_generation_options` list. On the other hand if serialization by alias is
-always needed, the best solution is to use the [`serialize_by_alias`](#serialize_by_alias-config-option)
-config option.
+If you want to have control over whether to serialize fields by
+[alias](#alias-option) you can add `by_alias` parameter to `to_dict` method
+using the `code_generation_options` list. On the other hand if serialization
+by alias is always needed, the best solution is to use the
+[`serialize_by_alias`](#serialize_by_alias-config-option) config option.
 
 ```python
 from dataclasses import dataclass, field
