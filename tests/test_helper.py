@@ -7,6 +7,7 @@ def test_field_options_helper():
         "serialize": None,
         "deserialize": None,
         "serialization_strategy": None,
+        "alias": None,
     }
 
     def serialize(x):
@@ -23,13 +24,16 @@ def test_field_options_helper():
             return value
 
     serialization_strategy = TestSerializationStrategy()
+    alias = "alias"
 
     assert field_options(
         serialize=serialize,
         deserialize=deserialize,
         serialization_strategy=serialization_strategy,
+        alias=alias,
     ) == {
         "serialize": serialize,
         "deserialize": deserialize,
         "serialization_strategy": serialization_strategy,
+        "alias": alias,
     }

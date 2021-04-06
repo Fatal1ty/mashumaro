@@ -4,7 +4,10 @@ from typing import Optional, Union
 import pytest
 
 from mashumaro import DataClassDictMixin
-from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
+from mashumaro.config import (
+    TO_DICT_ADD_OMIT_NONE_FLAG,
+    BaseConfig,
+)
 from mashumaro.types import SerializationStrategy
 
 from .entities import (

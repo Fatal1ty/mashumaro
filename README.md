@@ -29,10 +29,16 @@ Table of contents
         * [`serialize` option](#serialize-option)
         * [`deserialize` option](#deserialize-option)
         * [`serialization_strategy` option](#serialization_strategy-option)
+        * [`alias` option](#alias-option)
     * [Config options](#config-options)
         * [`debug` config option](#debug-config-option)
-        * [`omit_none` config option](#omit_none-config-option)
+        * [`code_generation_options` config option](#code_generation_options-config-option)
         * [`serialization_strategy` config option](#serialization_strategy-config-option)
+        * [`aliases` config option](#aliases-config-option)
+        * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
+    * [Code generation options](#config-options)
+        * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
+        * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
     * [Serialization hooks](#serialization-hooks)
         * [Before deserialization](#before-deserialization)
         * [After deserialization](#after-deserialization)
@@ -515,6 +521,38 @@ dictionary = formats.to_dict()
 assert DateTimeFormats.from_dict(dictionary) == formats
 ```
 
+#### `alias` option
+
+In some cases it's better to have different names for a field in your class and
+in its serialized view. For example, a third-party legacy API you are working
+with might operate with camel case style, but you stick to snake case style in
+your code base. Or even you want to load data with keys that are invalid
+identifiers in Python. This problem is easily solved by using aliases:
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import DataClassDictMixin, field_options
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    a: int = field(metadata=field_options(alias="FieldA"))
+    b: int = field(metadata=field_options(alias="#invalid"))
+
+x = DataClass.from_dict({"FieldA": 1, "#invalid": 2})  # DataClass(a=1, b=2)
+x.to_dict()  # {"a": 1, "b": 2}  # no aliases on serialization by default
+```
+
+If you want to write all the field aliases in one place there is
+[such a config option](#aliases-config-option).
+
+If you want to serialize all the fields by aliases you have two options to do so:
+* [`serialize_by_alias` config option](#serialize_by_alias-config-option)
+* [`by_alias` keyword argument in `to_dict` method](#add-by_alias-keyword-argument)
+
+It's hard to imagine when it might be necessary to serialize only specific
+fields by alias, but such functionality is easily added to the library. Open
+the issue if you need it.
+
 If you don't want to remember the names of the options you can use
 `field_options` helper function:
 
@@ -576,33 +614,19 @@ Next section describes all supported options to use in the config.
 If you enable the `debug` option the generated code for your data class
 will be printed.
 
-#### `omit_none` config option
+#### `code_generation_options` config option
 
-If you want to skip `None` values on serialization you can add `omit_none`
-parameter to `to_dict` method using the `code_generation_options` list:
+Some users may need functionality that wouldn't exist without extra cost such
+as valuable cpu time to execute additional instructions. Since not everyone
+needs such instructions, they can be enabled by a constant in the list,
+so the fastest basic behavior of the library will always remain by default.
+The following table provides a brief overview of all the available constants
+described below.
 
-```python
-from dataclasses import dataclass
-from typing import Optional
-from mashumaro import DataClassDictMixin
-from mashumaro.config import BaseConfig, TO_DICT_ADD_OMIT_NONE_FLAG
-
-@dataclass
-class Inner(DataClassDictMixin):
-    x: int = None
-    # "x" won't be omitted since there is no TO_DICT_ADD_OMIT_NONE_FLAG here
-
-@dataclass
-class Model(DataClassDictMixin):
-    x: Inner
-    a: int = None
-    b: str = None  # will be omitted
-
-    class Config(BaseConfig):
-        code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
-
-Model(x=Inner(), a=1).to_dict(omit_none=True)  # {'x': {'x': None}, 'a': 1}
-```
+| Constant                                                        | Description
+|:--------------------------------------------------------------- |:------------------------------------------------------------|
+| [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_dict` method. |
+| [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-by_alias-keyword-argument)   | Adds `by_alias` keyword-only arguments to `to_dict` method. |
 
 #### `serialization_strategy` config option
 
@@ -612,6 +636,7 @@ a dictionary with types as keys. The value could be either a
 `SerializationStrategy` instance or a dictionary with `serialize` and
 `deserialize` values with the same meaning as in the
 [field options](#field-options).
+
 ```python
 from dataclasses import dataclass
 from datetime import datetime, date
@@ -650,6 +675,109 @@ instance = DataClass.from_dict({"datetime": "2021", "date": "2021"})
 dictionary = instance.to_dict()
 # {'datetime': '2021', 'date': '2021-01-01'}
 ```
+
+#### `aliases` config option
+
+Sometimes it's better to write the field aliases in one place. You can mix
+aliases here with [aliases in the field options](#alias-option), but the last ones will always
+take precedence.
+
+```python
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    field_a: int
+    field_b: int
+
+    class Config(BaseConfig):
+        aliases = {
+            "field_a": "FieldA",
+            "field_b": "FieldB",
+        }
+
+DataClass.from_dict({"FieldA": 1, "FieldB": 2})  # DataClass(a=1, b=2)
+```
+
+#### `serialize_by_alias` config option
+
+All the fields with [aliases](#alias-option) will be serialized by them when
+this option is enabled. The more flexible but less fast way to do the same
+is using [`by_alias`](#add-by_alias-keyword-argument) keyword argument.
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import DataClassDictMixin, field_options
+from mashumaro.config import BaseConfig
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    field_a: int = field(metadata=field_options(alias="FieldA"))
+
+    class Config(BaseConfig):
+        serialize_by_alias = True
+
+DataClass(field_a=1).to_dict()  # {'FieldA': 1}
+```
+
+### Code generation options
+
+#### Add `omit_none` keyword argument
+
+If you want to have control over whether to skip `None` values on serialization
+you can add `omit_none` parameter to `to_dict` method using the
+`code_generation_options` list:
+
+```python
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig, TO_DICT_ADD_OMIT_NONE_FLAG
+
+@dataclass
+class Inner(DataClassDictMixin):
+    x: int = None
+    # "x" won't be omitted since there is no TO_DICT_ADD_OMIT_NONE_FLAG here
+
+@dataclass
+class Model(DataClassDictMixin):
+    x: Inner
+    a: int = None
+    b: str = None  # will be omitted
+
+    class Config(BaseConfig):
+        code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
+
+Model(x=Inner(), a=1).to_dict(omit_none=True)  # {'x': {'x': None}, 'a': 1}
+```
+
+#### Add `by_alias` keyword argument
+
+If you want to have control over whether to serialize fields by their
+[aliases](#alias-option) you can add `by_alias` parameter to `to_dict` method
+using the `code_generation_options` list. On the other hand if serialization
+by alias is always needed, the best solution is to use the
+[`serialize_by_alias`](#serialize_by_alias-config-option) config option.
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import DataClassDictMixin, field_options
+from mashumaro.config import BaseConfig, TO_DICT_ADD_BY_ALIAS_FLAG
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    field_a: int = field(metadata=field_options(alias="FieldA"))
+
+    class Config(BaseConfig):
+        code_generation_options = [TO_DICT_ADD_BY_ALIAS_FLAG]
+
+DataClass(field_a=1).to_dict()  # {'field_a': 1}
+DataClass(field_a=1).to_dict(by_alias=True)  # {'FieldA': 1}
+```
+
+Keep in mind, if you're serializing data in JSON or another format, then you
+need to pass `by_alias` argument to [`dict_params`](#dataclassjsonmixinto_jsonencoder-optionalencoder-dict_params-optionalmapping-encoder_kwargs) dictionary.
 
 ### Serialization hooks
 
