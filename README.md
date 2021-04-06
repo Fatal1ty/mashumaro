@@ -748,7 +748,7 @@ DataClass(field_a=1).to_dict(by_alias=True)  # {'FieldA': 1}
 ```
 
 Keep in mind, if you're serializing data in JSON or another format, then you
-need to pass "by_alias" argument to [`dict_params`](#dataclassjsonmixinto_jsonencoder-optionalencoder-dict_params-optionalmapping-encoder_kwargs) dictionary.
+need to pass `by_alias` argument to [`dict_params`](#dataclassjsonmixinto_jsonencoder-optionalencoder-dict_params-optionalmapping-encoder_kwargs) dictionary.
 
 ### Serialization hooks
 
