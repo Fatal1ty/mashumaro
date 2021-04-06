@@ -36,7 +36,7 @@ Table of contents
         * [`serialization_strategy` config option](#serialization_strategy-config-option)
         * [`aliases` config option](#aliases-config-option)
         * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
-    * [Code generation options](#config-options)
+    * [Code generation options](#code-generation-options)
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
         * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
     * [Serialization hooks](#serialization-hooks)
