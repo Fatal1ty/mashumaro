@@ -26,6 +26,8 @@ class Decoder(Protocol):  # pragma no cover
 
 
 class DataClassYAMLMixin(DataClassDictMixin):
+    __slots__ = ()
+
     def to_yaml(
         self: T,
         encoder: Encoder = yaml.dump,  # type: ignore

@@ -26,6 +26,8 @@ class Decoder(Protocol):  # pragma no cover
 
 
 class DataClassJSONMixin(DataClassDictMixin):
+    __slots__ = ()
+
     def to_json(
         self: T,
         encoder: Encoder = json.dumps,

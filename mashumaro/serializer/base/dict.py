@@ -6,6 +6,8 @@ T = TypeVar("T", bound="DataClassDictMixin")
 
 
 class DataClassDictMixin:
+    __slots__ = ()
+
     def __init_subclass__(cls: Type[T], **kwargs):
         builder = CodeBuilder(cls)
         exc = None

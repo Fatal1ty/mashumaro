@@ -27,6 +27,8 @@ class Decoder(Protocol):  # pragma no cover
 
 
 class DataClassMessagePackMixin(DataClassDictMixin):
+    __slots__ = ()
+
     def to_msgpack(
         self: T,
         encoder: Encoder = partial(msgpack.packb, use_bin_type=True),

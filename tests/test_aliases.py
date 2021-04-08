@@ -5,9 +5,9 @@ import pytest
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import (
-    BaseConfig,
     TO_DICT_ADD_BY_ALIAS_FLAG,
     TO_DICT_ADD_OMIT_NONE_FLAG,
+    BaseConfig,
 )
 from mashumaro.exceptions import MissingField
 
