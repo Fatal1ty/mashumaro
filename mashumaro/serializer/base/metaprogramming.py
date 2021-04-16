@@ -40,6 +40,7 @@ from mashumaro.meta.helpers import (
     get_imported_module_names,
     get_type_origin,
     is_class_var,
+    is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
     is_generic,
     is_init_var,
@@ -64,8 +65,6 @@ __PRE_SERIALIZE__ = "__pre_serialize__"
 __PRE_DESERIALIZE__ = "__pre_deserialize__"
 __POST_SERIALIZE__ = "__post_serialize__"
 __POST_DESERIALIZE__ = "__post_deserialize__"
-
-DataClassDictMixinPath = "mashumaro.serializer.base.dict.DataClassDictMixin"
 
 
 class CodeLines:
@@ -209,7 +208,7 @@ class CodeBuilder:
         if not hasattr(self.cls, method_name):
             return
         cls = get_class_that_define_method(method_name, self.cls)
-        if type_name(cls) != DataClassDictMixinPath:
+        if not is_dataclass_dict_mixin(cls):
             return cls.__dict__[method_name]
 
     def add_from_dict(self) -> None:

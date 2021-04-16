@@ -93,9 +93,13 @@ def get_class_that_define_method(method_name, cls):
             return cls
 
 
+def is_dataclass_dict_mixin(t):
+    return type_name(t) == DataClassDictMixinPath
+
+
 def is_dataclass_dict_mixin_subclass(t):
     for cls in t.__mro__:
-        if type_name(cls) == DataClassDictMixinPath:
+        if is_dataclass_dict_mixin(cls):
             return True
     return False
 
@@ -111,5 +115,6 @@ __all__ = [
     "is_class_var",
     "is_init_var",
     "get_class_that_define_method",
+    "is_dataclass_dict_mixin",
     "is_dataclass_dict_mixin_subclass",
 ]
