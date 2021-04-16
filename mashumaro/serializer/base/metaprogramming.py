@@ -7,6 +7,7 @@ import enum
 import ipaddress
 import os
 import pathlib
+import sys
 import typing
 import uuid
 
@@ -39,6 +40,7 @@ from mashumaro.meta.helpers import (
     get_imported_module_names,
     get_type_origin,
     is_class_var,
+    is_dataclass_dict_mixin_subclass,
     is_generic,
     is_init_var,
     is_special_typing_primitive,
@@ -114,7 +116,9 @@ class CodeBuilder:
         self, recursive=True
     ) -> typing.Dict[str, typing.Any]:
         fields = {}
-        for fname, ftype in typing.get_type_hints(self.cls).items():
+        globalns = sys.modules[self.cls.__module__].__dict__.copy()
+        globalns[self.cls.__name__] = self.cls
+        for fname, ftype in typing.get_type_hints(self.cls, globalns).items():
             if is_class_var(ftype) or is_init_var(ftype):
                 continue
             if recursive or fname in self.annotations:
@@ -477,10 +481,6 @@ class CodeBuilder:
             )
             overridden = f"self.__{fname}_serialize({value_name})"
 
-        if is_dataclass(ftype):
-            flags = self.get_to_dict_flags(ftype)
-            return overridden or f"{value_name}.to_dict({flags})"
-
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
                 return overridden or f"{value_name}._serialize()"
@@ -688,6 +688,9 @@ class CodeBuilder:
         elif issubclass(origin_type, enum.Enum):
             specific = f"{value_name}.value"
             return f"{value_name} if use_enum else {overridden or specific}"
+        elif is_dataclass_dict_mixin_subclass(ftype):
+            flags = self.get_to_dict_flags(ftype)
+            return overridden or f"{value_name}.to_dict({flags})"
         elif overridden:
             return overridden
 
@@ -717,12 +720,6 @@ class CodeBuilder:
         if callable(deserialize_option):
             setattr(self.cls, f"__{fname}_deserialize", deserialize_option)
             overridden = f"cls.__{fname}_deserialize({value_name})"
-
-        if is_dataclass(ftype):
-            return overridden or (
-                f"{type_name(ftype)}.from_dict({value_name}, "
-                f"use_bytes, use_enum, use_datetime)"
-            )
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
@@ -1021,6 +1018,11 @@ class CodeBuilder:
         elif issubclass(origin_type, enum.Enum):
             specific = f"{type_name(origin_type)}({value_name})"
             return f"{value_name} if use_enum else {overridden or specific}"
+        elif is_dataclass_dict_mixin_subclass(ftype):
+            return overridden or (
+                f"{type_name(ftype)}.from_dict({value_name}, "
+                f"use_bytes, use_enum, use_datetime)"
+            )
         elif overridden:
             return overridden
 

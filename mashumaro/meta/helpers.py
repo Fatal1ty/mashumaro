@@ -4,6 +4,8 @@ import typing
 
 from .macros import PY_36, PY_37, PY_38, PY_39
 
+DataClassDictMixinPath = "mashumaro.serializer.base.dict.DataClassDictMixin"
+
 
 def get_imported_module_names():
     # noinspection PyUnresolvedReferences
@@ -91,6 +93,13 @@ def get_class_that_define_method(method_name, cls):
             return cls
 
 
+def is_dataclass_dict_mixin_subclass(t):
+    for cls in t.__mro__:
+        if type_name(cls) == DataClassDictMixinPath:
+            return True
+    return False
+
+
 __all__ = [
     "get_imported_module_names",
     "get_type_origin",
@@ -102,4 +111,5 @@ __all__ = [
     "is_class_var",
     "is_init_var",
     "get_class_that_define_method",
+    "is_dataclass_dict_mixin_subclass",
 ]
