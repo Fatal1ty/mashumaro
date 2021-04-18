@@ -82,3 +82,22 @@ class InvalidFieldValue(ValueError):
 
 class BadHookSignature(TypeError):
     pass
+
+
+class ThirdPartyModuleNotFoundError(ModuleNotFoundError):
+    def __init__(self, module_name, field_name, holder_class):
+        self.module_name = module_name
+        self.field_name = field_name
+        self.holder_class = holder_class
+
+    @property
+    def holder_class_name(self):
+        return type_name(self.holder_class)
+
+    def __str__(self):
+        s = (
+            f'Install "{self.module_name}" to use it as the serialization '
+            f'method for the field "{self.field_name}" '
+            f"in {self.holder_class_name}"
+        )
+        return s

@@ -1,17 +1,16 @@
-# noinspection PyUnresolvedReferences
-import builtins  # noqa
 import collections
 import collections.abc
 import datetime
 import enum
+import inspect
 import ipaddress
 import os
 import pathlib
 import sys
+import types
 import typing
 import uuid
 
-# noinspection PyUnresolvedReferences
 from base64 import decodebytes, encodebytes  # noqa
 from contextlib import contextmanager, suppress
 
@@ -27,17 +26,16 @@ from mashumaro.config import (
     BaseConfig,
 )
 
-# noinspection PyUnresolvedReferences
 from mashumaro.exceptions import (  # noqa
     BadHookSignature,
     InvalidFieldValue,
     MissingField,
+    ThirdPartyModuleNotFoundError,
     UnserializableDataError,
     UnserializableField,
 )
 from mashumaro.meta.helpers import (
     get_class_that_define_method,
-    get_imported_module_names,
     get_type_origin,
     is_class_var,
     is_dataclass_dict_mixin,
@@ -54,11 +52,19 @@ from mashumaro.meta.patch import patch_fromisoformat
 from mashumaro.serializer.base.helpers import *  # noqa
 from mashumaro.types import SerializableType, SerializationStrategy
 
+try:
+    import ciso8601
+except ImportError:
+    ciso8601: typing.Optional[types.ModuleType] = None
+try:
+    import pendulum
+except ImportError:
+    pendulum: typing.Optional[types.ModuleType] = None
+
 patch_fromisoformat()
 
 
 NoneType = type(None)
-INITIAL_MODULES = get_imported_module_names()
 
 
 __PRE_SERIALIZE__ = "__pre_serialize__"
@@ -95,13 +101,11 @@ class CodeBuilder:
     def __init__(self, cls):
         self.cls = cls
         self.lines: CodeLines = CodeLines()
-        self.modules: typing.Set[str] = set()
-        self.globals: typing.Set[str] = set()
+        self.globals: typing.Dict[str, typing.Any] = {}
 
     def reset(self) -> None:
         self.lines.reset()
-        self.modules = INITIAL_MODULES.copy()
-        self.globals = set()
+        self.globals = globals().copy()
 
     @property
     def namespace(self) -> typing.Dict[typing.Any, typing.Any]:
@@ -165,7 +169,7 @@ class CodeBuilder:
 
     def _add_type_modules(self, *types_) -> None:
         for t in types_:
-            module = getattr(t, "__module__", None)
+            module = inspect.getmodule(t)
             if not module:
                 return
             self.ensure_module_imported(module)
@@ -176,18 +180,11 @@ class CodeBuilder:
             if constraints:
                 self._add_type_modules(*constraints)
 
-    def ensure_module_imported(self, module: str) -> None:
-        if module not in self.modules:
-            self.modules.add(module)
-            self.add_line(f"if '{module}' not in globals():")
-            with self.indent():
-                self.add_line(f"import {module}")
-            root_module = module.split(".")[0]
-            if root_module not in self.globals:
-                self.globals.add(root_module)
-                self.add_line("else:")
-                with self.indent():
-                    self.add_line(f"global {root_module}")
+    def ensure_module_imported(self, module: types.ModuleType) -> None:
+        self.globals.setdefault(module.__name__, module)
+        if module.__package__ and module.__package__ not in self.globals:
+            package = sys.modules[module.__package__]
+            self.globals[package.__name__] = package
 
     def add_line(self, line: str) -> None:
         self.lines.append(line)
@@ -202,7 +199,7 @@ class CodeBuilder:
         if self.get_config().debug:
             print(self.cls)
             print(code)
-        exec(code, globals(), self.__dict__)
+        exec(code, self.globals, self.__dict__)
 
     def get_declared_hook(self, method_name: str):
         if not hasattr(self.cls, method_name):
@@ -768,11 +765,21 @@ class CodeBuilder:
                 return f"{value_name} if use_datetime else {overridden}"
             elif deserialize_option is not None:
                 if deserialize_option == "ciso8601":
-                    self.ensure_module_imported("ciso8601")
-                    datetime_parser = "ciso8601.parse_datetime"
+                    if ciso8601:
+                        self.ensure_module_imported(ciso8601)
+                        datetime_parser = "ciso8601.parse_datetime"
+                    else:
+                        raise ThirdPartyModuleNotFoundError(
+                            "ciso8601", fname, parent
+                        )
                 elif deserialize_option == "pendulum":
-                    self.ensure_module_imported("pendulum")
-                    datetime_parser = "pendulum.parse"
+                    if pendulum:
+                        self.ensure_module_imported(pendulum)
+                        datetime_parser = "pendulum.parse"
+                    else:
+                        raise ThirdPartyModuleNotFoundError(
+                            "pendulum", fname, parent
+                        )
                 else:
                     raise UnserializableField(
                         fname,
