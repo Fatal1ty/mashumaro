@@ -53,11 +53,11 @@ from mashumaro.types import SerializableType, SerializationStrategy
 try:
     import ciso8601
 except ImportError:
-    ciso8601: typing.Optional[types.ModuleType] = None
+    ciso8601: typing.Optional[types.ModuleType] = None  # type: ignore
 try:
     import pendulum
 except ImportError:
-    pendulum: typing.Optional[types.ModuleType] = None
+    pendulum: typing.Optional[types.ModuleType] = None  # type: ignore
 
 patch_fromisoformat()
 
