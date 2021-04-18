@@ -2,6 +2,7 @@ import collections
 import collections.abc
 import datetime
 import enum
+import importlib
 import inspect
 import ipaddress
 import os
@@ -180,9 +181,8 @@ class CodeBuilder:
 
     def ensure_module_imported(self, module: types.ModuleType) -> None:
         self.globals.setdefault(module.__name__, module)
-        if module.__package__ and module.__package__ not in self.globals:
-            package = sys.modules[module.__package__]
-            self.globals[package.__name__] = package
+        package = module.__name__.split(".")[0]
+        self.globals.setdefault(package, importlib.import_module(package))
 
     def add_line(self, line: str) -> None:
         self.lines.append(line)
