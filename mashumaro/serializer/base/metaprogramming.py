@@ -10,7 +10,6 @@ import sys
 import types
 import typing
 import uuid
-
 from base64 import decodebytes, encodebytes  # noqa
 from contextlib import contextmanager, suppress
 
@@ -25,7 +24,6 @@ from mashumaro.config import (
     TO_DICT_ADD_OMIT_NONE_FLAG,
     BaseConfig,
 )
-
 from mashumaro.exceptions import (  # noqa
     BadHookSignature,
     InvalidFieldValue,
