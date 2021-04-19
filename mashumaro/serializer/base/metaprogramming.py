@@ -1,16 +1,16 @@
-# noinspection PyUnresolvedReferences
-import builtins  # noqa
 import collections
 import collections.abc
 import datetime
 import enum
+import importlib
+import inspect
 import ipaddress
 import os
 import pathlib
+import sys
+import types
 import typing
 import uuid
-
-# noinspection PyUnresolvedReferences
 from base64 import decodebytes, encodebytes  # noqa
 from contextlib import contextmanager, suppress
 
@@ -25,20 +25,20 @@ from mashumaro.config import (
     TO_DICT_ADD_OMIT_NONE_FLAG,
     BaseConfig,
 )
-
-# noinspection PyUnresolvedReferences
 from mashumaro.exceptions import (  # noqa
     BadHookSignature,
     InvalidFieldValue,
     MissingField,
+    ThirdPartyModuleNotFoundError,
     UnserializableDataError,
     UnserializableField,
 )
 from mashumaro.meta.helpers import (
     get_class_that_define_method,
-    get_imported_module_names,
     get_type_origin,
     is_class_var,
+    is_dataclass_dict_mixin,
+    is_dataclass_dict_mixin_subclass,
     is_generic,
     is_init_var,
     is_special_typing_primitive,
@@ -51,19 +51,25 @@ from mashumaro.meta.patch import patch_fromisoformat
 from mashumaro.serializer.base.helpers import *  # noqa
 from mashumaro.types import SerializableType, SerializationStrategy
 
+try:
+    import ciso8601
+except ImportError:  # pragma no cover
+    ciso8601: typing.Optional[types.ModuleType] = None  # type: ignore
+try:
+    import pendulum
+except ImportError:  # pragma no cover
+    pendulum: typing.Optional[types.ModuleType] = None  # type: ignore
+
 patch_fromisoformat()
 
 
 NoneType = type(None)
-INITIAL_MODULES = get_imported_module_names()
 
 
 __PRE_SERIALIZE__ = "__pre_serialize__"
 __PRE_DESERIALIZE__ = "__pre_deserialize__"
 __POST_SERIALIZE__ = "__post_serialize__"
 __POST_DESERIALIZE__ = "__post_deserialize__"
-
-DataClassDictMixinPath = "mashumaro.serializer.base.dict.DataClassDictMixin"
 
 
 class CodeLines:
@@ -94,13 +100,11 @@ class CodeBuilder:
     def __init__(self, cls):
         self.cls = cls
         self.lines: CodeLines = CodeLines()
-        self.modules: typing.Set[str] = set()
-        self.globals: typing.Set[str] = set()
+        self.globals: typing.Dict[str, typing.Any] = {}
 
     def reset(self) -> None:
         self.lines.reset()
-        self.modules = INITIAL_MODULES.copy()
-        self.globals = set()
+        self.globals = globals().copy()
 
     @property
     def namespace(self) -> typing.Dict[typing.Any, typing.Any]:
@@ -114,7 +118,9 @@ class CodeBuilder:
         self, recursive=True
     ) -> typing.Dict[str, typing.Any]:
         fields = {}
-        for fname, ftype in typing.get_type_hints(self.cls).items():
+        globalns = sys.modules[self.cls.__module__].__dict__.copy()
+        globalns[self.cls.__name__] = self.cls
+        for fname, ftype in typing.get_type_hints(self.cls, globalns).items():
             if is_class_var(ftype) or is_init_var(ftype):
                 continue
             if recursive or fname in self.annotations:
@@ -162,7 +168,7 @@ class CodeBuilder:
 
     def _add_type_modules(self, *types_) -> None:
         for t in types_:
-            module = getattr(t, "__module__", None)
+            module = inspect.getmodule(t)
             if not module:
                 return
             self.ensure_module_imported(module)
@@ -173,18 +179,10 @@ class CodeBuilder:
             if constraints:
                 self._add_type_modules(*constraints)
 
-    def ensure_module_imported(self, module: str) -> None:
-        if module not in self.modules:
-            self.modules.add(module)
-            self.add_line(f"if '{module}' not in globals():")
-            with self.indent():
-                self.add_line(f"import {module}")
-            root_module = module.split(".")[0]
-            if root_module not in self.globals:
-                self.globals.add(root_module)
-                self.add_line("else:")
-                with self.indent():
-                    self.add_line(f"global {root_module}")
+    def ensure_module_imported(self, module: types.ModuleType) -> None:
+        self.globals.setdefault(module.__name__, module)
+        package = module.__name__.split(".")[0]
+        self.globals.setdefault(package, importlib.import_module(package))
 
     def add_line(self, line: str) -> None:
         self.lines.append(line)
@@ -199,13 +197,13 @@ class CodeBuilder:
         if self.get_config().debug:
             print(self.cls)
             print(code)
-        exec(code, globals(), self.__dict__)
+        exec(code, self.globals, self.__dict__)
 
     def get_declared_hook(self, method_name: str):
         if not hasattr(self.cls, method_name):
             return
         cls = get_class_that_define_method(method_name, self.cls)
-        if type_name(cls) != DataClassDictMixinPath:
+        if not is_dataclass_dict_mixin(cls):
             return cls.__dict__[method_name]
 
     def add_from_dict(self) -> None:
@@ -477,10 +475,6 @@ class CodeBuilder:
             )
             overridden = f"self.__{fname}_serialize({value_name})"
 
-        if is_dataclass(ftype):
-            flags = self.get_to_dict_flags(ftype)
-            return overridden or f"{value_name}.to_dict({flags})"
-
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
                 return overridden or f"{value_name}._serialize()"
@@ -688,6 +682,9 @@ class CodeBuilder:
         elif issubclass(origin_type, enum.Enum):
             specific = f"{value_name}.value"
             return f"{value_name} if use_enum else {overridden or specific}"
+        elif is_dataclass_dict_mixin_subclass(ftype):
+            flags = self.get_to_dict_flags(ftype)
+            return overridden or f"{value_name}.to_dict({flags})"
         elif overridden:
             return overridden
 
@@ -717,12 +714,6 @@ class CodeBuilder:
         if callable(deserialize_option):
             setattr(self.cls, f"__{fname}_deserialize", deserialize_option)
             overridden = f"cls.__{fname}_deserialize({value_name})"
-
-        if is_dataclass(ftype):
-            return overridden or (
-                f"{type_name(ftype)}.from_dict({value_name}, "
-                f"use_bytes, use_enum, use_datetime)"
-            )
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
@@ -772,11 +763,21 @@ class CodeBuilder:
                 return f"{value_name} if use_datetime else {overridden}"
             elif deserialize_option is not None:
                 if deserialize_option == "ciso8601":
-                    self.ensure_module_imported("ciso8601")
-                    datetime_parser = "ciso8601.parse_datetime"
+                    if ciso8601:
+                        self.ensure_module_imported(ciso8601)
+                        datetime_parser = "ciso8601.parse_datetime"
+                    else:
+                        raise ThirdPartyModuleNotFoundError(
+                            "ciso8601", fname, parent
+                        )  # pragma no cover
                 elif deserialize_option == "pendulum":
-                    self.ensure_module_imported("pendulum")
-                    datetime_parser = "pendulum.parse"
+                    if pendulum:
+                        self.ensure_module_imported(pendulum)
+                        datetime_parser = "pendulum.parse"
+                    else:
+                        raise ThirdPartyModuleNotFoundError(
+                            "pendulum", fname, parent
+                        )  # pragma no cover
                 else:
                     raise UnserializableField(
                         fname,
@@ -1021,6 +1022,11 @@ class CodeBuilder:
         elif issubclass(origin_type, enum.Enum):
             specific = f"{type_name(origin_type)}({value_name})"
             return f"{value_name} if use_enum else {overridden or specific}"
+        elif is_dataclass_dict_mixin_subclass(ftype):
+            return overridden or (
+                f"{type_name(ftype)}.from_dict({value_name}, "
+                f"use_bytes, use_enum, use_datetime)"
+            )
         elif overridden:
             return overridden
 

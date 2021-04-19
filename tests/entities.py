@@ -95,3 +95,23 @@ class ThirdPartyType:
 
     def __eq__(self, other):
         return isinstance(other, ThirdPartyType) and self.value == other.value
+
+
+@dataclass
+class DataClassWithoutMixin:
+    i: int
+
+
+@dataclass
+class SerializableTypeDataClass(SerializableType):
+    a: int
+    b: int
+
+    def _serialize(self):
+        return {"a": self.a + 1, "b": self.b + 1}
+
+    @classmethod
+    def _deserialize(cls, value):
+        a = value.get("a") - 1
+        b = value.get("b") - 1
+        return cls(a, b)

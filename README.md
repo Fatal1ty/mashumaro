@@ -24,7 +24,7 @@ Table of contents
 * [Benchmark](#benchmark)
 * [API](#api)
 * [Customization](#customization)
-    * [Serializable Interface](#serializable-interface)
+    * [SerializableType Interface](#serializabletype-interface)
     * [Field options](#field-options)
         * [`serialize` option](#serialize-option)
         * [`deserialize` option](#deserialize-option)
@@ -350,7 +350,7 @@ decoder_kwargs # keyword arguments for decoder function
 Customization
 --------------------------------------------------------------------------------
 
-### Serializable Interface
+### SerializableType Interface
 
 If you already have a separate custom class, and you want to serialize
 instances of it with *mashumaro*, you can achieve this by implementing

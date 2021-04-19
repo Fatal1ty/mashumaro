@@ -3,14 +3,18 @@ from unittest.mock import patch
 
 import pytest
 
-from mashumaro import DataClassDictMixin
+from mashumaro import DataClassDictMixin, DataClassJSONMixin
 from mashumaro.meta.helpers import (
     get_class_that_define_method,
     is_class_var,
+    is_dataclass_dict_mixin,
+    is_dataclass_dict_mixin_subclass,
     is_generic,
     is_init_var,
 )
 from mashumaro.serializer.base.metaprogramming import CodeBuilder
+
+from .entities import MyDataClass
 
 
 def test_is_generic_unsupported_python():
@@ -83,3 +87,14 @@ def test_get_class_that_define_method():
 def test_get_unknown_declared_hook():
     builder = CodeBuilder(object)
     assert builder.get_declared_hook("unknown_name") is None
+
+
+def test_is_dataclass_dict_mixin():
+    assert is_dataclass_dict_mixin(DataClassDictMixin)
+    assert not is_dataclass_dict_mixin(DataClassJSONMixin)
+
+
+def test_is_dataclass_dict_mixin_subclass():
+    assert is_dataclass_dict_mixin_subclass(DataClassDictMixin)
+    assert is_dataclass_dict_mixin_subclass(DataClassJSONMixin)
+    assert is_dataclass_dict_mixin_subclass(MyDataClass)
