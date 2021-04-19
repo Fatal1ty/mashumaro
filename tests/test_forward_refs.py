@@ -1,17 +1,12 @@
-from __future__ import annotations
+import pytest
 
-from dataclasses import dataclass
-from typing import Optional
-
-from mashumaro import DataClassDictMixin
+from mashumaro.meta.macros import PY_37_MIN
 
 
-@dataclass
-class Node(DataClassDictMixin):
-    next: Optional[Node] = None
-
-
+@pytest.mark.skipif(not PY_37_MIN, reason="requires python>=3.7")
 def test_self_reference():
+    from .entities_forward_refs import Node
+
     assert Node.from_dict({}) == Node()
     assert Node.from_dict({"next": {}}) == Node(Node())
     assert Node().to_dict() == {"next": None}
