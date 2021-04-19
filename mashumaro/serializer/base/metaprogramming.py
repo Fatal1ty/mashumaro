@@ -53,11 +53,11 @@ from mashumaro.types import SerializableType, SerializationStrategy
 
 try:
     import ciso8601
-except ImportError:
+except ImportError:  # pragma no cover
     ciso8601: typing.Optional[types.ModuleType] = None  # type: ignore
 try:
     import pendulum
-except ImportError:
+except ImportError:  # pragma no cover
     pendulum: typing.Optional[types.ModuleType] = None  # type: ignore
 
 patch_fromisoformat()
@@ -769,7 +769,7 @@ class CodeBuilder:
                     else:
                         raise ThirdPartyModuleNotFoundError(
                             "ciso8601", fname, parent
-                        )
+                        )  # pragma no cover
                 elif deserialize_option == "pendulum":
                     if pendulum:
                         self.ensure_module_imported(pendulum)
@@ -777,7 +777,7 @@ class CodeBuilder:
                     else:
                         raise ThirdPartyModuleNotFoundError(
                             "pendulum", fname, parent
-                        )
+                        )  # pragma no cover
                 else:
                     raise UnserializableField(
                         fname,

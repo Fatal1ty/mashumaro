@@ -60,6 +60,7 @@ from mashumaro.types import (
 
 from .entities import (
     CustomPath,
+    DataClassWithoutMixin,
     MutableString,
     MyDataClass,
     MyDataClassWithUnion,
@@ -68,6 +69,7 @@ from .entities import (
     MyIntEnum,
     MyIntFlag,
     MyStrEnum,
+    SerializableTypeDataClass,
 )
 from .utils import same_types
 
@@ -1022,3 +1024,21 @@ def test_serialize_deserialize_options(
     )
     assert same_types(instance_dumped, dumped)
     assert same_types(instance_loaded.x, x_value)
+
+
+def test_dataclass_field_without_mixin():
+    with pytest.raises(UnserializableField):
+
+        @dataclass
+        class _(DataClassDictMixin):
+            p: DataClassWithoutMixin
+
+
+def test_serializable_type_dataclass():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        s: SerializableTypeDataClass
+
+    s_value = SerializableTypeDataClass(a=9, b=9)
+    assert DataClass.from_dict({"s": {"a": 10, "b": 10}}) == DataClass(s_value)
+    assert DataClass(s_value).to_dict() == {"s": {"a": 10, "b": 10}}

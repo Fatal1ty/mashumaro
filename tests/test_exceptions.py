@@ -3,6 +3,7 @@ from typing import List
 from mashumaro.exceptions import (
     InvalidFieldValue,
     MissingField,
+    ThirdPartyModuleNotFoundError,
     UnserializableField,
 )
 
@@ -95,4 +96,19 @@ def test_invalid_field_value_with_msg_str():
     assert (
         str(exc) == 'Field "x" of type builtins.int in builtins.object '
         "has invalid value 'y': test message"
+    )
+
+
+def test_third_party_module_not_found_error_holder_class_name():
+    exc = ThirdPartyModuleNotFoundError("third_party", "x", object)
+    assert exc.holder_class_name == "builtins.object"
+    exc = ThirdPartyModuleNotFoundError("third_party", "x", List[int])
+    assert exc.holder_class_name == "typing.List[int]"
+
+
+def test_third_party_module_not_found_error_str():
+    exc = ThirdPartyModuleNotFoundError("third_party", "x", object)
+    assert (
+        str(exc) == 'Install "third_party" to use it as the serialization '
+        'method for the field "x" in builtins.object'
     )
