@@ -210,45 +210,45 @@ The following figures show the best overall time in each case.
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/Fatal1ty/mashumaro">mashumaro</a></th>
-    <td>0.04316</td>
-    <td>1x</td>
-    <td>0.02751</td>
-    <td>1x</td>
+    <td align="right">0.04114</td>
+    <td align="left">1x</td>
+    <td align="right">0.02729</td>
+    <td align="left">1x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/Tinche/cattrs">cattrs</a></th>
-    <td>0.06518</td>
-    <td>1.51x</td>
-    <td>0.04856</td>
-    <td>1.77x</td>
+    <td align="right">0.06471</td>
+    <td align="left">1.57x</td>
+    <td align="right">0.04804</td>
+    <td align="left">1.76x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/samuelcolvin/pydantic/">pydantic</a></th>
-    <td>0.23339</td>
-    <td>5.41x</td>
-    <td>0.11464</td>
-    <td>4.17x</td>
+    <td align="right">0.23675</td>
+    <td align="left">5.75x</td>
+    <td align="right">0.11420</td>
+    <td align="left">4.18x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/marshmallow-code/marshmallow">marshmallow</a></th>
-    <td>0.24699</td>
-    <td>5.72x</td>
-    <td>0.09425</td>
-    <td>3.43x</td>
+    <td align="right">0.24702</td>
+    <td align="left">6.0x</td>
+    <td align="right">0.09430</td>
+    <td align="left">3.46x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.asdict">dataclasses</a></th>
-    <td>—</td>
-    <td>—</td>
-    <td>0.22689</td>
-    <td>5.26x</td>
+    <td align="left">—</td>
+    <td align="left">—</td>
+    <td align="right">0.22787</td>
+    <td align="left">5.54x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/konradhalas/dacite">dacite</a></th>
-    <td>0.91482</td>
-    <td>21.2x</td>
-    <td>—</td>
-    <td>—</td>
+    <td align="right">0.91061</td>
+    <td align="left">22.13x</td>
+    <td align="left">—</td>
+    <td align="left">—</td>
 </tr>
 </table>
 
