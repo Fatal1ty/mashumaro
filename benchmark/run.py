@@ -135,7 +135,7 @@ slowdown = {
     ],
     "dataclasses": [
         "—",
-        f"{round(dataclasses_to_dict / mashumaro_from_dict, 2)}x",
+        f"{round(dataclasses_to_dict / mashumaro_to_dict, 2)}x",
     ],
     "dacite": [f"{round(dacite_from_dict / mashumaro_from_dict, 2)}x", "—"],
 }

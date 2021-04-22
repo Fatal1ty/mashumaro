@@ -241,7 +241,7 @@ The following figures show the best overall time in each case.
     <td align="left">—</td>
     <td align="left">—</td>
     <td align="right">0.22787</td>
-    <td align="left">5.54x</td>
+    <td align="left">8.35x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/konradhalas/dacite">dacite</a></th>
