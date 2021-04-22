@@ -328,11 +328,16 @@ class CodeBuilder:
     def get_to_dict_flags(self, cls=None) -> str:
         config = self.get_config(cls)
         code_generation_options = config.code_generation_options
+        parent_config = self.get_config()
+        parent_code_generation_options = parent_config.code_generation_options
         pluggable_flags = []
-        if TO_DICT_ADD_OMIT_NONE_FLAG in code_generation_options:
-            pluggable_flags.append("omit_none=omit_none")
-        if TO_DICT_ADD_BY_ALIAS_FLAG in code_generation_options:
-            pluggable_flags.append("by_alias=by_alias")
+        for option, flag in (
+            (TO_DICT_ADD_OMIT_NONE_FLAG, "omit_none"),
+            (TO_DICT_ADD_BY_ALIAS_FLAG, "by_alias"),
+        ):
+            if option in code_generation_options:
+                if option in parent_code_generation_options:
+                    pluggable_flags.append(f"{flag}={flag}")
         return ",".join(
             ["use_bytes", "use_enum", "use_datetime", *pluggable_flags]
         )
