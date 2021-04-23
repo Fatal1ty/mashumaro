@@ -1067,7 +1067,7 @@ class CodeBuilder:
         if self.get_config().debug:
             print(self.cls)
             print(lines.as_text())
-        exec(lines.as_text(), globals(), self.__dict__)
+        exec(lines.as_text(), self.globals, self.__dict__)
         return method_name
 
     def _add_unpack_union(self, fname, ftype, args, parent, metadata) -> str:
@@ -1101,5 +1101,5 @@ class CodeBuilder:
         if self.get_config().debug:
             print(self.cls)
             print(lines.as_text())
-        exec(lines.as_text(), globals(), self.__dict__)
+        exec(lines.as_text(), self.globals, self.__dict__)
         return method_name
