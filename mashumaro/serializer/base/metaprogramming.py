@@ -484,6 +484,10 @@ class CodeBuilder:
             if issubclass(ftype, SerializableType):
                 return overridden or f"{value_name}._serialize()"
 
+        if is_dataclass_dict_mixin_subclass(ftype):
+            flags = self.get_to_dict_flags(ftype)
+            return overridden or f"{value_name}.to_dict({flags})"
+
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
@@ -687,9 +691,6 @@ class CodeBuilder:
         elif issubclass(origin_type, enum.Enum):
             specific = f"{value_name}.value"
             return f"{value_name} if use_enum else {overridden or specific}"
-        elif is_dataclass_dict_mixin_subclass(ftype):
-            flags = self.get_to_dict_flags(ftype)
-            return overridden or f"{value_name}.to_dict({flags})"
         elif overridden:
             return overridden
 
@@ -726,6 +727,12 @@ class CodeBuilder:
                     overridden
                     or f"{type_name(ftype)}._deserialize({value_name})"
                 )
+
+        if is_dataclass_dict_mixin_subclass(ftype):
+            return overridden or (
+                f"{type_name(ftype)}.from_dict({value_name}, "
+                f"use_bytes, use_enum, use_datetime)"
+            )
 
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
@@ -1027,11 +1034,6 @@ class CodeBuilder:
         elif issubclass(origin_type, enum.Enum):
             specific = f"{type_name(origin_type)}({value_name})"
             return f"{value_name} if use_enum else {overridden or specific}"
-        elif is_dataclass_dict_mixin_subclass(ftype):
-            return overridden or (
-                f"{type_name(ftype)}.from_dict({value_name}, "
-                f"use_bytes, use_enum, use_datetime)"
-            )
         elif overridden:
             return overridden
 
@@ -1065,7 +1067,7 @@ class CodeBuilder:
         if self.get_config().debug:
             print(self.cls)
             print(lines.as_text())
-        exec(lines.as_text(), globals(), self.__dict__)
+        exec(lines.as_text(), self.globals, self.__dict__)
         return method_name
 
     def _add_unpack_union(self, fname, ftype, args, parent, metadata) -> str:
@@ -1099,5 +1101,5 @@ class CodeBuilder:
         if self.get_config().debug:
             print(self.cls)
             print(lines.as_text())
-        exec(lines.as_text(), globals(), self.__dict__)
+        exec(lines.as_text(), self.globals, self.__dict__)
         return method_name

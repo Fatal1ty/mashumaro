@@ -1,5 +1,6 @@
 import dataclasses
 import typing
+from contextlib import suppress
 
 from .macros import PY_36, PY_37, PY_38, PY_39
 
@@ -88,9 +89,10 @@ def is_dataclass_dict_mixin(t):
 
 
 def is_dataclass_dict_mixin_subclass(t):
-    for cls in t.__mro__:
-        if is_dataclass_dict_mixin(cls):
-            return True
+    with suppress(AttributeError):
+        for cls in t.__mro__:
+            if is_dataclass_dict_mixin(cls):
+                return True
     return False
 
 
