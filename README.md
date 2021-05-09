@@ -132,7 +132,7 @@ for other less popular built-in types:
 * `ipaddress.IPv6Interface`
 
 for specific types like *NoneType*, nested dataclasses itself and
-even [user defined classes](#serializable-interface).
+even [user defined classes](#serializabletype-interface).
 
 Usage example
 --------------------------------------------------------------------------------
