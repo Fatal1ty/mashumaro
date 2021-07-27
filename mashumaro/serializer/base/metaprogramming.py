@@ -562,9 +562,7 @@ class CodeBuilder:
                         arg_type = args[arg_num]
                     else:
                         arg_type = typing.Any
-                    return self._pack_value(
-                        fname, arg_type, parent, v_name
-                    )
+                    return self._pack_value(fname, arg_type, parent, v_name)
 
             if issubclass(origin_type, typing.ByteString):
                 specific = f"encodebytes({value_name}).decode()"
