@@ -558,8 +558,12 @@ class CodeBuilder:
                 if v_type:
                     return self._pack_value(fname, v_type, parent, v_name)
                 else:
+                    if len(args) > arg_num:
+                        arg_type = args[arg_num]
+                    else:
+                        arg_type = typing.Any
                     return self._pack_value(
-                        fname, args[arg_num], parent, v_name
+                        fname, arg_type, parent, v_name
                     )
 
             if issubclass(origin_type, typing.ByteString):
@@ -845,8 +849,12 @@ class CodeBuilder:
                         fname, v_type, parent, v_name
                     )
                 else:
+                    if len(args) > arg_num:
+                        arg_type = args[arg_num]
+                    else:
+                        arg_type = typing.Any
                     return self._unpack_field_value(
-                        fname, args[arg_num], parent, v_name
+                        fname, arg_type, parent, v_name
                     )
 
             if issubclass(origin_type, typing.ByteString):

@@ -39,7 +39,7 @@ def is_generic(t):
     if PY_37 or PY_38 or PY_39:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
-        return t.__class__ is typing._GenericAlias
+        return issubclass(t.__class__, typing._BaseGenericAlias)
     elif PY_36:
         # noinspection PyUnresolvedReferences
         return issubclass(t.__class__, typing.GenericMeta)
