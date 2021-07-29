@@ -21,7 +21,7 @@ def type_name(t) -> str:
     if is_generic(t):
         return str(t)
     elif is_type_var_any(t):
-        return 'typing.Any'
+        return "typing.Any"
     else:
         try:
             return f"{t.__module__}.{t.__qualname__}"
