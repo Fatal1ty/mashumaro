@@ -75,8 +75,12 @@ from .utils import same_types
 
 NoneType = type(None)
 
+TAny = TypeVar("TAny")
+TBoundAny = TypeVar("TBoundAny", bound=Any)
+
 
 class Fixture:
+    ANY = [1, 2, {3: [4, 5]}]
     INT = 123
     FLOAT = 1.23
     BOOL = True
@@ -133,21 +137,36 @@ class Fixture:
 
 
 inner_values = [
+    (Any, Fixture.ANY, Fixture.ANY),
+    (TAny, Fixture.ANY, Fixture.ANY),
+    (TBoundAny, Fixture.ANY, Fixture.ANY),
     (int, Fixture.INT, Fixture.INT),
     (float, Fixture.FLOAT, Fixture.FLOAT),
     (bool, Fixture.BOOL, Fixture.BOOL),
     (List[int], Fixture.LIST, Fixture.LIST),
+    (List, Fixture.LIST, Fixture.LIST),
     (Deque[int], Fixture.DEQUE, Fixture.LIST),
+    (Deque, Fixture.DEQUE, Fixture.LIST),
     (Tuple[int], Fixture.TUPLE, Fixture.LIST),
+    (Tuple, Fixture.TUPLE, Fixture.LIST),
     (Set[int], Fixture.SET, Fixture.LIST),
+    (Set, Fixture.SET, Fixture.LIST),
     (FrozenSet[int], Fixture.FROZEN_SET, Fixture.LIST),
+    (FrozenSet, Fixture.FROZEN_SET, Fixture.LIST),
     (ChainMap[str, int], Fixture.CHAIN_MAP, Fixture.MAPS_LIST),
+    (ChainMap, Fixture.CHAIN_MAP, Fixture.MAPS_LIST),
     (Dict[str, int], Fixture.DICT, Fixture.DICT),
+    (Dict, Fixture.DICT, Fixture.DICT),
     (Mapping[str, int], Fixture.DICT, Fixture.DICT),
+    (Mapping, Fixture.DICT, Fixture.DICT),
     (OrderedDict[str, int], Fixture.ORDERED_DICT, Fixture.DICT),
+    (OrderedDict, Fixture.ORDERED_DICT, Fixture.DICT),
     (Counter[str], Fixture.COUNTER, Fixture.DICT),
+    (Counter, Fixture.COUNTER, Fixture.DICT),
     (MutableMapping[str, int], Fixture.DICT, Fixture.DICT),
+    (MutableMapping, Fixture.DICT, Fixture.DICT),
     (Sequence[int], Fixture.LIST, Fixture.LIST),
+    (Sequence, Fixture.LIST, Fixture.LIST),
     (bytes, Fixture.BYTES, Fixture.BYTES),
     (bytearray, Fixture.BYTE_ARRAY, Fixture.BYTE_ARRAY),
     (str, Fixture.STR, Fixture.STR),

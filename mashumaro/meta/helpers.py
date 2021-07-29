@@ -36,13 +36,20 @@ def is_special_typing_primitive(t):
 
 
 def is_generic(t):
-    if PY_37 or PY_38 or PY_39:
+    if PY_36:
+        # noinspection PyUnresolvedReferences
+        return issubclass(t.__class__, typing.GenericMeta)
+    elif PY_37 or PY_38:
+        # noinspection PyProtectedMember
+        # noinspection PyUnresolvedReferences
+        return t.__class__ in (
+            typing._GenericAlias,
+            typing._VariadicGenericAlias,
+        )
+    elif PY_39:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
         return issubclass(t.__class__, typing._BaseGenericAlias)
-    elif PY_36:
-        # noinspection PyUnresolvedReferences
-        return issubclass(t.__class__, typing.GenericMeta)
     else:
         raise NotImplementedError
 
@@ -58,12 +65,23 @@ def is_type_var(t):
     return hasattr(t, "__constraints__")
 
 
+def is_type_var_any(t):
+    if not is_type_var(t):
+        return False
+    elif t.__constraints__ != ():
+        return False
+    elif t.__bound__ not in (None, typing.Any):
+        return False
+    else:
+        return True
+
+
 def is_class_var(t):
     if PY_36:
         return (
             is_special_typing_primitive(t) and type(t).__name__ == "_ClassVar"
         )
-    if PY_37 or PY_38 or PY_39:
+    elif PY_37 or PY_38 or PY_39:
         return get_type_origin(t) is typing.ClassVar
     else:
         raise NotImplementedError
@@ -103,6 +121,7 @@ __all__ = [
     "is_generic",
     "is_union",
     "is_type_var",
+    "is_type_var_any",
     "is_class_var",
     "is_init_var",
     "get_class_that_define_method",

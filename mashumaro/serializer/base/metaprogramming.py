@@ -43,6 +43,7 @@ from mashumaro.meta.helpers import (
     is_init_var,
     is_special_typing_primitive,
     is_type_var,
+    is_type_var_any,
     is_union,
     type_name,
 )
@@ -492,6 +493,8 @@ class CodeBuilder:
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
                 return overridden or value_name
+            elif is_type_var_any(ftype):
+                return overridden or value_name
             elif is_union(ftype):
                 args = getattr(ftype, "__args__", ())
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
@@ -558,7 +561,7 @@ class CodeBuilder:
                 if v_type:
                     return self._pack_value(fname, v_type, parent, v_name)
                 else:
-                    if len(args) > arg_num:
+                    if args and len(args) > arg_num:
                         arg_type = args[arg_num]
                     else:
                         arg_type = typing.Any
@@ -609,7 +612,7 @@ class CodeBuilder:
                         "Use typing.ChainMap[KT,VT] instead",
                     )
                 elif is_generic(ftype):
-                    if is_dataclass(args[0]):
+                    if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "ChainMaps with dataclasses as keys "
                             "are not supported by mashumaro"
@@ -630,7 +633,7 @@ class CodeBuilder:
                         "Use typing.OrderedDict[KT,VT] instead",
                     )
                 elif is_generic(ftype):
-                    if is_dataclass(args[0]):
+                    if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "OrderedDict with dataclasses as keys "
                             "are not supported by mashumaro"
@@ -650,7 +653,7 @@ class CodeBuilder:
                         "Use typing.Counter[KT] instead",
                     )
                 elif is_generic(ftype):
-                    if is_dataclass(args[0]):
+                    if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "Counter with dataclasses as keys "
                             "are not supported by mashumaro"
@@ -671,7 +674,7 @@ class CodeBuilder:
                         "Use typing.Dict[KT,VT] or Mapping[KT,VT] instead",
                     )
                 elif is_generic(ftype):
-                    if is_dataclass(args[0]):
+                    if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "Mappings with dataclasses as keys "
                             "are not supported by mashumaro"
@@ -739,6 +742,8 @@ class CodeBuilder:
         origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
+                return overridden or value_name
+            elif is_type_var_any(ftype):
                 return overridden or value_name
             elif is_union(ftype):
                 args = getattr(ftype, "__args__", ())
@@ -847,7 +852,7 @@ class CodeBuilder:
                         fname, v_type, parent, v_name
                     )
                 else:
-                    if len(args) > arg_num:
+                    if args and len(args) > arg_num:
                         arg_type = args[arg_num]
                     else:
                         arg_type = typing.Any
@@ -936,7 +941,7 @@ class CodeBuilder:
                         "Use typing.ChainMap[KT,VT] instead",
                     )
                 elif is_generic(ftype):
-                    if is_dataclass(args[0]):
+                    if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "ChainMaps with dataclasses as keys "
                             "are not supported by mashumaro"
@@ -958,7 +963,7 @@ class CodeBuilder:
                         "Use typing.OrderedDict[KT,VT] instead",
                     )
                 elif is_generic(ftype):
-                    if is_dataclass(args[0]):
+                    if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "OrderedDict with dataclasses as keys "
                             "are not supported by mashumaro"
@@ -979,7 +984,7 @@ class CodeBuilder:
                         "Use typing.Counter[KT] instead",
                     )
                 elif is_generic(ftype):
-                    if is_dataclass(args[0]):
+                    if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "Counter with dataclasses as keys "
                             "are not supported by mashumaro"
@@ -1001,7 +1006,7 @@ class CodeBuilder:
                         "Use typing.Dict[KT,VT] or Mapping[KT,VT] instead",
                     )
                 elif is_generic(ftype):
-                    if is_dataclass(args[0]):
+                    if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "Mappings with dataclasses as keys "
                             "are not supported by mashumaro"

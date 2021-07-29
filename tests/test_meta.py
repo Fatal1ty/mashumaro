@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any, Tuple, TypeVar
 from unittest.mock import patch
 
 import pytest
@@ -11,10 +12,15 @@ from mashumaro.meta.helpers import (
     is_dataclass_dict_mixin_subclass,
     is_generic,
     is_init_var,
+    is_type_var_any,
 )
+from mashumaro.meta.macros import PY_37, PY_38
 from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
 from .entities import MyDataClass
+
+TBoundAny = TypeVar("TBoundAny", bound=Any)
+TMyDataClass = TypeVar("TMyDataClass", bound=MyDataClass)
 
 
 def test_is_generic_unsupported_python():
@@ -98,3 +104,16 @@ def test_is_dataclass_dict_mixin_subclass():
     assert is_dataclass_dict_mixin_subclass(DataClassDictMixin)
     assert is_dataclass_dict_mixin_subclass(DataClassJSONMixin)
     assert is_dataclass_dict_mixin_subclass(MyDataClass)
+
+
+def test_is_type_var_any():
+    assert is_type_var_any(TBoundAny)
+    assert not is_type_var_any(Any)
+    assert not is_type_var_any(TMyDataClass)
+
+
+@pytest.mark.skipif(not (PY_37 or PY_38), reason="requires python 3.7..3.8")
+def test_is_type_var_any_tuple_37_38():
+    # noinspection PyProtectedMember
+    # noinspection PyUnresolvedReferences
+    assert is_type_var_any(Tuple.__args__[0])
