@@ -2,7 +2,7 @@ import dataclasses
 import typing
 from contextlib import suppress
 
-from .macros import PY_36, PY_37, PY_38, PY_39
+from .macros import PY_36, PY_37, PY_38, PY_39, PY_37_MIN
 
 DataClassDictMixinPath = "mashumaro.serializer.base.dict.DataClassDictMixin"
 
@@ -17,11 +17,40 @@ def get_type_origin(t):
         return t
 
 
+def is_builtin_type(t):
+    try:
+        return t.__module__ == "builtins"
+    except AttributeError:
+        return False
+
+
+def get_generic_name(t):
+    if PY_36:
+        return getattr(t, "__name__")
+    elif PY_37_MIN:
+        return getattr(t, "_name")
+
+
 def type_name(t) -> str:
-    if is_generic(t):
-        return str(t)
+    if is_builtin_type(t):
+        return t.__qualname__
+    elif is_generic(t):
+        args = getattr(t, "__args__", ())
+        if not args:
+            return get_generic_name(t)
+        else:
+            args_str = ", ".join(map(type_name, args))
+            return f"{get_generic_name(t)}[{args_str}]"
     elif is_type_var_any(t):
         return "typing.Any"
+    elif is_type_var(t):
+        constraints = getattr(t, "__constraints__")
+        if constraints:
+            args_str = ", ".join(map(type_name, constraints))
+            return f"typing.Union[{args_str}]"
+        else:
+            bound = getattr(t, "__bound__")
+            return type_name(bound)
     else:
         try:
             return f"{t.__module__}.{t.__qualname__}"

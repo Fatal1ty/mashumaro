@@ -1,11 +1,16 @@
 from dataclasses import dataclass
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
-from typing import Optional, Union
+from typing import Any, Optional, TypeVar, Union
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
 from mashumaro.types import SerializableType
+
+
+TAny = TypeVar("TAny", bound=Any)
+TInt = TypeVar("TInt", bound=int)
+TIntStr = TypeVar("TIntStr", int, str)
 
 
 class MyEnum(Enum):

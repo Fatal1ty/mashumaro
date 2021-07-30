@@ -70,17 +70,19 @@ from .entities import (
     MyIntFlag,
     MyStrEnum,
     SerializableTypeDataClass,
+    TAny,
+    TInt,
+    TIntStr,
 )
 from .utils import same_types
 
 NoneType = type(None)
 
-TAny = TypeVar("TAny")
-TBoundAny = TypeVar("TBoundAny", bound=Any)
-
 
 class Fixture:
-    ANY = [1, 2, {3: [4, 5]}]
+    T_INT = 123
+    T_INT_STR = 123
+    ANY = 123
     INT = 123
     FLOAT = 1.23
     BOOL = True
@@ -137,9 +139,11 @@ class Fixture:
 
 
 inner_values = [
+    (TInt, Fixture.T_INT, Fixture.T_INT),
+    (TIntStr, Fixture.T_INT_STR, Fixture.T_INT_STR),
     (Any, Fixture.ANY, Fixture.ANY),
     (TAny, Fixture.ANY, Fixture.ANY),
-    (TBoundAny, Fixture.ANY, Fixture.ANY),
+    (TAny, Fixture.ANY, Fixture.ANY),
     (int, Fixture.INT, Fixture.INT),
     (float, Fixture.FLOAT, Fixture.FLOAT),
     (bool, Fixture.BOOL, Fixture.BOOL),
@@ -247,8 +251,7 @@ unsupported_field_types = [
 ]
 
 
-T = TypeVar("T", int, str)
-unsupported_typing_primitives = [AnyStr, T]
+unsupported_typing_primitives = [AnyStr]
 
 
 x_factory_mapping = {

@@ -13,13 +13,13 @@ from mashumaro.meta.helpers import (
     is_generic,
     is_init_var,
     is_type_var_any,
+    type_name,
 )
 from mashumaro.meta.macros import PY_37, PY_38
 from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
-from .entities import MyDataClass
+from .entities import MyDataClass, TAny, TInt, TIntStr
 
-TBoundAny = TypeVar("TBoundAny", bound=Any)
 TMyDataClass = TypeVar("TMyDataClass", bound=MyDataClass)
 
 
@@ -107,13 +107,21 @@ def test_is_dataclass_dict_mixin_subclass():
 
 
 def test_is_type_var_any():
-    assert is_type_var_any(TBoundAny)
+    assert is_type_var_any(TAny)
     assert not is_type_var_any(Any)
     assert not is_type_var_any(TMyDataClass)
 
 
 @pytest.mark.skipif(not (PY_37 or PY_38), reason="requires python 3.7..3.8")
-def test_is_type_var_any_tuple_37_38():
+def test_is_type_var_any_list_37_38():
     # noinspection PyProtectedMember
     # noinspection PyUnresolvedReferences
     assert is_type_var_any(List.__args__[0])
+
+
+def test_type_name():
+    assert type_name(TAny) == "typing.Any"
+    assert type_name(TInt) == "int"
+    assert type_name(TMyDataClass) == "tests.entities.MyDataClass"
+    assert type_name(TIntStr) == "typing.Union[int, str]"
+    assert type_name(List[TInt]) == "List[int]"

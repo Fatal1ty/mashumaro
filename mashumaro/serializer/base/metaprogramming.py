@@ -493,8 +493,6 @@ class CodeBuilder:
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
                 return overridden or value_name
-            elif is_type_var_any(ftype):
-                return overridden or value_name
             elif is_union(ftype):
                 args = getattr(ftype, "__args__", ())
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
@@ -513,10 +511,28 @@ class CodeBuilder:
                 raise UnserializableDataError(
                     "AnyStr is not supported by mashumaro"
                 )
+            elif is_type_var_any(ftype):
+                return overridden or value_name
             elif is_type_var(ftype):
-                raise UnserializableDataError(
-                    "TypeVars are not supported by mashumaro"
-                )
+                constraints = getattr(ftype, "__constraints__")
+                if constraints:
+                    method_name = self._add_pack_union(
+                        fname=fname,
+                        ftype=ftype,
+                        args=constraints,
+                        parent=parent,
+                        metadata=metadata,
+                        prefix="type_var",
+                    )
+                    return (
+                        f"self.{method_name}({value_name},"
+                        f"{self.get_to_dict_flags()})"
+                    )
+                else:
+                    bound = getattr(ftype, "__bound__")
+                    return self._pack_value(
+                        fname, bound, parent, value_name, metadata
+                    )
             else:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
@@ -743,8 +759,6 @@ class CodeBuilder:
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
                 return overridden or value_name
-            elif is_type_var_any(ftype):
-                return overridden or value_name
             elif is_union(ftype):
                 args = getattr(ftype, "__args__", ())
                 if len(args) == 2 and args[1] == NoneType:  # it is Optional
@@ -763,10 +777,28 @@ class CodeBuilder:
                 raise UnserializableDataError(
                     "AnyStr is not supported by mashumaro"
                 )
+            elif is_type_var_any(ftype):
+                return overridden or value_name
             elif is_type_var(ftype):
-                raise UnserializableDataError(
-                    "TypeVars are not supported by mashumaro"
-                )
+                constraints = getattr(ftype, "__constraints__")
+                if constraints:
+                    method_name = self._add_unpack_union(
+                        fname=fname,
+                        ftype=ftype,
+                        args=constraints,
+                        parent=parent,
+                        metadata=metadata,
+                        prefix="type_var",
+                    )
+                    return (
+                        f"cls.{method_name}({value_name},"
+                        f"use_bytes,use_enum,use_datetime)"
+                    )
+                else:
+                    bound = getattr(ftype, "__bound__")
+                    return self._unpack_field_value(
+                        fname, bound, parent, value_name, metadata
+                    )
             else:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
@@ -1050,10 +1082,12 @@ class CodeBuilder:
 
         raise UnserializableField(fname, ftype, parent)
 
-    def _add_pack_union(self, fname, ftype, args, parent, metadata) -> str:
+    def _add_pack_union(
+        self, fname, ftype, args, parent, metadata, prefix="union"
+    ) -> str:
         lines = CodeLines()
         method_name = (
-            f"__pack_union_{parent.__name__}_{fname}__"
+            f"__pack_{prefix}_{parent.__name__}_{fname}__"
             f"{str(uuid.uuid4().hex)}"
         )
         lines.append(
@@ -1071,8 +1105,9 @@ class CodeBuilder:
                 lines.append("except:")
                 with lines.indent():
                     lines.append("pass")
+            field_type = type_name(ftype)
             lines.append(
-                f"raise InvalidFieldValue('{fname}',{ftype},value,cls)"
+                f"raise InvalidFieldValue('{fname}',{field_type},value,cls)"
             )
         lines.append(f"setattr(cls, '{method_name}', {method_name})")
         if self.get_config().debug:
@@ -1081,10 +1116,12 @@ class CodeBuilder:
         exec(lines.as_text(), self.globals, self.__dict__)
         return method_name
 
-    def _add_unpack_union(self, fname, ftype, args, parent, metadata) -> str:
+    def _add_unpack_union(
+        self, fname, ftype, args, parent, metadata, prefix="union"
+    ) -> str:
         lines = CodeLines()
         method_name = (
-            f"__unpack_union_{parent.__name__}_{fname}__"
+            f"__unpack_{prefix}_{parent.__name__}_{fname}__"
             f"{str(uuid.uuid4().hex)}"
         )
         lines.append("@classmethod")
@@ -1105,8 +1142,9 @@ class CodeBuilder:
                 lines.append("except:")
                 with lines.indent():
                     lines.append("pass")
+            field_type = type_name(ftype)
             lines.append(
-                f"raise InvalidFieldValue('{fname}',{ftype},value,cls)"
+                f"raise InvalidFieldValue('{fname}',{field_type},value,cls)"
             )
         lines.append(f"setattr(cls, '{method_name}', {method_name})")
         if self.get_config().debug:
