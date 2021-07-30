@@ -7,7 +7,6 @@ from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
 from mashumaro.types import SerializableType
 
-
 TAny = TypeVar("TAny", bound=Any)
 TInt = TypeVar("TInt", bound=int)
 TIntStr = TypeVar("TIntStr", int, str)

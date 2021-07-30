@@ -2,7 +2,7 @@ import dataclasses
 import typing
 from contextlib import suppress
 
-from .macros import PY_36, PY_37, PY_38, PY_39, PY_37_MIN
+from .macros import PY_36, PY_37, PY_37_MIN, PY_38, PY_39
 
 DataClassDictMixinPath = "mashumaro.serializer.base.dict.DataClassDictMixin"
 
