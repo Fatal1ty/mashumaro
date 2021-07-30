@@ -85,9 +85,10 @@ There is support for generic types from the standard *typing* module:
 * `Sequence`
 
 for special primitives from the *typing* module:
+* `Any`
 * `Optional`
 * `Union`
-* `Any`
+* `TypeVar`
 
 for enumerations based on classes from the standard *enum* module:
 * `Enum`
