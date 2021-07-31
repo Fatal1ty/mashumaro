@@ -70,6 +70,7 @@ from .entities import (
     MyIntFlag,
     MyStrEnum,
     SerializableTypeDataClass,
+    T,
     TAny,
     TInt,
     TIntStr,
@@ -80,6 +81,7 @@ NoneType = type(None)
 
 
 class Fixture:
+    T = 123
     T_INT = 123
     T_INT_STR = 123
     ANY = 123
@@ -139,10 +141,10 @@ class Fixture:
 
 
 inner_values = [
+    (T, Fixture.T, Fixture.T),
     (TInt, Fixture.T_INT, Fixture.T_INT),
     (TIntStr, Fixture.T_INT_STR, Fixture.T_INT_STR),
     (Any, Fixture.ANY, Fixture.ANY),
-    (TAny, Fixture.ANY, Fixture.ANY),
     (TAny, Fixture.ANY, Fixture.ANY),
     (int, Fixture.INT, Fixture.INT),
     (float, Fixture.FLOAT, Fixture.FLOAT),
