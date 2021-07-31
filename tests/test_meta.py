@@ -1,5 +1,5 @@
+import typing
 from dataclasses import dataclass
-from typing import Any, List, TypeVar
 from unittest.mock import patch
 
 import pytest
@@ -15,12 +15,12 @@ from mashumaro.meta.helpers import (
     is_type_var_any,
     type_name,
 )
-from mashumaro.meta.macros import PY_37, PY_38
+from mashumaro.meta.macros import PY_37, PY_37_MIN, PY_38
 from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
 from .entities import MyDataClass, TAny, TInt, TIntStr
 
-TMyDataClass = TypeVar("TMyDataClass", bound=MyDataClass)
+TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 
 
 def test_is_generic_unsupported_python():
@@ -108,7 +108,7 @@ def test_is_dataclass_dict_mixin_subclass():
 
 def test_is_type_var_any():
     assert is_type_var_any(TAny)
-    assert not is_type_var_any(Any)
+    assert not is_type_var_any(typing.Any)
     assert not is_type_var_any(TMyDataClass)
 
 
@@ -120,8 +120,27 @@ def test_is_type_var_any_list_37_38():
 
 
 def test_type_name():
-    assert type_name(TAny) == "typing.Any"
+    assert type_name(TAny) == "Any"
     assert type_name(TInt) == "int"
     assert type_name(TMyDataClass) == "tests.entities.MyDataClass"
-    assert type_name(TIntStr) == "typing.Union[int, str]"
-    assert type_name(List[TInt]) == "List[int]"
+    assert type_name(TIntStr) == "Union[int, str]"
+    assert type_name(typing.List[TInt]) == "List[int]"
+    assert type_name(typing.Tuple[int]) == "Tuple[int]"
+    assert type_name(typing.Set[int]) == "Set[int]"
+    assert type_name(typing.FrozenSet[int]) == "FrozenSet[int]"
+    assert type_name(typing.Deque[int]) == "Deque[int]"
+    assert type_name(typing.Dict[int, int]) == "Dict[int, int]"
+    assert type_name(typing.Mapping[int, int]) == "Mapping[int, int]"
+    assert (
+        type_name(typing.MutableMapping[int, int])
+        == "MutableMapping[int, int]"
+    )
+    assert type_name(typing.Counter[int]) == "Counter[int]"
+    assert type_name(typing.ChainMap[int, int]) == "ChainMap[int, int]"
+    assert type_name(typing.Sequence[int]) == "Sequence[int]"
+    assert type_name(typing.Union[int, str]) == "Union[int, str]"
+    assert type_name(typing.Union[int, typing.Any]) == "Union[int, Any]"
+    if PY_37_MIN:
+        assert (
+            type_name(typing.OrderedDict[int, int]) == "OrderedDict[int, int]"
+        )

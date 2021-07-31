@@ -41,6 +41,7 @@ from mashumaro.meta.helpers import (
     is_dataclass_dict_mixin_subclass,
     is_generic,
     is_init_var,
+    is_optional,
     is_special_typing_primitive,
     is_type_var,
     is_type_var_any,
@@ -495,7 +496,7 @@ class CodeBuilder:
                 return overridden or value_name
             elif is_union(ftype):
                 args = getattr(ftype, "__args__", ())
-                if len(args) == 2 and args[1] == NoneType:  # it is Optional
+                if is_optional(ftype):
                     return self._pack_value(
                         fname, args[0], parent, metadata=metadata
                     )
@@ -761,7 +762,7 @@ class CodeBuilder:
                 return overridden or value_name
             elif is_union(ftype):
                 args = getattr(ftype, "__args__", ())
-                if len(args) == 2 and args[1] == NoneType:  # it is Optional
+                if is_optional(ftype):
                     return self._unpack_field_value(
                         fname, args[0], parent, metadata=metadata
                     )

@@ -5,6 +5,7 @@ from contextlib import suppress
 from .macros import PY_36, PY_37, PY_37_MIN, PY_38, PY_39
 
 DataClassDictMixinPath = "mashumaro.serializer.base.dict.DataClassDictMixin"
+NoneType = type(None)
 
 
 def get_type_origin(t):
@@ -31,23 +32,33 @@ def get_generic_name(t):
         return getattr(t, "_name")
 
 
+def _get_args_str(t):
+    args = getattr(t, "__args__", ())
+    return ", ".join(map(type_name, args))
+
+
 def type_name(t) -> str:
     if is_builtin_type(t):
         return t.__qualname__
+    elif t is typing.Any:
+        return "Any"
+    elif is_optional(t):
+        return f"Optional[{_get_args_str(t)}]"
+    elif is_union(t):
+        return f"Union[{_get_args_str(t)}]"
     elif is_generic(t):
-        args = getattr(t, "__args__", ())
-        if not args:
+        args_str = _get_args_str(t)
+        if not args_str:
             return get_generic_name(t)
         else:
-            args_str = ", ".join(map(type_name, args))
             return f"{get_generic_name(t)}[{args_str}]"
     elif is_type_var_any(t):
-        return "typing.Any"
+        return "Any"
     elif is_type_var(t):
         constraints = getattr(t, "__constraints__")
         if constraints:
             args_str = ", ".join(map(type_name, constraints))
-            return f"typing.Union[{args_str}]"
+            return f"Union[{args_str}]"
         else:
             bound = getattr(t, "__bound__")
             return type_name(bound)
@@ -90,6 +101,13 @@ def is_union(t):
         return t.__origin__ is typing.Union
     except AttributeError:
         return False
+
+
+def is_optional(t):
+    if not is_union(t):
+        return False
+    args = getattr(t, "__args__", ())
+    return len(args) == 2 and args[1] == NoneType
 
 
 def is_type_var(t):
@@ -150,6 +168,7 @@ __all__ = [
     "type_name",
     "is_special_typing_primitive",
     "is_generic",
+    "is_optional",
     "is_union",
     "is_type_var",
     "is_type_var_any",
