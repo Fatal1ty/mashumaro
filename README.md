@@ -71,66 +71,66 @@ Supported field types
 --------------------------------------------------------------------------------
 
 There is support for generic types from the standard *typing* module:
-* `List`
-* `Tuple`
-* `Set`
-* `FrozenSet`
-* `Deque`
-* `Dict`
-* `OrderedDict`
-* `Mapping`
-* `MutableMapping`
-* `Counter`
-* `ChainMap`
-* `Sequence`
+* [`List`](https://docs.python.org/3/library/typing.html#typing.List)
+* [`Tuple`](https://docs.python.org/3/library/typing.html#typing.Tuple)
+* [`Set`](https://docs.python.org/3/library/typing.html#typing.Set)
+* [`FrozenSet`](https://docs.python.org/3/library/typing.html#typing.FrozenSet)
+* [`Deque`](https://docs.python.org/3/library/typing.html#typing.Deque)
+* [`Dict`](https://docs.python.org/3/library/typing.html#typing.Dict)
+* [`OrderedDict`](https://docs.python.org/3/library/typing.html#typing.OrderedDict)
+* [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)
+* [`MutableMapping`](https://docs.python.org/3/library/typing.html#typing.MutableMapping)
+* [`Counter`](https://docs.python.org/3/library/typing.html#typing.Counter)
+* [`ChainMap`](https://docs.python.org/3/library/typing.html#typing.ChainMap)
+* [`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)
 
 for special primitives from the *typing* module:
-* `Any`
-* `Optional`
-* `Union`
-* `TypeVar`
+* [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
+* [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)
+* [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)
+* [`TypeVar`](https://docs.python.org/3/library/typing.html#typing.TypeVar)
 
 for enumerations based on classes from the standard *enum* module:
-* `Enum`
-* `IntEnum`
-* `Flag`
-* `IntFlag`
+* [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
+* [`IntEnum`](https://docs.python.org/3/library/enum.html#enum.IntEnum)
+* [`Flag`](https://docs.python.org/3/library/enum.html#enum.Flag)
+* [`IntFlag`](https://docs.python.org/3/library/enum.html#enum.IntFlag)
 
 for common built-in types:
-* `int`
-* `float`
-* `bool`
-* `str`
-* `bytes`
-* `bytearray`
+* [`int`](https://docs.python.org/3/library/functions.html#int)
+* [`float`](https://docs.python.org/3/library/functions.html#float)
+* [`bool`](https://docs.python.org/3/library/stdtypes.html#bltin-boolean-values)
+* [`str`](https://docs.python.org/3/library/stdtypes.html#str)
+* [`bytes`](https://docs.python.org/3/library/stdtypes.html#bytes)
+* [`bytearray`](https://docs.python.org/3/library/stdtypes.html#bytearray)
 
 for built-in datetime oriented types (see [more](#deserialize-option) details):
-* `datetime`
-* `date`
-* `time`
-* `timedelta`
-* `timezone`
+* [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime)
+* [`date`](https://docs.python.org/3/library/datetime.html#datetime.date)
+* [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
+* [`timedelta`](https://docs.python.org/3/library/datetime.html#datetime.timedelta)
+* [`timezone`](https://docs.python.org/3/library/datetime.html#datetime.timezone)
 
 for pathlike types:
-* `PurePath`
-* `Path`
-* `PurePosixPath`
-* `PosixPath`
-* `PureWindowsPath`
-* `WindowsPath`
-* `os.PathLike`
+* [`PurePath`](https://docs.python.org/3/library/pathlib.html#pathlib.PurePath)
+* [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
+* [`PurePosixPath`](https://docs.python.org/3/library/pathlib.html#pathlib.PurePosixPath)
+* [`PosixPath`](https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath)
+* [`PureWindowsPath`](https://docs.python.org/3/library/pathlib.html#pathlib.PureWindowsPath)
+* [`WindowsPath`](https://docs.python.org/3/library/pathlib.html#pathlib.WindowsPath)
+* [`os.PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)
 
 
 for other less popular built-in types:
-* `uuid.UUID`
-* `decimal.Decimal`
-* `fractions.Fraction`
-* `ipaddress.IPv4Address`
-* `ipaddress.IPv6Address`
-* `ipaddress.IPv4Network`
-* `ipaddress.IPv6Network`
-* `ipaddress.IPv4Interface`
-* `ipaddress.IPv6Interface`
+* [`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)
+* [`decimal.Decimal`](https://docs.python.org/3/library/decimal.html#decimal.Decimal)
+* [`fractions.Fraction`](https://docs.python.org/3/library/fractions.html#fractions.Fraction)
+* [`ipaddress.IPv4Address`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv4Address)
+* [`ipaddress.IPv6Address`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv6Address)
+* [`ipaddress.IPv4Network`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv4Network)
+* [`ipaddress.IPv6Network`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv6Network)
+* [`ipaddress.IPv4Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv4Interface)
+* [`ipaddress.IPv6Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv6Interface)
 
 for specific types like *NoneType*, nested dataclasses itself and
 even [user defined classes](#serializabletype-interface).
