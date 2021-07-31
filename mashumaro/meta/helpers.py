@@ -34,7 +34,7 @@ def get_generic_name(t):
 
 def _get_args_str(t):
     args = getattr(t, "__args__", ())
-    return ", ".join(map(type_name, args))
+    return ", ".join(map(type_name, args or ()))
 
 
 def type_name(t) -> str:
