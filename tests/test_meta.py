@@ -116,7 +116,7 @@ def test_is_type_var_any():
 def test_is_type_var_any_list_37_38():
     # noinspection PyProtectedMember
     # noinspection PyUnresolvedReferences
-    assert is_type_var_any(List.__args__[0])
+    assert is_type_var_any(typing.List.__args__[0])
 
 
 def test_type_name():
