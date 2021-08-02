@@ -9,11 +9,11 @@ class MissingField(LookupError):
 
     @property
     def field_type_name(self):
-        return type_name(self.field_type)
+        return type_name(self.field_type, short=True)
 
     @property
     def holder_class_name(self):
-        return type_name(self.holder_class)
+        return type_name(self.holder_class, short=True)
 
     def __str__(self):
         return (
@@ -35,11 +35,11 @@ class UnserializableField(UnserializableDataError):
 
     @property
     def field_type_name(self):
-        return type_name(self.field_type)
+        return type_name(self.field_type, short=True)
 
     @property
     def holder_class_name(self):
-        return type_name(self.holder_class)
+        return type_name(self.holder_class, short=True)
 
     def __str__(self):
         s = (
@@ -63,11 +63,11 @@ class InvalidFieldValue(ValueError):
 
     @property
     def field_type_name(self):
-        return type_name(self.field_type)
+        return type_name(self.field_type, short=True)
 
     @property
     def holder_class_name(self):
-        return type_name(self.holder_class)
+        return type_name(self.holder_class, short=True)
 
     def __str__(self):
         s = (
@@ -92,7 +92,7 @@ class ThirdPartyModuleNotFoundError(ModuleNotFoundError):
 
     @property
     def holder_class_name(self):
-        return type_name(self.holder_class)
+        return type_name(self.holder_class, short=True)
 
     def __str__(self):
         s = (

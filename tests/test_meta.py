@@ -120,27 +120,67 @@ def test_is_type_var_any_list_37_38():
 
 
 def test_type_name():
-    assert type_name(TAny) == "Any"
+    assert type_name(TAny) == "typing.Any"
     assert type_name(TInt) == "int"
     assert type_name(TMyDataClass) == "tests.entities.MyDataClass"
-    assert type_name(TIntStr) == "Union[int, str]"
-    assert type_name(typing.List[TInt]) == "List[int]"
-    assert type_name(typing.Tuple[int]) == "Tuple[int]"
-    assert type_name(typing.Set[int]) == "Set[int]"
-    assert type_name(typing.FrozenSet[int]) == "FrozenSet[int]"
-    assert type_name(typing.Deque[int]) == "Deque[int]"
-    assert type_name(typing.Dict[int, int]) == "Dict[int, int]"
-    assert type_name(typing.Mapping[int, int]) == "Mapping[int, int]"
+    assert type_name(TIntStr) == "typing.Union[int, str]"
+    assert type_name(typing.List[TInt]) == "typing.List[int]"
+    assert type_name(typing.Tuple[int]) == "typing.Tuple[int]"
+    assert type_name(typing.Set[int]) == "typing.Set[int]"
+    assert type_name(typing.FrozenSet[int]) == "typing.FrozenSet[int]"
+    assert type_name(typing.Deque[int]) == "typing.Deque[int]"
+    assert type_name(typing.Dict[int, int]) == "typing.Dict[int, int]"
+    assert type_name(typing.Mapping[int, int]) == "typing.Mapping[int, int]"
     assert (
         type_name(typing.MutableMapping[int, int])
-        == "MutableMapping[int, int]"
+        == "typing.MutableMapping[int, int]"
     )
-    assert type_name(typing.Counter[int]) == "Counter[int]"
-    assert type_name(typing.ChainMap[int, int]) == "ChainMap[int, int]"
-    assert type_name(typing.Sequence[int]) == "Sequence[int]"
-    assert type_name(typing.Union[int, str]) == "Union[int, str]"
-    assert type_name(typing.Union[int, typing.Any]) == "Union[int, Any]"
+    assert type_name(typing.Counter[int]) == "typing.Counter[int]"
+    assert type_name(typing.ChainMap[int, int]) == "typing.ChainMap[int, int]"
+    assert type_name(typing.Sequence[int]) == "typing.Sequence[int]"
+    assert type_name(typing.Union[int, str]) == "typing.Union[int, str]"
+    assert (
+        type_name(typing.Union[int, typing.Any])
+        == "typing.Union[int, typing.Any]"
+    )
     if PY_37_MIN:
         assert (
-            type_name(typing.OrderedDict[int, int]) == "OrderedDict[int, int]"
+            type_name(typing.OrderedDict[int, int])
+            == "typing.OrderedDict[int, int]"
+        )
+
+
+def test_type_name_short():
+    assert type_name(TAny, short=True) == "Any"
+    assert type_name(TInt, short=True) == "int"
+    assert type_name(TMyDataClass, short=True) == "tests.entities.MyDataClass"
+    assert type_name(TIntStr, short=True) == "Union[int, str]"
+    assert type_name(typing.List[TInt], short=True) == "List[int]"
+    assert type_name(typing.Tuple[int], short=True) == "Tuple[int]"
+    assert type_name(typing.Set[int], short=True) == "Set[int]"
+    assert type_name(typing.FrozenSet[int], short=True) == "FrozenSet[int]"
+    assert type_name(typing.Deque[int], short=True) == "Deque[int]"
+    assert type_name(typing.Dict[int, int], short=True) == "Dict[int, int]"
+    assert (
+        type_name(typing.Mapping[int, int], short=True) == "Mapping[int, int]"
+    )
+    assert (
+        type_name(typing.MutableMapping[int, int], short=True)
+        == "MutableMapping[int, int]"
+    )
+    assert type_name(typing.Counter[int], short=True) == "Counter[int]"
+    assert (
+        type_name(typing.ChainMap[int, int], short=True)
+        == "ChainMap[int, int]"
+    )
+    assert type_name(typing.Sequence[int], short=True) == "Sequence[int]"
+    assert type_name(typing.Union[int, str], short=True) == "Union[int, str]"
+    assert (
+        type_name(typing.Union[int, typing.Any], short=True)
+        == "Union[int, Any]"
+    )
+    if PY_37_MIN:
+        assert (
+            type_name(typing.OrderedDict[int, int], short=True)
+            == "OrderedDict[int, int]"
         )

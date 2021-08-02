@@ -25,43 +25,51 @@ def is_builtin_type(t):
         return False
 
 
-def get_generic_name(t):
+def get_generic_name(t, short: bool = False):
     if PY_36:
-        return getattr(t, "__name__")
+        name = getattr(t, "__name__")
     elif PY_37_MIN:
-        return getattr(t, "_name")
+        name = getattr(t, "_name")
+    if short:
+        return name
+    else:
+        return f"{t.__module__}.{name}"
 
 
-def _get_args_str(t):
+def _get_args_str(t, short):
     args = getattr(t, "__args__", ())
-    return ", ".join(map(type_name, args or ()))
+    return ", ".join(type_name(arg, short) for arg in args or ())
 
 
-def type_name(t) -> str:
+def _typing_name(t: str, short: bool = False):
+    return t if short else f"typing.{t}"
+
+
+def type_name(t, short: bool = False) -> str:
     if is_builtin_type(t):
         return t.__qualname__
-    elif t is typing.Any:
-        return "Any"
+    if t is typing.Any:
+        return _typing_name("Any", short)
     elif is_optional(t):
-        return f"Optional[{_get_args_str(t)}]"
+        return f"{_typing_name('Optional', short)}[{_get_args_str(t, short)}]"
     elif is_union(t):
-        return f"Union[{_get_args_str(t)}]"
+        return f"{_typing_name('Union', short)}[{_get_args_str(t, short)}]"
     elif is_generic(t):
-        args_str = _get_args_str(t)
+        args_str = _get_args_str(t, short)
         if not args_str:
-            return get_generic_name(t)
+            return get_generic_name(t, short)
         else:
-            return f"{get_generic_name(t)}[{args_str}]"
+            return f"{get_generic_name(t, short)}[{args_str}]"
     elif is_type_var_any(t):
-        return "Any"
+        return _typing_name("Any", short)
     elif is_type_var(t):
         constraints = getattr(t, "__constraints__")
         if constraints:
-            args_str = ", ".join(map(type_name, constraints))
-            return f"Union[{args_str}]"
+            args_str = ", ".join(type_name(c, short) for c in constraints)
+            return f"{_typing_name('Union', short)}[{args_str}]"
         else:
             bound = getattr(t, "__bound__")
-            return type_name(bound)
+            return type_name(bound, short)
     else:
         try:
             return f"{t.__module__}.{t.__qualname__}"
