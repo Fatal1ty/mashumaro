@@ -690,13 +690,13 @@ from mashumaro.config import BaseConfig
 
 @dataclass
 class DataClass(DataClassDictMixin):
-    field_a: int
-    field_b: int
+    a: int
+    b: int
 
     class Config(BaseConfig):
         aliases = {
-            "field_a": "FieldA",
-            "field_b": "FieldB",
+            "a": "FieldA",
+            "b": "FieldB",
         }
 
 DataClass.from_dict({"FieldA": 1, "FieldB": 2})  # DataClass(a=1, b=2)
