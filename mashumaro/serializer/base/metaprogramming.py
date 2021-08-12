@@ -180,6 +180,9 @@ class CodeBuilder:
             constraints = getattr(t, "__constraints__", ())
             if constraints:
                 self._add_type_modules(*constraints)
+            bound = getattr(t, "__bound__", ())
+            if bound:
+                self._add_type_modules(bound)
 
     def ensure_module_imported(self, module: types.ModuleType) -> None:
         self.globals.setdefault(module.__name__, module)
