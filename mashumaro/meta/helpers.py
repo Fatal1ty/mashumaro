@@ -36,9 +36,9 @@ def get_generic_name(t, short: bool = False):
         return f"{t.__module__}.{name}"
 
 
-def _get_args_str(t, short):
-    args = getattr(t, "__args__", ())
-    return ", ".join(type_name(arg, short) for arg in args or ())
+def _get_args_str(t, short, limit=None):
+    args = (getattr(t, "__args__", None) or ())[:limit]
+    return ", ".join(type_name(arg, short) for arg in args)
 
 
 def _typing_name(t: str, short: bool = False):
@@ -51,7 +51,9 @@ def type_name(t, short: bool = False) -> str:
     if t is typing.Any:
         return _typing_name("Any", short)
     elif is_optional(t):
-        return f"{_typing_name('Optional', short)}[{_get_args_str(t, short)}]"
+        return (
+            f"{_typing_name('Optional', short)}[{_get_args_str(t, short, 1)}]"
+        )
     elif is_union(t):
         return f"{_typing_name('Union', short)}[{_get_args_str(t, short)}]"
     elif is_generic(t):

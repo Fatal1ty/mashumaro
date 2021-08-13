@@ -148,6 +148,7 @@ def test_type_name():
             type_name(typing.OrderedDict[int, int])
             == "typing.OrderedDict[int, int]"
         )
+    assert type_name(typing.Optional[int]) == "typing.Optional[int]"
 
 
 def test_type_name_short():
@@ -184,3 +185,4 @@ def test_type_name_short():
             type_name(typing.OrderedDict[int, int], short=True)
             == "OrderedDict[int, int]"
         )
+    assert type_name(typing.Optional[int], short=True) == "Optional[int]"
