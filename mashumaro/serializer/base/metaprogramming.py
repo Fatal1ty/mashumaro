@@ -716,7 +716,7 @@ class CodeBuilder:
         elif issubclass(origin_type, enum.Enum):
             specific = f"{value_name}.value"
             return f"{value_name} if use_enum else {overridden or specific}"
-        elif overridden:
+        if overridden:
             return overridden
 
         raise UnserializableField(fname, ftype, parent)
@@ -1081,7 +1081,7 @@ class CodeBuilder:
         elif issubclass(origin_type, enum.Enum):
             specific = f"{type_name(origin_type)}({value_name})"
             return f"{value_name} if use_enum else {overridden or specific}"
-        elif overridden:
+        if overridden:
             return overridden
 
         raise UnserializableField(fname, ftype, parent)

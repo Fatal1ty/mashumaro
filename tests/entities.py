@@ -38,6 +38,10 @@ class MyIntFlag(IntFlag):
     b = 2
 
 
+class MyList(list):
+    pass
+
+
 @dataclass
 class MyDataClass(DataClassDictMixin):
     a: int

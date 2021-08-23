@@ -10,7 +10,7 @@ from mashumaro import DataClassDictMixin
 from mashumaro.exceptions import UnserializableField
 from mashumaro.types import SerializationStrategy
 
-from .entities import MutableString, ThirdPartyType
+from .entities import MutableString, MyList, ThirdPartyType
 
 
 def test_ciso8601_datetime_parser():
@@ -297,3 +297,16 @@ def test_serialization_strategy():
     instance = DataClass(x=123)
     assert DataClass.from_dict({"x": [123]}) == instance
     assert instance.to_dict() == {"x": [123]}
+
+
+def test_collection_derived_custom_class():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MyList = field(
+            metadata={"serialize": lambda v: v, "deserialize": lambda v: v}
+        )
+
+    DataClass.from_dict({"x": [1, 2, 3]}) == DataClass([1, 2, 3])
+    instance = DataClass(x=[1, 2, 3])
+    assert DataClass.from_dict({"x": [1, 2, 3]}) == instance
+    assert instance.to_dict() == {"x": [1, 2, 3]}
