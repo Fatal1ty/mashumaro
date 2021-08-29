@@ -185,9 +185,10 @@ building at runtime.
 Benchmark
 --------------------------------------------------------------------------------
 
-* macOS 11.1 Big Sur
+* macOS 11.5.2 Big Sur
 * Apple M1
 * 16GB RAM
+* Python 3.9.1
 
 Load and dump [sample data](https://github.com/Fatal1ty/mashumaro/blob/master/benchmark/sample.py) 1.000 times in 5 runs.
 The following figures show the best overall time in each case.
@@ -211,43 +212,43 @@ The following figures show the best overall time in each case.
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/Fatal1ty/mashumaro">mashumaro</a></th>
-    <td align="right">0.04114</td>
+    <td align="right">0.04096</td>
     <td align="left">1x</td>
-    <td align="right">0.02729</td>
+    <td align="right">0.02741</td>
     <td align="left">1x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/Tinche/cattrs">cattrs</a></th>
-    <td align="right">0.06471</td>
-    <td align="left">1.57x</td>
-    <td align="right">0.04804</td>
-    <td align="left">1.76x</td>
+    <td align="right">0.07307</td>
+    <td align="left">1.78x</td>
+    <td align="right">0.05062</td>
+    <td align="left">1.85x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/samuelcolvin/pydantic/">pydantic</a></th>
-    <td align="right">0.23675</td>
-    <td align="left">5.75x</td>
-    <td align="right">0.11420</td>
-    <td align="left">4.18x</td>
+    <td align="right">0.24847</td>
+    <td align="left">6.07x</td>
+    <td align="right">0.12292</td>
+    <td align="left">4.48x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/marshmallow-code/marshmallow">marshmallow</a></th>
-    <td align="right">0.24702</td>
-    <td align="left">6.0x</td>
-    <td align="right">0.09430</td>
-    <td align="left">3.46x</td>
+    <td align="right">0.29205</td>
+    <td align="left">7.13x</td>
+    <td align="right">0.09310</td>
+    <td align="left">3.4x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.asdict">dataclasses</a></th>
     <td align="left">—</td>
     <td align="left">—</td>
-    <td align="right">0.22787</td>
-    <td align="left">8.35x</td>
+    <td align="right">0.22583</td>
+    <td align="left">8.24x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/konradhalas/dacite">dacite</a></th>
-    <td align="right">0.91061</td>
-    <td align="left">22.13x</td>
+    <td align="right">0.91553</td>
+    <td align="left">22.35x</td>
     <td align="left">—</td>
     <td align="left">—</td>
 </tr>
