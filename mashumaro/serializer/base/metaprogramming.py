@@ -463,6 +463,7 @@ class CodeBuilder:
         parent,
         value_name="value",
         metadata=MappingProxyType({}),
+        could_be_none=False,
     ):
 
         overridden: typing.Optional[str] = None
@@ -500,9 +501,13 @@ class CodeBuilder:
             elif is_union(ftype):
                 args = getattr(ftype, "__args__", ())
                 if is_optional(ftype):
-                    return self._pack_value(
-                        fname, args[0], parent, metadata=metadata
+                    pv = self._pack_value(
+                        fname, args[0], parent, value_name, metadata=metadata
                     )
+                    if could_be_none:
+                        return f"{pv} if {value_name} is not None else None"
+                    else:
+                        return pv
                 else:
                     method_name = self._add_pack_union(
                         fname, ftype, args, parent, metadata
@@ -534,9 +539,14 @@ class CodeBuilder:
                     )
                 else:
                     bound = getattr(ftype, "__bound__")
-                    return self._pack_value(
+                    # act as if if was Optional[bound]
+                    pv = self._pack_value(
                         fname, bound, parent, value_name, metadata
                     )
+                    if could_be_none:
+                        return f"{pv} if {value_name} is not None else None"
+                    else:
+                        return pv
             else:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
@@ -585,7 +595,9 @@ class CodeBuilder:
                         arg_type = args[arg_num]
                     else:
                         arg_type = typing.Any
-                    return self._pack_value(fname, arg_type, parent, v_name)
+                    return self._pack_value(
+                        fname, arg_type, parent, v_name, could_be_none=True
+                    )
 
             if issubclass(origin_type, typing.ByteString):
                 specific = f"encodebytes({value_name}).decode()"
@@ -728,6 +740,7 @@ class CodeBuilder:
         parent,
         value_name="value",
         metadata=MappingProxyType({}),
+        could_be_none=False,
     ):
 
         overridden: typing.Optional[str] = None
@@ -766,9 +779,13 @@ class CodeBuilder:
             elif is_union(ftype):
                 args = getattr(ftype, "__args__", ())
                 if is_optional(ftype):
-                    return self._unpack_field_value(
-                        fname, args[0], parent, metadata=metadata
+                    ufv = self._unpack_field_value(
+                        fname, args[0], parent, value_name, metadata=metadata
                     )
+                    if could_be_none:
+                        return f"{ufv} if {value_name} is not None else None"
+                    else:
+                        return ufv
                 else:
                     method_name = self._add_unpack_union(
                         fname, ftype, args, parent, metadata
@@ -800,9 +817,14 @@ class CodeBuilder:
                     )
                 else:
                     bound = getattr(ftype, "__bound__")
-                    return self._unpack_field_value(
+                    # act as if if was Optional[bound]
+                    ufv = self._unpack_field_value(
                         fname, bound, parent, value_name, metadata
                     )
+                    if could_be_none:
+                        return f"{ufv} if {value_name} is not None else None"
+                    else:
+                        return ufv
             else:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
@@ -893,7 +915,7 @@ class CodeBuilder:
                     else:
                         arg_type = typing.Any
                     return self._unpack_field_value(
-                        fname, arg_type, parent, v_name
+                        fname, arg_type, parent, v_name, could_be_none=True
                     )
 
             if issubclass(origin_type, typing.ByteString):
