@@ -11,7 +11,7 @@ T = TypeVar("T")
 TAny = TypeVar("TAny", bound=Any)
 TInt = TypeVar("TInt", bound=int)
 TIntStr = TypeVar("TIntStr", int, str)
-T_Optional_int = TypeVar('T_Optional_int', bound=Optional[int])
+T_Optional_int = TypeVar("T_Optional_int", bound=Optional[int])
 
 
 class MyEnum(Enum):

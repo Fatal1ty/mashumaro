@@ -1074,7 +1074,7 @@ def test_optional_inside_collection():
         l: List[Optional[int]]
         d: Dict[Optional[int], Optional[int]]
 
-    d = {'l': [1, None, 2], 'd': {1: 1, 2: None, None: 3}}
+    d = {"l": [1, None, 2], "d": {1: 1, 2: None, None: 3}}
     o = DataClass.from_dict(d)
     assert o == DataClass(l=[1, None, 2], d={1: 1, 2: None, None: 3})
     assert o.to_dict() == d
@@ -1086,7 +1086,7 @@ def test_bound_type_var_inside_collection():
         l: List[T_Optional_int]
         d: Dict[T_Optional_int, T_Optional_int]
 
-    d = {'l': [1, None, 2], 'd': {1: 1, 2: None, None: 3}}
+    d = {"l": [1, None, 2], "d": {1: 1, 2: None, None: 3}}
     o = DataClass.from_dict(d)
     assert o == DataClass(l=[1, None, 2], d={1: 1, 2: None, None: 3})
     assert o.to_dict() == d
