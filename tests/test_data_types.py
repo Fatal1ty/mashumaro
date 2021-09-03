@@ -34,7 +34,6 @@ from typing import (
     Sequence,
     Set,
     Tuple,
-    TypeVar,
 )
 
 try:
@@ -74,6 +73,7 @@ from .entities import (
     TAny,
     TInt,
     TIntStr,
+    T_Optional_int,
 )
 from .utils import same_types
 
@@ -1066,3 +1066,27 @@ def test_serializable_type_dataclass():
     s_value = SerializableTypeDataClass(a=9, b=9)
     assert DataClass.from_dict({"s": {"a": 10, "b": 10}}) == DataClass(s_value)
     assert DataClass(s_value).to_dict() == {"s": {"a": 10, "b": 10}}
+
+
+def test_optional_inside_collection():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        l: List[Optional[int]]
+        d: Dict[Optional[int], Optional[int]]
+
+    d = {"l": [1, None, 2], "d": {1: 1, 2: None, None: 3}}
+    o = DataClass.from_dict(d)
+    assert o == DataClass(l=[1, None, 2], d={1: 1, 2: None, None: 3})
+    assert o.to_dict() == d
+
+
+def test_bound_type_var_inside_collection():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        l: List[T_Optional_int]
+        d: Dict[T_Optional_int, T_Optional_int]
+
+    d = {"l": [1, None, 2], "d": {1: 1, 2: None, None: 3}}
+    o = DataClass.from_dict(d)
+    assert o == DataClass(l=[1, None, 2], d={1: 1, 2: None, None: 3})
+    assert o.to_dict() == d
