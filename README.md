@@ -70,7 +70,7 @@ third-party library, such as a client for MongoDB.
 Supported field types
 --------------------------------------------------------------------------------
 
-There is support for generic types from the standard *typing* module:
+There is support for generic types from the standard [`typing`](https://docs.python.org/3/library/typing.html) module:
 * [`List`](https://docs.python.org/3/library/typing.html#typing.List)
 * [`Tuple`](https://docs.python.org/3/library/typing.html#typing.Tuple)
 * [`Set`](https://docs.python.org/3/library/typing.html#typing.Set)
@@ -84,13 +84,13 @@ There is support for generic types from the standard *typing* module:
 * [`ChainMap`](https://docs.python.org/3/library/typing.html#typing.ChainMap)
 * [`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)
 
-for special primitives from the *typing* module:
+for special primitives from the [`typing`](https://docs.python.org/3/library/typing.html) module:
 * [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
 * [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)
 * [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)
 * [`TypeVar`](https://docs.python.org/3/library/typing.html#typing.TypeVar)
 
-for enumerations based on classes from the standard *enum* module:
+for enumerations based on classes from the standard [`enum`](https://docs.python.org/3/library/enum.html) module:
 * [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
 * [`IntEnum`](https://docs.python.org/3/library/enum.html#enum.IntEnum)
 * [`Flag`](https://docs.python.org/3/library/enum.html#enum.Flag)
@@ -132,7 +132,7 @@ for other less popular built-in types:
 * [`ipaddress.IPv4Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv4Interface)
 * [`ipaddress.IPv6Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv6Interface)
 
-for specific types like *NoneType*, nested dataclasses itself and
+for specific types like [`NoneType`](https://docs.python.org/3/library/constants.html#None), nested dataclasses itself and
 even [user defined classes](#serializabletype-interface).
 
 Usage example
