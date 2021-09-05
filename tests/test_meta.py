@@ -6,7 +6,7 @@ import pytest
 
 from mashumaro import DataClassDictMixin, DataClassJSONMixin
 from mashumaro.meta.helpers import (
-    get_class_that_defines_attribute,
+    get_class_that_defines_method,
     is_class_var,
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
@@ -85,9 +85,9 @@ def test_get_class_that_defines_attribute():
         def foobar(self):
             pass  # pragma no cover
 
-    assert get_class_that_defines_attribute("foo", B) == A
-    assert get_class_that_defines_attribute("bar", B) == A
-    assert get_class_that_defines_attribute("foobar", B) == B
+    assert get_class_that_defines_method("foo", B) == A
+    assert get_class_that_defines_method("bar", B) == A
+    assert get_class_that_defines_method("foobar", B) == B
 
 
 def test_get_unknown_declared_hook():
