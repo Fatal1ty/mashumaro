@@ -228,7 +228,12 @@ def resolve_type_vars(cls, arg_types=()):
                     except StopIteration:
                         next_arg_type = base_arg
                     type_vars[base_arg] = next_arg_type
-        result.update(resolve_type_vars(base, base_args))
+        result.update(
+            resolve_type_vars(
+                base,
+                (type_vars.get(base_arg, base_arg) for base_arg in base_args),
+            )
+        )
     return result
 
 

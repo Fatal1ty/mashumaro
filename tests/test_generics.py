@@ -139,3 +139,23 @@ def test_loose_generic_info_in_first_generic():
     assert obj == D(x={1: 2}, y=[3.3])
     obj = D.from_dict({"x": {"1.1": "2.2"}, "y": {"3.3": "4.4"}})
     assert obj == D(x=[1.1], y=[3.3])
+
+
+def test_not_dataclass_generic():
+    class MyGeneric(Generic[P, T]):
+        pass
+
+    @dataclass
+    class GenericDataClass(Generic[P]):
+        x: P
+
+    @dataclass
+    class DataClass(MyGeneric[P, T], GenericDataClass[P]):
+        pass
+
+    @dataclass
+    class ConcreteDataClass(DataClass[List[float], float], DataClassDictMixin):
+        pass
+
+    obj = ConcreteDataClass.from_dict({"x": {"1": "2", "3": "4"}})
+    assert obj == ConcreteDataClass(x=[1.0, 3.0])
