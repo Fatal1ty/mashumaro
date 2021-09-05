@@ -124,3 +124,6 @@ class SerializableTypeDataClass(SerializableType):
         a = value.get("a") - 1
         b = value.get("b") - 1
         return cls(a, b)
+
+
+TMyDataClass = TypeVar("TMyDataClass", bound=MyDataClass)

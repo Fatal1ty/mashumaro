@@ -6,7 +6,7 @@ import pytest
 
 from mashumaro import DataClassDictMixin, DataClassJSONMixin
 from mashumaro.meta.helpers import (
-    get_class_that_define_method,
+    get_class_that_defines_attribute,
     is_class_var,
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
@@ -69,7 +69,7 @@ def test_no_code_builder():
         assert DataClass().__post_serialize__({}) is None
 
 
-def test_get_class_that_define_method():
+def test_get_class_that_defines_attribute():
     class A:
         def foo(self):
             pass  # pragma no cover
@@ -85,9 +85,9 @@ def test_get_class_that_define_method():
         def foobar(self):
             pass  # pragma no cover
 
-    assert get_class_that_define_method("foo", B) == A
-    assert get_class_that_define_method("bar", B) == A
-    assert get_class_that_define_method("foobar", B) == B
+    assert get_class_that_defines_attribute("foo", B) == A
+    assert get_class_that_defines_attribute("bar", B) == A
+    assert get_class_that_defines_attribute("foobar", B) == B
 
 
 def test_get_unknown_declared_hook():

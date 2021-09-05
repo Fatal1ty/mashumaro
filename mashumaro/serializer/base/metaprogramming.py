@@ -34,7 +34,8 @@ from mashumaro.exceptions import (  # noqa
     UnserializableField,
 )
 from mashumaro.meta.helpers import (
-    get_class_that_define_method,
+    get_class_that_defines_field,
+    get_class_that_defines_method,
     get_type_origin,
     is_class_var,
     is_dataclass_dict_mixin,
@@ -46,6 +47,7 @@ from mashumaro.meta.helpers import (
     is_type_var,
     is_type_var_any,
     is_union,
+    resolve_type_vars,
     type_name,
 )
 from mashumaro.meta.macros import PY_37_MIN
@@ -103,10 +105,14 @@ class CodeBuilder:
         self.cls = cls
         self.lines: CodeLines = CodeLines()
         self.globals: typing.Dict[str, typing.Any] = {}
+        self.type_vars = {}
+        self.field_classes = {}
 
     def reset(self) -> None:
         self.lines.reset()
         self.globals = globals().copy()
+        self.type_vars = resolve_type_vars(self.cls)
+        self.field_classes = {}
 
     @property
     def namespace(self) -> typing.Dict[typing.Any, typing.Any]:
@@ -128,6 +134,22 @@ class CodeBuilder:
             if recursive or fname in self.annotations:
                 fields[fname] = ftype
         return fields
+
+    def _get_field_class(self, field_name):
+        try:
+            cls = self.field_classes[field_name]
+        except KeyError:
+            cls = get_class_that_defines_field(field_name, self.cls)
+            self.field_classes[field_name] = cls
+        return cls
+
+    def __get_real_type(self, field_name, field_type):
+        cls = self._get_field_class(field_name)
+        return self.type_vars[cls].get(field_type, field_type)
+
+    def _get_field_type_vars(self, field_name):
+        cls = self._get_field_class(field_name)
+        return self.type_vars[cls]
 
     @property
     def field_types(self) -> typing.Dict[str, typing.Any]:
@@ -207,7 +229,7 @@ class CodeBuilder:
     def get_declared_hook(self, method_name: str):
         if not hasattr(self.cls, method_name):
             return
-        cls = get_class_that_define_method(method_name, self.cls)
+        cls = get_class_that_defines_method(method_name, self.cls)
         if not is_dataclass_dict_mixin(cls):
             return cls.__dict__[method_name]
 
@@ -270,6 +292,12 @@ class CodeBuilder:
         self.compile()
 
     def _from_dict_set_value(self, fname, ftype, metadata, alias=None):
+        unpacked_value = self._unpack_field_value(
+            fname=fname,
+            ftype=ftype,
+            parent=self.cls,
+            metadata=metadata,
+        )
         self.add_line(f"value = d.get('{alias or fname}', MISSING)")
         self.add_line("if value is None:")
         with self.indent():
@@ -277,23 +305,22 @@ class CodeBuilder:
         if self.defaults[fname] is MISSING:
             self.add_line("elif value is MISSING:")
             with self.indent():
+                field_type = type_name(
+                    ftype, type_vars=self._get_field_type_vars(fname)
+                )
                 self.add_line(
-                    f"raise MissingField('{fname}'," f"{type_name(ftype)},cls)"
+                    f"raise MissingField('{fname}'," f"{field_type},cls)"
                 )
             self.add_line("else:")
             with self.indent():
-                unpacked_value = self._unpack_field_value(
-                    fname=fname,
-                    ftype=ftype,
-                    parent=self.cls,
-                    metadata=metadata,
-                )
                 self.add_line("try:")
                 with self.indent():
                     self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
                 self.add_line("except Exception as e:")
                 with self.indent():
-                    field_type = type_name(ftype)
+                    field_type = type_name(
+                        ftype, type_vars=self._get_field_type_vars(fname)
+                    )
                     self.add_line(
                         f"raise InvalidFieldValue('{fname}',"
                         f"{field_type},value,cls)"
@@ -301,18 +328,14 @@ class CodeBuilder:
         else:
             self.add_line("elif value is not MISSING:")
             with self.indent():
-                unpacked_value = self._unpack_field_value(
-                    fname=fname,
-                    ftype=ftype,
-                    parent=self.cls,
-                    metadata=metadata,
-                )
                 self.add_line("try:")
                 with self.indent():
                     self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
                 self.add_line("except Exception as e:")
                 with self.indent():
-                    field_type = type_name(ftype)
+                    field_type = type_name(
+                        ftype, type_vars=self._get_field_type_vars(fname)
+                    )
                     self.add_line(
                         f"raise InvalidFieldValue('{fname}',"
                         f"{field_type},value,cls)"
@@ -484,6 +507,8 @@ class CodeBuilder:
                 staticmethod(serialize_option),
             )
             overridden = f"self.__{fname}_serialize({value_name})"
+
+        ftype = self.__get_real_type(fname, ftype)
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
@@ -745,6 +770,8 @@ class CodeBuilder:
         if callable(deserialize_option):
             setattr(self.cls, f"__{fname}_deserialize", deserialize_option)
             overridden = f"cls.__{fname}_deserialize({value_name})"
+
+        ftype = self.__get_real_type(fname, ftype)
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
@@ -1099,17 +1126,19 @@ class CodeBuilder:
             f"(self,value, {self.get_to_dict_default_flag_values()}):"
         )
         with lines.indent():
-            for packer in [
+            for packer in (
                 self._pack_value(fname, arg_type, parent, metadata=metadata)
                 for arg_type in args
-            ]:
+            ):
                 lines.append("try:")
                 with lines.indent():
                     lines.append(f"return {packer}")
                 lines.append("except:")
                 with lines.indent():
                     lines.append("pass")
-            field_type = type_name(ftype)
+            field_type = type_name(
+                ftype, type_vars=self._get_field_type_vars(fname)
+            )
             lines.append(
                 f"raise InvalidFieldValue('{fname}',{field_type},value,cls)"
             )
@@ -1134,19 +1163,21 @@ class CodeBuilder:
             f"(cls,value,use_bytes=False,use_enum=False,use_datetime=False):"
         )
         with lines.indent():
-            for unpacker in [
+            for unpacker in (
                 self._unpack_field_value(
                     fname, arg_type, parent, metadata=metadata
                 )
                 for arg_type in args
-            ]:
+            ):
                 lines.append("try:")
                 with lines.indent():
                     lines.append(f"return {unpacker}")
                 lines.append("except:")
                 with lines.indent():
                     lines.append("pass")
-            field_type = type_name(ftype)
+            field_type = type_name(
+                ftype, type_vars=self._get_field_type_vars(fname)
+            )
             lines.append(
                 f"raise InvalidFieldValue('{fname}',{field_type},value,cls)"
             )

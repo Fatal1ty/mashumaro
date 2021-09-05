@@ -1,6 +1,10 @@
 import dataclasses
+import types
 import typing
 from contextlib import suppress
+
+# noinspection PyProtectedMember
+from dataclasses import _FIELDS
 
 from .macros import PY_36, PY_37, PY_37_MIN, PY_38, PY_39
 
@@ -30,48 +34,65 @@ def get_generic_name(t, short: bool = False):
         name = getattr(t, "__name__")
     elif PY_37_MIN:
         name = getattr(t, "_name")
+        if name is None:
+            return type_name(t.__origin__)
     if short:
         return name
     else:
         return f"{t.__module__}.{name}"
 
 
-def _get_args_str(t, short, limit=None):
+def _get_args_str(
+    t: typing.Any,
+    short: bool,
+    type_vars: typing.Dict[str, typing.Any] = None,
+    limit: typing.Optional[int] = None,
+):
     args = (getattr(t, "__args__", None) or ())[:limit]
-    return ", ".join(type_name(arg, short) for arg in args)
+    return ", ".join(type_name(arg, short, type_vars) for arg in args)
 
 
 def _typing_name(t: str, short: bool = False):
     return t if short else f"typing.{t}"
 
 
-def type_name(t, short: bool = False) -> str:
+def type_name(
+    t: typing.Any,
+    short: bool = False,
+    type_vars: typing.Dict[str, typing.Any] = None,
+) -> str:
+    if type_vars is None:
+        type_vars = {}
     if is_builtin_type(t):
         return t.__qualname__
     if t is typing.Any:
         return _typing_name("Any", short)
     elif is_optional(t):
-        return (
-            f"{_typing_name('Optional', short)}[{_get_args_str(t, short, 1)}]"
-        )
+        args_str = _get_args_str(t, short, type_vars, 1)
+        return f"{_typing_name('Optional', short)}[{args_str}]"
     elif is_union(t):
-        return f"{_typing_name('Union', short)}[{_get_args_str(t, short)}]"
+        args_str = _get_args_str(t, short, type_vars)
+        return f"{_typing_name('Union', short)}[{args_str}]"
     elif is_generic(t):
-        args_str = _get_args_str(t, short)
+        args_str = _get_args_str(t, short, type_vars)
         if not args_str:
             return get_generic_name(t, short)
         else:
             return f"{get_generic_name(t, short)}[{args_str}]"
-    elif is_type_var_any(t):
-        return _typing_name("Any", short)
     elif is_type_var(t):
+        if t in type_vars and type_vars[t] is not t:
+            return type_name(type_vars[t], short, type_vars)
+        elif is_type_var_any(t):
+            return _typing_name("Any", short)
         constraints = getattr(t, "__constraints__")
         if constraints:
-            args_str = ", ".join(type_name(c, short) for c in constraints)
+            args_str = ", ".join(
+                type_name(c, short, type_vars) for c in constraints
+            )
             return f"{_typing_name('Union', short)}[{args_str}]"
         else:
             bound = getattr(t, "__bound__")
-            return type_name(bound, short)
+            return type_name(bound, short, type_vars)
     else:
         try:
             return f"{t.__module__}.{t.__qualname__}"
@@ -101,7 +122,10 @@ def is_generic(t):
     elif PY_39:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
-        return issubclass(t.__class__, typing._BaseGenericAlias)
+        return (
+            issubclass(t.__class__, typing._BaseGenericAlias)
+            or type(t) is types.GenericAlias
+        )
     else:
         raise NotImplementedError
 
@@ -155,10 +179,22 @@ def is_init_var(t):
         raise NotImplementedError
 
 
-def get_class_that_define_method(method_name, cls):
+def get_class_that_defines_method(method_name, cls):
     for cls in cls.__mro__:
         if method_name in cls.__dict__:
             return cls
+
+
+def get_class_that_defines_field(field_name, cls):
+    prev_cls = None
+    prev_field = None
+    for base in reversed(cls.__mro__):
+        if dataclasses.is_dataclass(base):
+            field = getattr(base, _FIELDS).get(field_name)
+            if field and field != prev_field:
+                prev_field = field
+                prev_cls = base
+    return prev_cls or cls
 
 
 def is_dataclass_dict_mixin(t):
@@ -173,6 +209,29 @@ def is_dataclass_dict_mixin_subclass(t):
     return False
 
 
+def resolve_type_vars(cls, arg_types=()):
+    arg_types = iter(arg_types)
+    type_vars = {}
+    result = {cls: type_vars}
+    orig_bases = {
+        get_type_origin(orig_base): orig_base
+        for orig_base in getattr(cls, "__orig_bases__", ())
+    }
+    for base in getattr(cls, "__bases__", ()):
+        orig_base = orig_bases.get(base)
+        base_args = getattr(orig_base, "__args__", ())
+        for base_arg in base_args:
+            if is_type_var(base_arg):
+                if base_arg not in type_vars:
+                    try:
+                        next_arg_type = next(arg_types)
+                    except StopIteration:
+                        next_arg_type = base_arg
+                    type_vars[base_arg] = next_arg_type
+        result.update(resolve_type_vars(base, base_args))
+    return result
+
+
 __all__ = [
     "get_type_origin",
     "type_name",
@@ -184,7 +243,9 @@ __all__ = [
     "is_type_var_any",
     "is_class_var",
     "is_init_var",
-    "get_class_that_define_method",
+    "get_class_that_defines_method",
+    "get_class_that_defines_field",
     "is_dataclass_dict_mixin",
     "is_dataclass_dict_mixin_subclass",
+    "resolve_type_vars",
 ]

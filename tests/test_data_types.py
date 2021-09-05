@@ -34,7 +34,6 @@ from typing import (
     Sequence,
     Set,
     Tuple,
-    TypeVar,
 )
 
 try:
@@ -74,6 +73,7 @@ from .entities import (
     TAny,
     TInt,
     TIntStr,
+    TMyDataClass,
 )
 from .utils import same_types
 
@@ -108,6 +108,7 @@ class Fixture:
     FLAG = MyFlag.a
     INT_FLAG = MyIntFlag.a
     DATA_CLASS = MyDataClass(a=1, b=2)
+    T_DATA_CLASS = MyDataClass(a=1, b=2)
     DATA_CLASS_WITH_UNION = MyDataClassWithUnion(a=1, b=2)
     NONE = None
     DATETIME = datetime(2018, 10, 29, 12, 46, 55, 308495)
@@ -182,6 +183,7 @@ inner_values = [
     (MyFlag, Fixture.FLAG, Fixture.FLAG),
     (MyIntFlag, Fixture.INT_FLAG, Fixture.INT_FLAG),
     (MyDataClass, Fixture.DATA_CLASS, Fixture.DICT),
+    (TMyDataClass, Fixture.T_DATA_CLASS, Fixture.DICT),
     (MyDataClassWithUnion, Fixture.DATA_CLASS_WITH_UNION, Fixture.DICT),
     (NoneType, Fixture.NONE, Fixture.NONE),
     (datetime, Fixture.DATETIME, Fixture.DATETIME),
