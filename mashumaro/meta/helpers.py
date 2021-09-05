@@ -4,7 +4,7 @@ import typing
 from contextlib import suppress
 
 # noinspection PyProtectedMember
-from dataclasses import _FIELDS
+from dataclasses import _FIELDS  # type: ignore
 
 from .macros import PY_36, PY_37, PY_37_MIN, PY_38, PY_39
 
