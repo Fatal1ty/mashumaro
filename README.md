@@ -39,6 +39,7 @@ Table of contents
     * [Code generation options](#code-generation-options)
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
         * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
+    * [User-defined generic types](#user-defined-generic-types)
     * [Serialization hooks](#serialization-hooks)
         * [Before deserialization](#before-deserialization)
         * [After deserialization](#after-deserialization)
@@ -132,8 +133,10 @@ for other less popular built-in types:
 * [`ipaddress.IPv4Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv4Interface)
 * [`ipaddress.IPv6Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv6Interface)
 
-for specific types like [`NoneType`](https://docs.python.org/3/library/constants.html#None), nested dataclasses itself and
-even [user defined classes](#serializabletype-interface).
+for specific types like:
+* [`NoneType`](https://docs.python.org/3/library/constants.html#None)
+* [user-defined classes](#serializabletype-interface)
+* [user-defined generic types](#user-defined-generic-types)
 
 Usage example
 --------------------------------------------------------------------------------
@@ -780,6 +783,44 @@ DataClass(field_a=1).to_dict(by_alias=True)  # {'FieldA': 1}
 
 Keep in mind, if you're serializing data in JSON or another format, then you
 need to pass `by_alias` argument to [`dict_params`](#dataclassjsonmixinto_jsonencoder-optionalencoder-dict_params-optionalmapping-encoder_kwargs) dictionary.
+
+### User-defined generic types
+
+![soon](https://img.shields.io/badge/soon-not%20released%20yet-yellow)
+
+There is support for [user-defined generic types](https://docs.python.org/3/library/typing.html#user-defined-generic-types).
+You can check it out in [this](https://github.com/Fatal1ty/mashumaro/tree/generics) branch. However, for the time being, there are some limitations:
+* Python 3.6 isn't supported
+* Only user-defined generic dataclasses are supported
+* Specifying concrete generic types in field type hints isn't supported
+* There is no generic alternative to [`SerializableType`](#serializabletype-interface)
+
+In short, you can do this:
+
+```python
+from dataclasses import dataclass
+from datetime import date
+from typing import Generic, Mapping, TypeVar
+from mashumaro import DataClassDictMixin
+
+KT = TypeVar("KT")
+VT = TypeVar("VT", date, str)
+
+@dataclass
+class GenericDataClass(Generic[KT, VT]):
+    x: Mapping[KT, VT]
+
+@dataclass
+class ConcreteDataClass(GenericDataClass[str, date], DataClassDictMixin):
+    pass
+
+ConcreteDataClass.from_dict({"x": {"a": "2021-01-01"}})          # ok
+ConcreteDataClass.from_dict({"x": {"a": "not a date but str"}})  # error
+```
+
+You can override `TypeVar` field with a concrete type or another `TypeVar`.
+Partial specification of concrete types is also allowed. If a generic dataclass
+is inherited without type overriding the types of its fields remain untouched.
 
 ### Serialization hooks
 
