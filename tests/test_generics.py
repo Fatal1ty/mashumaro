@@ -2,11 +2,21 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Generic, List, Mapping, TypeVar
 
+import pytest
+
 from mashumaro import DataClassDictMixin
+from mashumaro.meta.macros import PY_36
 
 T = TypeVar("T")
 S = TypeVar("S")
 P = TypeVar("P", Mapping[int, int], List[float])
+
+
+if PY_36:
+    pytest.skip(
+        "Generics aren't currently supported on python 3.6",
+        allow_module_level=True,
+    )
 
 
 def test_one_generic():

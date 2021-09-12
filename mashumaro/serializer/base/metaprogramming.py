@@ -34,6 +34,7 @@ from mashumaro.exceptions import (  # noqa
     UnserializableField,
 )
 from mashumaro.meta.helpers import (
+    get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
     get_type_origin,
@@ -196,7 +197,7 @@ class CodeBuilder:
             if not module:
                 return
             self.ensure_module_imported(module)
-            args = getattr(t, "__args__", ())
+            args = get_args(t)
             if args:
                 self._add_type_modules(*args)
             constraints = getattr(t, "__constraints__", ())
@@ -524,7 +525,7 @@ class CodeBuilder:
             if origin_type is typing.Any:
                 return overridden or value_name
             elif is_union(ftype):
-                args = getattr(ftype, "__args__", ())
+                args = get_args(ftype)
                 if is_optional(ftype):
                     pv = self._pack_value(
                         fname, args[0], parent, value_name, metadata=metadata
@@ -610,7 +611,7 @@ class CodeBuilder:
         elif issubclass(origin_type, typing.Collection) and not issubclass(
             origin_type, enum.Enum
         ):
-            args = getattr(ftype, "__args__", ())
+            args = get_args(ftype)
 
             def inner_expr(arg_num=0, v_name="value", v_type=None):
                 if v_type:
@@ -804,7 +805,7 @@ class CodeBuilder:
             if origin_type is typing.Any:
                 return overridden or value_name
             elif is_union(ftype):
-                args = getattr(ftype, "__args__", ())
+                args = get_args(ftype)
                 if is_optional(ftype):
                     ufv = self._unpack_field_value(
                         fname, args[0], parent, value_name, metadata=metadata
@@ -929,7 +930,7 @@ class CodeBuilder:
         elif issubclass(origin_type, typing.Collection) and not issubclass(
             origin_type, enum.Enum
         ):
-            args = getattr(ftype, "__args__", ())
+            args = get_args(ftype)
 
             def inner_expr(arg_num=0, v_name="value", v_type=None):
                 if v_type:

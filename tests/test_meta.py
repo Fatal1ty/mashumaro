@@ -6,19 +6,22 @@ import pytest
 
 from mashumaro import DataClassDictMixin, DataClassJSONMixin
 from mashumaro.meta.helpers import (
+    get_class_that_defines_field,
     get_class_that_defines_method,
+    get_type_origin,
     is_class_var,
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
     is_generic,
     is_init_var,
     is_type_var_any,
+    resolve_type_vars,
     type_name,
 )
 from mashumaro.meta.macros import PY_37, PY_37_MIN, PY_38
 from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
-from .entities import MyDataClass, TAny, TInt, TIntStr
+from .entities import MyDataClass, MyGenericDataClass, T, TAny, TInt, TIntStr
 
 TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 
@@ -69,7 +72,7 @@ def test_no_code_builder():
         assert DataClass().__post_serialize__({}) is None
 
 
-def test_get_class_that_defines_attribute():
+def test_get_class_that_defines_method():
     class A:
         def foo(self):
             pass  # pragma no cover
@@ -88,6 +91,23 @@ def test_get_class_that_defines_attribute():
     assert get_class_that_defines_method("foo", B) == A
     assert get_class_that_defines_method("bar", B) == A
     assert get_class_that_defines_method("foobar", B) == B
+
+
+def test_get_class_that_defines_field():
+    @dataclass
+    class A:
+        x: int
+        y: int
+        z: int
+
+    @dataclass
+    class B(A):
+        y: float
+        z: int
+
+    assert get_class_that_defines_field("x", B) == A
+    assert get_class_that_defines_field("y", B) == B
+    assert get_class_that_defines_field("z", B) == B
 
 
 def test_get_unknown_declared_hook():
@@ -186,3 +206,24 @@ def test_type_name_short():
             == "OrderedDict[int, int]"
         )
     assert type_name(typing.Optional[int], short=True) == "Optional[int]"
+
+
+def test_get_type_origin():
+    assert get_type_origin(typing.List[int]) == list
+    assert get_type_origin(typing.List) == list
+    assert get_type_origin(MyGenericDataClass[int]) == MyGenericDataClass
+    assert get_type_origin(MyGenericDataClass) == MyGenericDataClass
+
+
+def test_resolve_type_vars():
+    @dataclass
+    class A(typing.Generic[T]):
+        x: T
+
+    @dataclass
+    class B(A[int]):
+        pass
+
+    resolved = resolve_type_vars(B)
+    assert resolved[A] == {T: int}
+    assert resolved[B] == {}

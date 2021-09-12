@@ -70,10 +70,10 @@ from .entities import (
     MyStrEnum,
     SerializableTypeDataClass,
     T,
+    T_Optional_int,
     TAny,
     TInt,
     TIntStr,
-    T_Optional_int,
     TMyDataClass,
 )
 from .utils import same_types

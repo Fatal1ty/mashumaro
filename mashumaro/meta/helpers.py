@@ -13,13 +13,15 @@ NoneType = type(None)
 
 
 def get_type_origin(t):
+    origin = None
     try:
         if PY_36:
-            return t.__extra__
-        elif PY_37 or PY_38 or PY_39:
-            return t.__origin__
+            origin = t.__extra__ or t.__origin__
+        elif PY_37_MIN:
+            origin = t.__origin__
     except AttributeError:
-        return t
+        origin = t
+    return origin or t
 
 
 def is_builtin_type(t):
@@ -42,13 +44,17 @@ def get_generic_name(t, short: bool = False):
         return f"{t.__module__}.{name}"
 
 
+def get_args(t: typing.Any):
+    return getattr(t, "__args__", None) or ()
+
+
 def _get_args_str(
     t: typing.Any,
     short: bool,
     type_vars: typing.Dict[str, typing.Any] = None,
     limit: typing.Optional[int] = None,
 ):
-    args = (getattr(t, "__args__", None) or ())[:limit]
+    args = get_args(t)[:limit]
     return ", ".join(type_name(arg, short, type_vars) for arg in args)
 
 
@@ -140,7 +146,7 @@ def is_union(t):
 def is_optional(t):
     if not is_union(t):
         return False
-    args = getattr(t, "__args__", ())
+    args = get_args(t)
     return len(args) == 2 and args[1] == NoneType
 
 
@@ -219,7 +225,7 @@ def resolve_type_vars(cls, arg_types=()):
     }
     for base in getattr(cls, "__bases__", ()):
         orig_base = orig_bases.get(base)
-        base_args = getattr(orig_base, "__args__", ())
+        base_args = get_args(orig_base)
         for base_arg in base_args:
             if is_type_var(base_arg):
                 if base_arg not in type_vars:
