@@ -259,4 +259,5 @@ __all__ = [
     "is_dataclass_dict_mixin",
     "is_dataclass_dict_mixin_subclass",
     "resolve_type_vars",
+    "get_generic_name",
 ]

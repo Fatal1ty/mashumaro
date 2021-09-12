@@ -8,6 +8,7 @@ from mashumaro import DataClassDictMixin, DataClassJSONMixin
 from mashumaro.meta.helpers import (
     get_class_that_defines_field,
     get_class_that_defines_method,
+    get_generic_name,
     get_type_origin,
     is_class_var,
     is_dataclass_dict_mixin,
@@ -169,6 +170,7 @@ def test_type_name():
             == "typing.OrderedDict[int, int]"
         )
     assert type_name(typing.Optional[int]) == "typing.Optional[int]"
+    assert type_name(None) == "None"
 
 
 def test_type_name_short():
@@ -206,6 +208,7 @@ def test_type_name_short():
             == "OrderedDict[int, int]"
         )
     assert type_name(typing.Optional[int], short=True) == "Optional[int]"
+    assert type_name(None) == "None"
 
 
 def test_get_type_origin():
@@ -227,3 +230,11 @@ def test_resolve_type_vars():
     resolved = resolve_type_vars(B)
     assert resolved[A] == {T: int}
     assert resolved[B] == {}
+
+
+def test_get_generic_name():
+    assert get_generic_name(typing.List[int]) == "typing.List"
+    assert (
+        get_generic_name(MyGenericDataClass[int])
+        == "tests.entities.MyGenericDataClass"
+    )
