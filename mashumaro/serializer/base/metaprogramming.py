@@ -223,7 +223,7 @@ class CodeBuilder:
     def compile(self) -> None:
         code = self.lines.as_text()
         if self.get_config().debug:
-            print(self.cls)
+            print(f"{type_name(self.cls)}:")
             print(code)
         exec(code, self.globals, self.__dict__)
 
@@ -1167,7 +1167,7 @@ class CodeBuilder:
             )
         lines.append(f"setattr(cls, '{method_name}', {method_name})")
         if self.get_config().debug:
-            print(self.cls)
+            print(f"{type_name(self.cls)}:")
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
         return method_name
@@ -1206,7 +1206,7 @@ class CodeBuilder:
             )
         lines.append(f"setattr(cls, '{method_name}', {method_name})")
         if self.get_config().debug:
-            print(self.cls)
+            print(f"{type_name(self.cls)}:")
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
         return method_name
