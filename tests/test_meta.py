@@ -208,7 +208,7 @@ def test_type_name_short():
             == "OrderedDict[int, int]"
         )
     assert type_name(typing.Optional[int], short=True) == "Optional[int]"
-    assert type_name(None) == "None"
+    assert type_name(None, short=True) == "None"
 
 
 def test_get_type_origin():
