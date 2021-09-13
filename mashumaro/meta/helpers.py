@@ -1,4 +1,5 @@
 import dataclasses
+import inspect
 import types
 import typing
 from contextlib import suppress
@@ -215,13 +216,31 @@ def is_dataclass_dict_mixin_subclass(t):
     return False
 
 
-def resolve_type_vars(cls, arg_types=()):
+def get_orig_bases(cls, is_created=True):
+    if PY_36 and not is_created:
+        # on py3.6 __orig_bases__ is correct only after the class is created
+        for record in inspect.stack():
+            if (
+                record.filename.endswith("typing.py")
+                and record.function == "__new__"
+                and record.frame.f_locals.get("cls") is typing.GenericMeta
+                and record.frame.f_locals.get("initial_bases")
+                and record.frame.f_locals.get("namespace", {}).get(
+                    "__qualname__"
+                )
+                == cls.__qualname__
+            ):
+                return record.frame.f_locals.get("initial_bases")
+    return getattr(cls, "__orig_bases__", ())
+
+
+def resolve_type_vars(cls, arg_types=(), is_cls_created=False):
     arg_types = iter(arg_types)
     type_vars = {}
     result = {cls: type_vars}
     orig_bases = {
         get_type_origin(orig_base): orig_base
-        for orig_base in getattr(cls, "__orig_bases__", ())
+        for orig_base in get_orig_bases(cls, is_cls_created)
     }
     for base in getattr(cls, "__bases__", ()):
         orig_base = orig_bases.get(base)
@@ -234,12 +253,10 @@ def resolve_type_vars(cls, arg_types=()):
                     except StopIteration:
                         next_arg_type = base_arg
                     type_vars[base_arg] = next_arg_type
-        result.update(
-            resolve_type_vars(
-                base,
-                (type_vars.get(base_arg, base_arg) for base_arg in base_args),
-            )
+        base_arg_types = (
+            type_vars.get(base_arg, base_arg) for base_arg in base_args
         )
+        result.update(resolve_type_vars(base, base_arg_types, True))
     return result
 
 

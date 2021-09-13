@@ -12,13 +12,6 @@ S = TypeVar("S")
 P = TypeVar("P", Mapping[int, int], List[float])
 
 
-if PY_36:
-    pytest.skip(
-        "Generics aren't currently supported on python 3.6",
-        allow_module_level=True,
-    )
-
-
 def test_one_generic():
     @dataclass
     class A(Generic[T]):
