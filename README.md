@@ -790,7 +790,6 @@ need to pass `by_alias` argument to [`dict_params`](#dataclassjsonmixinto_jsonen
 
 There is support for [user-defined generic types](https://docs.python.org/3/library/typing.html#user-defined-generic-types).
 You can check it out in [this](https://github.com/Fatal1ty/mashumaro/tree/generics) branch. However, for the time being, there are some limitations:
-* Python 3.6 isn't supported
 * Only user-defined generic dataclasses are supported
 * Specifying concrete generic types in field type hints isn't supported
 * There is no generic alternative to [`SerializableType`](#serializabletype-interface)
