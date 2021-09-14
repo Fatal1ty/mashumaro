@@ -13,12 +13,12 @@ import typing
 import uuid
 from base64 import decodebytes, encodebytes  # noqa
 from contextlib import contextmanager, suppress
-from hashlib import md5
 
 # noinspection PyProtectedMember
 from dataclasses import _FIELDS, MISSING, Field, is_dataclass  # type: ignore
 from decimal import Decimal
 from fractions import Fraction
+from hashlib import md5
 from types import MappingProxyType
 
 from mashumaro.config import (
@@ -245,9 +245,9 @@ class CodeBuilder:
             return cls.__dict__[method_name]
 
     def add_from_dict(self) -> None:
-        method_name = 'from_dict'
+        method_name = "from_dict"
         if self.initial_arg_types:
-            method_name += f'_{self._hash_arg_types(self.initial_arg_types)}'
+            method_name += f"_{self._hash_arg_types(self.initial_arg_types)}"
         config = self.get_config()
         self.reset()
         self.add_line("@classmethod")
@@ -412,9 +412,9 @@ class CodeBuilder:
         return option in self.get_config(cls).code_generation_options
 
     def add_to_dict(self) -> None:
-        method_name = 'to_dict'
+        method_name = "to_dict"
         if self.initial_arg_types:
-            method_name += f'_{self._hash_arg_types(self.initial_arg_types)}'
+            method_name += f"_{self._hash_arg_types(self.initial_arg_types)}"
         self.reset()
         self.add_line(
             f"def {method_name}"
@@ -545,13 +545,13 @@ class CodeBuilder:
         if is_dataclass_dict_mixin_subclass(origin_type):
             arg_types = get_args(ftype)
             if arg_types:
-                method_name = f'to_dict_{self._hash_arg_types(arg_types)}'
+                method_name = f"to_dict_{self._hash_arg_types(arg_types)}"
                 if not hasattr(origin_type, method_name):
                     builder = CodeBuilder(origin_type, arg_types)
                     builder.add_from_dict()
                     builder.add_to_dict()
             else:
-                method_name = 'to_dict'
+                method_name = "to_dict"
             flags = self.get_to_dict_flags(ftype)
             return overridden or f"{value_name}.{method_name}({flags})"
 
@@ -842,13 +842,13 @@ class CodeBuilder:
         if is_dataclass_dict_mixin_subclass(origin_type):
             arg_types = get_args(ftype)
             if arg_types:
-                method_name = f'from_dict_{self._hash_arg_types(arg_types)}'
+                method_name = f"from_dict_{self._hash_arg_types(arg_types)}"
                 if not hasattr(origin_type, method_name):
                     builder = CodeBuilder(origin_type, arg_types)
                     builder.add_from_dict()
                     builder.add_to_dict()
             else:
-                method_name = 'from_dict'
+                method_name = "from_dict"
             return overridden or (
                 f"{type_name(ftype)}.{method_name}({value_name}, "
                 f"use_bytes, use_enum, use_datetime)"
@@ -1266,4 +1266,4 @@ class CodeBuilder:
 
     @classmethod
     def _hash_arg_types(cls, arg_types) -> str:
-        return md5(','.join(map(type_name, arg_types)).encode()).hexdigest()
+        return md5(",".join(map(type_name, arg_types)).encode()).hexdigest()
