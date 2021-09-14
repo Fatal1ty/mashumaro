@@ -13,6 +13,7 @@ import typing
 import uuid
 from base64 import decodebytes, encodebytes  # noqa
 from contextlib import contextmanager, suppress
+from hashlib import md5
 
 # noinspection PyProtectedMember
 from dataclasses import _FIELDS, MISSING, Field, is_dataclass  # type: ignore
@@ -106,17 +107,22 @@ class CodeLines:
 
 
 class CodeBuilder:
-    def __init__(self, cls):
+    def __init__(self, cls, arg_types=()):
         self.cls = cls
         self.lines: CodeLines = CodeLines()
         self.globals: typing.Dict[str, typing.Any] = {}
         self.type_vars = {}
         self.field_classes = {}
+        self.initial_arg_types = arg_types
 
     def reset(self) -> None:
         self.lines.reset()
         self.globals = globals().copy()
-        self.type_vars = resolve_type_vars(self.cls)
+        self.type_vars = resolve_type_vars(
+            cls=self.cls,
+            arg_types=self.initial_arg_types,
+            is_cls_created=bool(self.initial_arg_types),
+        )
         self.field_classes = {}
 
     @property
@@ -239,13 +245,15 @@ class CodeBuilder:
             return cls.__dict__[method_name]
 
     def add_from_dict(self) -> None:
-
+        method_name = 'from_dict'
+        if self.initial_arg_types:
+            method_name += f'_{self._hash_arg_types(self.initial_arg_types)}'
         config = self.get_config()
         self.reset()
         self.add_line("@classmethod")
         self.add_line(
-            "def from_dict(cls, d, use_bytes=False, use_enum=False, "
-            "use_datetime=False):"
+            f"def {method_name}(cls, d, use_bytes=False, use_enum=False, "
+            f"use_datetime=False):"
         )
         with self.indent():
             pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
@@ -293,7 +301,7 @@ class CodeBuilder:
                     )
             else:
                 self.add_line("return cls(**kwargs)")
-        self.add_line("setattr(cls, 'from_dict', from_dict)")
+        self.add_line(f"setattr(cls, '{method_name}', {method_name})")
         self.compile()
 
     def _from_dict_set_value(self, fname, ftype, metadata, alias=None):
@@ -404,9 +412,13 @@ class CodeBuilder:
         return option in self.get_config(cls).code_generation_options
 
     def add_to_dict(self) -> None:
+        method_name = 'to_dict'
+        if self.initial_arg_types:
+            method_name += f'_{self._hash_arg_types(self.initial_arg_types)}'
         self.reset()
         self.add_line(
-            f"def to_dict(self, {self.get_to_dict_default_flag_values()}):"
+            f"def {method_name}"
+            f"(self, {self.get_to_dict_default_flag_values()}):"
         )
         with self.indent():
             pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
@@ -421,7 +433,7 @@ class CodeBuilder:
                 self.add_line(f"return self.{__POST_SERIALIZE__}(kwargs)")
             else:
                 self.add_line("return kwargs")
-        self.add_line("setattr(cls, 'to_dict', to_dict)")
+        self.add_line(f"setattr(cls, '{method_name}', {method_name})")
         self.compile()
 
     def _to_dict_set_value(self, fname, ftype, metadata):
@@ -530,9 +542,18 @@ class CodeBuilder:
                     or f"{value_name}._serialize([{arg_type_names}])"
                 )
 
-        if is_dataclass_dict_mixin_subclass(ftype):
+        if is_dataclass_dict_mixin_subclass(origin_type):
+            arg_types = get_args(ftype)
+            if arg_types:
+                method_name = f'to_dict_{self._hash_arg_types(arg_types)}'
+                if not hasattr(origin_type, method_name):
+                    builder = CodeBuilder(origin_type, arg_types)
+                    builder.add_from_dict()
+                    builder.add_to_dict()
+            else:
+                method_name = 'to_dict'
             flags = self.get_to_dict_flags(ftype)
-            return overridden or f"{value_name}.to_dict({flags})"
+            return overridden or f"{value_name}.{method_name}({flags})"
 
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
@@ -818,9 +839,18 @@ class CodeBuilder:
                     f"[{arg_type_names}])"
                 )
 
-        if is_dataclass_dict_mixin_subclass(ftype):
+        if is_dataclass_dict_mixin_subclass(origin_type):
+            arg_types = get_args(ftype)
+            if arg_types:
+                method_name = f'from_dict_{self._hash_arg_types(arg_types)}'
+                if not hasattr(origin_type, method_name):
+                    builder = CodeBuilder(origin_type, arg_types)
+                    builder.add_from_dict()
+                    builder.add_to_dict()
+            else:
+                method_name = 'from_dict'
             return overridden or (
-                f"{type_name(ftype)}.from_dict({value_name}, "
+                f"{type_name(ftype)}.{method_name}({value_name}, "
                 f"use_bytes, use_enum, use_datetime)"
             )
 
@@ -1233,3 +1263,7 @@ class CodeBuilder:
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
         return method_name
+
+    @classmethod
+    def _hash_arg_types(cls, arg_types) -> str:
+        return md5(','.join(map(type_name, arg_types)).encode()).hexdigest()

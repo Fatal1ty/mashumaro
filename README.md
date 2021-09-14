@@ -791,16 +791,16 @@ need to pass `by_alias` argument to [`dict_params`](#dataclassjsonmixinto_jsonen
 
 ### User-defined generic types
 
-![soon](https://img.shields.io/badge/soon-not%20released%20yet-yellow)
-
 There is support for [user-defined generic types](https://docs.python.org/3/library/typing.html#user-defined-generic-types).
-You can check it out in [this](https://github.com/Fatal1ty/mashumaro/tree/generics) branch. However, for the time being, there are some limitations:
-* Specifying concrete generic types in field type hints isn't supported
+You can inherit generic dataclasses along with overwriting types in them, use generic
+dataclasses as field types, or create your own generic types with serialization
+under your control.
 
 #### User-defined generic dataclasses
 
 If you have a generic version of a dataclass and want to serialize and
-deserialize instances of it depending on the concrete types, you can achieve this using inheritance:
+deserialize its instances depending on the concrete types, you can achieve
+this using inheritance:
 
 ```python
 from dataclasses import dataclass
@@ -826,6 +826,36 @@ ConcreteDataClass.from_dict({"x": {"a": "not a date but str"}})  # error
 You can override `TypeVar` field with a concrete type or another `TypeVar`.
 Partial specification of concrete types is also allowed. If a generic dataclass
 is inherited without type overriding the types of its fields remain untouched.
+
+#### Generic dataclasses as field types
+
+Another approach is to specify concrete types in the field type hints. This can
+help to have different versions of the same generic dataclass:
+
+```python
+from dataclasses import dataclass
+from datetime import date
+from typing import Generic, TypeVar
+from mashumaro import DataClassDictMixin
+
+T = TypeVar('T')
+
+@dataclass
+class GenericDataClass(Generic[T], DataClassDictMixin):
+    x: T
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    date: GenericDataClass[date]
+    str: GenericDataClass[str]
+
+instance = DataClass(
+    date=GenericDataClass(x=date(2021, 1, 1)),
+    str=GenericDataClass(x='2021-01-01'),
+)
+dictionary = {'date': {'x': '2021-01-01'}, 'str': {'x': '2021-01-01'}}
+assert DataClass.from_dict(dictionary) == instance
+```
 
 #### GenericSerializableType interface
 
@@ -862,9 +892,9 @@ class DataClass(DataClassDictMixin):
     x: GenericDict[int, str]
     y: GenericDict[str, int]
 
-obj = DataClass(GenericDict({1: 'a'}), GenericDict({'b': 2}))
-dictionary = obj.to_dict()  # {'x': {1: 'a'}, 'y': {'b': 2}}
-assert DataClass.from_dict(dictionary) == obj
+instance = DataClass(GenericDict({1: 'a'}), GenericDict({'b': 2}))
+dictionary = instance.to_dict()  # {'x': {1: 'a'}, 'y': {'b': 2}}
+assert DataClass.from_dict(dictionary) == instance
 ```
 
 The difference between [`SerializableType`](#serializabletype-interface) and

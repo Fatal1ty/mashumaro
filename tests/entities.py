@@ -76,8 +76,6 @@ class GenericSerializableList(Generic[T], GenericSerializableType):
             return [v + 2 for v in self.value]
         elif types[0] == str:
             return [f"_{v}" for v in self.value]
-        else:
-            raise TypeError
 
     @classmethod
     def _deserialize(cls, value, types):
@@ -85,11 +83,6 @@ class GenericSerializableList(Generic[T], GenericSerializableType):
             return GenericSerializableList([int(v) - 2 for v in value])
         elif types[0] == str:
             return GenericSerializableList([v[1:] for v in value])
-        else:
-            raise TypeError
-
-    def __str__(self):
-        return str(self.value)
 
     def __eq__(self, other):
         return self.value == other.value
