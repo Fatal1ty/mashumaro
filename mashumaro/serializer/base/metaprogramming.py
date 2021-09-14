@@ -546,7 +546,7 @@ class CodeBuilder:
             arg_types = get_args(ftype)
             if arg_types:
                 method_name = f"to_dict_{self._hash_arg_types(arg_types)}"
-                if not hasattr(origin_type, method_name):
+                if not hasattr(origin_type, method_name):  # pragma no cover
                     builder = CodeBuilder(origin_type, arg_types)
                     builder.add_from_dict()
                     builder.add_to_dict()
