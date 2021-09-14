@@ -243,7 +243,7 @@ def resolve_type_vars(cls, arg_types=(), is_cls_created=False):
         for orig_base in get_orig_bases(cls, is_cls_created)
     }
     for base in getattr(cls, "__bases__", ()):
-        orig_base = orig_bases.get(base)
+        orig_base = orig_bases.get(get_type_origin(base))
         base_args = get_args(orig_base)
         for base_arg in base_args:
             if is_type_var(base_arg):

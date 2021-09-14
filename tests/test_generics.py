@@ -2,10 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Generic, List, Mapping, TypeVar
 
-import pytest
-
 from mashumaro import DataClassDictMixin
-from mashumaro.meta.macros import PY_36
 
 T = TypeVar("T")
 S = TypeVar("S")
@@ -23,6 +20,19 @@ def test_one_generic():
 
     obj = B.from_dict({"x": "2021-08-15 00:00:00"})
     assert obj.x == datetime(2021, 8, 15)
+
+
+def test_one_generic_list():
+    @dataclass
+    class A(List[T]):
+        x: List[T]
+
+    @dataclass
+    class B(A[datetime], DataClassDictMixin):
+        pass
+
+    obj = B.from_dict({"x": ["2021-08-15 00:00:00"]})
+    assert obj.x == [datetime(2021, 8, 15)]
 
 
 def test_two_generics():
