@@ -6,19 +6,31 @@ import pytest
 
 from mashumaro import DataClassDictMixin, DataClassJSONMixin
 from mashumaro.meta.helpers import (
-    get_class_that_define_method,
+    get_class_that_defines_field,
+    get_class_that_defines_method,
+    get_generic_name,
+    get_type_origin,
     is_class_var,
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
     is_generic,
     is_init_var,
     is_type_var_any,
+    resolve_type_vars,
     type_name,
 )
 from mashumaro.meta.macros import PY_37, PY_37_MIN, PY_38
 from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
-from .entities import MyDataClass, TAny, TInt, TIntStr
+from .entities import (
+    MyDataClass,
+    MyGenericDataClass,
+    MyGenericList,
+    T,
+    TAny,
+    TInt,
+    TIntStr,
+)
 
 TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 
@@ -69,7 +81,7 @@ def test_no_code_builder():
         assert DataClass().__post_serialize__({}) is None
 
 
-def test_get_class_that_define_method():
+def test_get_class_that_defines_method():
     class A:
         def foo(self):
             pass  # pragma no cover
@@ -85,9 +97,26 @@ def test_get_class_that_define_method():
         def foobar(self):
             pass  # pragma no cover
 
-    assert get_class_that_define_method("foo", B) == A
-    assert get_class_that_define_method("bar", B) == A
-    assert get_class_that_define_method("foobar", B) == B
+    assert get_class_that_defines_method("foo", B) == A
+    assert get_class_that_defines_method("bar", B) == A
+    assert get_class_that_defines_method("foobar", B) == B
+
+
+def test_get_class_that_defines_field():
+    @dataclass
+    class A:
+        x: int
+        y: int
+        z: int
+
+    @dataclass
+    class B(A):
+        y: float
+        z: int
+
+    assert get_class_that_defines_field("x", B) == A
+    assert get_class_that_defines_field("y", B) == B
+    assert get_class_that_defines_field("z", B) == B
 
 
 def test_get_unknown_declared_hook():
@@ -149,12 +178,13 @@ def test_type_name():
             == "typing.OrderedDict[int, int]"
         )
     assert type_name(typing.Optional[int]) == "typing.Optional[int]"
+    assert type_name(None) == "None"
 
 
 def test_type_name_short():
     assert type_name(TAny, short=True) == "Any"
     assert type_name(TInt, short=True) == "int"
-    assert type_name(TMyDataClass, short=True) == "tests.entities.MyDataClass"
+    assert type_name(TMyDataClass, short=True) == "MyDataClass"
     assert type_name(TIntStr, short=True) == "Union[int, str]"
     assert type_name(typing.List[TInt], short=True) == "List[int]"
     assert type_name(typing.Tuple[int], short=True) == "Tuple[int]"
@@ -186,3 +216,47 @@ def test_type_name_short():
             == "OrderedDict[int, int]"
         )
     assert type_name(typing.Optional[int], short=True) == "Optional[int]"
+    assert type_name(None, short=True) == "None"
+
+
+def test_get_type_origin():
+    assert get_type_origin(typing.List[int]) == list
+    assert get_type_origin(typing.List) == list
+    assert get_type_origin(MyGenericDataClass[int]) == MyGenericDataClass
+    assert get_type_origin(MyGenericDataClass) == MyGenericDataClass
+
+
+def test_resolve_type_vars():
+    @dataclass
+    class A(typing.Generic[T]):
+        x: T
+
+    @dataclass
+    class B(A[int]):
+        pass
+
+    resolved = resolve_type_vars(B)
+    assert resolved[A] == {T: int}
+    assert resolved[B] == {}
+
+
+def test_get_generic_name():
+    assert get_generic_name(typing.List[int]) == "typing.List"
+    assert get_generic_name(typing.List[int], short=True) == "List"
+    assert (
+        get_generic_name(MyGenericDataClass[int])
+        == "tests.entities.MyGenericDataClass"
+    )
+    assert (
+        get_generic_name(MyGenericDataClass[int], short=True)
+        == "MyGenericDataClass"
+    )
+
+
+def test_get_generic_collection_based_class_name():
+    assert get_generic_name(MyGenericList, short=True) == "MyGenericList"
+    assert get_generic_name(MyGenericList) == "tests.entities.MyGenericList"
+    assert get_generic_name(MyGenericList[int], short=True) == "MyGenericList"
+    assert (
+        get_generic_name(MyGenericList[int]) == "tests.entities.MyGenericList"
+    )

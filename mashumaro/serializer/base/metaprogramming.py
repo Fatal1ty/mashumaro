@@ -18,6 +18,7 @@ from contextlib import contextmanager, suppress
 from dataclasses import _FIELDS, MISSING, Field, is_dataclass  # type: ignore
 from decimal import Decimal
 from fractions import Fraction
+from hashlib import md5
 from types import MappingProxyType
 
 from mashumaro.config import (
@@ -34,7 +35,9 @@ from mashumaro.exceptions import (  # noqa
     UnserializableField,
 )
 from mashumaro.meta.helpers import (
-    get_class_that_define_method,
+    get_args,
+    get_class_that_defines_field,
+    get_class_that_defines_method,
     get_type_origin,
     is_class_var,
     is_dataclass_dict_mixin,
@@ -46,12 +49,17 @@ from mashumaro.meta.helpers import (
     is_type_var,
     is_type_var_any,
     is_union,
+    resolve_type_vars,
     type_name,
 )
 from mashumaro.meta.macros import PY_37_MIN
 from mashumaro.meta.patch import patch_fromisoformat
 from mashumaro.serializer.base.helpers import *  # noqa
-from mashumaro.types import SerializableType, SerializationStrategy
+from mashumaro.types import (
+    GenericSerializableType,
+    SerializableType,
+    SerializationStrategy,
+)
 
 try:
     import ciso8601
@@ -99,14 +107,23 @@ class CodeLines:
 
 
 class CodeBuilder:
-    def __init__(self, cls):
+    def __init__(self, cls, arg_types=()):
         self.cls = cls
         self.lines: CodeLines = CodeLines()
         self.globals: typing.Dict[str, typing.Any] = {}
+        self.type_vars = {}
+        self.field_classes = {}
+        self.initial_arg_types = arg_types
 
     def reset(self) -> None:
         self.lines.reset()
         self.globals = globals().copy()
+        self.type_vars = resolve_type_vars(
+            cls=self.cls,
+            arg_types=self.initial_arg_types,
+            is_cls_created=bool(self.initial_arg_types),
+        )
+        self.field_classes = {}
 
     @property
     def namespace(self) -> typing.Dict[typing.Any, typing.Any]:
@@ -128,6 +145,22 @@ class CodeBuilder:
             if recursive or fname in self.annotations:
                 fields[fname] = ftype
         return fields
+
+    def _get_field_class(self, field_name):
+        try:
+            cls = self.field_classes[field_name]
+        except KeyError:
+            cls = get_class_that_defines_field(field_name, self.cls)
+            self.field_classes[field_name] = cls
+        return cls
+
+    def __get_real_type(self, field_name, field_type):
+        cls = self._get_field_class(field_name)
+        return self.type_vars[cls].get(field_type, field_type)
+
+    def _get_field_type_vars(self, field_name):
+        cls = self._get_field_class(field_name)
+        return self.type_vars[cls]
 
     @property
     def field_types(self) -> typing.Dict[str, typing.Any]:
@@ -174,7 +207,7 @@ class CodeBuilder:
             if not module:
                 return
             self.ensure_module_imported(module)
-            args = getattr(t, "__args__", ())
+            args = get_args(t)
             if args:
                 self._add_type_modules(*args)
             constraints = getattr(t, "__constraints__", ())
@@ -200,25 +233,27 @@ class CodeBuilder:
     def compile(self) -> None:
         code = self.lines.as_text()
         if self.get_config().debug:
-            print(self.cls)
+            print(f"{type_name(self.cls)}:")
             print(code)
         exec(code, self.globals, self.__dict__)
 
     def get_declared_hook(self, method_name: str):
         if not hasattr(self.cls, method_name):
             return
-        cls = get_class_that_define_method(method_name, self.cls)
+        cls = get_class_that_defines_method(method_name, self.cls)
         if not is_dataclass_dict_mixin(cls):
             return cls.__dict__[method_name]
 
     def add_from_dict(self) -> None:
-
+        method_name = "from_dict"
+        if self.initial_arg_types:
+            method_name += f"_{self._hash_arg_types(self.initial_arg_types)}"
         config = self.get_config()
         self.reset()
         self.add_line("@classmethod")
         self.add_line(
-            "def from_dict(cls, d, use_bytes=False, use_enum=False, "
-            "use_datetime=False):"
+            f"def {method_name}(cls, d, use_bytes=False, use_enum=False, "
+            f"use_datetime=False):"
         )
         with self.indent():
             pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
@@ -266,10 +301,16 @@ class CodeBuilder:
                     )
             else:
                 self.add_line("return cls(**kwargs)")
-        self.add_line("setattr(cls, 'from_dict', from_dict)")
+        self.add_line(f"setattr(cls, '{method_name}', {method_name})")
         self.compile()
 
     def _from_dict_set_value(self, fname, ftype, metadata, alias=None):
+        unpacked_value = self._unpack_field_value(
+            fname=fname,
+            ftype=ftype,
+            parent=self.cls,
+            metadata=metadata,
+        )
         self.add_line(f"value = d.get('{alias or fname}', MISSING)")
         self.add_line("if value is None:")
         with self.indent():
@@ -277,23 +318,22 @@ class CodeBuilder:
         if self.defaults[fname] is MISSING:
             self.add_line("elif value is MISSING:")
             with self.indent():
+                field_type = type_name(
+                    ftype, type_vars=self._get_field_type_vars(fname)
+                )
                 self.add_line(
-                    f"raise MissingField('{fname}'," f"{type_name(ftype)},cls)"
+                    f"raise MissingField('{fname}'," f"{field_type},cls)"
                 )
             self.add_line("else:")
             with self.indent():
-                unpacked_value = self._unpack_field_value(
-                    fname=fname,
-                    ftype=ftype,
-                    parent=self.cls,
-                    metadata=metadata,
-                )
                 self.add_line("try:")
                 with self.indent():
                     self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
                 self.add_line("except Exception as e:")
                 with self.indent():
-                    field_type = type_name(ftype)
+                    field_type = type_name(
+                        ftype, type_vars=self._get_field_type_vars(fname)
+                    )
                     self.add_line(
                         f"raise InvalidFieldValue('{fname}',"
                         f"{field_type},value,cls)"
@@ -301,18 +341,14 @@ class CodeBuilder:
         else:
             self.add_line("elif value is not MISSING:")
             with self.indent():
-                unpacked_value = self._unpack_field_value(
-                    fname=fname,
-                    ftype=ftype,
-                    parent=self.cls,
-                    metadata=metadata,
-                )
                 self.add_line("try:")
                 with self.indent():
                     self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
                 self.add_line("except Exception as e:")
                 with self.indent():
-                    field_type = type_name(ftype)
+                    field_type = type_name(
+                        ftype, type_vars=self._get_field_type_vars(fname)
+                    )
                     self.add_line(
                         f"raise InvalidFieldValue('{fname}',"
                         f"{field_type},value,cls)"
@@ -376,9 +412,13 @@ class CodeBuilder:
         return option in self.get_config(cls).code_generation_options
 
     def add_to_dict(self) -> None:
+        method_name = "to_dict"
+        if self.initial_arg_types:
+            method_name += f"_{self._hash_arg_types(self.initial_arg_types)}"
         self.reset()
         self.add_line(
-            f"def to_dict(self, {self.get_to_dict_default_flag_values()}):"
+            f"def {method_name}"
+            f"(self, {self.get_to_dict_default_flag_values()}):"
         )
         with self.indent():
             pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
@@ -393,7 +433,7 @@ class CodeBuilder:
                 self.add_line(f"return self.{__POST_SERIALIZE__}(kwargs)")
             else:
                 self.add_line("return kwargs")
-        self.add_line("setattr(cls, 'to_dict', to_dict)")
+        self.add_line(f"setattr(cls, '{method_name}', {method_name})")
         self.compile()
 
     def _to_dict_set_value(self, fname, ftype, metadata):
@@ -486,20 +526,40 @@ class CodeBuilder:
             )
             overridden = f"self.__{fname}_serialize({value_name})"
 
+        ftype = self.__get_real_type(fname, ftype)
+        origin_type = get_type_origin(ftype)
+
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
                 return overridden or f"{value_name}._serialize()"
+        with suppress(TypeError):
+            if issubclass(origin_type, GenericSerializableType):
+                arg_type_names = ", ".join(
+                    list(map(type_name, get_args(ftype)))
+                )
+                return (
+                    overridden
+                    or f"{value_name}._serialize([{arg_type_names}])"
+                )
 
-        if is_dataclass_dict_mixin_subclass(ftype):
+        if is_dataclass_dict_mixin_subclass(origin_type):
+            arg_types = get_args(ftype)
+            if arg_types:
+                method_name = f"to_dict_{self._hash_arg_types(arg_types)}"
+                if not hasattr(origin_type, method_name):  # pragma no cover
+                    builder = CodeBuilder(origin_type, arg_types)
+                    builder.add_from_dict()
+                    builder.add_to_dict()
+            else:
+                method_name = "to_dict"
             flags = self.get_to_dict_flags(ftype)
-            return overridden or f"{value_name}.to_dict({flags})"
+            return overridden or f"{value_name}.{method_name}({flags})"
 
-        origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
                 return overridden or value_name
             elif is_union(ftype):
-                args = getattr(ftype, "__args__", ())
+                args = get_args(ftype)
                 if is_optional(ftype):
                     pv = self._pack_value(
                         fname, args[0], parent, value_name, metadata=metadata
@@ -585,7 +645,7 @@ class CodeBuilder:
         elif issubclass(origin_type, typing.Collection) and not issubclass(
             origin_type, enum.Enum
         ):
-            args = getattr(ftype, "__args__", ())
+            args = get_args(ftype)
 
             def inner_expr(arg_num=0, v_name="value", v_type=None):
                 if v_type:
@@ -759,25 +819,46 @@ class CodeBuilder:
             setattr(self.cls, f"__{fname}_deserialize", deserialize_option)
             overridden = f"cls.__{fname}_deserialize({value_name})"
 
+        ftype = self.__get_real_type(fname, ftype)
+        origin_type = get_type_origin(ftype)
+
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
                 return (
                     overridden
                     or f"{type_name(ftype)}._deserialize({value_name})"
                 )
+        with suppress(TypeError):
+            if issubclass(origin_type, GenericSerializableType):
+                arg_type_names = ", ".join(
+                    list(map(type_name, get_args(ftype)))
+                )
+                return (
+                    overridden
+                    or f"{type_name(ftype)}._deserialize({value_name}, "
+                    f"[{arg_type_names}])"
+                )
 
-        if is_dataclass_dict_mixin_subclass(ftype):
+        if is_dataclass_dict_mixin_subclass(origin_type):
+            arg_types = get_args(ftype)
+            if arg_types:
+                method_name = f"from_dict_{self._hash_arg_types(arg_types)}"
+                if not hasattr(origin_type, method_name):
+                    builder = CodeBuilder(origin_type, arg_types)
+                    builder.add_from_dict()
+                    builder.add_to_dict()
+            else:
+                method_name = "from_dict"
             return overridden or (
-                f"{type_name(ftype)}.from_dict({value_name}, "
+                f"{type_name(ftype)}.{method_name}({value_name}, "
                 f"use_bytes, use_enum, use_datetime)"
             )
 
-        origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
                 return overridden or value_name
             elif is_union(ftype):
-                args = getattr(ftype, "__args__", ())
+                args = get_args(ftype)
                 if is_optional(ftype):
                     ufv = self._unpack_field_value(
                         fname, args[0], parent, value_name, metadata=metadata
@@ -902,7 +983,7 @@ class CodeBuilder:
         elif issubclass(origin_type, typing.Collection) and not issubclass(
             origin_type, enum.Enum
         ):
-            args = getattr(ftype, "__args__", ())
+            args = get_args(ftype)
 
             def inner_expr(arg_num=0, v_name="value", v_type=None):
                 if v_type:
@@ -1121,23 +1202,25 @@ class CodeBuilder:
             f"(self,value, {self.get_to_dict_default_flag_values()}):"
         )
         with lines.indent():
-            for packer in [
+            for packer in (
                 self._pack_value(fname, arg_type, parent, metadata=metadata)
                 for arg_type in args
-            ]:
+            ):
                 lines.append("try:")
                 with lines.indent():
                     lines.append(f"return {packer}")
                 lines.append("except:")
                 with lines.indent():
                     lines.append("pass")
-            field_type = type_name(ftype)
+            field_type = type_name(
+                ftype, type_vars=self._get_field_type_vars(fname)
+            )
             lines.append(
                 f"raise InvalidFieldValue('{fname}',{field_type},value,cls)"
             )
         lines.append(f"setattr(cls, '{method_name}', {method_name})")
         if self.get_config().debug:
-            print(self.cls)
+            print(f"{type_name(self.cls)}:")
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
         return method_name
@@ -1156,25 +1239,31 @@ class CodeBuilder:
             f"(cls,value,use_bytes=False,use_enum=False,use_datetime=False):"
         )
         with lines.indent():
-            for unpacker in [
+            for unpacker in (
                 self._unpack_field_value(
                     fname, arg_type, parent, metadata=metadata
                 )
                 for arg_type in args
-            ]:
+            ):
                 lines.append("try:")
                 with lines.indent():
                     lines.append(f"return {unpacker}")
                 lines.append("except:")
                 with lines.indent():
                     lines.append("pass")
-            field_type = type_name(ftype)
+            field_type = type_name(
+                ftype, type_vars=self._get_field_type_vars(fname)
+            )
             lines.append(
                 f"raise InvalidFieldValue('{fname}',{field_type},value,cls)"
             )
         lines.append(f"setattr(cls, '{method_name}', {method_name})")
         if self.get_config().debug:
-            print(self.cls)
+            print(f"{type_name(self.cls)}:")
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
         return method_name
+
+    @classmethod
+    def _hash_arg_types(cls, arg_types) -> str:
+        return md5(",".join(map(type_name, arg_types)).encode()).hexdigest()

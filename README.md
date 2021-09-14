@@ -24,7 +24,7 @@ Table of contents
 * [Benchmark](#benchmark)
 * [API](#api)
 * [Customization](#customization)
-    * [SerializableType Interface](#serializabletype-interface)
+    * [`SerializableType` interface](#serializabletype-interface)
     * [Field options](#field-options)
         * [`serialize` option](#serialize-option)
         * [`deserialize` option](#deserialize-option)
@@ -40,6 +40,9 @@ Table of contents
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
         * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
     * [User-defined generic types](#user-defined-generic-types)
+      * [User-defined generic dataclasses](#user-defined-generic-dataclasses)
+      * [Generic dataclasses as field types](#generic-dataclasses-as-field-types)
+      * [`GenericSerializableType` interface](#genericserializabletype-interface)
     * [Serialization hooks](#serialization-hooks)
         * [Before deserialization](#before-deserialization)
         * [After deserialization](#after-deserialization)
@@ -355,11 +358,11 @@ decoder_kwargs # keyword arguments for decoder function
 Customization
 --------------------------------------------------------------------------------
 
-### SerializableType Interface
+### SerializableType interface
 
 If you already have a separate custom class, and you want to serialize
 instances of it with *mashumaro*, you can achieve this by implementing
-*SerializableType* interface:
+`SerializableType` interface:
 
 ```python
 from typing import Dict
@@ -401,6 +404,9 @@ dictionary = new_year.to_dict()
 # {'x': {'year': 2019, 'month': 1, 'day': 1, 'hour': 0, 'minute': 0, 'second': 0}}
 assert Holiday.from_dict(dictionary) == new_year
 ```
+
+If you have a custom [generic type](https://docs.python.org/3/library/typing.html#user-defined-generic-types)
+and are looking for a generic version of such an interface, read [this](#genericserializabletype-interface).
 
 ### Field options
 
@@ -482,7 +488,7 @@ class C(DataClassDictMixin):
 
 This option is useful when you want to change the serialization behaviour
 for a class depending on some defined parameters. For this case you can create
-the special class implementing *SerializationStrategy* interface:
+the special class implementing `SerializationStrategy` interface:
 
 ```python
 from dataclasses import dataclass, field
@@ -786,15 +792,16 @@ need to pass `by_alias` argument to [`dict_params`](#dataclassjsonmixinto_jsonen
 
 ### User-defined generic types
 
-![soon](https://img.shields.io/badge/soon-not%20released%20yet-yellow)
-
 There is support for [user-defined generic types](https://docs.python.org/3/library/typing.html#user-defined-generic-types).
-You can check it out in [this](https://github.com/Fatal1ty/mashumaro/tree/generics) branch. However, for the time being, there are some limitations:
-* Only user-defined generic dataclasses are supported
-* Specifying concrete generic types in field type hints isn't supported
-* There is no generic alternative to [`SerializableType`](#serializabletype-interface)
+You can inherit generic dataclasses along with overwriting types in them, use generic
+dataclasses as field types, or create your own generic types with serialization
+under your control.
 
-In short, you can do this:
+#### User-defined generic dataclasses
+
+If you have a generic version of a dataclass and want to serialize and
+deserialize its instances depending on the concrete types, you can achieve
+this using inheritance:
 
 ```python
 from dataclasses import dataclass
@@ -820,6 +827,84 @@ ConcreteDataClass.from_dict({"x": {"a": "not a date but str"}})  # error
 You can override `TypeVar` field with a concrete type or another `TypeVar`.
 Partial specification of concrete types is also allowed. If a generic dataclass
 is inherited without type overriding the types of its fields remain untouched.
+
+#### Generic dataclasses as field types
+
+Another approach is to specify concrete types in the field type hints. This can
+help to have different versions of the same generic dataclass:
+
+```python
+from dataclasses import dataclass
+from datetime import date
+from typing import Generic, TypeVar
+from mashumaro import DataClassDictMixin
+
+T = TypeVar('T')
+
+@dataclass
+class GenericDataClass(Generic[T], DataClassDictMixin):
+    x: T
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    date: GenericDataClass[date]
+    str: GenericDataClass[str]
+
+instance = DataClass(
+    date=GenericDataClass(x=date(2021, 1, 1)),
+    str=GenericDataClass(x='2021-01-01'),
+)
+dictionary = {'date': {'x': '2021-01-01'}, 'str': {'x': '2021-01-01'}}
+assert DataClass.from_dict(dictionary) == instance
+```
+
+#### GenericSerializableType interface
+
+There is a generic alternative to [`SerializableType`](#serializabletype-interface)
+called `GenericSerializableType`. It makes it possible to serialize and deserialize
+instances of generic types depending on the types provided:
+
+```python
+from typing import Dict, TypeVar, Iterator
+from datetime import datetime
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.types import GenericSerializableType
+
+KT = TypeVar("KT", int, str)
+VT = TypeVar("VT", int, str)
+
+class GenericDict(Dict[KT, VT], GenericSerializableType):
+    def _serialize(self, types) -> Dict[KT, VT]:
+        k_type, v_type = types
+        if k_type not in (int, str) or v_type not in (int, str):
+            raise TypeError
+        return {k_type(k): v_type(v) for k, v in self.items()}
+
+    @classmethod
+    def _deserialize(cls, value, types) -> 'GenericDict[KT, VT]':
+        k_type, v_type = types
+        if k_type not in (int, str) or v_type not in (int, str):
+            raise TypeError
+        return cls({k_type(k): v_type(v) for k, v in value.items()})
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    x: GenericDict[int, str]
+    y: GenericDict[str, int]
+
+instance = DataClass(GenericDict({1: 'a'}), GenericDict({'b': 2}))
+dictionary = instance.to_dict()  # {'x': {1: 'a'}, 'y': {'b': 2}}
+assert DataClass.from_dict(dictionary) == instance
+```
+
+The difference between [`SerializableType`](#serializabletype-interface) and
+[`GenericSerializableType`](#genericserializabletype-interface) is that
+the methods of [`GenericSerializableType`](#genericserializabletype-interface)
+have a parameter `types`, to which the concrete types will be passed.
+If you don't need this information you can still use
+[`SerializableType`](#serializabletype-interface) interface even with generic
+types.
 
 ### Serialization hooks
 

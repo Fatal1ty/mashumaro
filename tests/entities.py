@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Generic, List, Optional, TypeVar, Union
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
-from mashumaro.types import SerializableType
+from mashumaro.types import GenericSerializableType, SerializableType
 
 T = TypeVar("T")
 TAny = TypeVar("TAny", bound=Any)
@@ -67,6 +67,27 @@ class MutableString(SerializableType):
         return self.characters == other.characters
 
 
+class GenericSerializableList(Generic[T], GenericSerializableType):
+    def __init__(self, value: List[T]):
+        self.value = value
+
+    def _serialize(self, types):
+        if types[0] == int:
+            return [v + 2 for v in self.value]
+        elif types[0] == str:
+            return [f"_{v}" for v in self.value]
+
+    @classmethod
+    def _deserialize(cls, value, types):
+        if types[0] == int:
+            return GenericSerializableList([int(v) - 2 for v in value])
+        elif types[0] == str:
+            return GenericSerializableList([v[1:] for v in value])
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+
 class CustomPath(PathLike):
     def __init__(self, *args: str):
         self._path = "/".join(args)
@@ -125,3 +146,30 @@ class SerializableTypeDataClass(SerializableType):
         a = value.get("a") - 1
         b = value.get("b") - 1
         return cls(a, b)
+
+
+@dataclass
+class GenericSerializableTypeDataClass(GenericSerializableType):
+    a: int
+    b: int
+
+    def _serialize(self, types):
+        return {"a": self.a + 1, "b": self.b + 1}
+
+    @classmethod
+    def _deserialize(cls, value, types):
+        a = value.get("a") - 1
+        b = value.get("b") - 1
+        return cls(a, b)
+
+
+@dataclass
+class MyGenericDataClass(Generic[T], DataClassDictMixin):
+    x: T
+
+
+class MyGenericList(List[T]):
+    pass
+
+
+TMyDataClass = TypeVar("TMyDataClass", bound=MyDataClass)
