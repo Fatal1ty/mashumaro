@@ -164,7 +164,7 @@ class GenericSerializableTypeDataClass(GenericSerializableType):
 
 
 @dataclass
-class MyGenericDataClass(Generic[T]):
+class MyGenericDataClass(Generic[T], DataClassDictMixin):
     x: T
 
 

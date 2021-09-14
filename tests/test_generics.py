@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from typing import Generic, List, Mapping, TypeVar
 
 from mashumaro import DataClassDictMixin
+from tests.entities import MyGenericDataClass
 
 T = TypeVar("T")
 S = TypeVar("S")
@@ -172,3 +173,18 @@ def test_not_dataclass_generic():
 
     obj = ConcreteDataClass.from_dict({"x": {"1": "2", "3": "4"}})
     assert obj == ConcreteDataClass(x=[1.0, 3.0])
+
+
+def test_generic_dataclass_as_field_type():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        date: MyGenericDataClass[date]
+        str: MyGenericDataClass[str]
+
+    obj = DataClass(
+        date=MyGenericDataClass(date(2021, 9, 14)),
+        str=MyGenericDataClass("2021-09-14"),
+    )
+    dictionary = {"date": {"x": "2021-09-14"}, "str": {"x": "2021-09-14"}}
+    assert DataClass.from_dict(dictionary) == obj
+    assert obj.to_dict() == dictionary
