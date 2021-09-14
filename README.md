@@ -41,6 +41,7 @@ Table of contents
         * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
     * [User-defined generic types](#user-defined-generic-types)
       * [User-defined generic dataclasses](#user-defined-generic-dataclasses)
+      * [Generic dataclasses as field types](#generic-dataclasses-as-field-types)
       * [`GenericSerializableType` interface](#genericserializabletype-interface)
     * [Serialization hooks](#serialization-hooks)
         * [Before deserialization](#before-deserialization)
