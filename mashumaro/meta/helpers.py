@@ -36,7 +36,7 @@ def get_generic_name(t, short: bool = False):
     if PY_36:
         name = getattr(t, "__name__")
     elif PY_37_MIN:
-        name = getattr(t, "_name")
+        name = getattr(t, "_name", None)
         if name is None:
             return type_name(t.__origin__)
     if short:
