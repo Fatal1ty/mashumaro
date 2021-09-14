@@ -54,7 +54,11 @@ from mashumaro.meta.helpers import (
 from mashumaro.meta.macros import PY_37_MIN
 from mashumaro.meta.patch import patch_fromisoformat
 from mashumaro.serializer.base.helpers import *  # noqa
-from mashumaro.types import SerializableType, SerializationStrategy
+from mashumaro.types import (
+    GenericSerializableType,
+    SerializableType,
+    SerializationStrategy,
+)
 
 try:
     import ciso8601
@@ -511,16 +515,25 @@ class CodeBuilder:
             overridden = f"self.__{fname}_serialize({value_name})"
 
         ftype = self.__get_real_type(fname, ftype)
+        origin_type = get_type_origin(ftype)
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
                 return overridden or f"{value_name}._serialize()"
+        with suppress(TypeError):
+            if issubclass(origin_type, GenericSerializableType):
+                arg_type_names = ", ".join(
+                    list(map(type_name, get_args(ftype)))
+                )
+                return (
+                    overridden
+                    or f"{value_name}._serialize([{arg_type_names}])"
+                )
 
         if is_dataclass_dict_mixin_subclass(ftype):
             flags = self.get_to_dict_flags(ftype)
             return overridden or f"{value_name}.to_dict({flags})"
 
-        origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
                 return overridden or value_name
@@ -786,12 +799,23 @@ class CodeBuilder:
             overridden = f"cls.__{fname}_deserialize({value_name})"
 
         ftype = self.__get_real_type(fname, ftype)
+        origin_type = get_type_origin(ftype)
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
                 return (
                     overridden
                     or f"{type_name(ftype)}._deserialize({value_name})"
+                )
+        with suppress(TypeError):
+            if issubclass(origin_type, GenericSerializableType):
+                arg_type_names = ", ".join(
+                    list(map(type_name, get_args(ftype)))
+                )
+                return (
+                    overridden
+                    or f"{type_name(ftype)}._deserialize({value_name}, "
+                    f"[{arg_type_names}])"
                 )
 
         if is_dataclass_dict_mixin_subclass(ftype):
@@ -800,7 +824,6 @@ class CodeBuilder:
                 f"use_bytes, use_enum, use_datetime)"
             )
 
-        origin_type = get_type_origin(ftype)
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
                 return overridden or value_name

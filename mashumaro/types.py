@@ -10,6 +10,15 @@ class SerializableType:
         raise NotImplementedError
 
 
+class GenericSerializableType:
+    def _serialize(self, types):
+        raise NotImplementedError
+
+    @classmethod
+    def _deserialize(cls, value, types):
+        raise NotImplementedError
+
+
 class SerializationStrategy:
     def serialize(self, value):
         raise NotImplementedError
@@ -41,6 +50,7 @@ class RoundedDecimal(SerializationStrategy):
 
 __all__ = [
     "SerializableType",
+    "GenericSerializableType",
     "SerializationStrategy",
     "RoundedDecimal",
 ]

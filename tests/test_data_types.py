@@ -52,6 +52,7 @@ from mashumaro.exceptions import (
     UnserializableField,
 )
 from mashumaro.types import (
+    GenericSerializableType,
     RoundedDecimal,
     SerializableType,
     SerializationStrategy,
@@ -60,6 +61,8 @@ from mashumaro.types import (
 from .entities import (
     CustomPath,
     DataClassWithoutMixin,
+    GenericSerializableList,
+    GenericSerializableTypeDataClass,
     MutableString,
     MyDataClass,
     MyDataClassWithUnion,
@@ -140,6 +143,8 @@ class Fixture:
     CUSTOM_PATH = CustomPath("/a/b/c")
     CUSTOM_PATH_STR = "/a/b/c"
     CUSTOM_SERIALIZE = "_FOOBAR_"
+    GENERIC_SERIALIZABLE_LIST_INT = GenericSerializableList([1, 2, 3])
+    GENERIC_SERIALIZABLE_LIST_STR = GenericSerializableList(["a", "b", "c"])
 
 
 inner_values = [
@@ -203,6 +208,16 @@ inner_values = [
     (fractions.Fraction, Fixture.FRACTION, Fixture.FRACTION_STR),
     (MutableString, Fixture.MUTABLE_STRING, Fixture.MUTABLE_STRING_STR),
     (CustomPath, Fixture.CUSTOM_PATH, Fixture.CUSTOM_PATH_STR),
+    (
+        GenericSerializableList[int],
+        Fixture.GENERIC_SERIALIZABLE_LIST_INT,
+        [3, 4, 5],
+    ),
+    (
+        GenericSerializableList[str],
+        Fixture.GENERIC_SERIALIZABLE_LIST_STR,
+        ["_a", "_b", "_c"],
+    ),
 ]
 
 if os.name == "posix":
@@ -1093,3 +1108,21 @@ def test_bound_type_var_inside_collection():
     o = DataClass.from_dict(d)
     assert o == DataClass(l=[1, None, 2], d={1: 1, 2: None, None: 3})
     assert o.to_dict() == d
+
+
+def test_generic_serializable_type():
+    with pytest.raises(NotImplementedError):
+        # noinspection PyTypeChecker
+        GenericSerializableType._serialize(None, None)
+    with pytest.raises(NotImplementedError):
+        GenericSerializableType._deserialize(None, None)
+
+
+def test_generic_serializable_type_dataclass():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        s: GenericSerializableTypeDataClass
+
+    s_value = GenericSerializableTypeDataClass(a=9, b=9)
+    assert DataClass.from_dict({"s": {"a": 10, "b": 10}}) == DataClass(s_value)
+    assert DataClass(s_value).to_dict() == {"s": {"a": 10, "b": 10}}
