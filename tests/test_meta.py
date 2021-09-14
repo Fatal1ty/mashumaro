@@ -22,7 +22,15 @@ from mashumaro.meta.helpers import (
 from mashumaro.meta.macros import PY_37, PY_37_MIN, PY_38
 from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
-from .entities import MyDataClass, MyGenericDataClass, T, TAny, TInt, TIntStr
+from .entities import (
+    MyDataClass,
+    MyGenericDataClass,
+    MyGenericList,
+    T,
+    TAny,
+    TInt,
+    TIntStr,
+)
 
 TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 
@@ -176,7 +184,7 @@ def test_type_name():
 def test_type_name_short():
     assert type_name(TAny, short=True) == "Any"
     assert type_name(TInt, short=True) == "int"
-    assert type_name(TMyDataClass, short=True) == "tests.entities.MyDataClass"
+    assert type_name(TMyDataClass, short=True) == "MyDataClass"
     assert type_name(TIntStr, short=True) == "Union[int, str]"
     assert type_name(typing.List[TInt], short=True) == "List[int]"
     assert type_name(typing.Tuple[int], short=True) == "Tuple[int]"
@@ -234,7 +242,21 @@ def test_resolve_type_vars():
 
 def test_get_generic_name():
     assert get_generic_name(typing.List[int]) == "typing.List"
+    assert get_generic_name(typing.List[int], short=True) == "List"
     assert (
         get_generic_name(MyGenericDataClass[int])
         == "tests.entities.MyGenericDataClass"
+    )
+    assert (
+        get_generic_name(MyGenericDataClass[int], short=True)
+        == "MyGenericDataClass"
+    )
+
+
+def test_get_generic_collection_based_class_name():
+    assert get_generic_name(MyGenericList, short=True) == "MyGenericList"
+    assert get_generic_name(MyGenericList) == "tests.entities.MyGenericList"
+    assert get_generic_name(MyGenericList[int], short=True) == "MyGenericList"
+    assert (
+        get_generic_name(MyGenericList[int]) == "tests.entities.MyGenericList"
     )

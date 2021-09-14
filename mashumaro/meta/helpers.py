@@ -38,7 +38,7 @@ def get_generic_name(t, short: bool = False):
     elif PY_37_MIN:
         name = getattr(t, "_name", None)
         if name is None:
-            return type_name(t.__origin__)
+            return type_name(get_type_origin(t), short)
     if short:
         return name
     else:
@@ -102,7 +102,10 @@ def type_name(
             return type_name(bound, short, type_vars)
     else:
         try:
-            return f"{t.__module__}.{t.__qualname__}"
+            if short:
+                return t.__qualname__
+            else:
+                return f"{t.__module__}.{t.__qualname__}"
         except AttributeError:
             return str(t)
 

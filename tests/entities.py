@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
-from typing import Any, Generic, Optional, TypeVar, Union
+from typing import Any, Generic, List, Optional, TypeVar, Union
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
@@ -130,6 +130,10 @@ class SerializableTypeDataClass(SerializableType):
 @dataclass
 class MyGenericDataClass(Generic[T]):
     x: T
+
+
+class MyGenericList(List[T]):
+    pass
 
 
 TMyDataClass = TypeVar("TMyDataClass", bound=MyDataClass)
