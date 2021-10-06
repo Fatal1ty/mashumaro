@@ -7,7 +7,7 @@ from contextlib import suppress
 # noinspection PyProtectedMember
 from dataclasses import _FIELDS  # type: ignore
 
-from .macros import PY_36, PY_37, PY_37_MIN, PY_38, PY_39
+from .macros import PY_36, PY_37, PY_37_MIN, PY_38, PY_38_MIN, PY_39_MIN
 
 DataClassDictMixinPath = "mashumaro.serializer.base.dict.DataClassDictMixin"
 NoneType = type(None)
@@ -129,7 +129,7 @@ def is_generic(t):
             typing._GenericAlias,
             typing._VariadicGenericAlias,
         )
-    elif PY_39:
+    elif PY_39_MIN:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
         return (
@@ -174,7 +174,7 @@ def is_class_var(t):
         return (
             is_special_typing_primitive(t) and type(t).__name__ == "_ClassVar"
         )
-    elif PY_37 or PY_38 or PY_39:
+    elif PY_37_MIN:
         return get_type_origin(t) is typing.ClassVar
     else:
         raise NotImplementedError
@@ -183,7 +183,7 @@ def is_class_var(t):
 def is_init_var(t):
     if PY_36 or PY_37:
         return get_type_origin(t) is dataclasses.InitVar
-    elif PY_38 or PY_39:
+    elif PY_38_MIN:
         return isinstance(t, dataclasses.InitVar)
     else:
         raise NotImplementedError
