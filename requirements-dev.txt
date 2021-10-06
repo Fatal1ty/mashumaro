@@ -20,6 +20,7 @@ cattrs==1.8.0;python_version>='3.7'
 pydantic==1.8.2
 dacite==1.6.0
 marshmallow==3.13.0
+marshmallow_enum==1.5.1
 
 # library stubs
 types-backports
