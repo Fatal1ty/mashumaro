@@ -696,14 +696,7 @@ class CodeBuilder:
                         fname, ftype, parent, "Use typing.FrozenSet[T] instead"
                     )
             elif issubclass(origin_type, typing.ChainMap):
-                if ftype is collections.ChainMap:
-                    raise UnserializableField(
-                        fname,
-                        ftype,
-                        parent,
-                        "Use typing.ChainMap[KT,VT] instead",
-                    )
-                elif is_generic(ftype):
+                if is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "ChainMaps with dataclasses as keys "
@@ -716,15 +709,15 @@ class CodeBuilder:
                             f"for key,value in m.items()}} "
                             f"for m in value.maps]"
                         )
-            elif PY_37_MIN and issubclass(origin_type, typing.OrderedDict):
-                if ftype is collections.OrderedDict:
+                elif ftype is collections.ChainMap:
                     raise UnserializableField(
                         fname,
                         ftype,
                         parent,
-                        "Use typing.OrderedDict[KT,VT] instead",
+                        "Use typing.ChainMap[KT,VT] instead",
                     )
-                elif is_generic(ftype):
+            elif PY_37_MIN and issubclass(origin_type, typing.OrderedDict):
+                if is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "OrderedDict with dataclasses as keys "
@@ -736,15 +729,15 @@ class CodeBuilder:
                             or f'{{{inner_expr(0, "key")}: {inner_expr(1)} '
                             f"for key, value in {value_name}.items()}}"
                         )
-            elif issubclass(origin_type, typing.Counter):
-                if ftype is collections.Counter:
+                elif ftype is collections.OrderedDict:
                     raise UnserializableField(
                         fname,
                         ftype,
                         parent,
-                        "Use typing.Counter[KT] instead",
+                        "Use typing.OrderedDict[KT,VT] instead",
                     )
-                elif is_generic(ftype):
+            elif issubclass(origin_type, typing.Counter):
+                if is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "Counter with dataclasses as keys "
@@ -757,15 +750,15 @@ class CodeBuilder:
                             f"{inner_expr(1, v_type=int)} "
                             f"for key, value in {value_name}.items()}}"
                         )
-            elif issubclass(origin_type, typing.Mapping):
-                if ftype is dict:
+                elif ftype is collections.Counter:
                     raise UnserializableField(
                         fname,
                         ftype,
                         parent,
-                        "Use typing.Dict[KT,VT] or Mapping[KT,VT] instead",
+                        "Use typing.Counter[KT] instead",
                     )
-                elif is_generic(ftype):
+            elif issubclass(origin_type, typing.Mapping):
+                if is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "Mappings with dataclasses as keys "
@@ -777,6 +770,13 @@ class CodeBuilder:
                             or f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
                             f"for key, value in {value_name}.items()}}"
                         )
+                elif ftype is dict:
+                    raise UnserializableField(
+                        fname,
+                        ftype,
+                        parent,
+                        "Use typing.Dict[KT,VT] or Mapping[KT,VT] instead",
+                    )
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
                     return (
@@ -1072,14 +1072,7 @@ class CodeBuilder:
                         fname, ftype, parent, "Use typing.Set[T] instead"
                     )
             elif issubclass(origin_type, typing.ChainMap):
-                if ftype is collections.ChainMap:
-                    raise UnserializableField(
-                        fname,
-                        ftype,
-                        parent,
-                        "Use typing.ChainMap[KT,VT] instead",
-                    )
-                elif is_generic(ftype):
+                if is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "ChainMaps with dataclasses as keys "
@@ -1093,15 +1086,15 @@ class CodeBuilder:
                             f"for key, value in m.items()}} "
                             f"for m in {value_name}])"
                         )
-            elif PY_37_MIN and issubclass(origin_type, typing.OrderedDict):
-                if ftype is collections.OrderedDict:
+                elif ftype is collections.ChainMap:
                     raise UnserializableField(
                         fname,
                         ftype,
                         parent,
-                        "Use typing.OrderedDict[KT,VT] instead",
+                        "Use typing.ChainMap[KT,VT] instead",
                     )
-                elif is_generic(ftype):
+            elif PY_37_MIN and issubclass(origin_type, typing.OrderedDict):
+                if is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "OrderedDict with dataclasses as keys "
@@ -1114,15 +1107,15 @@ class CodeBuilder:
                             f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
                             f"for key, value in {value_name}.items()}})"
                         )
-            elif issubclass(origin_type, typing.Counter):
-                if ftype is collections.Counter:
+                elif ftype is collections.OrderedDict:
                     raise UnserializableField(
                         fname,
                         ftype,
                         parent,
-                        "Use typing.Counter[KT] instead",
+                        "Use typing.OrderedDict[KT,VT] instead",
                     )
-                elif is_generic(ftype):
+            elif issubclass(origin_type, typing.Counter):
+                if is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "Counter with dataclasses as keys "
@@ -1136,15 +1129,15 @@ class CodeBuilder:
                             f"{inner_expr(1, v_type=int)} "
                             f"for key, value in {value_name}.items()}})"
                         )
-            elif issubclass(origin_type, typing.Mapping):
-                if ftype is dict:
+                elif ftype is collections.Counter:
                     raise UnserializableField(
                         fname,
                         ftype,
                         parent,
-                        "Use typing.Dict[KT,VT] or Mapping[KT,VT] instead",
+                        "Use typing.Counter[KT] instead",
                     )
-                elif is_generic(ftype):
+            elif issubclass(origin_type, typing.Mapping):
+                if is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "Mappings with dataclasses as keys "
@@ -1156,6 +1149,13 @@ class CodeBuilder:
                             or f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
                             f"for key, value in {value_name}.items()}}"
                         )
+                elif ftype is dict:
+                    raise UnserializableField(
+                        fname,
+                        ftype,
+                        parent,
+                        "Use typing.Dict[KT,VT] or Mapping[KT,VT] instead",
+                    )
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
                     return (
