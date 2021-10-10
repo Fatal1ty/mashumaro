@@ -1,4 +1,5 @@
 import collections
+import collections.abc
 import decimal
 import fractions
 import ipaddress
@@ -51,6 +52,7 @@ from mashumaro.exceptions import (
     UnserializableDataError,
     UnserializableField,
 )
+from mashumaro.meta.macros import PEP_585_COMPATIBLE
 from mashumaro.types import (
     GenericSerializableType,
     RoundedDecimal,
@@ -246,6 +248,55 @@ else:
     )
 
 
+if PEP_585_COMPATIBLE:
+    inner_values.extend(
+        [
+            (list[int], Fixture.LIST, Fixture.LIST),
+            (list, Fixture.LIST, Fixture.LIST),
+            (collections.deque[int], Fixture.DEQUE, Fixture.LIST),
+            (collections.deque, Fixture.DEQUE, Fixture.LIST),
+            (tuple[int], Fixture.TUPLE, Fixture.LIST),
+            (tuple, Fixture.TUPLE, Fixture.LIST),
+            (set[int], Fixture.SET, Fixture.LIST),
+            (set, Fixture.SET, Fixture.LIST),
+            (frozenset[int], Fixture.FROZEN_SET, Fixture.LIST),
+            (frozenset, Fixture.FROZEN_SET, Fixture.LIST),
+            (collections.abc.Set[int], Fixture.SET, Fixture.LIST),
+            (collections.abc.Set, Fixture.SET, Fixture.LIST),
+            (collections.abc.MutableSet[int], Fixture.SET, Fixture.LIST),
+            (collections.abc.MutableSet, Fixture.SET, Fixture.LIST),
+            (
+                collections.ChainMap[str, int],
+                Fixture.CHAIN_MAP,
+                Fixture.MAPS_LIST,
+            ),
+            (collections.ChainMap, Fixture.CHAIN_MAP, Fixture.MAPS_LIST),
+            (dict[str, int], Fixture.DICT, Fixture.DICT),
+            (dict, Fixture.DICT, Fixture.DICT),
+            (collections.abc.Mapping[str, int], Fixture.DICT, Fixture.DICT),
+            (collections.abc.Mapping, Fixture.DICT, Fixture.DICT),
+            (
+                collections.OrderedDict[str, int],
+                Fixture.ORDERED_DICT,
+                Fixture.DICT,
+            ),
+            (collections.OrderedDict, Fixture.ORDERED_DICT, Fixture.DICT),
+            (collections.Counter[str], Fixture.COUNTER, Fixture.DICT),
+            (collections.Counter, Fixture.COUNTER, Fixture.DICT),
+            (
+                collections.abc.MutableMapping[str, int],
+                Fixture.DICT,
+                Fixture.DICT,
+            ),
+            (collections.abc.MutableMapping, Fixture.DICT, Fixture.DICT),
+            (collections.abc.Sequence[int], Fixture.LIST, Fixture.LIST),
+            (collections.abc.Sequence, Fixture.LIST, Fixture.LIST),
+            (collections.abc.MutableSequence[int], Fixture.LIST, Fixture.LIST),
+            (collections.abc.MutableSequence, Fixture.LIST, Fixture.LIST),
+        ]
+    )
+
+
 hashable_inner_values = [
     (type_, value, value_dumped)
     for type_, value, value_dumped in inner_values
@@ -255,20 +306,47 @@ hashable_inner_values = [
 
 generic_sequence_types = [List, Deque, Tuple, Set, FrozenSet]
 generic_mapping_types = [Dict, Mapping, OrderedDict, MutableMapping]
+if PEP_585_COMPATIBLE:
+    generic_sequence_types.extend(
+        [
+            list,
+            collections.deque,
+            tuple,
+            set,
+            frozenset,
+            collections.abc.Set,
+            collections.abc.MutableSet,
+            collections.Counter,
+            collections.abc.Sequence,
+            collections.abc.MutableSequence,
+        ]
+    )
+    generic_mapping_types.extend(
+        [
+            collections.ChainMap,
+            dict,
+            collections.abc.Mapping,
+            collections.OrderedDict,
+            collections.abc.MutableMapping,
+        ]
+    )
 
 
-unsupported_field_types = [
-    list,
-    collections.deque,
-    tuple,
-    set,
-    frozenset,
-    collections.ChainMap,
-    dict,
-    Queue,
-    collections.OrderedDict,
-    collections.Counter,
-]
+unsupported_field_types = [Queue]
+if not PEP_585_COMPATIBLE:
+    unsupported_field_types.extend(
+        [
+            list,
+            collections.deque,
+            tuple,
+            set,
+            frozenset,
+            collections.ChainMap,
+            dict,
+            collections.OrderedDict,
+            collections.Counter,
+        ]
+    )
 
 
 unsupported_typing_primitives = [AnyStr]
@@ -288,6 +366,29 @@ x_factory_mapping = {
     Counter: lambda items: collections.Counter({k: v for k, v in items}),
     ChainMap: lambda items: collections.ChainMap(*({k: v} for k, v in items)),
 }
+if PEP_585_COMPATIBLE:
+    x_factory_mapping.update(
+        {
+            list: list,
+            collections.deque: collections.deque,
+            tuple: tuple,
+            set: set,
+            frozenset: frozenset,
+            collections.abc.MutableSet: set,
+            dict: lambda items: {k: v for k, v in items},
+            collections.abc.Mapping: lambda items: {k: v for k, v in items},
+            collections.abc.MutableMapping: lambda items: {
+                k: v for k, v in items
+            },
+            collections.OrderedDict: lambda items: {k: v for k, v in items},
+            collections.Counter: lambda items: collections.Counter(
+                {k: v for k, v in items}
+            ),
+            collections.ChainMap: lambda items: collections.ChainMap(
+                *({k: v} for k, v in items)
+            ),
+        }
+    )
 
 
 # noinspection PyCallingNonCallable

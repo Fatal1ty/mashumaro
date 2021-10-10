@@ -38,7 +38,7 @@ def get_generic_name(t, short: bool = False):
     elif PY_37_MIN:
         name = getattr(t, "_name", None)
         if name is None:
-            return type_name(get_type_origin(t), short)
+            return type_name(get_type_origin(t), short, is_type_origin=True)
     if short:
         return name
     else:
@@ -67,11 +67,10 @@ def type_name(
     t: typing.Any,
     short: bool = False,
     type_vars: typing.Dict[str, typing.Any] = None,
+    is_type_origin: bool = False,
 ) -> str:
     if type_vars is None:
         type_vars = {}
-    if is_builtin_type(t):
-        return t.__qualname__
     if t is typing.Any:
         return _typing_name("Any", short)
     elif is_optional(t):
@@ -80,12 +79,14 @@ def type_name(
     elif is_union(t):
         args_str = _get_args_str(t, short, type_vars)
         return f"{_typing_name('Union', short)}[{args_str}]"
-    elif is_generic(t):
+    elif is_generic(t) and not is_type_origin:
         args_str = _get_args_str(t, short, type_vars)
         if not args_str:
             return get_generic_name(t, short)
         else:
             return f"{get_generic_name(t, short)}[{args_str}]"
+    elif is_builtin_type(t):
+        return t.__qualname__
     elif is_type_var(t):
         if t in type_vars and type_vars[t] is not t:
             return type_name(type_vars[t], short, type_vars)
@@ -132,10 +133,19 @@ def is_generic(t):
     elif PY_39_MIN:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
-        return (
+        if (
             issubclass(t.__class__, typing._BaseGenericAlias)
             or type(t) is types.GenericAlias
-        )
+        ):
+            return True
+        else:  # for PEP 585 generics without args
+            try:
+                return (
+                    hasattr(t, "__class_getitem__")
+                    and type(t[str]) is types.GenericAlias
+                )
+            except (TypeError, AttributeError):
+                return False
     else:
         raise NotImplementedError
 

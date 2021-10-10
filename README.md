@@ -88,6 +88,23 @@ There is support for generic types from the standard [`typing`](https://docs.pyt
 * [`ChainMap`](https://docs.python.org/3/library/typing.html#typing.ChainMap)
 * [`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)
 
+for standard generic types on [PEP 585](https://www.python.org/dev/peps/pep-0585/) compatible Python (3.9+):
+* [`list`](https://docs.python.org/3/library/stdtypes.html#list)
+* [`tuple`](https://docs.python.org/3/library/stdtypes.html#tuple)
+* [`set`](https://docs.python.org/3/library/stdtypes.html#set)
+* [`frozenset`](https://docs.python.org/3/library/stdtypes.html#frozenset)
+* [`collections.abc.Set`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Set)
+* [`collections.abc.MutableSet`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableSet)
+* [`collections.deque`](https://docs.python.org/3/library/collections.html#collections.deque)
+* [`dict`](https://docs.python.org/3/library/stdtypes.html#dict)
+* [`collections.OrderedDict`](https://docs.python.org/3/library/collections.html#collections.OrderedDict)
+* [`collections.abc.Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)
+* [`collections.abc.MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)
+* [`collections.Counter`](https://docs.python.org/3/library/collections.html#collections.Counter)
+* [`collections.ChainMap`](https://docs.python.org/3/library/collections.html#collections.ChainMap)
+* [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)
+* [`collections.abc.MutableSequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableSequence)
+
 for special primitives from the [`typing`](https://docs.python.org/3/library/typing.html) module:
 * [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
 * [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)

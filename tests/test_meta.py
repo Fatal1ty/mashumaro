@@ -1,3 +1,5 @@
+import collections
+import collections.abc
 import typing
 from dataclasses import dataclass
 from unittest.mock import patch
@@ -19,7 +21,7 @@ from mashumaro.meta.helpers import (
     resolve_type_vars,
     type_name,
 )
-from mashumaro.meta.macros import PY_37, PY_37_MIN, PY_38
+from mashumaro.meta.macros import PEP_585_COMPATIBLE, PY_37, PY_37_MIN, PY_38
 from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
 from .entities import (
@@ -178,6 +180,42 @@ def test_type_name():
     assert type_name(None) == "None"
 
 
+@pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
+def test_type_name_pep_585():
+    assert type_name(list[str]) == "list[str]"
+    assert type_name(collections.deque[str]) == "collections.deque[str]"
+    assert type_name(tuple[str]) == "tuple[str]"
+    assert type_name(set[str]) == "set[str]"
+    assert type_name(frozenset[str]) == "frozenset[str]"
+    assert type_name(collections.abc.Set[str]) == "collections.abc.Set[str]"
+    assert (
+        type_name(collections.abc.MutableSet[str])
+        == "collections.abc.MutableSet[str]"
+    )
+    assert type_name(collections.Counter[str]) == "collections.Counter[str]"
+    assert (
+        type_name(collections.abc.Sequence[str])
+        == "collections.abc.Sequence[str]"
+    )
+    assert (
+        type_name(collections.abc.MutableSequence[str])
+        == "collections.abc.MutableSequence[str]"
+    )
+    assert (
+        type_name(collections.ChainMap[str, str])
+        == "collections.ChainMap[str, str]"
+    )
+    assert type_name(dict[str, str]) == "dict[str, str]"
+    assert (
+        type_name(collections.abc.Mapping[str, str])
+        == "collections.abc.Mapping[str, str]"
+    )
+    assert (
+        type_name(collections.OrderedDict[str, str])
+        == "collections.OrderedDict[str, str]"
+    )
+
+
 def test_type_name_short():
     assert type_name(TAny, short=True) == "Any"
     assert type_name(TInt, short=True) == "int"
@@ -214,6 +252,41 @@ def test_type_name_short():
         )
     assert type_name(typing.Optional[int], short=True) == "Optional[int]"
     assert type_name(None, short=True) == "None"
+
+
+@pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
+def test_type_name_pep_585_short():
+    assert type_name(list[str], short=True) == "list[str]"
+    assert type_name(collections.deque[str], short=True) == "deque[str]"
+    assert type_name(tuple[str], short=True) == "tuple[str]"
+    assert type_name(set[str], short=True) == "set[str]"
+    assert type_name(frozenset[str], short=True) == "frozenset[str]"
+    assert type_name(collections.abc.Set[str], short=True) == "Set[str]"
+    assert (
+        type_name(collections.abc.MutableSet[str], short=True)
+        == "MutableSet[str]"
+    )
+    assert type_name(collections.Counter[str], short=True) == "Counter[str]"
+    assert (
+        type_name(collections.abc.Sequence[str], short=True) == "Sequence[str]"
+    )
+    assert (
+        type_name(collections.abc.MutableSequence[str], short=True)
+        == "MutableSequence[str]"
+    )
+    assert (
+        type_name(collections.ChainMap[str, str], short=True)
+        == "ChainMap[str, str]"
+    )
+    assert type_name(dict[str, str], short=True) == "dict[str, str]"
+    assert (
+        type_name(collections.abc.Mapping[str, str], short=True)
+        == "Mapping[str, str]"
+    )
+    assert (
+        type_name(collections.OrderedDict[str, str], short=True)
+        == "OrderedDict[str, str]"
+    )
 
 
 def test_get_type_origin():
