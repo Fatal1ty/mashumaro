@@ -666,9 +666,17 @@ class CodeBuilder:
                 )
             elif issubclass(origin_type, str):
                 return overridden or value_name
+            elif issubclass(origin_type, typing.Tuple):
+                if is_generic(ftype):
+                    return overridden or self._pack_tuple(
+                        fname, value_name, args, parent, metadata
+                    )
+                elif ftype is tuple:
+                    raise UnserializableField(
+                        fname, ftype, parent, "Use typing.Tuple[T] instead"
+                    )
             elif issubclass(
-                origin_type,
-                (typing.List, typing.Deque, typing.Tuple, typing.AbstractSet),
+                origin_type, (typing.List, typing.Deque, typing.AbstractSet)
             ):
                 if is_generic(ftype):
                     return (
@@ -682,10 +690,6 @@ class CodeBuilder:
                 elif ftype is collections.deque:
                     raise UnserializableField(
                         fname, ftype, parent, "Use typing.Deque[T] instead"
-                    )
-                elif ftype is tuple:
-                    raise UnserializableField(
-                        fname, ftype, parent, "Use typing.Tuple[T] instead"
                     )
                 elif ftype is set:
                     raise UnserializableField(
@@ -707,7 +711,7 @@ class CodeBuilder:
                             overridden
                             or f'[{{{inner_expr(0,"key")}:{inner_expr(1)} '
                             f"for key,value in m.items()}} "
-                            f"for m in value.maps]"
+                            f"for m in {value_name}.maps]"
                         )
                 elif ftype is collections.ChainMap:
                     raise UnserializableField(
@@ -1042,9 +1046,8 @@ class CodeBuilder:
                     )
             elif issubclass(origin_type, typing.Tuple):
                 if is_generic(ftype):
-                    return (
-                        overridden
-                        or f"tuple([{inner_expr()} for value in {value_name}])"
+                    return overridden or self._unpack_tuple(
+                        fname, value_name, args, parent, metadata
                     )
                 elif ftype is tuple:
                     raise UnserializableField(
@@ -1263,6 +1266,60 @@ class CodeBuilder:
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
         return method_name
+
+    def _pack_tuple(self, fname, value_name, args, parent, metadata) -> str:
+        if not args:
+            args = [typing.Any, ...]
+        if len(args) == 1 and args[0] == ():
+            return "[]"
+        elif len(args) == 2 and args[1] is Ellipsis:
+            packer = self._pack_value(
+                fname,
+                args[0],
+                parent,
+                value_name,
+                metadata=metadata,
+            )
+            return f"[{packer} for value in value]"
+        else:
+            packers = [
+                self._pack_value(
+                    fname,
+                    arg_type,
+                    parent,
+                    f"{value_name}[{arg_idx}]",
+                    metadata=metadata,
+                )
+                for arg_idx, arg_type in enumerate(args)
+            ]
+            return f"[{', '.join(packers)}]"
+
+    def _unpack_tuple(self, fname, value_name, args, parent, metadata) -> str:
+        if not args:
+            args = [typing.Any, ...]
+        if len(args) == 1 and args[0] == ():
+            return "()"
+        elif len(args) == 2 and args[1] is Ellipsis:
+            unpacker = self._unpack_field_value(
+                fname,
+                args[0],
+                parent,
+                value_name,
+                metadata=metadata,
+            )
+            return f"tuple([{unpacker} for value in value])"
+        else:
+            unpackers = [
+                self._unpack_field_value(
+                    fname,
+                    arg_type,
+                    parent,
+                    f"{value_name}[{arg_idx}]",
+                    metadata=metadata,
+                )
+                for arg_idx, arg_type in enumerate(args)
+            ]
+            return f"tuple([{', '.join(unpackers)}])"
 
     @classmethod
     def _hash_arg_types(cls, arg_types) -> str:

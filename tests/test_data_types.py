@@ -95,7 +95,8 @@ class Fixture:
     FLOAT = 1.23
     BOOL = True
     LIST = [1, 2, 3]
-    TUPLE = (1, 2, 3)
+    TUPLE = (1,)
+    TUPLE_DUMPED = [1]
     DEQUE = collections.deque([1, 2, 3])
     SET = {1, 2, 3}
     FROZEN_SET = frozenset([1, 2, 3])
@@ -162,8 +163,8 @@ inner_values = [
     (List, Fixture.LIST, Fixture.LIST),
     (Deque[int], Fixture.DEQUE, Fixture.LIST),
     (Deque, Fixture.DEQUE, Fixture.LIST),
-    (Tuple[int], Fixture.TUPLE, Fixture.LIST),
-    (Tuple, Fixture.TUPLE, Fixture.LIST),
+    (Tuple[int], Fixture.TUPLE, Fixture.TUPLE_DUMPED),
+    (Tuple, Fixture.TUPLE, Fixture.TUPLE_DUMPED),
     (Set[int], Fixture.SET, Fixture.LIST),
     (Set, Fixture.SET, Fixture.LIST),
     (FrozenSet[int], Fixture.FROZEN_SET, Fixture.LIST),
@@ -255,8 +256,8 @@ if PEP_585_COMPATIBLE:
             (list, Fixture.LIST, Fixture.LIST),
             (collections.deque[int], Fixture.DEQUE, Fixture.LIST),
             (collections.deque, Fixture.DEQUE, Fixture.LIST),
-            (tuple[int], Fixture.TUPLE, Fixture.LIST),
-            (tuple, Fixture.TUPLE, Fixture.LIST),
+            (tuple[int], Fixture.TUPLE, Fixture.TUPLE_DUMPED),
+            (tuple, Fixture.TUPLE, Fixture.TUPLE_DUMPED),
             (set[int], Fixture.SET, Fixture.LIST),
             (set, Fixture.SET, Fixture.LIST),
             (frozenset[int], Fixture.FROZEN_SET, Fixture.LIST),
@@ -393,7 +394,7 @@ if PEP_585_COMPATIBLE:
 
 # noinspection PyCallingNonCallable
 def check_collection_generic(
-    type_, value_info, use_bytes, use_enum, use_datetime
+    type_, value_info, use_bytes, use_enum, use_datetime, x_values_number=3
 ):
     x_type, x_value, x_value_dumped = value_info
 
@@ -402,7 +403,7 @@ def check_collection_generic(
         x: type_[x_type]
 
     x_factory = x_factory_mapping[type_]
-    x = x_factory([x_value for _ in range(3)])
+    x = x_factory([x_value for _ in range(x_values_number)])
     instance = DataClass(x)
     if x_value_dumped is Fixture.BYTES:
         v_dumped = Fixture.BYTES if use_bytes else Fixture.BYTES_BASE64
@@ -416,7 +417,7 @@ def check_collection_generic(
         )
     else:
         v_dumped = x_value_dumped
-    dumped = {"x": list(x_factory([v_dumped for _ in range(3)]))}
+    dumped = {"x": list(x_factory([v_dumped for _ in range(x_values_number)]))}
     instance_dumped = instance.to_dict(
         use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
     )
@@ -595,7 +596,7 @@ def test_with_generic_deque(value_info, use_bytes, use_enum, use_datetime):
 @pytest.mark.parametrize("value_info", inner_values)
 def test_with_generic_tuple(value_info, use_bytes, use_enum, use_datetime):
     check_collection_generic(
-        Tuple, value_info, use_bytes, use_enum, use_datetime
+        Tuple, value_info, use_bytes, use_enum, use_datetime, 1
     )
 
 
@@ -1227,3 +1228,34 @@ def test_generic_serializable_type_dataclass():
     s_value = GenericSerializableTypeDataClass(a=9, b=9)
     assert DataClass.from_dict({"s": {"a": 10, "b": 10}}) == DataClass(s_value)
     assert DataClass(s_value).to_dict() == {"s": {"a": 10, "b": 10}}
+
+
+def test_with_different_tuples():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        a: Tuple
+        b: Tuple[()]
+        c: Tuple[int]
+        d: Tuple[int, float, int]
+        e: Tuple[int, ...]
+
+    obj = DataClass(a=(1, "2", 3.0), b=(), c=(1,), d=(1, 2.0, 3), e=(1, 2, 3))
+    assert (
+        DataClass.from_dict(
+            {
+                "a": [1, "2", 3.0],
+                "b": [1, 2, 3],
+                "c": [1, 2, 3],
+                "d": ["1", "2.0", "3"],
+                "e": [1, 2, 3],
+            }
+        )
+        == obj
+    )
+    assert obj.to_dict() == {
+        "a": [1, "2", 3.0],
+        "b": [],
+        "c": [1],
+        "d": [1, 2.0, 3],
+        "e": [1, 2, 3],
+    }
