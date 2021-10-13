@@ -10,6 +10,7 @@ from mashumaro.types import SerializationStrategy
 from .entities import (
     MyDataClassWithOptional,
     MyDataClassWithOptionalAndOmitNoneFlag,
+    TypedDictRequiredKeys,
 )
 
 
@@ -18,7 +19,8 @@ def test_debug_true_option(mocker):
 
     @dataclass
     class _(DataClassDictMixin):
-        x: Union[int, str]
+        union: Union[int, str]
+        typed_dict: TypedDictRequiredKeys
 
         class Config(BaseConfig):
             debug = True

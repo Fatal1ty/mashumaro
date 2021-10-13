@@ -48,6 +48,7 @@ from mashumaro.meta.helpers import (
     is_special_typing_primitive,
     is_type_var,
     is_type_var_any,
+    is_typed_dict,
     is_union,
     resolve_type_vars,
     type_name,
@@ -762,7 +763,18 @@ class CodeBuilder:
                         "Use typing.Counter[KT] instead",
                     )
             elif issubclass(origin_type, typing.Mapping):
-                if is_generic(ftype):
+                if is_typed_dict(ftype):
+                    if overridden:
+                        return overridden
+                    else:
+                        method_name = self._add_pack_typed_dict(
+                            fname, ftype, value_name, parent, metadata
+                        )
+                        return (
+                            f"self.{method_name}({value_name},"
+                            f"use_bytes,use_enum,use_datetime)"
+                        )
+                elif is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "Mappings with dataclasses as keys "
@@ -1140,7 +1152,18 @@ class CodeBuilder:
                         "Use typing.Counter[KT] instead",
                     )
             elif issubclass(origin_type, typing.Mapping):
-                if is_generic(ftype):
+                if is_typed_dict(ftype):
+                    if overridden:
+                        return overridden
+                    else:
+                        method_name = self._add_unpack_typed_dict(
+                            fname, ftype, value_name, parent, metadata
+                        )
+                        return (
+                            f"cls.{method_name}({value_name},"
+                            f"use_bytes,use_enum,use_datetime)"
+                        )
+                elif is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
                             "Mappings with dataclasses as keys "
@@ -1320,6 +1343,101 @@ class CodeBuilder:
                 for arg_idx, arg_type in enumerate(args)
             ]
             return f"tuple([{', '.join(unpackers)}])"
+
+    def _add_pack_typed_dict(
+        self, fname, ftype, value_name, parent, metadata
+    ) -> str:
+        annotations = ftype.__annotations__
+        all_keys = list(annotations.keys())
+        required_keys = getattr(ftype, "__required_keys__", all_keys)
+        optional_keys = getattr(ftype, "__optional_keys__", [])
+        lines = CodeLines()
+        method_name = (
+            f"__pack_typed_dict_{parent.__name__}_{fname}__"
+            f"{str(uuid.uuid4().hex)}"
+        )
+        lines.append(
+            f"def {method_name}"
+            f"(self,value, {self.get_to_dict_default_flag_values()}):"
+        )
+        with lines.indent():
+            lines.append("d = {}")
+            for key in sorted(required_keys, key=all_keys.index):
+                packer = self._pack_value(
+                    fname,
+                    annotations[key],
+                    parent,
+                    f"{value_name}['{key}']",
+                    metadata=metadata,
+                )
+                lines.append(f"d['{key}'] = {packer}")
+            for key in sorted(optional_keys, key=all_keys.index):
+                lines.append(f"key_value = {value_name}.get('{key}', MISSING)")
+                lines.append("if key_value is not MISSING:")
+                with lines.indent():
+                    packer = self._pack_value(
+                        fname,
+                        annotations[key],
+                        parent,
+                        "key_value",
+                        metadata=metadata,
+                    )
+                    lines.append(f"d['{key}'] = {packer}")
+            lines.append("return d")
+        lines.append(f"setattr(cls, '{method_name}', {method_name})")
+        if self.get_config().debug:
+            print(f"{type_name(self.cls)}:")
+            print(lines.as_text())
+        exec(lines.as_text(), self.globals, self.__dict__)
+        return method_name
+
+    def _add_unpack_typed_dict(
+        self, fname, ftype, value_name, parent, metadata
+    ) -> str:
+        annotations = ftype.__annotations__
+        all_keys = list(annotations.keys())
+        required_keys = getattr(ftype, "__required_keys__", all_keys)
+        optional_keys = getattr(ftype, "__optional_keys__", [])
+        lines = CodeLines()
+        method_name = (
+            f"__unpack_typed_dict_{parent.__name__}_{fname}__"
+            f"{str(uuid.uuid4().hex)}"
+        )
+        lines.append("@classmethod")
+        lines.append(
+            f"def {method_name}"
+            f"(cls,value,use_bytes=False,use_enum=False,use_datetime=False):"
+        )
+        with lines.indent():
+            lines.append("d = {}")
+            for key in sorted(required_keys, key=all_keys.index):
+                unpacker = self._unpack_field_value(
+                    fname,
+                    annotations[key],
+                    parent,
+                    f"{value_name}['{key}']",
+                    metadata=metadata,
+                )
+                lines.append(f"d['{key}'] = {unpacker}")
+            for key in sorted(optional_keys, key=all_keys.index):
+                lines.append(f"key_value = {value_name}.get('{key}', MISSING)")
+                lines.append("if key_value is not MISSING:")
+                with lines.indent():
+                    unpacker = self._unpack_field_value(
+                        fname,
+                        annotations[key],
+                        parent,
+                        "key_value",
+                        metadata=metadata,
+                    )
+                    lines.append(f"d['{key}'] = {unpacker}")
+            lines.append("return d")
+        lines.append(f"setattr(cls, '{method_name}', {method_name})")
+        if self.get_config().debug:
+            print(f"{type_name(self.cls)}:")
+            print(lines.as_text())
+        exec(lines.as_text(), self.globals, self.__dict__)
+        return method_name
 
     @classmethod
     def _hash_arg_types(cls, arg_types) -> str:

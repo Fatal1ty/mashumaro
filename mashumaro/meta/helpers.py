@@ -7,6 +7,8 @@ from contextlib import suppress
 # noinspection PyProtectedMember
 from dataclasses import _FIELDS  # type: ignore
 
+import typing_extensions
+
 from .macros import PY_36, PY_37, PY_37_MIN, PY_38, PY_38_MIN, PY_39_MIN
 
 DataClassDictMixinPath = "mashumaro.serializer.base.dict.DataClassDictMixin"
@@ -150,6 +152,14 @@ def is_generic(t):
         raise NotImplementedError
 
 
+def is_typed_dict(t):
+    for module in (typing, typing_extensions):
+        with suppress(AttributeError):
+            if type(t) is getattr(module, "_TypedDictMeta"):
+                return True
+    return False
+
+
 def is_union(t):
     try:
         return t.__origin__ is typing.Union
@@ -278,6 +288,7 @@ __all__ = [
     "type_name",
     "is_special_typing_primitive",
     "is_generic",
+    "is_typed_dict",
     "is_optional",
     "is_union",
     "is_type_var",

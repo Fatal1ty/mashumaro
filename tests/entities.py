@@ -3,6 +3,8 @@ from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
 from typing import Any, Generic, List, Optional, TypeVar, Union
 
+from typing_extensions import TypedDict
+
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
 from mashumaro.types import GenericSerializableType, SerializableType
@@ -173,3 +175,17 @@ class MyGenericList(List[T]):
 
 
 TMyDataClass = TypeVar("TMyDataClass", bound=MyDataClass)
+
+
+class TypedDictRequiredKeys(TypedDict):
+    int: int
+    float: float
+
+
+class TypedDictOptionalKeys(TypedDict, total=False):
+    int: int
+    float: float
+
+
+class TypedDictRequiredAndOptionalKeys(TypedDictRequiredKeys, total=False):
+    str: str

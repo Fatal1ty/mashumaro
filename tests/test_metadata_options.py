@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timezone
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import ciso8601
 import pytest
@@ -10,7 +10,12 @@ from mashumaro import DataClassDictMixin
 from mashumaro.exceptions import UnserializableField
 from mashumaro.types import SerializationStrategy
 
-from .entities import MutableString, MyList, ThirdPartyType
+from .entities import (
+    MutableString,
+    MyList,
+    ThirdPartyType,
+    TypedDictRequiredKeys,
+)
 
 
 def test_ciso8601_datetime_parser():
@@ -306,7 +311,25 @@ def test_collection_derived_custom_class():
             metadata={"serialize": lambda v: v, "deserialize": lambda v: v}
         )
 
-    DataClass.from_dict({"x": [1, 2, 3]}) == DataClass([1, 2, 3])
     instance = DataClass(x=[1, 2, 3])
     assert DataClass.from_dict({"x": [1, 2, 3]}) == instance
     assert instance.to_dict() == {"x": [1, 2, 3]}
+
+
+def test_dataclass_with_typed_dict_overridden():
+    def serialize_x(x: TypedDictRequiredKeys) -> Dict[str, Any]:
+        return {"int": int(x["int"]), "float": float(x["float"])}
+
+    def deserialize_x(x: Dict[str, Any]) -> TypedDictRequiredKeys:
+        return TypedDictRequiredKeys(int=x["int"], float=x["float"])
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: TypedDictRequiredKeys = field(
+            metadata={"serialize": serialize_x, "deserialize": deserialize_x}
+        )
+
+    obj = DataClass(x=TypedDictRequiredKeys(int=1, float=2.0))
+    data = {"x": {"int": 1, "float": 2.0}}
+    assert DataClass.from_dict(data) == obj
+    assert obj.to_dict() == data

@@ -80,6 +80,9 @@ from .entities import (
     TInt,
     TIntStr,
     TMyDataClass,
+    TypedDictOptionalKeys,
+    TypedDictRequiredAndOptionalKeys,
+    TypedDictRequiredKeys,
 )
 from .utils import same_types
 
@@ -1230,7 +1233,7 @@ def test_generic_serializable_type_dataclass():
     assert DataClass(s_value).to_dict() == {"s": {"a": 10, "b": 10}}
 
 
-def test_with_different_tuples():
+def test_dataclass_with_different_tuples():
     @dataclass
     class DataClass(DataClassDictMixin):
         a: Tuple
@@ -1258,4 +1261,67 @@ def test_with_different_tuples():
         "c": [1],
         "d": [1, 2.0, 3],
         "e": [1, 2, 3],
+    }
+
+
+def test_dataclass_with_typed_dict_required_keys():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: TypedDictRequiredKeys
+
+    for data in ({}, {"int": 1}, {"float": 1.0}):
+        with pytest.raises(InvalidFieldValue):
+            DataClass.from_dict({"x": data})
+
+    obj = DataClass(x={"int": 1, "float": 2.0})
+    assert (
+        DataClass.from_dict({"x": {"int": "1", "float": "2.0", "str": "str"}})
+        == obj
+    )
+    assert obj.to_dict() == {"x": {"int": 1, "float": 2.0}}
+
+
+def test_dataclass_with_typed_dict_optional_keys():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: TypedDictOptionalKeys
+
+    for data in ({}, {"int": 1}, {"float": 1.0}):
+        assert DataClass.from_dict({"x": data}) == DataClass(x=data)
+
+    obj = DataClass(x={"int": 1, "float": 2.0})
+    assert (
+        DataClass.from_dict({"x": {"int": "1", "float": "2.0", "str": "str"}})
+        == obj
+    )
+    assert obj.to_dict() == {"x": {"int": 1, "float": 2.0}}
+
+
+def test_dataclass_with_typed_dict_required_and_optional_keys():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: TypedDictRequiredAndOptionalKeys
+
+    for data in (
+        {},
+        {"str": "str"},
+        {"int": 1},
+        {"float": 1.0},
+        {"int": 1, "str": "str"},
+        {"float": 1.0, "str": "str"},
+    ):
+        with pytest.raises(InvalidFieldValue):
+            DataClass.from_dict({"x": data})
+
+    assert DataClass.from_dict(
+        {"x": {"int": "1", "float": "2.0", "unknown": "unknown"}}
+    ) == DataClass(x={"int": 1, "float": 2.0})
+    assert DataClass.from_dict(
+        {"x": {"int": "1", "float": "2.0", "str": "str"}}
+    ) == DataClass(x={"int": 1, "float": 2.0, "str": "str"})
+    assert DataClass(x={"int": 1, "float": 2.0}).to_dict() == {
+        "x": {"int": 1, "float": 2.0}
+    }
+    assert DataClass(x={"int": 1, "float": 2.0, "str": "str"}).to_dict() == {
+        "x": {"int": 1, "float": 2.0, "str": "str"}
     }
