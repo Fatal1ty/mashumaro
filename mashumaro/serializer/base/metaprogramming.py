@@ -44,6 +44,7 @@ from mashumaro.meta.helpers import (
     is_dataclass_dict_mixin_subclass,
     is_generic,
     is_init_var,
+    is_named_tuple,
     is_optional,
     is_special_typing_primitive,
     is_type_var,
@@ -668,7 +669,11 @@ class CodeBuilder:
             elif issubclass(origin_type, str):
                 return overridden or value_name
             elif issubclass(origin_type, typing.Tuple):
-                if is_generic(ftype):
+                if is_named_tuple(ftype):
+                    return overridden or self._pack_named_tuple(
+                        fname, ftype, value_name, parent, metadata
+                    )
+                elif is_generic(ftype):
                     return overridden or self._pack_tuple(
                         fname, value_name, args, parent, metadata
                     )
@@ -1057,7 +1062,11 @@ class CodeBuilder:
                         fname, ftype, parent, "Use typing.Deque[T] instead"
                     )
             elif issubclass(origin_type, typing.Tuple):
-                if is_generic(ftype):
+                if is_named_tuple(ftype):
+                    return overridden or self._unpack_named_tuple(
+                        fname, ftype, value_name, parent, metadata
+                    )
+                elif is_generic(ftype):
                     return overridden or self._unpack_tuple(
                         fname, value_name, args, parent, metadata
                     )
@@ -1438,6 +1447,72 @@ class CodeBuilder:
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
         return method_name
+
+    def _pack_named_tuple(
+        self, fname, ftype, value_name, parent, metadata
+    ) -> str:
+        annotations = getattr(ftype, "__annotations__", {})
+        fields = getattr(ftype, "_fields", ())
+        packers = []
+        for idx, field in enumerate(fields):
+            packer = self._pack_value(
+                fname,
+                annotations.get(field, typing.Any),
+                parent,
+                f"{value_name}[{idx}]",
+                metadata=metadata,
+            )
+            packers.append(packer)
+        return f"[{', '.join(packers)}]"
+
+    def _unpack_named_tuple(
+        self, fname, ftype, value_name, parent, metadata
+    ) -> str:
+        annotations = getattr(ftype, "__annotations__", {})
+        fields = getattr(ftype, "_fields", ())
+        defaults = getattr(ftype, "_field_defaults", {})
+        unpackers = []
+        for idx, field in enumerate(fields):
+            unpacker = self._unpack_field_value(
+                fname,
+                annotations.get(field, typing.Any),
+                parent,
+                f"{value_name}[{idx}]",
+                metadata=metadata,
+            )
+            unpackers.append(unpacker)
+
+        if not defaults:
+            return f"{type_name(ftype)}({', '.join(unpackers)})"
+
+        lines = CodeLines()
+        method_name = (
+            f"__unpack_named_tuple_{parent.__name__}_{fname}__"
+            f"{str(uuid.uuid4().hex)}"
+        )
+        lines.append("@classmethod")
+        lines.append(
+            f"def {method_name}"
+            f"(cls,value,use_bytes=False,use_enum=False,use_datetime=False):"
+        )
+        with lines.indent():
+            lines.append("fields = []")
+            lines.append("try:")
+            with lines.indent():
+                for unpacker in unpackers:
+                    lines.append(f"fields.append({unpacker})")
+            lines.append("except IndexError:")
+            with lines.indent():
+                lines.append("pass")
+            lines.append(f"return {type_name(ftype)}(*fields)")
+        lines.append(f"setattr(cls, '{method_name}', {method_name})")
+        if self.get_config().debug:
+            print(f"{type_name(self.cls)}:")
+            print(lines.as_text())
+        exec(lines.as_text(), self.globals, self.__dict__)
+        return (
+            f"cls.{method_name}({value_name},use_bytes,use_enum,use_datetime)"
+        )
 
     @classmethod
     def _hash_arg_types(cls, arg_types) -> str:

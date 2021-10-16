@@ -72,7 +72,11 @@ from .entities import (
     MyFlag,
     MyIntEnum,
     MyIntFlag,
+    MyNamedTuple,
+    MyNamedTupleWithDefaults,
     MyStrEnum,
+    MyUntypedNamedTuple,
+    MyUntypedNamedTupleWithDefaults,
     SerializableTypeDataClass,
     T,
     T_Optional_int,
@@ -1325,3 +1329,43 @@ def test_dataclass_with_typed_dict_required_and_optional_keys():
     assert DataClass(x={"int": 1, "float": 2.0, "str": "str"}).to_dict() == {
         "x": {"int": 1, "float": 2.0, "str": "str"}
     }
+
+
+def test_dataclass_with_named_tuple():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MyNamedTuple
+
+    obj = DataClass(x=MyNamedTuple(1, 2.0))
+    assert DataClass.from_dict({"x": ["1", "2.0"]}) == obj
+    assert obj.to_dict() == {"x": [1, 2.0]}
+
+
+def test_dataclass_with_named_tuple_with_defaults():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MyNamedTupleWithDefaults
+
+    obj = DataClass(x=MyNamedTupleWithDefaults())
+    assert DataClass.from_dict({"x": ["1"]}) == obj
+    assert obj.to_dict() == {"x": [1, 2.0]}
+
+
+def test_dataclass_with_untyped_named_tuple():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MyUntypedNamedTuple
+
+    obj = DataClass(x=MyUntypedNamedTuple("1", "2.0"))
+    assert DataClass.from_dict({"x": ["1", "2.0"]}) == obj
+    assert obj.to_dict() == {"x": ["1", "2.0"]}
+
+
+def test_dataclass_with_untyped_named_tuple_with_defaults():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MyUntypedNamedTupleWithDefaults
+
+    obj = DataClass(x=MyUntypedNamedTupleWithDefaults(i="1"))
+    assert DataClass.from_dict({"x": ["1"]}) == obj
+    assert obj.to_dict() == {"x": ["1", 2.0]}

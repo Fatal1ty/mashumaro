@@ -77,6 +77,7 @@ Supported field types
 There is support for generic types from the standard [`typing`](https://docs.python.org/3/library/typing.html) module:
 * [`List`](https://docs.python.org/3/library/typing.html#typing.List)
 * [`Tuple`](https://docs.python.org/3/library/typing.html#typing.Tuple)
+* [`NamedTuple`](https://docs.python.org/3/library/typing.html#typing.NamedTuple)
 * [`Set`](https://docs.python.org/3/library/typing.html#typing.Set)
 * [`FrozenSet`](https://docs.python.org/3/library/typing.html#typing.FrozenSet)
 * [`Deque`](https://docs.python.org/3/library/typing.html#typing.Deque)
@@ -92,6 +93,7 @@ There is support for generic types from the standard [`typing`](https://docs.pyt
 for standard generic types on [PEP 585](https://www.python.org/dev/peps/pep-0585/) compatible Python (3.9+):
 * [`list`](https://docs.python.org/3/library/stdtypes.html#list)
 * [`tuple`](https://docs.python.org/3/library/stdtypes.html#tuple)
+* [`namedtuple`](https://docs.python.org/3/library/collections.html#collections.namedtuple)
 * [`set`](https://docs.python.org/3/library/stdtypes.html#set)
 * [`frozenset`](https://docs.python.org/3/library/stdtypes.html#frozenset)
 * [`collections.abc.Set`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Set)

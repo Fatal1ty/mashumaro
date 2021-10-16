@@ -160,6 +160,10 @@ def is_typed_dict(t):
     return False
 
 
+def is_named_tuple(t):
+    return issubclass(t, typing.Tuple) and hasattr(t, "_fields")
+
+
 def is_union(t):
     try:
         return t.__origin__ is typing.Union
@@ -289,6 +293,7 @@ __all__ = [
     "is_special_typing_primitive",
     "is_generic",
     "is_typed_dict",
+    "is_named_tuple",
     "is_optional",
     "is_union",
     "is_type_var",

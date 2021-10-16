@@ -1,7 +1,8 @@
+from collections import namedtuple
 from dataclasses import dataclass
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
-from typing import Any, Generic, List, Optional, TypeVar, Union
+from typing import Any, Generic, List, NamedTuple, Optional, TypeVar, Union
 
 from typing_extensions import TypedDict
 
@@ -189,3 +190,23 @@ class TypedDictOptionalKeys(TypedDict, total=False):
 
 class TypedDictRequiredAndOptionalKeys(TypedDictRequiredKeys, total=False):
     str: str
+
+
+class MyNamedTuple(NamedTuple):
+    i: int
+    f: float
+
+
+class MyNamedTupleWithDefaults(NamedTuple):
+    i: int = 1
+    f: float = 2.0
+
+
+MyUntypedNamedTuple = namedtuple("MyUntypedNamedTuple", ("i", "f"))
+
+
+MyUntypedNamedTupleWithDefaults = namedtuple(
+    "MyUntypedNamedTupleWithDefaults",
+    ("i", "f"),
+    defaults=(1, 2.0),
+)
