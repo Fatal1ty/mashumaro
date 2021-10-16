@@ -161,7 +161,10 @@ def is_typed_dict(t):
 
 
 def is_named_tuple(t):
-    return issubclass(t, typing.Tuple) and hasattr(t, "_fields")
+    try:
+        return issubclass(t, typing.Tuple) and hasattr(t, "_fields")
+    except TypeError:
+        return False
 
 
 def is_union(t):
