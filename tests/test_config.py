@@ -10,6 +10,7 @@ from mashumaro.types import SerializationStrategy
 from .entities import (
     MyDataClassWithOptional,
     MyDataClassWithOptionalAndOmitNoneFlag,
+    MyNamedTupleWithDefaults,
     TypedDictRequiredKeys,
 )
 
@@ -21,6 +22,7 @@ def test_debug_true_option(mocker):
     class _(DataClassDictMixin):
         union: Union[int, str]
         typed_dict: TypedDictRequiredKeys
+        named_tuple: MyNamedTupleWithDefaults
 
         class Config(BaseConfig):
             debug = True
