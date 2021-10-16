@@ -52,7 +52,7 @@ from mashumaro.exceptions import (
     UnserializableDataError,
     UnserializableField,
 )
-from mashumaro.meta.macros import PEP_585_COMPATIBLE
+from mashumaro.meta.macros import PEP_585_COMPATIBLE, PY_37_MIN
 from mashumaro.types import (
     GenericSerializableType,
     RoundedDecimal,
@@ -76,7 +76,6 @@ from .entities import (
     MyNamedTupleWithDefaults,
     MyStrEnum,
     MyUntypedNamedTuple,
-    MyUntypedNamedTupleWithDefaults,
     SerializableTypeDataClass,
     T,
     T_Optional_int,
@@ -89,6 +88,9 @@ from .entities import (
     TypedDictRequiredKeys,
 )
 from .utils import same_types
+
+if PY_37_MIN:
+    from tests.entities import MyUntypedNamedTupleWithDefaults
 
 NoneType = type(None)
 
@@ -1361,6 +1363,7 @@ def test_dataclass_with_untyped_named_tuple():
     assert obj.to_dict() == {"x": ["1", "2.0"]}
 
 
+@pytest.mark.skipif(not PY_37_MIN, reason="requires python>=3.7")
 def test_dataclass_with_untyped_named_tuple_with_defaults():
     @dataclass
     class DataClass(DataClassDictMixin):
