@@ -1454,6 +1454,7 @@ class CodeBuilder:
         annotations = getattr(ftype, "__annotations__", {})
         fields = getattr(ftype, "_fields", ())
         packers = []
+        as_dict = self.get_config().namedtuple_as_dict
         for idx, field in enumerate(fields):
             packer = self._pack_value(
                 fname,
@@ -1463,7 +1464,11 @@ class CodeBuilder:
                 metadata=metadata,
             )
             packers.append(packer)
-        return f"[{', '.join(packers)}]"
+        if as_dict:
+            kv = (f"'{key}': {value}" for key, value in zip(fields, packers))
+            return f"{{{', '.join(kv)}}}"
+        else:
+            return f"[{', '.join(packers)}]"
 
     def _unpack_named_tuple(
         self, fname, ftype, value_name, parent, metadata
@@ -1472,7 +1477,12 @@ class CodeBuilder:
         fields = getattr(ftype, "_fields", ())
         defaults = getattr(ftype, "_field_defaults", {})
         unpackers = []
-        for idx, field in enumerate(fields):
+        as_dict = self.get_config().namedtuple_as_dict
+        if as_dict:
+            field_indices = zip((f"'{name}'" for name in fields), fields)
+        else:
+            field_indices = enumerate(fields)
+        for idx, field in field_indices:
             unpacker = self._unpack_field_value(
                 fname,
                 annotations.get(field, typing.Any),

@@ -17,3 +17,4 @@ class BaseConfig:
     serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
     aliases: Dict[str, str] = {}
     serialize_by_alias: bool = False
+    namedtuple_as_dict: bool = False
