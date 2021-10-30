@@ -1503,7 +1503,7 @@ class CodeBuilder:
         if as_dict:
             field_indices = zip((f"'{name}'" for name in fields), fields)
         else:
-            field_indices = enumerate(fields)
+            field_indices = enumerate(fields)  # type: ignore
         for idx, field in field_indices:
             unpacker = self._unpack_field_value(
                 fname,
