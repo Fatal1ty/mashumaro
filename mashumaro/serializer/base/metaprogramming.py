@@ -33,6 +33,8 @@ from mashumaro.exceptions import (  # noqa
     ThirdPartyModuleNotFoundError,
     UnserializableDataError,
     UnserializableField,
+    UnsupportedDeserializationEngine,
+    UnsupportedSerializationEngine,
 )
 from mashumaro.meta.helpers import (
     get_args,
@@ -671,7 +673,12 @@ class CodeBuilder:
             elif issubclass(origin_type, typing.Tuple):
                 if is_named_tuple(ftype):
                     return overridden or self._pack_named_tuple(
-                        fname, ftype, value_name, parent, metadata
+                        fname,
+                        ftype,
+                        value_name,
+                        parent,
+                        metadata,
+                        serialize_option,
                     )
                 elif is_generic(ftype):
                     return overridden or self._pack_tuple(
@@ -958,12 +965,8 @@ class CodeBuilder:
                             "pendulum", fname, parent
                         )  # pragma no cover
                 else:
-                    raise UnserializableField(
-                        fname,
-                        ftype,
-                        parent,
-                        f"Unsupported deserialization engine "
-                        f'"{deserialize_option}"',
+                    raise UnsupportedDeserializationEngine(
+                        fname, ftype, parent, deserialize_option
                     )
                 suffix = ""
                 if origin_type is datetime.date:
@@ -1064,7 +1067,12 @@ class CodeBuilder:
             elif issubclass(origin_type, typing.Tuple):
                 if is_named_tuple(ftype):
                     return overridden or self._unpack_named_tuple(
-                        fname, ftype, value_name, parent, metadata
+                        fname,
+                        ftype,
+                        value_name,
+                        parent,
+                        metadata,
+                        deserialize_option,
                     )
                 elif is_generic(ftype):
                     return overridden or self._unpack_tuple(
@@ -1449,12 +1457,19 @@ class CodeBuilder:
         return method_name
 
     def _pack_named_tuple(
-        self, fname, ftype, value_name, parent, metadata
+        self, fname, ftype, value_name, parent, metadata, serialize_option
     ) -> str:
         annotations = getattr(ftype, "__annotations__", {})
         fields = getattr(ftype, "_fields", ())
         packers = []
         as_dict = self.get_config().namedtuple_as_dict
+        if serialize_option is not None:
+            if serialize_option == "as_dict":
+                as_dict = True
+            else:
+                raise UnsupportedSerializationEngine(
+                    fname, ftype, parent, serialize_option
+                )
         for idx, field in enumerate(fields):
             packer = self._pack_value(
                 fname,
@@ -1471,13 +1486,20 @@ class CodeBuilder:
             return f"[{', '.join(packers)}]"
 
     def _unpack_named_tuple(
-        self, fname, ftype, value_name, parent, metadata
+        self, fname, ftype, value_name, parent, metadata, deserialize_option
     ) -> str:
         annotations = getattr(ftype, "__annotations__", {})
         fields = getattr(ftype, "_fields", ())
         defaults = getattr(ftype, "_field_defaults", {})
         unpackers = []
         as_dict = self.get_config().namedtuple_as_dict
+        if deserialize_option is not None:
+            if deserialize_option == "as_dict":
+                as_dict = True
+            else:
+                raise UnsupportedDeserializationEngine(
+                    fname, ftype, parent, deserialize_option
+                )
         if as_dict:
             field_indices = zip((f"'{name}'" for name in fields), fields)
         else:

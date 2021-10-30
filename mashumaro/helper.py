@@ -1,11 +1,16 @@
 from typing import Any, Callable, Optional, Union
 
 from mashumaro.types import SerializationStrategy
+from mashumaro.typing import AnyDeserializationEngine, AnySerializationEngine
 
 
 def field_options(
-    serialize: Optional[Callable[[Any], Any]] = None,
-    deserialize: Optional[Union[str, Callable[[Any], Any]]] = None,
+    serialize: Optional[
+        Union[AnySerializationEngine, Callable[[Any], Any]]
+    ] = None,
+    deserialize: Optional[
+        Union[AnyDeserializationEngine, Callable[[Any], Any]]
+    ] = None,
     serialization_strategy: Optional[SerializationStrategy] = None,
     alias: Optional[str] = None,
 ):
