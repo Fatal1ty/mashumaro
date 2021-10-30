@@ -166,38 +166,43 @@ Usage example
 
 ```python
 from enum import Enum
-from typing import Set
+from typing import List
 from dataclasses import dataclass
 from mashumaro import DataClassJSONMixin
 
-class PetType(Enum):
-    CAT = 'CAT'
-    MOUSE = 'MOUSE'
-
-@dataclass(unsafe_hash=True)
-class Pet(DataClassJSONMixin):
-    name: str
-    age: int
-    pet_type: PetType
+class Currency(Enum):
+    USD = "USD"
+    EUR = "EUR"
 
 @dataclass
-class Person(DataClassJSONMixin):
-    first_name: str
-    second_name: str
-    age: int
-    pets: Set[Pet]
+class CurrencyPosition(DataClassJSONMixin):
+    currency: Currency
+    balance: float
 
+@dataclass
+class StockPosition(DataClassJSONMixin):
+    ticker: str
+    name: str
+    balance: int
 
-tom = Pet(name='Tom', age=5, pet_type=PetType.CAT)
-jerry = Pet(name='Jerry', age=3, pet_type=PetType.MOUSE)
-john = Person(first_name='John', second_name='Smith', age=18, pets={tom, jerry})
+@dataclass
+class Portfolio(DataClassJSONMixin):
+    currencies: List[CurrencyPosition]
+    stocks: List[StockPosition]
 
-dump = john.to_json()
-person = Person.from_json(dump)
-# person == john
+my_portfolio = Portfolio(
+    currencies=[
+        CurrencyPosition(Currency.USD, 238.67),
+        CurrencyPosition(Currency.EUR, 361.84),
+    ],
+    stocks=[
+        StockPosition("AAPL", "Apple", 10),
+        StockPosition("AMZN", "Amazon", 10),
+    ]
+)
 
-Pet.from_json('{"name": "Tom", "age": 5, "pet_type": "CAT"}')
-# Pet(name='Tom', age=5, pet_type=<PetType.CAT: 'CAT'>)
+json_string = my_portfolio.to_json()
+Portfolio.from_json(json_string)  # same as my_portfolio
 ```
 
 How does it work?
