@@ -1,10 +1,11 @@
 from typing import Any, Callable, Dict, List, Union
 
+from mashumaro.meta.macros import PY_38_MIN
 from mashumaro.types import SerializationStrategy
 
-try:
-    from typing import Literal  # type: ignore
-except ImportError:
+if PY_38_MIN:
+    from typing import Literal
+else:
     from typing_extensions import Literal  # type: ignore
 
 

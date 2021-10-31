@@ -1,6 +1,8 @@
-try:
-    from typing import Literal  # type: ignore
-except ImportError:
+from mashumaro.meta.macros import PY_38_MIN
+
+if PY_38_MIN:
+    from typing import Literal
+else:
     from typing_extensions import Literal  # type: ignore
 
 
