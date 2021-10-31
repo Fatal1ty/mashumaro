@@ -182,6 +182,7 @@ def test_named_tuple_as_dict():
     assert DataClass.from_dict(obj_dict) == obj
 
 
+@pytest.mark.skipif(not PY_37_MIN, reason="requires python>=3.7")
 def test_untyped_named_tuple_with_defaults_as_dict():
     @dataclass
     class DataClass(DataClassDictMixin):
