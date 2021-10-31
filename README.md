@@ -36,6 +36,7 @@ Table of contents
         * [`serialization_strategy` config option](#serialization_strategy-config-option)
         * [`aliases` config option](#aliases-config-option)
         * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
+        * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
     * [Code generation options](#code-generation-options)
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
         * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
@@ -444,14 +445,34 @@ to use in `metadata` mapping.
 
 #### `serialize` option
 
-This option allows you to change the serialization method through
-a value of type `Callable[[Any], Any]` that could be any callable object like
-a function, a class method, a class instance method, an instance of a callable
-class or even a lambda function.
+This option allows you to change the serialization method. When using
+this option, the serialization behaviour depends on what type of value the
+option has. It could be either `Callable[[Any], Any]` or `str`.
+
+A value of type `Callable[[Any], Any]` is a generic way to specify any callable
+object like a function, a class method, a class instance method, an instance
+of a callable class or even a lambda function to be called for serialization.
+
+A value of type `str` sets a specific engine for serialization. Keep in mind
+that all possible engines depend on the field type that this option is used
+with. At this moment there are next serialization engines to choose from:
+
+| Applicable field types     | Supported engines        | Description
+|:-------------------------- |:-------------------------|:------------------------------|
+| `NamedTuple`, `namedtuple` | `as_list`, `as_dict`     | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine.
 
 Example:
 
 ```python
+from datetime import datetime
+from dataclasses import dataclass, field
+from typing import NamedTuple
+from mashumaro import DataClassDictMixin
+
+class MyNamedTuple(NamedTuple):
+    x: int
+    y: float
+
 @dataclass
 class A(DataClassDictMixin):
     dt: datetime = field(
@@ -459,6 +480,7 @@ class A(DataClassDictMixin):
             "serialize": lambda v: v.strftime('%Y-%m-%d %H:%M:%S')
         }
     )
+    t: MyNamedTuple = field(metadata={"serialize": "as_dict"})
 ```
 
 #### `deserialize` option
@@ -478,16 +500,21 @@ with. At this moment there are next deserialization engines to choose from:
 | Applicable field types     | Supported engines        | Description
 |:-------------------------- |:-------------------------|:------------------------------|
 | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
+| `NamedTuple`, `namedtuple` | `as_list`, `as_dict`     | How to unpack named tuples. By default `as_list` engine is used that means your named tuple class instance will be created from a list of its values. You can unpack it from a dictionary using `as_dict` engine.
 
 Example:
 
 ```python
 from datetime import datetime
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, NamedTuple
 from mashumaro import DataClassDictMixin
 import ciso8601
 import dateutil
+
+class MyNamedTuple(NamedTuple):
+    x: int
+    y: float
 
 @dataclass
 class A(DataClassDictMixin):
@@ -507,6 +534,10 @@ class C(DataClassDictMixin):
             "deserialize": lambda l: list(map(dateutil.parser.isoparse, l))
         }
     )
+
+@dataclass
+class D(DataClassDictMixin):
+    x: MyNamedTuple = field(metadata={"deserialize": "as_dict"})
 ```
 
 #### `serialization_strategy` option
@@ -757,6 +788,64 @@ class DataClass(DataClassDictMixin):
 
 DataClass(field_a=1).to_dict()  # {'FieldA': 1}
 ```
+
+#### `namedtuple_as_dict` config option
+
+Dataclasses are a great way to declare and use data models. But it's not the only way.
+Python has a typed version of [namedtuple](https://docs.python.org/3/library/collections.html#collections.namedtuple)
+called [NamedTuple](https://docs.python.org/3/library/typing.html#typing.NamedTuple)
+which looks similar to dataclasses:
+
+```python
+from typing import NamedTuple
+
+class Point(NamedTuple):
+    x: int
+    y: int
+```
+
+the same with a dataclass will look like this:
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class Point:
+    x: int
+    y: int
+```
+
+At first glance, you can use both options. But imagine that you need to create
+a bunch of instances of the `Point` class. Due to how dataclasses work you will
+have more memory consumption compared to named tuples. In such a case it could
+be more appropriate to use named tuples.
+
+By default, all named tuples are packed into lists. But with `namedtuple_as_dict`
+option you have a drop-in replacement for dataclasses:
+
+```python
+from dataclasses import dataclass
+from typing import List, NamedTuple
+from mashumaro import DataClassDictMixin
+
+class Point(NamedTuple):
+    x: int
+    y: int
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    points: List[Point]
+
+    class Config:
+        namedtuple_as_dict = True
+
+obj = DataClass.from_dict({"points": [{"x": 0, "y": 0}, {"x": 1, "y": 1}]})
+print(obj.to_dict())  # {"points": [{"x": 0, "y": 0}, {"x": 1, "y": 1}]}
+```
+
+If you want to serialize only certain named tuple fields as dictionaries, you
+can use the corresponding [serialization](#serialize-option) and
+[deserialization](#deserialize-option) engines.
 
 ### Code generation options
 
