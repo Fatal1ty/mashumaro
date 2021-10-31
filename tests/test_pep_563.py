@@ -38,6 +38,7 @@ def test_unresolved_type_with_allowed_postponed_annotation_evaluation():
 
 def test_unresolved_type_with_disallowed_postponed_annotation_evaluation():
     with pytest.raises(UnresolvedTypeReferenceError):
+
         @dataclass
         class DataClass(DataClassDictMixin):
             x: X

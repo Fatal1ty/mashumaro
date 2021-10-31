@@ -304,7 +304,7 @@ def get_name_error_name(e: NameError) -> str:
         return e.name  # type: ignore
     else:
         match = re.search("'(.*)'", e.args[0])
-        return match.group(1) if match else ''
+        return match.group(1) if match else ""
 
 
 __all__ = [
