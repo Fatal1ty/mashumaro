@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List, Union
 from mashumaro.types import SerializationStrategy
 
 try:
-    from typing import Literal
+    from typing import Literal  # type: ignore
 except ImportError:
     from typing_extensions import Literal  # type: ignore
 
@@ -25,7 +25,7 @@ SerializationStrategyValueType = Union[
 
 class BaseConfig:
     debug: bool = False
-    code_generation_options: List[CodeGenerationOption] = []
+    code_generation_options: List[CodeGenerationOption] = []  # type: ignore
     serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
     aliases: Dict[str, str] = {}
     serialize_by_alias: bool = False

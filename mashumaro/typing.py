@@ -1,14 +1,12 @@
-from typing import Union
-
 try:
-    from typing import Literal
+    from typing import Literal  # type: ignore
 except ImportError:
     from typing_extensions import Literal  # type: ignore
 
 
 NamedTupleDeserializationEngine = Literal["as_dict"]
 DateTimeDeserializationEngine = Literal["ciso8601", "pendulum"]
-AnyDeserializationEngine = Union[
+AnyDeserializationEngine = Literal[
     NamedTupleDeserializationEngine, DateTimeDeserializationEngine
 ]
 
