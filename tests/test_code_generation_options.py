@@ -1,7 +1,7 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
-from mashumaro import DataClassDictMixin, field_options
+from mashumaro import DataClassDictMixin
 from mashumaro.config import (
     TO_DICT_ADD_BY_ALIAS_FLAG,
     TO_DICT_ADD_OMIT_NONE_FLAG,

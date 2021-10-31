@@ -5,6 +5,8 @@ from mashumaro.exceptions import (
     MissingField,
     ThirdPartyModuleNotFoundError,
     UnserializableField,
+    UnsupportedDeserializationEngine,
+    UnsupportedSerializationEngine,
 )
 
 
@@ -104,4 +106,24 @@ def test_third_party_module_not_found_error_str():
     assert (
         str(exc) == 'Install "third_party" to use it as the serialization '
         'method for the field "x" in object'
+    )
+
+
+def test_unsupported_deserialization_engine():
+    exc = UnsupportedDeserializationEngine("x", int, object, "engine_name")
+    assert exc.field_type_name == "int"
+    assert exc.holder_class_name == "object"
+    assert (
+        str(exc) == 'Field "x" of type int in object is not serializable: '
+        'Unsupported deserialization engine "engine_name"'
+    )
+
+
+def test_unsupported_serialization_engine():
+    exc = UnsupportedSerializationEngine("x", int, object, "engine_name")
+    assert exc.field_type_name == "int"
+    assert exc.holder_class_name == "object"
+    assert (
+        str(exc) == 'Field "x" of type int in object is not serializable: '
+        'Unsupported serialization engine "engine_name"'
     )

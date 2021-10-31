@@ -51,6 +51,26 @@ class UnserializableField(UnserializableDataError):
         return s
 
 
+class UnsupportedSerializationEngine(UnserializableField):
+    def __init__(self, field_name, field_type, holder_class, engine):
+        super(UnsupportedSerializationEngine, self).__init__(
+            field_name,
+            field_type,
+            holder_class,
+            msg=f'Unsupported serialization engine "{engine}"',
+        )
+
+
+class UnsupportedDeserializationEngine(UnserializableField):
+    def __init__(self, field_name, field_type, holder_class, engine):
+        super(UnsupportedDeserializationEngine, self).__init__(
+            field_name,
+            field_type,
+            holder_class,
+            msg=f'Unsupported deserialization engine "{engine}"',
+        )
+
+
 class InvalidFieldValue(ValueError):
     def __init__(
         self, field_name, field_type, field_value, holder_class, msg=None
