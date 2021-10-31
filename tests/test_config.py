@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Union
 
 import pytest
@@ -193,3 +193,26 @@ def test_untyped_named_tuple_with_defaults_as_dict():
     obj = DataClass(munpwd=MyUntypedNamedTupleWithDefaults(i=1, f=2.0))
     assert obj.to_dict() == {"munpwd": {"i": 1, "f": 2.0}}
     assert DataClass.from_dict({"munpwd": {"i": 1, "f": 2.0}}) == obj
+
+
+def test_named_tuple_as_dict_and_as_list_engine():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        as_dict: MyNamedTuple
+        as_list: MyNamedTuple = field(
+            metadata={"serialize": "as_list", "deserialize": "as_list"}
+        )
+
+        class Config(BaseConfig):
+            namedtuple_as_dict = True
+
+    obj = DataClass(
+        as_dict=MyNamedTuple(i=1, f=2.0),
+        as_list=MyNamedTuple(i=1, f=2.0),
+    )
+    obj_dict = {
+        "as_dict": {"i": 1, "f": 2.0},
+        "as_list": [1, 2.0],
+    }
+    assert obj.to_dict() == obj_dict
+    assert DataClass.from_dict(obj_dict) == obj

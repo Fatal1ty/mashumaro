@@ -1466,6 +1466,8 @@ class CodeBuilder:
         if serialize_option is not None:
             if serialize_option == "as_dict":
                 as_dict = True
+            elif serialize_option == "as_list":
+                as_dict = False
             else:
                 raise UnsupportedSerializationEngine(
                     fname, ftype, parent, serialize_option
@@ -1496,6 +1498,8 @@ class CodeBuilder:
         if deserialize_option is not None:
             if deserialize_option == "as_dict":
                 as_dict = True
+            elif deserialize_option == "as_list":
+                as_dict = False
             else:
                 raise UnsupportedDeserializationEngine(
                     fname, ftype, parent, deserialize_option

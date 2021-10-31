@@ -6,13 +6,13 @@ else:
     from typing_extensions import Literal  # type: ignore
 
 
-NamedTupleDeserializationEngine = Literal["as_dict"]
+NamedTupleDeserializationEngine = Literal["as_dict", "as_list"]
 DateTimeDeserializationEngine = Literal["ciso8601", "pendulum"]
 AnyDeserializationEngine = Literal[
     NamedTupleDeserializationEngine, DateTimeDeserializationEngine
 ]
 
-NamedTupleSerializationEngine = Literal["as_dict"]
+NamedTupleSerializationEngine = Literal["as_dict", "as_list"]
 AnySerializationEngine = NamedTupleSerializationEngine
 
 
