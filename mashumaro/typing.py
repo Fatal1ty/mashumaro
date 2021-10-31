@@ -1,7 +1,7 @@
-from mashumaro.meta.macros import PY_38_MIN
+from mashumaro.meta.macros import PEP_586_COMPATIBLE
 
-if PY_38_MIN:
-    from typing import Literal
+if PEP_586_COMPATIBLE:  # type: ignore
+    from typing import Literal  # type: ignore
 else:
     from typing_extensions import Literal  # type: ignore
 

@@ -1,10 +1,10 @@
 from typing import Any, Callable, Dict, List, Union
 
-from mashumaro.meta.macros import PY_38_MIN
+from mashumaro.meta.macros import PEP_586_COMPATIBLE
 from mashumaro.types import SerializationStrategy
 
-if PY_38_MIN:
-    from typing import Literal
+if PEP_586_COMPATIBLE:
+    from typing import Literal  # type: ignore
 else:
     from typing_extensions import Literal  # type: ignore
 
