@@ -90,7 +90,7 @@ def test_pendulum_time_parser():
 
 
 def test_unsupported_datetime_parser_engine():
-    with pytest.raises(UnserializableField):
+    with pytest.raises(UnsupportedDeserializationEngine):
 
         @dataclass
         class DataClass(DataClassDictMixin):
