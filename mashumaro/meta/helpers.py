@@ -301,9 +301,10 @@ def resolve_type_vars(cls, arg_types=(), is_cls_created=False):
 
 def get_name_error_name(e: NameError) -> str:
     if PY_310_MIN:
-        return e.name
+        return e.name  # type: ignore
     else:
-        return re.search("'(.*)'", e.args[0]).group(1)
+        match = re.search("'(.*)'", e.args[0])
+        return match.group(1) if match else ''
 
 
 __all__ = [
