@@ -31,6 +31,7 @@ class BaseConfig:
     aliases: Dict[str, str] = {}
     serialize_by_alias: bool = False
     namedtuple_as_dict: bool = False
+    allow_postponed_evaluation: bool = True
 
 
 __all__ = [

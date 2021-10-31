@@ -121,3 +121,19 @@ class ThirdPartyModuleNotFoundError(ModuleNotFoundError):
             f"in {self.holder_class_name}"
         )
         return s
+
+
+class UnresolvedTypeReferenceError(NameError):
+    def __init__(self, holder_class, unresolved_type_name):
+        self.holder_class = holder_class
+        self.unresolved_type_name = unresolved_type_name
+
+    @property
+    def holder_class_name(self):
+        return type_name(self.holder_class, short=True)
+
+    def __str__(self):
+        return (
+            f"Class {self.holder_class_name} has unresolved type reference "
+            f"{self.unresolved_type_name} in some of its fields"
+        )
