@@ -5,14 +5,20 @@ import pytest
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
+from mashumaro.meta.macros import PY_37_MIN
 from mashumaro.types import SerializationStrategy
 
 from .entities import (
     MyDataClassWithOptional,
     MyDataClassWithOptionalAndOmitNoneFlag,
+    MyNamedTuple,
     MyNamedTupleWithDefaults,
+    MyUntypedNamedTuple,
     TypedDictRequiredKeys,
 )
+
+if PY_37_MIN:
+    from .entities import MyUntypedNamedTupleWithDefaults
 
 
 def test_debug_true_option(mocker):
@@ -150,3 +156,40 @@ def test_serialization_strategy():
     instance = DataClass(a=123, b="abc")
     assert DataClass.from_dict({"a": [123], "b": ["abc"]}) == instance
     assert instance.to_dict() == {"a": [123], "b": ["abc"]}
+
+
+def test_named_tuple_as_dict():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        mnp: MyNamedTuple
+        mnpwd: MyNamedTupleWithDefaults
+        munp: MyUntypedNamedTuple
+
+        class Config(BaseConfig):
+            namedtuple_as_dict = True
+
+    obj = DataClass(
+        mnp=MyNamedTuple(i=1, f=2.0),
+        mnpwd=MyNamedTupleWithDefaults(i=1, f=2.0),
+        munp=MyUntypedNamedTuple(i=1, f=2.0),
+    )
+    obj_dict = {
+        "mnp": {"i": 1, "f": 2.0},
+        "mnpwd": {"i": 1, "f": 2.0},
+        "munp": {"i": 1, "f": 2.0},
+    }
+    assert obj.to_dict() == obj_dict
+    assert DataClass.from_dict(obj_dict) == obj
+
+
+def test_untyped_named_tuple_with_defaults_as_dict():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        munpwd: MyUntypedNamedTupleWithDefaults
+
+        class Config(BaseConfig):
+            namedtuple_as_dict = True
+
+    obj = DataClass(munpwd=MyUntypedNamedTupleWithDefaults(i=1, f=2.0))
+    assert obj.to_dict() == {"munpwd": {"i": 1, "f": 2.0}}
+    assert DataClass.from_dict({"munpwd": {"i": 1, "f": 2.0}}) == obj

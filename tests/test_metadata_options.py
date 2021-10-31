@@ -7,15 +7,26 @@ import ciso8601
 import pytest
 
 from mashumaro import DataClassDictMixin
-from mashumaro.exceptions import UnserializableField
+from mashumaro.exceptions import (
+    UnserializableField,
+    UnsupportedDeserializationEngine,
+    UnsupportedSerializationEngine,
+)
+from mashumaro.meta.macros import PY_37_MIN
 from mashumaro.types import SerializationStrategy
 
 from .entities import (
     MutableString,
     MyList,
+    MyNamedTuple,
+    MyNamedTupleWithDefaults,
+    MyUntypedNamedTuple,
     ThirdPartyType,
     TypedDictRequiredKeys,
 )
+
+if PY_37_MIN:
+    from .entities import MyUntypedNamedTupleWithDefaults
 
 
 def test_ciso8601_datetime_parser():
@@ -333,3 +344,118 @@ def test_dataclass_with_typed_dict_overridden():
     data = {"x": {"int": 1, "float": 2.0}}
     assert DataClass.from_dict(data) == obj
     assert obj.to_dict() == data
+
+
+def test_named_tuple_as_dict_engine():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MyNamedTuple = field(
+            metadata={"serialize": "as_dict", "deserialize": "as_dict"}
+        )
+
+    obj = DataClass(x=MyNamedTuple(i=1, f=2.0))
+    assert obj.to_dict() == {"x": {"i": 1, "f": 2.0}}
+    assert DataClass.from_dict({"x": {"i": 1, "f": 2.0}}) == obj
+
+
+def test_named_tuple_with_defaults_as_dict_engine():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MyNamedTupleWithDefaults = field(
+            metadata={"serialize": "as_dict", "deserialize": "as_dict"}
+        )
+
+    obj = DataClass(x=MyNamedTupleWithDefaults(i=1, f=2.0))
+    assert obj.to_dict() == {"x": {"i": 1, "f": 2.0}}
+    assert DataClass.from_dict({"x": {"i": 1, "f": 2.0}}) == obj
+
+
+def test_untyped_named_tuple_as_dict_engine():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MyUntypedNamedTuple = field(
+            metadata={"serialize": "as_dict", "deserialize": "as_dict"}
+        )
+
+    obj = DataClass(x=MyUntypedNamedTuple(i=1, f=2.0))
+    assert obj.to_dict() == {"x": {"i": 1, "f": 2.0}}
+    assert DataClass.from_dict({"x": {"i": 1, "f": 2.0}}) == obj
+
+
+@pytest.mark.skipif(not PY_37_MIN, reason="requires python>=3.7")
+def test_untyped_named_tuple_with_defaults_as_dict_engine():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MyUntypedNamedTupleWithDefaults = field(
+            metadata={"serialize": "as_dict", "deserialize": "as_dict"}
+        )
+
+    obj = DataClass(x=MyUntypedNamedTupleWithDefaults(i=1, f=2.0))
+    assert obj.to_dict() == {"x": {"i": 1, "f": 2.0}}
+    assert DataClass.from_dict({"x": {"i": 1, "f": 2.0}}) == obj
+
+
+def test_unsupported_named_tuple_deserialization_engine():
+    with pytest.raises(UnsupportedDeserializationEngine):
+
+        @dataclass
+        class DataClass(DataClassDictMixin):
+            x: MyNamedTuple = field(metadata={"deserialize": "unsupported"})
+
+    with pytest.raises(UnsupportedDeserializationEngine):
+
+        @dataclass
+        class DataClass(DataClassDictMixin):
+            x: MyNamedTupleWithDefaults = field(
+                metadata={"deserialize": "unsupported"}
+            )
+
+    with pytest.raises(UnsupportedDeserializationEngine):
+
+        @dataclass
+        class DataClass(DataClassDictMixin):
+            x: MyUntypedNamedTuple = field(
+                metadata={"deserialize": "unsupported"}
+            )
+
+    if PY_37_MIN:
+        with pytest.raises(UnsupportedDeserializationEngine):
+
+            @dataclass
+            class DataClass(DataClassDictMixin):
+                x: MyUntypedNamedTupleWithDefaults = field(
+                    metadata={"deserialize": "unsupported"}
+                )
+
+
+def test_unsupported_named_tuple_serialization_engine():
+    with pytest.raises(UnsupportedSerializationEngine):
+
+        @dataclass
+        class DataClass(DataClassDictMixin):
+            x: MyNamedTuple = field(metadata={"serialize": "unsupported"})
+
+    with pytest.raises(UnsupportedSerializationEngine):
+
+        @dataclass
+        class DataClass(DataClassDictMixin):
+            x: MyNamedTupleWithDefaults = field(
+                metadata={"serialize": "unsupported"}
+            )
+
+    with pytest.raises(UnsupportedSerializationEngine):
+
+        @dataclass
+        class DataClass(DataClassDictMixin):
+            x: MyUntypedNamedTuple = field(
+                metadata={"serialize": "unsupported"}
+            )
+
+    if PY_37_MIN:
+        with pytest.raises(UnsupportedSerializationEngine):
+
+            @dataclass
+            class DataClass(DataClassDictMixin):
+                x: MyUntypedNamedTupleWithDefaults = field(
+                    metadata={"serialize": "unsupported"}
+                )
