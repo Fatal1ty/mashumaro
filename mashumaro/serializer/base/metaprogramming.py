@@ -31,6 +31,7 @@ from mashumaro.exceptions import (  # noqa
     InvalidFieldValue,
     MissingField,
     ThirdPartyModuleNotFoundError,
+    UnresolvedTypeReferenceError,
     UnserializableDataError,
     UnserializableField,
     UnsupportedDeserializationEngine,
@@ -40,6 +41,7 @@ from mashumaro.meta.helpers import (
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
+    get_name_error_name,
     get_type_origin,
     is_class_var,
     is_dataclass_dict_mixin,
@@ -143,7 +145,12 @@ class CodeBuilder:
         fields = {}
         globalns = sys.modules[self.cls.__module__].__dict__.copy()
         globalns[self.cls.__name__] = self.cls
-        for fname, ftype in typing.get_type_hints(self.cls, globalns).items():
+        try:
+            field_type_hints = typing.get_type_hints(self.cls, globalns)
+        except NameError as e:
+            name = get_name_error_name(e)
+            raise UnresolvedTypeReferenceError(self.cls, name) from None
+        for fname, ftype in field_type_hints.items():
             if is_class_var(ftype) or is_init_var(ftype):
                 continue
             if recursive or fname in self.annotations:

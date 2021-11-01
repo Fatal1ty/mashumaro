@@ -4,6 +4,7 @@ from mashumaro.exceptions import (
     InvalidFieldValue,
     MissingField,
     ThirdPartyModuleNotFoundError,
+    UnresolvedTypeReferenceError,
     UnserializableField,
     UnsupportedDeserializationEngine,
     UnsupportedSerializationEngine,
@@ -126,4 +127,14 @@ def test_unsupported_serialization_engine():
     assert (
         str(exc) == 'Field "x" of type int in object is not serializable: '
         'Unsupported serialization engine "engine_name"'
+    )
+
+
+def test_unresolved_type_reference_error():
+    exc = UnresolvedTypeReferenceError(object, "x")
+    assert exc.holder_class_name == "object"
+    assert exc.name == "x"
+    assert (
+        str(exc) == "Class object has unresolved type reference "
+        "x in some of its fields"
     )

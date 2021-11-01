@@ -72,8 +72,6 @@ def test_no_code_builder():
         class DataClass(DataClassDictMixin):
             pass
 
-        assert DataClass.from_dict({}) is None
-        assert DataClass().to_dict() is None
         assert DataClass.__pre_deserialize__({}) is None
         assert DataClass.__post_deserialize__(DataClass()) is None
         assert DataClass().__pre_serialize__() is None

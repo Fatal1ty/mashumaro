@@ -1,5 +1,6 @@
 import dataclasses
 import inspect
+import re
 import types
 import typing
 from contextlib import suppress
@@ -9,7 +10,15 @@ from dataclasses import _FIELDS  # type: ignore
 
 import typing_extensions
 
-from .macros import PY_36, PY_37, PY_37_MIN, PY_38, PY_38_MIN, PY_39_MIN
+from .macros import (
+    PY_36,
+    PY_37,
+    PY_37_MIN,
+    PY_38,
+    PY_38_MIN,
+    PY_39_MIN,
+    PY_310_MIN,
+)
 
 DataClassDictMixinPath = "mashumaro.serializer.base.dict.DataClassDictMixin"
 NoneType = type(None)
@@ -290,8 +299,17 @@ def resolve_type_vars(cls, arg_types=(), is_cls_created=False):
     return result
 
 
+def get_name_error_name(e: NameError) -> str:
+    if PY_310_MIN:
+        return e.name  # type: ignore
+    else:
+        match = re.search("'(.*)'", e.args[0])
+        return match.group(1) if match else ""
+
+
 __all__ = [
     "get_type_origin",
+    "get_args",
     "type_name",
     "is_special_typing_primitive",
     "is_generic",
@@ -309,4 +327,5 @@ __all__ = [
     "is_dataclass_dict_mixin_subclass",
     "resolve_type_vars",
     "get_generic_name",
+    "get_name_error_name",
 ]

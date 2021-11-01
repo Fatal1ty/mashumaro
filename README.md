@@ -37,6 +37,7 @@ Table of contents
         * [`aliases` config option](#aliases-config-option)
         * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
         * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
+        * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
     * [Code generation options](#code-generation-options)
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
         * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
@@ -846,6 +847,56 @@ print(obj.to_dict())  # {"points": [{"x": 0, "y": 0}, {"x": 1, "y": 1}]}
 If you want to serialize only certain named tuple fields as dictionaries, you
 can use the corresponding [serialization](#serialize-option) and
 [deserialization](#deserialize-option) engines.
+
+#### `allow_postponed_evaluation` config option
+
+[PEP 563](https://www.python.org/dev/peps/pep-0563/) solved the problem of forward references by postponing the evaluation
+of annotations, so you can write the following code:
+
+```python
+from __future__ import annotations
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+
+@dataclass
+class A(DataClassDictMixin):
+    x: B
+
+@dataclass
+class B(DataClassDictMixin):
+    y: int
+
+obj = A.from_dict({'x': {'y': 1}})
+```
+
+You don't need to write anything special here, forward references work out of
+the box. If a field of a dataclass has a forward reference in the type
+annotations, building of `from_dict` and `to_dict` methods of this dataclass
+will be postponed until they are called once. However, if for some reason you
+don't want the evaluation to be possibly postponed, you can disable it using
+`allow_postponed_evaluation` option:
+
+```python
+from __future__ import annotations
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+
+@dataclass
+class A(DataClassDictMixin):
+    x: B
+
+    class Config:
+        allow_postponed_evaluation = False
+
+# UnresolvedTypeReferenceError: Class A has unresolved type reference B
+# in some of its fields
+
+@dataclass
+class B(DataClassDictMixin):
+    y: int
+```
+
+In this case you will get `UnresolvedTypeReferenceError` regardless of whether class B is declared below or not.
 
 ### Code generation options
 
