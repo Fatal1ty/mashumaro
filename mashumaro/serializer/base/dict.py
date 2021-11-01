@@ -21,7 +21,7 @@ class DataClassDictMixin:
             builder.add_to_dict()
         except UnresolvedTypeReferenceError:
             if not config.allow_postponed_evaluation:
-                raise  # pragma no cover
+                raise
 
     def to_dict(
         self: T,

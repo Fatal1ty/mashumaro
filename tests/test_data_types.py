@@ -37,6 +37,8 @@ from typing import (
     Tuple,
 )
 
+from .conftest import fake_add_from_dict
+
 try:
     from typing import OrderedDict  # New in version 3.7.2
 except ImportError:
@@ -729,6 +731,14 @@ def test_unsupported_generic_field_types(x_type, generic_type):
             # noinspection PyTypeChecker
             x: generic_type[x_type]
 
+    with fake_add_from_dict:
+        with pytest.raises(UnserializableField):
+
+            @dataclass
+            class _(DataClassDictMixin):
+                # noinspection PyTypeChecker
+                x: generic_type[x_type]
+
 
 @pytest.mark.parametrize("x_type", unsupported_typing_primitives)
 @pytest.mark.parametrize("generic_type", generic_sequence_types)
@@ -740,6 +750,14 @@ def test_unsupported_generic_typing_primitives(x_type, generic_type):
             # noinspection PyTypeChecker
             x: generic_type[x_type]
 
+    with fake_add_from_dict:
+        with pytest.raises(UnserializableDataError):
+
+            @dataclass
+            class _(DataClassDictMixin):
+                # noinspection PyTypeChecker
+                x: generic_type[x_type]
+
 
 @pytest.mark.parametrize("x_type", unsupported_field_types)
 def test_unsupported_field_types(x_type):
@@ -749,6 +767,13 @@ def test_unsupported_field_types(x_type):
         class _(DataClassDictMixin):
             x: x_type
 
+    with fake_add_from_dict:
+        with pytest.raises(UnserializableField):
+
+            @dataclass
+            class _(DataClassDictMixin):
+                x: x_type
+
 
 @pytest.mark.parametrize("x_type", unsupported_typing_primitives)
 def test_unsupported_typing_primitives(x_type):
@@ -757,6 +782,13 @@ def test_unsupported_typing_primitives(x_type):
         @dataclass
         class _(DataClassDictMixin):
             x: x_type
+
+    with fake_add_from_dict:
+        with pytest.raises(UnserializableDataError):
+
+            @dataclass
+            class _(DataClassDictMixin):
+                x: x_type
 
 
 @pytest.mark.parametrize("generic_type", generic_mapping_types)
@@ -771,6 +803,13 @@ def test_data_class_as_mapping_key(generic_type):
         class _(DataClassDictMixin):
             x: generic_type[Key, int]
 
+    with fake_add_from_dict:
+        with pytest.raises(UnserializableDataError):
+
+            @dataclass
+            class _(DataClassDictMixin):
+                x: generic_type[Key, int]
+
 
 def test_data_class_as_mapping_key_for_counter():
     @dataclass
@@ -783,6 +822,13 @@ def test_data_class_as_mapping_key_for_counter():
         class _(DataClassDictMixin):
             x: Counter[Key]
 
+    with fake_add_from_dict:
+        with pytest.raises(UnserializableDataError):
+
+            @dataclass
+            class _(DataClassDictMixin):
+                x: Counter[Key]
+
 
 def test_data_class_as_chain_map_key():
     @dataclass
@@ -794,6 +840,13 @@ def test_data_class_as_chain_map_key():
         @dataclass
         class _(DataClassDictMixin):
             x: ChainMap[Key, int]
+
+    with fake_add_from_dict:
+        with pytest.raises(UnserializableDataError):
+
+            @dataclass
+            class _(DataClassDictMixin):
+                x: ChainMap[Key, int]
 
 
 @pytest.mark.parametrize("use_datetime", [True, False])
@@ -901,6 +954,13 @@ def test_weird_field_type():
         @dataclass
         class _(DataClassDictMixin):
             x: 123
+
+    with fake_add_from_dict:
+        with pytest.raises(UnserializableDataError):
+
+            @dataclass
+            class _(DataClassDictMixin):
+                x: 123
 
 
 @pytest.mark.parametrize(
@@ -1185,6 +1245,13 @@ def test_dataclass_field_without_mixin():
         @dataclass
         class _(DataClassDictMixin):
             p: DataClassWithoutMixin
+
+    with fake_add_from_dict:
+        with pytest.raises(UnserializableField):
+
+            @dataclass
+            class _(DataClassDictMixin):
+                p: DataClassWithoutMixin
 
 
 def test_serializable_type_dataclass():

@@ -8,6 +8,8 @@ from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
 from mashumaro.exceptions import UnresolvedTypeReferenceError
 
+from .conftest import fake_add_from_dict
+
 
 @dataclass
 class A(DataClassDictMixin):
@@ -46,3 +48,13 @@ def test_unresolved_type_with_disallowed_postponed_annotation_evaluation():
 
             class Config(BaseConfig):
                 allow_postponed_evaluation = False
+
+    with fake_add_from_dict:
+        with pytest.raises(UnresolvedTypeReferenceError):
+
+            @dataclass
+            class DataClass(DataClassDictMixin):
+                x: X
+
+                class Config(BaseConfig):
+                    allow_postponed_evaluation = False
