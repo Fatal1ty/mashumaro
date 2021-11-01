@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import pytest
 from dataclasses import dataclass
 
+import pytest
+
 from mashumaro import DataClassDictMixin
-from mashumaro.exceptions import UnresolvedTypeReferenceError
 from mashumaro.config import BaseConfig
+from mashumaro.exceptions import UnresolvedTypeReferenceError
 
 
 @dataclass
