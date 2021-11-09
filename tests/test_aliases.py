@@ -98,17 +98,6 @@ def test_serialize_by_alias_code_generation_flag_without_alias():
     assert instance.to_dict(by_alias=True) == {"x": 123}
 
 
-def test_no_serialize_by_alias_code_generation_flag():
-    @dataclass
-    class DataClass(DataClassDictMixin):
-        x: int = field(metadata={"alias": "alias"})
-
-    instance = DataClass(x=123)
-    assert instance.to_dict() == {"x": 123}
-    with pytest.raises(TypeError):
-        instance.to_dict(by_alias=True)
-
-
 def test_serialize_by_alias_flag_for_inner_class_without_it():
     @dataclass
     class DataClass(DataClassDictMixin):

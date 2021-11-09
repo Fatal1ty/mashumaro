@@ -36,7 +36,8 @@ class DataClassDictMixin:
     ) -> dict:
         builder = CodeBuilder(self.__class__)
         builder.add_to_dict()
-        return self.to_dict(use_bytes, use_enum, use_datetime, **kwargs)
+        return self.to_dict(use_bytes=use_bytes, use_enum=use_enum,
+                            use_datetime=use_datetime, **kwargs)
 
     @classmethod
     def from_dict(
@@ -45,10 +46,12 @@ class DataClassDictMixin:
         use_bytes: bool = False,
         use_enum: bool = False,
         use_datetime: bool = False,
+        **kwargs
     ) -> T:
         builder = CodeBuilder(cls)
         builder.add_from_dict()
-        return cls.from_dict(d, use_bytes, use_enum, use_datetime)
+        return cls.from_dict(d, use_bytes=use_bytes, use_enum=use_enum,
+                             use_datetime=use_datetime, **kwargs)
 
     @classmethod
     def __pre_deserialize__(cls: Type[T], d: Dict[Any, Any]) -> Dict[Any, Any]:

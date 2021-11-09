@@ -24,7 +24,9 @@ from types import MappingProxyType
 from mashumaro.config import (
     TO_DICT_ADD_BY_ALIAS_FLAG,
     TO_DICT_ADD_OMIT_NONE_FLAG,
-    BaseConfig,
+    PROPAGATE_KWARGS,
+    LOOSE_DESERIALIZE,
+    BaseConfig
 )
 from mashumaro.exceptions import (  # noqa
     BadHookSignature,
@@ -95,6 +97,12 @@ class CodeLines:
 
     def append(self, line: str):
         self._lines.append(f"{self._current_indent}{line}")
+
+    def extend(self, lines: typing.List[str]):
+        self._lines.extend([
+            f"{self._current_indent}{line}"
+            for line in lines
+        ])
 
     @contextmanager
     def indent(self) -> typing.Generator[None, None, None]:
@@ -236,6 +244,9 @@ class CodeBuilder:
     def add_line(self, line: str) -> None:
         self.lines.append(line)
 
+    def extends_lines(self, lines: typing.List[str]) -> None:
+        self.lines.extend(lines)
+
     @contextmanager
     def indent(self) -> typing.Generator[None, None, None]:
         with self.lines.indent():
@@ -263,10 +274,10 @@ class CodeBuilder:
         self.reset()
         self.add_line("@classmethod")
         self.add_line(
-            f"def {method_name}(cls, d, use_bytes=False, use_enum=False, "
-            f"use_datetime=False):"
+            f"def {method_name}(cls, d, **kwargs):"
         )
         with self.indent():
+            self.extends_lines(self.get_to_dict_kwargs_extract())
             pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
             if pre_deserialize:
                 if not isinstance(pre_deserialize, classmethod):
@@ -275,10 +286,17 @@ class CodeBuilder:
                         f"Callable[[Dict[Any, Any]], Dict[Any, Any]] signature"
                     )
                 else:
-                    self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
+                    if self.is_code_generation_option_enabled(
+                        PROPAGATE_KWARGS
+                    ):
+                        self.add_line(
+                            f"d = cls.{__PRE_DESERIALIZE__}(d, **kwargs)"
+                        )
+                    else:
+                        self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
             self.add_line("try:")
             with self.indent():
-                self.add_line("kwargs = {}")
+                self.add_line("container = {}")
                 for fname, ftype in self.field_types.items():
                     self._add_type_modules(ftype)
                     metadata = self.metadatas.get(fname, {})
@@ -308,10 +326,11 @@ class CodeBuilder:
                     )
                 else:
                     self.add_line(
-                        f"return cls.{__POST_DESERIALIZE__}(cls(**kwargs))"
+                        f"return cls.{__POST_DESERIALIZE__}(cls(**container),"
+                        f"**kwargs)"
                     )
             else:
-                self.add_line("return cls(**kwargs)")
+                self.add_line("return cls(**container)")
         self.add_line(f"setattr(cls, '{method_name}', {method_name})")
         self.compile()
 
@@ -322,10 +341,14 @@ class CodeBuilder:
             parent=self.cls,
             metadata=metadata,
         )
-        self.add_line(f"value = d.get('{alias or fname}', MISSING)")
+        if self.is_code_generation_option_enabled(LOOSE_DESERIALIZE):
+            self.add_line(f"value = d.get('{alias}') "
+                          f"or d.get('{fname}', MISSING)")
+        else:
+            self.add_line(f"value = d.get('{alias or fname}', MISSING)")
         self.add_line("if value is None:")
         with self.indent():
-            self.add_line(f"kwargs['{fname}'] = None")
+            self.add_line(f"container['{fname}'] = None")
         if self.defaults[fname] is MISSING:
             self.add_line("elif value is MISSING:")
             with self.indent():
@@ -339,7 +362,7 @@ class CodeBuilder:
             with self.indent():
                 self.add_line("try:")
                 with self.indent():
-                    self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+                    self.add_line(f"container['{fname}'] = {unpacked_value}")
                 self.add_line("except Exception as e:")
                 with self.indent():
                     field_type = type_name(
@@ -354,7 +377,7 @@ class CodeBuilder:
             with self.indent():
                 self.add_line("try:")
                 with self.indent():
-                    self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+                    self.add_line(f"container['{fname}'] = {unpacked_value}")
                 self.add_line("except Exception as e:")
                 with self.indent():
                     field_type = type_name(
@@ -394,30 +417,19 @@ class CodeBuilder:
             ["use_bytes", "use_enum", "use_datetime", *pluggable_flags]
         )
 
-    def get_to_dict_default_flag_values(self, cls=None) -> str:
-        pluggable_flags = []
-        omit_none_feature = (
-            TO_DICT_ADD_OMIT_NONE_FLAG
-            in self.get_config(cls).code_generation_options
-        )
-        if omit_none_feature:
-            pluggable_flags.append("omit_none")
-        by_alias_feature = (
-            TO_DICT_ADD_BY_ALIAS_FLAG
-            in self.get_config().code_generation_options
-        )
-        if by_alias_feature:
-            pluggable_flags.append("by_alias")
-        if pluggable_flags:
-            pluggable_flags_str = ", *, " + ", ".join(
-                [f"{f}=False" for f in pluggable_flags]
-            )
-        else:
-            pluggable_flags_str = ""
-        return (
-            f"use_bytes=False, use_enum=False, use_datetime=False"
-            f"{pluggable_flags_str}"
-        )
+    def get_to_dict_kwargs_extract(self, cls=None) -> typing.List[str]:
+        extract_lines = [
+            f"use_bytes=kwargs.get('use_bytes', False)",
+            f"use_enum=kwargs.get('use_enum', False)",
+            f"use_datetime=kwargs.get('use_datetime', False)"
+        ]
+        if self.is_code_generation_option_enabled(TO_DICT_ADD_OMIT_NONE_FLAG,
+                                                  cls):
+            extract_lines.append(f"omit_none=kwargs.get('omit_none', False)")
+        if self.is_code_generation_option_enabled(TO_DICT_ADD_BY_ALIAS_FLAG,
+                                                  cls):
+            extract_lines.append(f"by_alias=kwargs.get('by_alias', False)")
+        return extract_lines
 
     def is_code_generation_option_enabled(self, option: str, cls=None):
         return option in self.get_config(cls).code_generation_options
@@ -429,21 +441,30 @@ class CodeBuilder:
         self.reset()
         self.add_line(
             f"def {method_name}"
-            f"(self, {self.get_to_dict_default_flag_values()}):"
+            f"(self, **kwargs):"
         )
         with self.indent():
+            self.extends_lines(self.get_to_dict_kwargs_extract())
             pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
             if pre_serialize:
-                self.add_line(f"self = self.{__PRE_SERIALIZE__}()")
-            self.add_line("kwargs = {}")
+                if self.is_code_generation_option_enabled(PROPAGATE_KWARGS):
+                    self.add_line(f"self=self.{__PRE_SERIALIZE__}(**kwargs)")
+                else:
+                    self.add_line(f"self=self.{__PRE_SERIALIZE__}()")
+            self.add_line("container = {}")
             for fname, ftype in self.field_types.items():
                 metadata = self.metadatas.get(fname, {})
                 self._to_dict_set_value(fname, ftype, metadata)
             post_serialize = self.get_declared_hook(__POST_SERIALIZE__)
             if post_serialize:
-                self.add_line(f"return self.{__POST_SERIALIZE__}(kwargs)")
+                if self.is_code_generation_option_enabled(PROPAGATE_KWARGS):
+                    self.add_line(f"return self.{__POST_SERIALIZE__}"
+                                  f"(container, **kwargs)")
+                else:
+                    self.add_line(f"return self.{__POST_SERIALIZE__}"
+                                  f"(container)")
             else:
-                self.add_line("return kwargs")
+                self.add_line(f"return container")
         self.add_line(f"setattr(cls, '{method_name}', {method_name})")
         self.compile()
 
@@ -473,22 +494,22 @@ class CodeBuilder:
                     if by_alias_feature and alias is not None:
                         self.add_line("if by_alias:")
                         with self.indent():
-                            self.add_line(f"kwargs['{alias}'] = None")
+                            self.add_line(f"container['{alias}'] = None")
                         self.add_line("else:")
                         with self.indent():
-                            self.add_line(f"kwargs['{fname}'] = None")
+                            self.add_line(f"container['{fname}'] = None")
                     else:
-                        self.add_line(f"kwargs['{fname_or_alias}'] = None")
+                        self.add_line(f"container['{fname_or_alias}'] = None")
             else:
                 if by_alias_feature and alias is not None:
                     self.add_line("if by_alias:")
                     with self.indent():
-                        self.add_line(f"kwargs['{alias}'] = None")
+                        self.add_line(f"container['{alias}'] = None")
                     self.add_line("else:")
                     with self.indent():
-                        self.add_line(f"kwargs['{fname}'] = None")
+                        self.add_line(f"container['{fname}'] = None")
                 else:
-                    self.add_line(f"kwargs['{fname_or_alias}'] = None")
+                    self.add_line(f"container['{fname_or_alias}'] = None")
         self.add_line("else:")
         with self.indent():
             packed_value = self._pack_value(
@@ -500,12 +521,13 @@ class CodeBuilder:
             if by_alias_feature and alias is not None:
                 self.add_line("if by_alias:")
                 with self.indent():
-                    self.add_line(f"kwargs['{alias}'] = {packed_value}")
+                    self.add_line(f"container['{alias}'] = {packed_value}")
                 self.add_line("else:")
                 with self.indent():
-                    self.add_line(f"kwargs['{fname}'] = {packed_value}")
+                    self.add_line(f"container['{fname}'] = {packed_value}")
             else:
-                self.add_line(f"kwargs['{fname_or_alias}'] = {packed_value}")
+                self.add_line(f"container['{fname_or_alias}']"
+                              f" = {packed_value}")
 
     def _pack_value(
         self,
@@ -535,7 +557,13 @@ class CodeBuilder:
                 f"__{fname}_serialize",
                 staticmethod(serialize_option),
             )
-            overridden = f"self.__{fname}_serialize({value_name})"
+            if self.is_code_generation_option_enabled(PROPAGATE_KWARGS):
+                overridden = (
+                    f"self.__{fname}_serialize({value_name}, "
+                    f"**kwargs)"
+                )
+            else:
+                overridden = f"self.__{fname}_serialize({value_name})"
 
         ftype = self.__get_real_type(fname, ftype)
         origin_type = get_type_origin(ftype)
@@ -563,8 +591,10 @@ class CodeBuilder:
                     builder.add_to_dict()
             else:
                 method_name = "to_dict"
-            flags = self.get_to_dict_flags(ftype)
-            return overridden or f"{value_name}.{method_name}({flags})"
+            if overridden:
+                return overridden
+            else:
+                return f"{value_name}.{method_name}(**kwargs)"
 
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
@@ -583,10 +613,8 @@ class CodeBuilder:
                     method_name = self._add_pack_union(
                         fname, ftype, args, parent, metadata
                     )
-                    return (
-                        f"self.{method_name}({value_name},"
-                        f"{self.get_to_dict_flags()})"
-                    )
+                    return f"self.{method_name}({value_name}, **kwargs)"
+
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(
                     "AnyStr is not supported by mashumaro"
@@ -604,10 +632,8 @@ class CodeBuilder:
                         metadata=metadata,
                         prefix="type_var",
                     )
-                    return (
-                        f"self.{method_name}({value_name},"
-                        f"{self.get_to_dict_flags()})"
-                    )
+
+                    return f"self.{method_name}({value_name}, **kwargs)"
                 else:
                     bound = getattr(ftype, "__bound__")
                     # act as if if was Optional[bound]
@@ -789,10 +815,7 @@ class CodeBuilder:
                         method_name = self._add_pack_typed_dict(
                             fname, ftype, value_name, parent, metadata
                         )
-                        return (
-                            f"self.{method_name}({value_name},"
-                            f"use_bytes,use_enum,use_datetime)"
-                        )
+                        return f"self.{method_name}({value_name},**kwargs)"
                 elif is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
@@ -852,17 +875,28 @@ class CodeBuilder:
                 deserialize_option = strategy.deserialize
         if callable(deserialize_option):
             setattr(self.cls, f"__{fname}_deserialize", deserialize_option)
-            overridden = f"cls.__{fname}_deserialize({value_name})"
+            if self.is_code_generation_option_enabled(PROPAGATE_KWARGS):
+                overridden = (
+                    f"cls.__{fname}_deserialize({value_name},"
+                    f"**kwargs)"
+                )
+            else:
+                overridden = f"cls.__{fname}_deserialize({value_name})"
 
         ftype = self.__get_real_type(fname, ftype)
         origin_type = get_type_origin(ftype)
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
-                return (
-                    overridden
-                    or f"{type_name(ftype)}._deserialize({value_name})"
-                )
+                if overridden:
+                    return overridden
+                elif self.is_code_generation_option_enabled(PROPAGATE_KWARGS):
+                    return (
+                        f"{type_name(ftype)}._deserialize({value_name},"
+                        f"**kwargs)"
+                    )
+                else:
+                    return f"{type_name(ftype)}._deserialize({value_name})"
         with suppress(TypeError):
             if issubclass(origin_type, GenericSerializableType):
                 arg_type_names = ", ".join(
@@ -884,9 +918,10 @@ class CodeBuilder:
                     builder.add_to_dict()
             else:
                 method_name = "from_dict"
-            return overridden or (
-                f"{type_name(ftype)}.{method_name}({value_name}, "
-                f"use_bytes, use_enum, use_datetime)"
+
+            return (
+                overridden
+                or f"{type_name(ftype)}.{method_name}({value_name}, **kwargs)"
             )
 
         if is_special_typing_primitive(origin_type):
@@ -906,10 +941,7 @@ class CodeBuilder:
                     method_name = self._add_unpack_union(
                         fname, ftype, args, parent, metadata
                     )
-                    return (
-                        f"cls.{method_name}({value_name},"
-                        f"use_bytes,use_enum,use_datetime)"
-                    )
+                    return f"cls.{method_name}({value_name}, **kwargs)"
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(
                     "AnyStr is not supported by mashumaro"
@@ -927,10 +959,7 @@ class CodeBuilder:
                         metadata=metadata,
                         prefix="type_var",
                     )
-                    return (
-                        f"cls.{method_name}({value_name},"
-                        f"use_bytes,use_enum,use_datetime)"
-                    )
+                    return f"cls.{method_name}({value_name}, **kwargs)"
                 else:
                     bound = getattr(ftype, "__bound__")
                     # act as if if was Optional[bound]
@@ -1183,10 +1212,8 @@ class CodeBuilder:
                         method_name = self._add_unpack_typed_dict(
                             fname, ftype, value_name, parent, metadata
                         )
-                        return (
-                            f"cls.{method_name}({value_name},"
-                            f"use_bytes,use_enum,use_datetime)"
-                        )
+                        return f"cls.{method_name}({value_name}, **kwargs)"
+
                 elif is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
@@ -1249,9 +1276,10 @@ class CodeBuilder:
         )
         lines.append(
             f"def {method_name}"
-            f"(self,value, {self.get_to_dict_default_flag_values()}):"
+            f"(self,value,**kwargs):"
         )
         with lines.indent():
+            lines.extend(self.get_to_dict_kwargs_extract())
             for packer in (
                 self._pack_value(fname, arg_type, parent, metadata=metadata)
                 for arg_type in args
@@ -1286,9 +1314,10 @@ class CodeBuilder:
         lines.append("@classmethod")
         lines.append(
             f"def {method_name}"
-            f"(cls,value,use_bytes=False,use_enum=False,use_datetime=False):"
+            f"(cls,value,**kwargs):"
         )
         with lines.indent():
+            lines.extend(self.get_to_dict_kwargs_extract())
             for unpacker in (
                 self._unpack_field_value(
                     fname, arg_type, parent, metadata=metadata
@@ -1382,9 +1411,10 @@ class CodeBuilder:
         )
         lines.append(
             f"def {method_name}"
-            f"(self,value, {self.get_to_dict_default_flag_values()}):"
+            f"(self,value,**kwargs):"
         )
         with lines.indent():
+            lines.extend(self.get_to_dict_kwargs_extract())
             lines.append("d = {}")
             for key in sorted(required_keys, key=all_keys.index):
                 packer = self._pack_value(
@@ -1430,9 +1460,10 @@ class CodeBuilder:
         lines.append("@classmethod")
         lines.append(
             f"def {method_name}"
-            f"(cls,value,use_bytes=False,use_enum=False,use_datetime=False):"
+            f"(cls,value,**kwargs):"
         )
         with lines.indent():
+            lines.extend(self.get_to_dict_kwargs_extract())
             lines.append("d = {}")
             for key in sorted(required_keys, key=all_keys.index):
                 unpacker = self._unpack_field_value(
@@ -1536,9 +1567,10 @@ class CodeBuilder:
         lines.append("@classmethod")
         lines.append(
             f"def {method_name}"
-            f"(cls,value,use_bytes=False,use_enum=False,use_datetime=False):"
+            f"(cls,value,**kwargs):"
         )
         with lines.indent():
+            lines.extend(self.get_to_dict_kwargs_extract())
             lines.append("fields = []")
             lines.append("try:")
             with lines.indent():
@@ -1553,9 +1585,8 @@ class CodeBuilder:
             print(f"{type_name(self.cls)}:")
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
-        return (
-            f"cls.{method_name}({value_name},use_bytes,use_enum,use_datetime)"
-        )
+
+        return f"cls.{method_name}({value_name},**kwargs)"
 
     @classmethod
     def _hash_arg_types(cls, arg_types) -> str:

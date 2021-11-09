@@ -74,16 +74,6 @@ def test_omit_none_code_generation_flag():
     assert DataClass().to_dict(omit_none=True) == {}
 
 
-def test_no_omit_none_code_generation_flag():
-    @dataclass
-    class DataClass(DataClassDictMixin):
-        x: Optional[int] = None
-
-    assert DataClass().to_dict() == {"x": None}
-    with pytest.raises(TypeError):
-        DataClass().to_dict(omit_none=True)
-
-
 def test_omit_none_flag_for_inner_class_without_it():
     @dataclass
     class DataClass(DataClassDictMixin):

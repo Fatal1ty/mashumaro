@@ -695,6 +695,8 @@ described below.
 |:--------------------------------------------------------------- |:------------------------------------------------------------|
 | [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_dict` method. |
 | [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-by_alias-keyword-argument)   | Adds `by_alias` keyword-only arguments to `to_dict` method. |
+| [`PROPAGATE_KWARGS`](#add-propagate_kwargs-option)              | Propagates all kwargs passed to custom serde strategies.    |
+| [`LOOSE_DESERIALIZE`](#add-loose_deserialize-option)            | Allows deserializing aliased fields by their true name      |
 
 #### `serialization_strategy` config option
 
@@ -954,6 +956,59 @@ DataClass(field_a=1).to_dict(by_alias=True)  # {'FieldA': 1}
 
 Keep in mind, if you're serializing data in JSON or another format, then you
 need to pass `by_alias` argument to [`dict_params`](#dataclassjsonmixinto_jsonencoder-optionalencoder-dict_params-optionalmapping-encoder_kwargs) dictionary.
+
+
+#### Add `PROPAGATE_KWARGS` Option
+
+When `PROPAGATE_KWARGS` is used in the code generation options, the kwargs
+passed to `to_dict` and `from_dict` methods will be propagated to custom
+serializers/deserializers.  Use this to create custom serialization dialects
+for multiple targets.
+
+```python
+class CustomDateSerdeStrategy(SerializationStrategy):
+
+    def serialize(self, value: Arrow, unix: bool = False):
+        if unix:
+            return int(value.timestamp())
+        return value.isoformat()
+
+    def deserialize(self, value):
+        return Arrow.get(value)
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    x: Arrow = field(metadata=field_options(
+        serialization_strategy=CustomDateSerdeStrategy()
+    ))
+
+    class Config(BaseConfig):
+        code_generation_options = [PROPAGATE_KWARGS]
+
+dc = DataClass(x=Arrow(2020, 1, 1))
+iso_dict = dc.to_dict()              # {"x": "2020-01-01T00:00:00+00:00"}
+unix_dict = dc.to_dict(unix=True)    # {"x": 1577836800}
+```
+
+#### Add `LOOSE_DESERIALIZE` Option
+
+When `LOOSE_DESERIALIZE` is used, dict fields matching both the aliased name
+as well as the true name may match the field.
+
+```python
+@dataclass
+class DataClass(DataClassDictMixin):
+    x: str = field(metadata=field_options(alias="FieldX"))
+
+    class Config(BaseConfig):
+        code_generation_options = [
+            LOOSE_DESERIALIZE
+        ]
+
+DataClass.from_dict({"FieldX": "Hello"})
+DataClass.from_dict({"x": "Hello"})
+```
+
 
 ### User-defined generic types
 
