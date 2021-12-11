@@ -395,22 +395,26 @@ class CodeBuilder:
         )
 
     def get_to_dict_default_flag_values(self, cls=None) -> str:
-        pluggable_flags = []
+        flag_names = []
+        flag_values = []
         omit_none_feature = (
             TO_DICT_ADD_OMIT_NONE_FLAG
             in self.get_config(cls).code_generation_options
         )
         if omit_none_feature:
-            pluggable_flags.append("omit_none")
+            flag_names.append("omit_none")
+            flag_values.append("False")
         by_alias_feature = (
             TO_DICT_ADD_BY_ALIAS_FLAG
-            in self.get_config().code_generation_options
+            in self.get_config(cls).code_generation_options
         )
         if by_alias_feature:
-            pluggable_flags.append("by_alias")
-        if pluggable_flags:
+            serialize_by_alias = self.get_config(cls).serialize_by_alias
+            flag_names.append("by_alias")
+            flag_values.append("True" if serialize_by_alias else "False")
+        if flag_names:
             pluggable_flags_str = ", *, " + ", ".join(
-                [f"{f}=False" for f in pluggable_flags]
+                [f"{n}={v}" for n, v in zip(flag_names, flag_values)]
             )
         else:
             pluggable_flags_str = ""
