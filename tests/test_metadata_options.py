@@ -23,6 +23,7 @@ from .entities import (
     MyUntypedNamedTuple,
     ThirdPartyType,
     TypedDictRequiredKeys,
+    TIntStr,
 )
 
 if PY_37_MIN:
@@ -284,16 +285,45 @@ def test_optional_overridden():
 def test_union_overridden():
     @dataclass
     class DataClass(DataClassDictMixin):
-        x: Union[int, str, float, ThirdPartyType] = field(
+        x: Union[float, int] = field(
             metadata={
-                "deserialize": lambda v: ThirdPartyType(v),
-                "serialize": lambda v: v.value,
+                "deserialize": lambda v: int(v),
+                "serialize": lambda v: int(v),
             }
         )
 
-    instance = DataClass.from_dict({"x": 1})
-    assert instance == DataClass(x=ThirdPartyType(value=1))
+    instance = DataClass.from_dict({"x": 1.0})
+    assert instance == DataClass(x=1)
     assert instance.to_dict() == {"x": 1}
+    for attr in dir(DataClass):
+        if attr.startswith("__unpack_union"):
+            raise Exception("DataClass shouldn't have __unpack_union_* method")
+        elif attr.startswith("__pack_union"):
+            raise Exception("DataClass shouldn't have __pack_union_* method")
+
+
+def test_type_var_overridden():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: TIntStr = field(
+            metadata={
+                "deserialize": lambda v: v * 2,
+                "serialize": lambda v: v * 2,
+            }
+        )
+
+    instance = DataClass.from_dict({"x": "a"})
+    assert instance == DataClass(x="aa")
+    assert instance.to_dict() == {"x": "aaaa"}
+    for attr in dir(DataClass):
+        if attr.startswith("__unpack_type_var"):
+            raise Exception(
+                "DataClass shouldn't have __unpack_type_var_* method"
+            )
+        elif attr.startswith("__pack_type_var"):
+            raise Exception(
+                "DataClass shouldn't have __pack_type_var_* method"
+            )
 
 
 def test_serialization_strategy():

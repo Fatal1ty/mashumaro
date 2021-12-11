@@ -570,6 +570,8 @@ class CodeBuilder:
             if origin_type is typing.Any:
                 return overridden or value_name
             elif is_union(ftype):
+                if overridden:
+                    return overridden
                 args = get_args(ftype)
                 if is_optional(ftype):
                     pv = self._pack_value(
@@ -594,6 +596,8 @@ class CodeBuilder:
             elif is_type_var_any(ftype):
                 return overridden or value_name
             elif is_type_var(ftype):
+                if overridden:
+                    return overridden
                 constraints = getattr(ftype, "__constraints__")
                 if constraints:
                     method_name = self._add_pack_union(
@@ -893,6 +897,8 @@ class CodeBuilder:
             if origin_type is typing.Any:
                 return overridden or value_name
             elif is_union(ftype):
+                if overridden:
+                    return overridden
                 args = get_args(ftype)
                 if is_optional(ftype):
                     ufv = self._unpack_field_value(
@@ -917,6 +923,8 @@ class CodeBuilder:
             elif is_type_var_any(ftype):
                 return overridden or value_name
             elif is_type_var(ftype):
+                if overridden:
+                    return overridden
                 constraints = getattr(ftype, "__constraints__")
                 if constraints:
                     method_name = self._add_unpack_union(
