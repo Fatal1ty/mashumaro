@@ -20,8 +20,11 @@ from .macros import (
     PY_310_MIN,
 )
 
-DataClassDictMixinPath = "mashumaro.serializer.base.dict.DataClassDictMixin"
 NoneType = type(None)
+DataClassDictMixinPath = (
+    f"{__name__.rsplit('.', 2)[:-2][0]}"
+    f".serializer.base.dict.DataClassDictMixin"
+)
 
 
 def get_type_origin(t):
