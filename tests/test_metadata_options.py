@@ -296,10 +296,8 @@ def test_union_overridden():
     assert instance == DataClass(x=1)
     assert instance.to_dict() == {"x": 1}
     for attr in dir(DataClass):
-        if attr.startswith("__unpack_union"):
-            raise Exception("DataClass shouldn't have __unpack_union_* method")
-        elif attr.startswith("__pack_union"):
-            raise Exception("DataClass shouldn't have __pack_union_* method")
+        assert not attr.startswith("__unpack_union")
+        assert not attr.startswith("__unpack_union")
 
 
 def test_type_var_overridden():
@@ -316,14 +314,8 @@ def test_type_var_overridden():
     assert instance == DataClass(x="aa")
     assert instance.to_dict() == {"x": "aaaa"}
     for attr in dir(DataClass):
-        if attr.startswith("__unpack_type_var"):
-            raise Exception(
-                "DataClass shouldn't have __unpack_type_var_* method"
-            )
-        elif attr.startswith("__pack_type_var"):
-            raise Exception(
-                "DataClass shouldn't have __pack_type_var_* method"
-            )
+        assert not attr.startswith("__unpack_type_var")
+        assert not attr.startswith("__pack_type_var")
 
 
 def test_serialization_strategy():
