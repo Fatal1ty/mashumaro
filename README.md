@@ -934,9 +934,7 @@ If you want to have control over whether to serialize fields by their
 [aliases](#alias-option) you can add `by_alias` parameter to `to_dict` method
 using the `code_generation_options` list. The default value of `by_alias`
 parameter depends on whether the [`serialize_by_alias`](#serialize_by_alias-config-option)
-config option is enabled. On the other hand if serialization by alias is always
-needed, the best solution is simply to use the
-[`serialize_by_alias`](#serialize_by_alias-config-option) config option.
+config option is enabled.
 
 ```python
 from dataclasses import dataclass, field
