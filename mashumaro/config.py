@@ -1,5 +1,6 @@
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 
+from mashumaro.dialect import Dialect
 from mashumaro.meta.macros import PEP_586_COMPATIBLE
 from mashumaro.types import SerializationStrategy
 
@@ -34,6 +35,7 @@ class BaseConfig:
     serialize_by_alias: bool = False
     namedtuple_as_dict: bool = False
     allow_postponed_evaluation: bool = True
+    default_dialect: Optional[Type[Dialect]] = None
 
 
 __all__ = [

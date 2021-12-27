@@ -435,7 +435,17 @@ class CodeBuilder:
         )
         if dialects_feature:
             flag_names.append("dialect")
-            flag_values.append("None")
+            default_dialect = self.get_config(cls).default_dialect
+            if default_dialect is not None:
+                if not is_dialect_subclass(default_dialect):
+                    raise BadDialect(
+                        f'Config option "default_dialect" of '
+                        f"{type_name(self.cls)} must be a subclass of Dialect"
+                    )
+            self._add_type_modules(default_dialect)
+            flag_values.append(
+                "None" if not default_dialect else type_name(default_dialect)
+            )
         if flag_names:
             pluggable_flags_str = ", *, " + ", ".join(
                 [f"{n}={v}" for n, v in zip(flag_names, flag_values)]
