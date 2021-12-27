@@ -122,6 +122,7 @@ class CodeBuilder:
         cls,
         arg_types: typing.Tuple = (),
         dialect: typing.Optional[typing.Type[Dialect]] = None,
+        first_method: str = "from_dict",
     ):
         self.cls = cls
         self.lines: CodeLines = CodeLines()
@@ -130,7 +131,10 @@ class CodeBuilder:
         self.field_classes = {}
         self.initial_arg_types = arg_types
         if dialect is not None and not is_dialect_subclass(dialect):
-            raise BadDialect("dialect must be a subclass of Dialect")
+            raise BadDialect(
+                f'Keyword argument "dialect" must be a subclass of Dialect '
+                f"in {type_name(self.cls)}.{first_method}"
+            )
         self.dialect = dialect
 
     def reset(self) -> None:
@@ -488,7 +492,8 @@ class CodeBuilder:
         with self.indent():
             self.add_line(f"return to_dict(self,{self.get_to_dict_flags()})")
         self.add_line(
-            "CodeBuilder(self.__class__,dialect=dialect).add_to_dict()"
+            "CodeBuilder(self.__class__,dialect=dialect,"
+            "first_method='to_dict').add_to_dict()"
         )
         self.add_line(
             f"return self.__class__.__dialect_to_dict_cache__[dialect]"
