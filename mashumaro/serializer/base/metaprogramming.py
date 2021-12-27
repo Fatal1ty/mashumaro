@@ -127,8 +127,8 @@ class CodeBuilder:
         self.cls = cls
         self.lines: CodeLines = CodeLines()
         self.globals: typing.Dict[str, typing.Any] = {}
-        self.type_vars = {}
-        self.field_classes = {}
+        self.type_vars: typing.Dict = {}
+        self.field_classes: typing.Dict = {}
         self.initial_arg_types = arg_types
         if dialect is not None and not is_dialect_subclass(dialect):
             raise BadDialect(

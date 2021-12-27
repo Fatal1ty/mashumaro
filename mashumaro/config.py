@@ -10,16 +10,16 @@ else:
     from typing_extensions import Literal  # type: ignore
 
 
+TO_DICT_ADD_BY_ALIAS_FLAG = "TO_DICT_ADD_BY_ALIAS_FLAG"
+TO_DICT_ADD_OMIT_NONE_FLAG = "TO_DICT_ADD_OMIT_NONE_FLAG"
+ADD_DIALECT_SUPPORT = "ADD_DIALECT_SUPPORT"
+
+
 CodeGenerationOption = Literal[
     "TO_DICT_ADD_BY_ALIAS_FLAG",
     "TO_DICT_ADD_OMIT_NONE_FLAG",
     "ADD_DIALECT_SUPPORT",
 ]
-
-
-TO_DICT_ADD_BY_ALIAS_FLAG: CodeGenerationOption = "TO_DICT_ADD_BY_ALIAS_FLAG"
-TO_DICT_ADD_OMIT_NONE_FLAG: CodeGenerationOption = "TO_DICT_ADD_OMIT_NONE_FLAG"
-ADD_DIALECT_SUPPORT: CodeGenerationOption = "ADD_DIALECT_SUPPORT"
 
 
 SerializationStrategyValueType = Union[
