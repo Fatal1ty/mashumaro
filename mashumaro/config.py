@@ -9,14 +9,16 @@ else:
     from typing_extensions import Literal  # type: ignore
 
 
-TO_DICT_ADD_BY_ALIAS_FLAG = "TO_DICT_ADD_BY_ALIAS_FLAG"
-TO_DICT_ADD_OMIT_NONE_FLAG = "TO_DICT_ADD_OMIT_NONE_FLAG"
-
-
 CodeGenerationOption = Literal[
     "TO_DICT_ADD_BY_ALIAS_FLAG",
     "TO_DICT_ADD_OMIT_NONE_FLAG",
+    "ADD_DIALECT_SUPPORT",
 ]
+
+
+TO_DICT_ADD_BY_ALIAS_FLAG: CodeGenerationOption = "TO_DICT_ADD_BY_ALIAS_FLAG"
+TO_DICT_ADD_OMIT_NONE_FLAG: CodeGenerationOption = "TO_DICT_ADD_OMIT_NONE_FLAG"
+ADD_DIALECT_SUPPORT: CodeGenerationOption = "ADD_DIALECT_SUPPORT"
 
 
 SerializationStrategyValueType = Union[
@@ -26,7 +28,7 @@ SerializationStrategyValueType = Union[
 
 class BaseConfig:
     debug: bool = False
-    code_generation_options: List[CodeGenerationOption] = []  # type: ignore
+    code_generation_options: List[CodeGenerationOption] = []
     serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
     aliases: Dict[str, str] = {}
     serialize_by_alias: bool = False
@@ -38,4 +40,5 @@ __all__ = [
     "BaseConfig",
     "TO_DICT_ADD_BY_ALIAS_FLAG",
     "TO_DICT_ADD_OMIT_NONE_FLAG",
+    "ADD_DIALECT_SUPPORT",
 ]

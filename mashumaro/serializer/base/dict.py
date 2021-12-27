@@ -29,9 +29,10 @@ class DataClassDictMixin:
         use_enum: bool = False,
         use_datetime: bool = False,
         # *
-        # keyword-only flags that are exist with the code generation options:
+        # keyword-only flags that exist with the code generation options:
         # omit_none: bool = False
         # by_alias: bool = False
+        # dialect: Type[Dialect] = None
         **kwargs,
     ) -> dict:
         builder = CodeBuilder(self.__class__)
