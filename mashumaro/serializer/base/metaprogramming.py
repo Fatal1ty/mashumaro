@@ -274,64 +274,128 @@ class CodeBuilder:
         if not is_dataclass_dict_mixin(cls):
             return cls.__dict__[method_name]
 
-    def add_from_dict(self) -> None:
+    def _add_from_dict(self) -> None:
         method_name = "from_dict"
         if self.initial_arg_types:
             method_name += f"_{self._hash_arg_types(self.initial_arg_types)}"
-        config = self.get_config()
-        self.reset()
-        self.add_line("@classmethod")
+        if self.dialect is None:
+            self.add_line("@classmethod")
         self.add_line(
-            f"def {method_name}(cls, d, use_bytes=False, use_enum=False, "
-            f"use_datetime=False):"
+            f"def {method_name}(cls, d, "
+            f"{self.get_from_dict_default_flag_values()}):"
         )
         with self.indent():
-            pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
-            if pre_deserialize:
-                if not isinstance(pre_deserialize, classmethod):
-                    raise BadHookSignature(
-                        f"`{__PRE_DESERIALIZE__}` must be a class method with "
-                        f"Callable[[Dict[Any, Any]], Dict[Any, Any]] signature"
-                    )
-                else:
-                    self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
-            self.add_line("try:")
-            with self.indent():
-                self.add_line("kwargs = {}")
-                for fname, ftype in self.field_types.items():
-                    self._add_type_modules(ftype)
-                    metadata = self.metadatas.get(fname, {})
-                    alias = metadata.get("alias")
-                    if alias is None:
-                        alias = config.aliases.get(fname)
-                    self._from_dict_set_value(fname, ftype, metadata, alias)
-            self.add_line("except AttributeError:")
-            with self.indent():
-                self.add_line("if not isinstance(d, dict):")
-                with self.indent():
-                    self.add_line(
-                        f"raise ValueError('Argument for "
-                        f"{type_name(self.cls)}.from_dict method "
-                        f"should be a dict instance') from None"
-                    )
-                self.add_line("else:")
-                with self.indent():
-                    self.add_line("raise")
-            post_deserialize = self.get_declared_hook(__POST_DESERIALIZE__)
-            if post_deserialize:
-                if not isinstance(post_deserialize, classmethod):
-                    raise BadHookSignature(
-                        f"`{__POST_DESERIALIZE__}` must be a class method "
-                        f"with Callable[[{type_name(self.cls)}], "
-                        f"{type_name(self.cls)}] signature"
-                    )
-                else:
-                    self.add_line(
-                        f"return cls.{__POST_DESERIALIZE__}(cls(**kwargs))"
-                    )
+            self._add_from_dict_lines()
+        if self.dialect is None:
+            self.add_line(f"setattr(cls, '{method_name}', {method_name})")
+        else:
+            self.add_line(
+                f"cls.__dialect_from_dict_cache__[dialect] = {method_name}"
+            )
+        self.compile()
+
+    def _add_from_dict_lines(self):
+        config = self.get_config()
+        pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
+        if pre_deserialize:
+            if not isinstance(pre_deserialize, classmethod):
+                raise BadHookSignature(
+                    f"`{__PRE_DESERIALIZE__}` must be a class method with "
+                    f"Callable[[Dict[Any, Any]], Dict[Any, Any]] signature"
+                )
             else:
-                self.add_line("return cls(**kwargs)")
-        self.add_line(f"setattr(cls, '{method_name}', {method_name})")
+                self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
+        self.add_line("try:")
+        with self.indent():
+            self.add_line("kwargs = {}")
+            for fname, ftype in self.field_types.items():
+                self._add_type_modules(ftype)
+                metadata = self.metadatas.get(fname, {})
+                alias = metadata.get("alias")
+                if alias is None:
+                    alias = config.aliases.get(fname)
+                self._from_dict_set_value(fname, ftype, metadata, alias)
+        self.add_line("except AttributeError:")
+        with self.indent():
+            self.add_line("if not isinstance(d, dict):")
+            with self.indent():
+                self.add_line(
+                    f"raise ValueError('Argument for "
+                    f"{type_name(self.cls)}.from_dict method "
+                    f"should be a dict instance') from None"
+                )
+            self.add_line("else:")
+            with self.indent():
+                self.add_line("raise")
+        post_deserialize = self.get_declared_hook(__POST_DESERIALIZE__)
+        if post_deserialize:
+            if not isinstance(post_deserialize, classmethod):
+                raise BadHookSignature(
+                    f"`{__POST_DESERIALIZE__}` must be a class method "
+                    f"with Callable[[{type_name(self.cls)}], "
+                    f"{type_name(self.cls)}] signature"
+                )
+            else:
+                self.add_line(
+                    f"return cls.{__POST_DESERIALIZE__}(cls(**kwargs))"
+                )
+        else:
+            self.add_line("return cls(**kwargs)")
+
+    def _add_from_dict_with_dialect_lines(self) -> None:
+        self.add_line(
+            "from_dict = cls.__dialect_from_dict_cache__.get(dialect)"
+        )
+        self.add_line("if from_dict is not None:")
+        with self.indent():
+            self.add_line(
+                f"return from_dict(cls,d,{self.get_from_dict_flags()})"
+            )
+        self.add_line(
+            "CodeBuilder(cls,dialect=dialect,"
+            "first_method='from_dict').add_from_dict()"
+        )
+        self.add_line(
+            f"return cls.__dialect_from_dict_cache__[dialect]"
+            f"(cls,d,{self.get_from_dict_flags()})"
+        )
+
+    def add_from_dict(self) -> None:
+        self.reset()
+        dialects_feature = self.is_code_generation_option_enabled(
+            ADD_DIALECT_SUPPORT
+        )
+        if dialects_feature:
+            self.add_line(
+                "if not hasattr(cls, '__dialect_from_dict_cache__'):"
+            )
+            with self.indent():
+                self.add_line("cls.__dialect_from_dict_cache__ = {}")
+        if not dialects_feature or dialects_feature and self.dialect:
+            return self._add_from_dict()
+
+        method_name = "from_dict"
+        if self.initial_arg_types:
+            method_name += f"_{self._hash_arg_types(self.initial_arg_types)}"
+        self.add_line("@classmethod")
+        self.add_line(
+            f"def {method_name}(cls, d, "
+            f"{self.get_to_dict_default_flag_values()}):"
+        )
+        with self.indent():
+            self.add_line("if dialect is None:")
+            with self.indent():
+                self._add_from_dict_lines()
+            self.add_line("else:")
+            with self.indent():
+                self._add_from_dict_with_dialect_lines()
+        if self.dialect is None:
+            self.add_line(f"setattr(cls, '{method_name}', {method_name})")
+        else:
+            self.add_line(
+                f"self.__class__."
+                f"__dialect_from_dict_cache__[dialect] = {method_name}"
+            )
         self.compile()
 
     def _from_dict_set_value(self, fname, ftype, metadata, alias=None):
@@ -414,6 +478,20 @@ class CodeBuilder:
             ["use_bytes", "use_enum", "use_datetime", *pluggable_flags]
         )
 
+    def get_from_dict_flags(self, cls=None) -> str:
+        config = self.get_config(cls)
+        code_generation_options = config.code_generation_options
+        parent_config = self.get_config()
+        parent_code_generation_options = parent_config.code_generation_options
+        pluggable_flags = []
+        for option, flag in ((ADD_DIALECT_SUPPORT, "dialect"),):
+            if option in code_generation_options:
+                if option in parent_code_generation_options:
+                    pluggable_flags.append(f"{flag}={flag}")
+        return ",".join(
+            ["use_bytes", "use_enum", "use_datetime", *pluggable_flags]
+        )
+
     def get_to_dict_default_flag_values(self, cls=None) -> str:
         flag_names = []
         flag_values = []
@@ -430,6 +508,26 @@ class CodeBuilder:
             serialize_by_alias = self.get_config(cls).serialize_by_alias
             flag_names.append("by_alias")
             flag_values.append("True" if serialize_by_alias else "False")
+        dialects_feature = self.is_code_generation_option_enabled(
+            ADD_DIALECT_SUPPORT, cls
+        )
+        if dialects_feature:
+            flag_names.append("dialect")
+            flag_values.append("None")
+        if flag_names:
+            pluggable_flags_str = ", *, " + ", ".join(
+                [f"{n}={v}" for n, v in zip(flag_names, flag_values)]
+            )
+        else:
+            pluggable_flags_str = ""
+        return (
+            f"use_bytes=False, use_enum=False, use_datetime=False"
+            f"{pluggable_flags_str}"
+        )
+
+    def get_from_dict_default_flag_values(self, cls=None) -> str:
+        flag_names = []
+        flag_values = []
         dialects_feature = self.is_code_generation_option_enabled(
             ADD_DIALECT_SUPPORT, cls
         )
@@ -521,7 +619,6 @@ class CodeBuilder:
         )
         with self.indent():
             self.add_line("if dialect is None:")
-            # TODO: Use the default dialect if it's declared
             with self.indent():
                 self._add_to_dict_lines()
             self.add_line("else:")
@@ -904,7 +1001,7 @@ class CodeBuilder:
                         )
                         return (
                             f"self.{method_name}({value_name},"
-                            f"use_bytes,use_enum,use_datetime)"
+                            f"{self.get_to_dict_flags()})"
                         )
                 elif is_generic(ftype):
                     if args and is_dataclass(args[0]):
@@ -958,6 +1055,26 @@ class CodeBuilder:
             if isinstance(strategy, SerializationStrategy):
                 deserialize_option = strategy.deserialize
         if deserialize_option is None:
+            if self.dialect is not None:
+                strategy = self.dialect.serialization_strategy.get(ftype)
+                if isinstance(strategy, dict):
+                    deserialize_option = strategy.get("deserialize")
+                elif isinstance(strategy, SerializationStrategy):
+                    deserialize_option = strategy.deserialize
+        if deserialize_option is None:
+            default_dialect = self.get_config().dialect
+            if default_dialect is not None:
+                if not is_dialect_subclass(default_dialect):
+                    raise BadDialect(
+                        f'Config option "dialect" of '
+                        f"{type_name(self.cls)} must be a subclass of Dialect"
+                    )
+                strategy = default_dialect.serialization_strategy.get(ftype)
+                if isinstance(strategy, dict):
+                    deserialize_option = strategy.get("deserialize")
+                elif isinstance(strategy, SerializationStrategy):
+                    deserialize_option = strategy.deserialize
+        if deserialize_option is None:
             strategy = self.get_config().serialization_strategy.get(ftype)
             if isinstance(strategy, dict):
                 deserialize_option = strategy.get("deserialize")
@@ -999,7 +1116,7 @@ class CodeBuilder:
                 method_name = "from_dict"
             return overridden or (
                 f"{type_name(ftype)}.{method_name}({value_name}, "
-                f"use_bytes, use_enum, use_datetime)"
+                f"{self.get_from_dict_flags(ftype)})"
             )
 
         if is_special_typing_primitive(origin_type):
@@ -1403,7 +1520,7 @@ class CodeBuilder:
         lines.append("@classmethod")
         lines.append(
             f"def {method_name}"
-            f"(cls,value,use_bytes=False,use_enum=False,use_datetime=False):"
+            f"(cls,value,{self.get_from_dict_default_flag_values()}):"
         )
         with lines.indent():
             for unpacker in (
@@ -1653,7 +1770,7 @@ class CodeBuilder:
         lines.append("@classmethod")
         lines.append(
             f"def {method_name}"
-            f"(cls,value,use_bytes=False,use_enum=False,use_datetime=False):"
+            f"(cls,value,{self.get_from_dict_default_flag_values()}):"
         )
         with lines.indent():
             lines.append("fields = []")

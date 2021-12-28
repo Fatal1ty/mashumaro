@@ -29,7 +29,7 @@ class DataClassDictMixin:
         use_enum: bool = False,
         use_datetime: bool = False,
         # *
-        # keyword-only flags that exist with the code generation options:
+        # keyword-only arguments that exist with the code generation options:
         # omit_none: bool = False
         # by_alias: bool = False
         # dialect: Type[Dialect] = None
@@ -46,10 +46,14 @@ class DataClassDictMixin:
         use_bytes: bool = False,
         use_enum: bool = False,
         use_datetime: bool = False,
+        # *
+        # keyword-only arguments that exist with the code generation options:
+        # dialect: Type[Dialect] = None
+        **kwargs,
     ) -> T:
         builder = CodeBuilder(cls)
         builder.add_from_dict()
-        return cls.from_dict(d, use_bytes, use_enum, use_datetime)
+        return cls.from_dict(d, use_bytes, use_enum, use_datetime, **kwargs)
 
     @classmethod
     def __pre_deserialize__(cls: Type[T], d: Dict[Any, Any]) -> Dict[Any, Any]:
