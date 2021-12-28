@@ -435,17 +435,7 @@ class CodeBuilder:
         )
         if dialects_feature:
             flag_names.append("dialect")
-            default_dialect = self.get_config(cls).default_dialect
-            if default_dialect is not None:
-                if not is_dialect_subclass(default_dialect):
-                    raise BadDialect(
-                        f'Config option "default_dialect" of '
-                        f"{type_name(self.cls)} must be a subclass of Dialect"
-                    )
-            self._add_type_modules(default_dialect)
-            flag_values.append(
-                "None" if not default_dialect else type_name(default_dialect)
-            )
+            flag_values.append("None")
         if flag_names:
             pluggable_flags_str = ", *, " + ", ".join(
                 [f"{n}={v}" for n, v in zip(flag_names, flag_values)]
@@ -625,6 +615,19 @@ class CodeBuilder:
         if serialize_option is None:
             if self.dialect is not None:
                 strategy = self.dialect.serialization_strategy.get(ftype)
+                if isinstance(strategy, dict):
+                    serialize_option = strategy.get("serialize")
+                elif isinstance(strategy, SerializationStrategy):
+                    serialize_option = strategy.serialize
+        if serialize_option is None:
+            default_dialect = self.get_config().dialect
+            if default_dialect is not None:
+                if not is_dialect_subclass(default_dialect):
+                    raise BadDialect(
+                        f'Config option "dialect" of '
+                        f"{type_name(self.cls)} must be a subclass of Dialect"
+                    )
+                strategy = default_dialect.serialization_strategy.get(ftype)
                 if isinstance(strategy, dict):
                     serialize_option = strategy.get("serialize")
                 elif isinstance(strategy, SerializationStrategy):

@@ -10,8 +10,5 @@ SerializationStrategyValueType = Union[
 class Dialect:
     serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
 
-    def __getattr__(self, item):
-        pass
-
 
 __all__ = ["Dialect"]
