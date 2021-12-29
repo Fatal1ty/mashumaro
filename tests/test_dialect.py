@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import List
+from typing import Generic, List, TypeVar
 
 import pytest
 
@@ -11,6 +11,8 @@ from mashumaro.exceptions import BadDialect
 from mashumaro.types import SerializationStrategy
 
 from .conftest import fake_add_from_dict
+
+T_Date = TypeVar("T_Date", bound=date)
 
 
 class HexSerializationStrategy(SerializationStrategy):
@@ -83,7 +85,42 @@ class DataClassWithDialectSupportAndDefaultDialect(DataClassDictMixin):
     class Config(BaseConfig):
         code_generation_options = [ADD_DIALECT_SUPPORT]
         dialect = FormattedDialect
-        debug = True
+
+
+@dataclass
+class GenericDataClassWithoutDialects(Generic[T_Date], DataClassDictMixin):
+    dt: T_Date
+    i: int
+
+
+@dataclass
+class GenericDataClassWithDefaultDialect(Generic[T_Date], DataClassDictMixin):
+    dt: T_Date
+    i: int
+
+    class Config(BaseConfig):
+        dialect = OrdinalDialect
+
+
+@dataclass
+class GenericDataClassWithDialectSupport(Generic[T_Date], DataClassDictMixin):
+    dt: T_Date
+    i: int
+
+    class Config(BaseConfig):
+        code_generation_options = [ADD_DIALECT_SUPPORT]
+
+
+@dataclass
+class GenericDataClassWithDialectSupportAndDefaultDialect(
+    Generic[T_Date], DataClassDictMixin
+):
+    dt: T_Date
+    i: int
+
+    class Config(BaseConfig):
+        code_generation_options = [ADD_DIALECT_SUPPORT]
+        dialect = FormattedDialect
 
 
 def test_default_dialect():
@@ -308,6 +345,7 @@ def test_inner_with_dialect_support():
             dialect = FormattedDialect
 
     dt = date.today()
+    ordinal = dt.toordinal()
     formatted = dt.strftime("%Y/%m/%d")
     iso = dt.isoformat()
     obj = DataClass(
@@ -322,6 +360,64 @@ def test_inner_with_dialect_support():
         "inners": [{"dt": iso, "i": 255}],
         "i": "0xff",
     }
+    assert obj.to_dict(dialect=OrdinalDialect) == {
+        "dt": ordinal,
+        "inner": {"dt": ordinal, "i": "0xff"},
+        "inners": [{"dt": ordinal, "i": "0xff"}],
+        "i": "0xff",
+    }
+    assert (
+        DataClass.from_dict(
+            {
+                "dt": formatted,
+                "inner": {"dt": iso, "i": 255},
+                "inners": [{"dt": iso, "i": 255}],
+                "i": "0xff",
+            }
+        )
+        == obj
+    )
+    assert (
+        DataClass.from_dict(
+            {
+                "dt": ordinal,
+                "inner": {"dt": ordinal, "i": "0xff"},
+                "inners": [{"dt": ordinal, "i": "0xff"}],
+                "i": "0xff",
+            },
+            dialect=OrdinalDialect,
+        )
+        == obj
+    )
+
+
+def test_inner_with_dialect_support_and_default():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        dt: date
+        inner: DataClassWithDialectSupportAndDefaultDialect
+        inners: List[DataClassWithDialectSupportAndDefaultDialect]
+        i: int
+
+        class Config(BaseConfig):
+            code_generation_options = [ADD_DIALECT_SUPPORT]
+            dialect = FormattedDialect
+
+    dt = date.today()
+    formatted = dt.strftime("%Y/%m/%d")
+    iso = dt.isoformat()
+    obj = DataClass(
+        dt=dt,
+        inner=DataClassWithDialectSupportAndDefaultDialect(dt, 255),
+        inners=[DataClassWithDialectSupportAndDefaultDialect(dt, 255)],
+        i=255,
+    )
+    assert obj.to_dict() == {
+        "dt": formatted,
+        "inner": {"dt": formatted, "i": "0xff"},
+        "inners": [{"dt": formatted, "i": "0xff"}],
+        "i": "0xff",
+    }
     assert obj.to_dict(dialect=ISODialect) == {
         "dt": iso,
         "inner": {"dt": iso, "i": "0xff"},
@@ -332,8 +428,8 @@ def test_inner_with_dialect_support():
         DataClass.from_dict(
             {
                 "dt": formatted,
-                "inner": {"dt": iso, "i": 255},
-                "inners": [{"dt": iso, "i": 255}],
+                "inner": {"dt": formatted, "i": "0xff"},
+                "inners": [{"dt": formatted, "i": "0xff"}],
                 "i": "0xff",
             }
         )
@@ -353,26 +449,202 @@ def test_inner_with_dialect_support():
     )
 
 
-def test_inner_with_dialect_support_and_default():
+def test_generic_without_dialects():
     @dataclass
     class DataClass(DataClassDictMixin):
         dt: date
-        inner: DataClassWithDialectSupportAndDefaultDialect
-        inners: List[DataClassWithDialectSupportAndDefaultDialect]
+        inner: GenericDataClassWithoutDialects[date]
+        inners: List[GenericDataClassWithoutDialects[date]]
         i: int
 
         class Config(BaseConfig):
             code_generation_options = [ADD_DIALECT_SUPPORT]
             dialect = FormattedDialect
-            debug = False
+
+    dt = date.today()
+    formatted = dt.strftime("%Y/%m/%d")
+    ordinal = dt.toordinal()
+    iso = dt.isoformat()
+    obj = DataClass(
+        dt=dt,
+        inner=GenericDataClassWithoutDialects(dt, 255),
+        inners=[GenericDataClassWithoutDialects(dt, 255)],
+        i=255,
+    )
+    assert obj.to_dict() == {
+        "dt": formatted,
+        "inner": {"dt": iso, "i": 255},
+        "inners": [{"dt": iso, "i": 255}],
+        "i": "0xff",
+    }
+    assert obj.to_dict(dialect=OrdinalDialect) == {
+        "dt": ordinal,
+        "inner": {"dt": iso, "i": 255},
+        "inners": [{"dt": iso, "i": 255}],
+        "i": "0xff",
+    }
+    assert (
+        DataClass.from_dict(
+            {
+                "dt": formatted,
+                "inner": {"dt": iso, "i": 255},
+                "inners": [{"dt": iso, "i": 255}],
+                "i": "0xff",
+            }
+        )
+        == obj
+    )
+    assert (
+        DataClass.from_dict(
+            {
+                "dt": ordinal,
+                "inner": {"dt": iso, "i": 255},
+                "inners": [{"dt": iso, "i": 255}],
+                "i": "0xff",
+            },
+            dialect=OrdinalDialect,
+        )
+        == obj
+    )
+
+
+def test_generic_with_default_dialect():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        dt: date
+        inner: GenericDataClassWithDefaultDialect[date]
+        inners: List[GenericDataClassWithDefaultDialect[date]]
+        i: int
+
+        class Config(BaseConfig):
+            code_generation_options = [ADD_DIALECT_SUPPORT]
+            dialect = FormattedDialect
+
+    dt = date.today()
+    formatted = dt.strftime("%Y/%m/%d")
+    ordinal = dt.toordinal()
+    iso = dt.isoformat()
+    obj = DataClass(
+        dt=dt,
+        inner=GenericDataClassWithDefaultDialect(dt, 255),
+        inners=[GenericDataClassWithDefaultDialect(dt, 255)],
+        i=255,
+    )
+    assert obj.to_dict() == {
+        "dt": formatted,
+        "inner": {"dt": ordinal, "i": "0xff"},
+        "inners": [{"dt": ordinal, "i": "0xff"}],
+        "i": "0xff",
+    }
+    assert obj.to_dict(dialect=ISODialect) == {
+        "dt": iso,
+        "inner": {"dt": ordinal, "i": "0xff"},
+        "inners": [{"dt": ordinal, "i": "0xff"}],
+        "i": "0xff",
+    }
+    assert (
+        DataClass.from_dict(
+            {
+                "dt": formatted,
+                "inner": {"dt": ordinal, "i": "0xff"},
+                "inners": [{"dt": ordinal, "i": "0xff"}],
+                "i": "0xff",
+            }
+        )
+        == obj
+    )
+    assert (
+        DataClass.from_dict(
+            {
+                "dt": iso,
+                "inner": {"dt": ordinal, "i": "0xff"},
+                "inners": [{"dt": ordinal, "i": "0xff"}],
+                "i": "0xff",
+            },
+            dialect=ISODialect,
+        )
+        == obj
+    )
+
+
+def test_generic_with_dialect_support():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        dt: date
+        inner: GenericDataClassWithDialectSupport[date]
+        inners: List[GenericDataClassWithDialectSupport[date]]
+        i: int
+
+        class Config(BaseConfig):
+            code_generation_options = [ADD_DIALECT_SUPPORT]
+            dialect = FormattedDialect
+
+    dt = date.today()
+    ordinal = dt.toordinal()
+    formatted = dt.strftime("%Y/%m/%d")
+    iso = dt.isoformat()
+    obj = DataClass(
+        dt=dt,
+        inner=GenericDataClassWithDialectSupport(dt, 255),
+        inners=[GenericDataClassWithDialectSupport(dt, 255)],
+        i=255,
+    )
+    assert obj.to_dict() == {
+        "dt": formatted,
+        "inner": {"dt": iso, "i": 255},
+        "inners": [{"dt": iso, "i": 255}],
+        "i": "0xff",
+    }
+    assert obj.to_dict(dialect=OrdinalDialect) == {
+        "dt": ordinal,
+        "inner": {"dt": ordinal, "i": "0xff"},
+        "inners": [{"dt": ordinal, "i": "0xff"}],
+        "i": "0xff",
+    }
+    assert (
+        DataClass.from_dict(
+            {
+                "dt": formatted,
+                "inner": {"dt": iso, "i": 255},
+                "inners": [{"dt": iso, "i": 255}],
+                "i": "0xff",
+            }
+        )
+        == obj
+    )
+    assert (
+        DataClass.from_dict(
+            {
+                "dt": ordinal,
+                "inner": {"dt": ordinal, "i": "0xff"},
+                "inners": [{"dt": ordinal, "i": "0xff"}],
+                "i": "0xff",
+            },
+            dialect=OrdinalDialect,
+        )
+        == obj
+    )
+
+
+def test_generic_with_dialect_support_and_default():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        dt: date
+        inner: GenericDataClassWithDialectSupportAndDefaultDialect[date]
+        inners: List[GenericDataClassWithDialectSupportAndDefaultDialect[date]]
+        i: int
+
+        class Config(BaseConfig):
+            code_generation_options = [ADD_DIALECT_SUPPORT]
+            dialect = FormattedDialect
 
     dt = date.today()
     formatted = dt.strftime("%Y/%m/%d")
     iso = dt.isoformat()
     obj = DataClass(
         dt=dt,
-        inner=DataClassWithDialectSupportAndDefaultDialect(dt, 255),
-        inners=[DataClassWithDialectSupportAndDefaultDialect(dt, 255)],
+        inner=GenericDataClassWithDialectSupportAndDefaultDialect(dt, 255),
+        inners=[GenericDataClassWithDialectSupportAndDefaultDialect(dt, 255)],
         i=255,
     )
     assert obj.to_dict() == {
