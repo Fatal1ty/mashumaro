@@ -10,6 +10,8 @@ from mashumaro.dialect import Dialect
 from mashumaro.exceptions import BadDialect
 from mashumaro.types import SerializationStrategy
 
+from .conftest import fake_add_from_dict
+
 
 class HexSerializationStrategy(SerializationStrategy):
     def serialize(self, value: int) -> str:
@@ -151,6 +153,16 @@ def test_bad_default_dialect():
 
             class Config(BaseConfig):
                 dialect = int
+
+    with fake_add_from_dict:
+        with pytest.raises(BadDialect):
+
+            @dataclass
+            class _(DataClassDictMixin):
+                dt: date
+
+                class Config(BaseConfig):
+                    dialect = int
 
 
 def test_bad_dialect():
