@@ -705,6 +705,7 @@ class CodeBuilder:
 
         overridden: typing.Optional[str] = None
         serialize_option = metadata.get("serialize")
+        overridden_fn_suffix = str(uuid.uuid4().hex)
         if serialize_option is None:
             strategy = metadata.get("serialization_strategy")
             if isinstance(strategy, SerializationStrategy):
@@ -736,12 +737,9 @@ class CodeBuilder:
             elif isinstance(strategy, SerializationStrategy):
                 serialize_option = strategy.serialize
         if callable(serialize_option):
-            setattr(
-                self.cls,
-                f"__{fname}_serialize",
-                staticmethod(serialize_option),
-            )
-            overridden = f"self.__{fname}_serialize({value_name})"
+            overridden_fn = f"__{fname}_serialize_{overridden_fn_suffix}"
+            setattr(self.cls, overridden_fn, staticmethod(serialize_option))
+            overridden = f"self.{overridden_fn}({value_name})"
 
         ftype = self.__get_real_type(fname, ftype)
         origin_type = get_type_origin(ftype)
@@ -1050,6 +1048,7 @@ class CodeBuilder:
 
         overridden: typing.Optional[str] = None
         deserialize_option = metadata.get("deserialize")
+        overridden_fn_suffix = str(uuid.uuid4().hex)
         if deserialize_option is None:
             strategy = metadata.get("serialization_strategy")
             if isinstance(strategy, SerializationStrategy):
@@ -1081,8 +1080,9 @@ class CodeBuilder:
             elif isinstance(strategy, SerializationStrategy):
                 deserialize_option = strategy.deserialize
         if callable(deserialize_option):
-            setattr(self.cls, f"__{fname}_deserialize", deserialize_option)
-            overridden = f"cls.__{fname}_deserialize({value_name})"
+            overridden_fn = f"__{fname}_deserialize_{overridden_fn_suffix}"
+            setattr(self.cls, overridden_fn, deserialize_option)
+            overridden = f"cls.{overridden_fn}({value_name})"
 
         ftype = self.__get_real_type(fname, ftype)
         origin_type = get_type_origin(ftype)

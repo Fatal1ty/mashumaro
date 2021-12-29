@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from mashumaro import DataClassDictMixin, DataClassJSONMixin
+from mashumaro.dialect import Dialect
 from mashumaro.meta.helpers import (
     get_class_that_defines_field,
     get_class_that_defines_method,
@@ -15,6 +16,7 @@ from mashumaro.meta.helpers import (
     is_class_var,
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
+    is_dialect_subclass,
     is_generic,
     is_init_var,
     is_type_var_any,
@@ -328,3 +330,12 @@ def test_get_generic_collection_based_class_name():
     assert (
         get_generic_name(MyGenericList[int]) == "tests.entities.MyGenericList"
     )
+
+
+def test_is_dialect_subclass():
+    class MyDialect(Dialect):
+        pass
+
+    assert is_dialect_subclass(Dialect)
+    assert is_dialect_subclass(123)
+    assert is_dialect_subclass(MyDialect)
