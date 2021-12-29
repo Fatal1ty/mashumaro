@@ -691,6 +691,9 @@ class CodeBuilder:
         could_be_none=False,
     ):
 
+        ftype = self.__get_real_type(fname, ftype)
+        origin_type = get_type_origin(ftype)
+
         overridden: typing.Optional[str] = None
         serialize_option = metadata.get("serialize")
         overridden_fn_suffix = str(uuid.uuid4().hex)
@@ -728,9 +731,6 @@ class CodeBuilder:
             overridden_fn = f"__{fname}_serialize_{overridden_fn_suffix}"
             setattr(self.cls, overridden_fn, staticmethod(serialize_option))
             overridden = f"self.{overridden_fn}({value_name})"
-
-        ftype = self.__get_real_type(fname, ftype)
-        origin_type = get_type_origin(ftype)
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
@@ -1034,6 +1034,9 @@ class CodeBuilder:
         could_be_none=False,
     ):
 
+        ftype = self.__get_real_type(fname, ftype)
+        origin_type = get_type_origin(ftype)
+
         overridden: typing.Optional[str] = None
         deserialize_option = metadata.get("deserialize")
         overridden_fn_suffix = str(uuid.uuid4().hex)
@@ -1071,9 +1074,6 @@ class CodeBuilder:
             overridden_fn = f"__{fname}_deserialize_{overridden_fn_suffix}"
             setattr(self.cls, overridden_fn, deserialize_option)
             overridden = f"cls.{overridden_fn}({value_name})"
-
-        ftype = self.__get_real_type(fname, ftype)
-        origin_type = get_type_origin(ftype)
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
