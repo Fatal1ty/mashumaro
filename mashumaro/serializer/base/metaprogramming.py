@@ -389,13 +389,7 @@ class CodeBuilder:
             self.add_line("else:")
             with self.indent():
                 self._add_from_dict_with_dialect_lines()
-        if self.dialect is None:
-            self.add_line(f"setattr(cls, '{method_name}', {method_name})")
-        else:
-            self.add_line(
-                f"self.__class__."
-                f"__dialect_from_dict_cache__[dialect] = {method_name}"
-            )
+        self.add_line(f"setattr(cls, '{method_name}', {method_name})")
         self.compile()
 
     def _from_dict_set_value(self, fname, ftype, metadata, alias=None):
@@ -624,13 +618,7 @@ class CodeBuilder:
             self.add_line("else:")
             with self.indent():
                 self._add_to_dict_with_dialect_lines()
-        if self.dialect is None:
-            self.add_line(f"setattr(cls, '{method_name}', {method_name})")
-        else:
-            self.add_line(
-                f"self.__class__."
-                f"__dialect_to_dict_cache__[dialect] = {method_name}"
-            )
+        self.add_line(f"setattr(cls, '{method_name}', {method_name})")
         self.compile()
 
     def _to_dict_set_value(self, fname, ftype, metadata):
