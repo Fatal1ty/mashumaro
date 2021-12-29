@@ -337,5 +337,5 @@ def test_is_dialect_subclass():
         pass
 
     assert is_dialect_subclass(Dialect)
-    assert not is_dialect_subclass(123)
     assert is_dialect_subclass(MyDialect)
+    assert not is_dialect_subclass(123)
