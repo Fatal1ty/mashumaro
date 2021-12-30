@@ -38,9 +38,14 @@ Table of contents
         * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
         * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
         * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
+        * [`dialect` config option](#dialect-config-option)
+    * [Dialects](#dialects)
+      * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
+      * [Changing the default dialect](#changing-the-default-dialect)
     * [Code generation options](#code-generation-options)
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
         * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
+        * [Add `dialect` keyword argument](#add-dialect-keyword-argument)
     * [User-defined generic types](#user-defined-generic-types)
       * [User-defined generic dataclasses](#user-defined-generic-dataclasses)
       * [Generic dataclasses as field types](#generic-dataclasses-as-field-types)
@@ -692,9 +697,10 @@ The following table provides a brief overview of all the available constants
 described below.
 
 | Constant                                                        | Description
-|:--------------------------------------------------------------- |:------------------------------------------------------------|
-| [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_dict` method. |
-| [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-by_alias-keyword-argument)   | Adds `by_alias` keyword-only arguments to `to_dict` method. |
+|:--------------------------------------------------------------- |:---------------------------------------------------------------------------|
+| [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_dict` method.                |
+| [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-by_alias-keyword-argument)   | Adds `by_alias` keyword-only argument to `to_dict` method.                 |
+| [`ADD_DIALECT_SUPPORT`](#add-dialect-keyword-argument)          | Adds `dialect` keyword-only argument to `from_dict` and `to_dict` methods. |
 
 #### `serialization_strategy` config option
 
@@ -896,7 +902,104 @@ class B(DataClassDictMixin):
     y: int
 ```
 
-In this case you will get `UnresolvedTypeReferenceError` regardless of whether class B is declared below or not.
+In this case you will get `UnresolvedTypeReferenceError` regardless of whether
+class B is declared below or not.
+
+#### `dialect` config option
+
+This option is described [below](#changing-the-default-dialect) in the
+Dialects section.
+
+### Dialects
+
+Sometimes it's needed to have different serialization and deserialization
+methods depending on the data source where entities of the dataclass are
+stored or on the API to which the entities are being sent or received from.
+There is a special Dialect type that may contain all the differences from the
+default serialization and deserialization methods. You can create different
+dialects and use each of them for the same dataclass depending on
+the situation.
+
+Suppose we have the following dataclass with a field of type `date`:
+```python
+@dataclass
+class Entity(DataClassDictMixin):
+    dt: date
+```
+
+By default, a field of `date` type serializes to a string in ISO 8601 format,
+so the serialized entity will look like `{'dt': '2021-12-31'}`. But what if we
+have, for example, two sensitive legacy Ethiopian and Japanese APIs that use
+two different formats for dates — `dd/mm/yyyy` and `yyyy年mm月dd日`? Instead of
+creating two similar dataclasses we can have one dataclass and two dialects:
+```python
+from dataclasses import dataclass
+from datetime import date, datetime
+from mashumaro import DataClassDictMixin
+from mashumaro.config import ADD_DIALECT_SUPPORT
+from mashumaro.dialect import Dialect
+from mashumaro.types import SerializationStrategy
+
+class DateTimeSerializationStrategy(SerializationStrategy):
+    def __init__(self, fmt: str):
+        self.fmt = fmt
+
+    def serialize(self, value: date) -> str:
+        return value.strftime(self.fmt)
+
+    def deserialize(self, value: str) -> date:
+        return datetime.strptime(value, self.fmt).date()
+
+class EthiopianDialect(Dialect):
+    serialization_strategy = {
+        date: DateTimeSerializationStrategy("%d/%m/%Y")
+    }
+
+class JapaneseDialect(Dialect):
+    serialization_strategy = {
+        date: DateTimeSerializationStrategy("%Y年%m月%d日")
+    }
+
+@dataclass
+class Entity(DataClassDictMixin):
+    dt: date
+
+    class Config:
+        code_generation_options = [ADD_DIALECT_SUPPORT]
+
+entity = Entity(date(2021, 12, 31))
+entity.to_dict(dialect=EthiopianDialect)  # {'dt': '31/12/2021'}
+entity.to_dict(dialect=JapaneseDialect)   # {'dt': '2021年12月31日'}
+Entity.from_dict({'dt': '2021年12月31日'}, dialect=JapaneseDialect)
+```
+
+#### `serialization_strategy` dialect option
+
+This dialect option has the same meaning as
+[the similar config option](#serialization_strategy-config-option)
+but for the dialect scope. You can register custom `SerializationStrategy`,
+`serialize` and `deserialize` methods for specific types.
+
+#### Changing the default dialect
+
+You can change the default serialization and deserialization methods for
+a dataclass not only in the `serialization_strategy` config option but using
+the `dialect` config option. If you have multiple dataclasses without a common
+parent class the default dialect can help you to reduce the number of code
+lines written:
+
+```python
+@dataclass
+class Entity(DataClassDictMixin):
+    dt: date
+
+    class Config:
+        dialect = JapaneseDialect
+
+entity = Entity(date(2021, 12, 31))
+entity.to_dict()  # {'dt': '2021年12月31日'}
+assert Entity.from_dict({'dt': '2021年12月31日'}) == entity
+```
 
 ### Code generation options
 
@@ -954,6 +1057,24 @@ DataClass(field_a=1).to_dict(by_alias=True)  # {'FieldA': 1}
 
 Keep in mind, if you're serializing data in JSON or another format, then you
 need to pass `by_alias` argument to [`dict_params`](#dataclassjsonmixinto_jsonencoder-optionalencoder-dict_params-optionalmapping-encoder_kwargs) dictionary.
+
+#### Add `dialect` keyword argument
+
+Support for [dialects](#dialects) is disabled by default for performance reasons. You can enable
+it using a `ADD_DIALECT_SUPPORT` constant:
+```python
+from dataclasses import dataclass
+from datetime import date
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig, ADD_DIALECT_SUPPORT
+
+@dataclass
+class Entity(DataClassDictMixin):
+    dt: date
+
+    class Config(BaseConfig):
+        code_generation_options = [ADD_DIALECT_SUPPORT]
+```
 
 ### User-defined generic types
 

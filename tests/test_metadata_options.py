@@ -22,8 +22,8 @@ from .entities import (
     MyNamedTupleWithDefaults,
     MyUntypedNamedTuple,
     ThirdPartyType,
-    TypedDictRequiredKeys,
     TIntStr,
+    TypedDictRequiredKeys,
 )
 
 if PY_37_MIN:

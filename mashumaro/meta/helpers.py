@@ -10,6 +10,8 @@ from dataclasses import _FIELDS  # type: ignore
 
 import typing_extensions
 
+from mashumaro.dialect import Dialect
+
 from .macros import (
     PY_36,
     PY_37,
@@ -310,6 +312,13 @@ def get_name_error_name(e: NameError) -> str:
         return match.group(1) if match else ""
 
 
+def is_dialect_subclass(t) -> bool:
+    try:
+        return issubclass(t, Dialect)
+    except TypeError:
+        return False
+
+
 __all__ = [
     "get_type_origin",
     "get_args",
@@ -331,4 +340,5 @@ __all__ = [
     "resolve_type_vars",
     "get_generic_name",
     "get_name_error_name",
+    "is_dialect_subclass",
 ]

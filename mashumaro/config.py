@@ -1,5 +1,6 @@
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 
+from mashumaro.dialect import Dialect
 from mashumaro.meta.macros import PEP_586_COMPATIBLE
 from mashumaro.types import SerializationStrategy
 
@@ -11,11 +12,13 @@ else:
 
 TO_DICT_ADD_BY_ALIAS_FLAG = "TO_DICT_ADD_BY_ALIAS_FLAG"
 TO_DICT_ADD_OMIT_NONE_FLAG = "TO_DICT_ADD_OMIT_NONE_FLAG"
+ADD_DIALECT_SUPPORT = "ADD_DIALECT_SUPPORT"
 
 
 CodeGenerationOption = Literal[
     "TO_DICT_ADD_BY_ALIAS_FLAG",
     "TO_DICT_ADD_OMIT_NONE_FLAG",
+    "ADD_DIALECT_SUPPORT",
 ]
 
 
@@ -32,10 +35,12 @@ class BaseConfig:
     serialize_by_alias: bool = False
     namedtuple_as_dict: bool = False
     allow_postponed_evaluation: bool = True
+    dialect: Optional[Type[Dialect]] = None
 
 
 __all__ = [
     "BaseConfig",
     "TO_DICT_ADD_BY_ALIAS_FLAG",
     "TO_DICT_ADD_OMIT_NONE_FLAG",
+    "ADD_DIALECT_SUPPORT",
 ]

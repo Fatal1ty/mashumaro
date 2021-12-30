@@ -137,3 +137,7 @@ class UnresolvedTypeReferenceError(NameError):
             f"Class {self.holder_class_name} has unresolved type reference "
             f"{self.name} in some of its fields"
         )
+
+
+class BadDialect(ValueError):
+    pass
