@@ -12,7 +12,7 @@ DEFAULT_DICT_PARAMS = {
     "use_enum": False,
     "use_datetime": False,
 }
-EncodedData = Union[str, bytes, bytearray]
+EncodedData = bytes
 T = TypeVar("T", bound="DataClassMessagePackMixin")
 
 
