@@ -682,3 +682,19 @@ def test_generic_with_dialect_support_and_default():
         )
         == obj
     )
+
+
+def test_debug_true_option_with_dialect(mocker):
+    mocked_print = mocker.patch("builtins.print")
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        dt: date
+
+        class Config(BaseConfig):
+            debug = True
+            code_generation_options = [ADD_DIALECT_SUPPORT]
+
+    DataClass(date.today()).to_dict(dialect=FormattedDialect)
+    mocked_print.assert_called()
+    assert mocked_print.call_count == 6
