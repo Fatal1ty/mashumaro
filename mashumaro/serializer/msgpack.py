@@ -1,6 +1,6 @@
 from functools import partial
 from types import MappingProxyType
-from typing import Any, Dict, Mapping, Type, TypeVar, Union
+from typing import Any, Dict, Mapping, Type, TypeVar
 
 import msgpack
 from typing_extensions import Protocol
