@@ -162,7 +162,9 @@ class CodeBuilder:
         globalns = sys.modules[self.cls.__module__].__dict__.copy()
         globalns[self.cls.__name__] = self.cls
         try:
-            field_type_hints = typing.get_type_hints(self.cls, globalns)
+            field_type_hints = typing.get_type_hints(
+                self.cls, globalns, self.cls.__dict__
+            )
         except NameError as e:
             name = get_name_error_name(e)
             raise UnresolvedTypeReferenceError(self.cls, name) from None
