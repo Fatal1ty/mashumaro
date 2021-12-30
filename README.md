@@ -914,7 +914,7 @@ Dialects section.
 
 Sometimes it's needed to have different serialization and deserialization
 methods depending on the data source where entities of the dataclass are
-stored or the API to which the entities are being sent or received from.
+stored or on the API to which the entities are being sent or received from.
 There is a special Dialect type that may contain all the differences from the
 default serialization and deserialization methods. You can create different
 dialects and use each of them for the same dataclass depending on
