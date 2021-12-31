@@ -116,11 +116,38 @@ marshmallow_to_dict = min(
         number=REPETITIONS,
     )
 )
+apischema_from_dict = min(
+    timeit.repeat(
+        "deserialize(sample)",
+        setup=(
+            "from benchmark.sample import sample_1 as sample;"
+            "from benchmark.apischema_setup import deserialize;"
+            "sample['dict_complex'] = {str(k): v for k, v in sample['dict_complex'].items()};"
+        ),
+        number=REPETITIONS,
+    )
+)
+apischema_to_dict = min(
+    timeit.repeat(
+        "serialize(obj)",
+        setup=(
+            "from benchmark.sample import sample_1 as sample;"
+            "from benchmark.apischema_setup import deserialize, serialize;"
+            "sample['dict_complex'] = {str(k): v for k, v in sample['dict_complex'].items()};"
+            "obj = deserialize(sample);"
+        ),
+        number=REPETITIONS,
+    )
+)
 
 
 # Print table
 
 slowdown = {
+    "apischema": [
+        f"{round(apischema_from_dict / mashumaro_from_dict, 2)}x",
+        f"{round(apischema_to_dict / mashumaro_to_dict, 2)}x",
+    ],
     "cattrs": [
         f"{round(cattrs_from_dict / mashumaro_from_dict, 2)}x",
         f"{round(cattrs_to_dict / mashumaro_to_dict, 2)}x",
@@ -148,6 +175,12 @@ header = [
 ]
 data = [
     ["mashumaro", mashumaro_from_dict, mashumaro_to_dict, "1x"],
+    [
+        "apischema",
+        apischema_from_dict,
+        apischema_to_dict,
+        " / ".join(slowdown["apischema"]),
+    ],
     [
         "cattrs",
         cattrs_from_dict,
@@ -187,6 +220,13 @@ writer = HtmlTableWriter(
     ],
     value_matrix=[
         ["mashumaro", mashumaro_from_dict, "1x", mashumaro_to_dict, "1x"],
+        [
+            "apischema",
+            apischema_from_dict,
+            slowdown["apischema"][0],
+            apischema_to_dict,
+            slowdown["apischema"][1],
+        ],
         [
             "cattrs",
             cattrs_from_dict,
@@ -234,13 +274,21 @@ ax.set_ylabel(f"Elapsed time for {REPETITIONS} repetitions in seconds")
 
 y = [
     mashumaro_from_dict,
+    apischema_from_dict,
     cattrs_from_dict,
     pydantic_from_dict,
     dacite_from_dict,
     marshmallow_from_dict,
 ]
 x = list(range(1, len(y) + 1))
-labels = ["mashumaro", "cattrs", "pydantic", "dacite", "marshmallow"]
+labels = [
+    "mashumaro",
+    "apischema",
+    "cattrs",
+    "pydantic",
+    "dacite",
+    "marshmallow",
+]
 
 bar = plt.bar(x, height=y, tick_label=labels, label="a")
 plt.title = "Load time"
@@ -255,13 +303,21 @@ ax.set_ylabel(f"Elapsed time for {REPETITIONS} repetitions in seconds")
 
 y = [
     mashumaro_to_dict,
+    apischema_to_dict,
     cattrs_to_dict,
     pydantic_to_dict,
     dataclasses_to_dict,
     marshmallow_to_dict,
 ]
 x = list(range(1, len(y) + 1))
-labels = ["mashumaro", "cattrs", "pydantic", "dataclasses", "marshmallow"]
+labels = [
+    "mashumaro",
+    "apischema",
+    "cattrs",
+    "pydantic",
+    "dataclasses",
+    "marshmallow",
+]
 
 bar = plt.bar(x, height=y, tick_label=labels, label="a")
 plt.title = "Dump time"
