@@ -122,7 +122,9 @@ apischema_from_dict = min(
         setup=(
             "from benchmark.sample import sample_1 as sample;"
             "from benchmark.apischema_setup import deserialize;"
-            "sample['dict_complex'] = {str(k): v for k, v in sample['dict_complex'].items()};"
+            "sample['dict_complex'] = {"
+            "   str(k): v for k, v in sample['dict_complex'].items()"
+            "};"
         ),
         number=REPETITIONS,
     )
@@ -133,7 +135,9 @@ apischema_to_dict = min(
         setup=(
             "from benchmark.sample import sample_1 as sample;"
             "from benchmark.apischema_setup import deserialize, serialize;"
-            "sample['dict_complex'] = {str(k): v for k, v in sample['dict_complex'].items()};"
+            "sample['dict_complex'] = {"
+            "   str(k): v for k, v in sample['dict_complex'].items()"
+            "};"
             "obj = deserialize(sample);"
         ),
         number=REPETITIONS,
