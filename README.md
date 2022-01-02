@@ -975,8 +975,8 @@ Entity.from_dict({'dt': '2021年12月31日'}, dialect=JapaneseDialect)
 
 #### `serialization_strategy` dialect option
 
-This dialect option has the same meaning as
-[the similar config option](#serialization_strategy-config-option)
+This dialect option has the same meaning as the
+[similar config option](#serialization_strategy-config-option)
 but for the dialect scope. You can register custom `SerializationStrategy`,
 `serialize` and `deserialize` methods for specific types.
 
