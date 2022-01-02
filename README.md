@@ -983,10 +983,11 @@ but for the dialect scope. You can register custom `SerializationStrategy`,
 #### Changing the default dialect
 
 You can change the default serialization and deserialization methods for
-a dataclass not only in the `serialization_strategy` config option but using
-the `dialect` config option. If you have multiple dataclasses without a common
-parent class the default dialect can help you to reduce the number of code
-lines written:
+a dataclass not only in the
+[`serialization_strategy`](#serialization_strategy-config-option) config option
+but using the `dialect` config option. If you have multiple dataclasses without
+a common parent class the default dialect can help you to reduce the number of
+code lines written:
 
 ```python
 @dataclass
