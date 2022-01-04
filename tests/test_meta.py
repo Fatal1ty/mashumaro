@@ -380,6 +380,7 @@ def test_is_union():
     assert get_args(t) == (NoneType, str)
 
 
+@pytest.mark.skipif(not PY_310_MIN, reason="requires python 3.10+")
 def test_is_union_pep_604():
     t = str | None
     assert is_optional(t)
