@@ -70,10 +70,14 @@ def _get_args_str(
     short: bool,
     type_vars: typing.Dict[str, typing.Any] = None,
     limit: typing.Optional[int] = None,
+    none_type_as_none: bool = False,
     sep: str = ", ",
 ):
     args = get_args(t)[:limit]
-    return sep.join(type_name(arg, short, type_vars) for arg in args)
+    return sep.join(
+        type_name(arg, short, type_vars, none_type_as_none=none_type_as_none)
+        for arg in args
+    )
 
 
 def _typing_name(t: str, short: bool = False):
@@ -85,10 +89,11 @@ def type_name(
     short: bool = False,
     type_vars: typing.Dict[str, typing.Any] = None,
     is_type_origin: bool = False,
+    none_type_as_none: bool = False,
 ) -> str:
     if type_vars is None:
         type_vars = {}
-    if t is NoneType:
+    if t is NoneType and none_type_as_none:
         return "None"
     elif t is typing.Any:
         return _typing_name("Any", short)
@@ -96,7 +101,7 @@ def type_name(
         args_str = type_name(not_none_type_arg(get_args(t), type_vars), short)
         return f"{_typing_name('Optional', short)}[{args_str}]"
     elif is_union(t):
-        args_str = _get_args_str(t, short, type_vars)
+        args_str = _get_args_str(t, short, type_vars, none_type_as_none=True)
         return f"{_typing_name('Union', short)}[{args_str}]"
     elif is_generic(t) and not is_type_origin:
         args_str = _get_args_str(t, short, type_vars)

@@ -192,7 +192,14 @@ def test_type_name():
     assert type_name(typing.Union[None, int]) == "typing.Optional[int]"
     assert type_name(typing.Union[int, None]) == "typing.Optional[int]"
     assert type_name(None) == "None"
-    assert type_name(NoneType) == "None"
+    assert type_name(NoneType) == "NoneType"
+    assert type_name(NoneType, none_type_as_none=True) == "None"
+    assert type_name(typing.List[NoneType]) == "typing.List[NoneType]"
+    assert (
+        type_name(typing.Union[int, str, None])
+        == "typing.Union[int, str, None]"
+    )
+    assert type_name(typing.Optional[NoneType]) == "NoneType"
 
     if PY_310_MIN:
         assert type_name(int | None) == "typing.Optional[int]"
@@ -274,7 +281,14 @@ def test_type_name_short():
     assert type_name(typing.Union[None, int], short=True) == "Optional[int]"
     assert type_name(typing.Union[int, None], short=True) == "Optional[int]"
     assert type_name(None, short=True) == "None"
-    assert type_name(NoneType, short=True) == "None"
+    assert type_name(NoneType, short=True) == "NoneType"
+    assert type_name(NoneType, short=True, none_type_as_none=True) == "None"
+    assert type_name(typing.List[NoneType], short=True) == "List[NoneType]"
+    assert (
+        type_name(typing.Union[int, str, None], short=True)
+        == "Union[int, str, None]"
+    )
+    assert type_name(typing.Optional[NoneType], short=True) == "NoneType"
 
     if PY_310_MIN:
         assert type_name(int | None, short=True) == "Optional[int]"

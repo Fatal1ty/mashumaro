@@ -121,6 +121,10 @@ for special primitives from the [`typing`](https://docs.python.org/3/library/typ
 * [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)
 * [`TypeVar`](https://docs.python.org/3/library/typing.html#typing.TypeVar)
 
+for standard interpreter types from [`types`](https://docs.python.org/3/library/types.html#standard-interpreter-types) module:
+* [`NoneType`](https://docs.python.org/3/library/types.html#types.NoneType)
+* [`UnionType`](https://docs.python.org/3/library/types.html#types.UnionType)
+
 for enumerations based on classes from the standard [`enum`](https://docs.python.org/3/library/enum.html) module:
 * [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
 * [`IntEnum`](https://docs.python.org/3/library/enum.html#enum.IntEnum)
@@ -163,8 +167,7 @@ for other less popular built-in types:
 * [`ipaddress.IPv4Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv4Interface)
 * [`ipaddress.IPv6Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv6Interface)
 
-for specific types like:
-* [`NoneType`](https://docs.python.org/3/library/constants.html#None)
+for arbitrary types:
 * [user-defined classes](#serializabletype-interface)
 * [user-defined generic types](#user-defined-generic-types)
 
