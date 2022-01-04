@@ -1439,3 +1439,15 @@ def test_dataclass_with_untyped_named_tuple_with_defaults():
     obj = DataClass(x=MyUntypedNamedTupleWithDefaults(i="1"))
     assert DataClass.from_dict({"x": ["1"]}) == obj
     assert obj.to_dict() == {"x": ["1", 2.0]}
+
+
+def test_data_class_with_none():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: None
+        y: NoneType
+        z: List[None]
+
+    obj = DataClass(x=None, y=None, z=[None])
+    assert DataClass.from_dict({"x": None, "y": None, "z": [None]}) == obj
+    assert obj.to_dict() == {"x": None, "y": None, "z": [None]}
