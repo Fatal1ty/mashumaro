@@ -417,3 +417,4 @@ def test_not_non_type_arg():
     assert not_none_type_arg((str, int)) == str
     assert not_none_type_arg((NoneType, int)) == int
     assert not_none_type_arg((str, NoneType)) == str
+    assert not_none_type_arg((T, int), {T: NoneType}) == int
