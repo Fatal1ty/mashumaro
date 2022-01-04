@@ -23,6 +23,7 @@ from mashumaro.meta.helpers import (
     is_optional,
     is_type_var_any,
     is_union,
+    not_none_type_arg,
     resolve_type_vars,
     type_name,
 )
@@ -370,23 +371,23 @@ def test_is_dialect_subclass():
 
 def test_is_union():
     t = typing.Optional[str]
-    assert is_optional(t)
+    assert is_union(t)
     assert get_args(t) == (str, NoneType)
     t = typing.Union[str, None]
-    assert is_optional(t)
+    assert is_union(t)
     assert get_args(t) == (str, NoneType)
     t = typing.Union[None, str]
-    assert is_optional(t)
+    assert is_union(t)
     assert get_args(t) == (NoneType, str)
 
 
 @pytest.mark.skipif(not PY_310_MIN, reason="requires python 3.10+")
 def test_is_union_pep_604():
     t = str | None
-    assert is_optional(t)
+    assert is_union(t)
     assert get_args(t) == (str, NoneType)
     t = None | str
-    assert is_optional(t)
+    assert is_union(t)
     assert get_args(t) == (NoneType, str)
 
 
@@ -410,3 +411,9 @@ def test_is_optional_pep_604():
     t = None | str
     assert is_optional(t)
     assert get_args(t) == (NoneType, str)
+
+
+def test_not_non_type_arg():
+    assert not_none_type_arg((str, int)) == str
+    assert not_none_type_arg((NoneType, int)) == int
+    assert not_none_type_arg((str, NoneType)) == str
