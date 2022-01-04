@@ -59,6 +59,7 @@ from mashumaro.meta.helpers import (
     is_type_var_any,
     is_typed_dict,
     is_union,
+    not_none_type_arg,
     resolve_type_vars,
     type_name,
 )
@@ -767,9 +768,11 @@ class CodeBuilder:
                 if overridden:
                     return overridden
                 args = get_args(ftype)
-                if is_optional(ftype):
+                field_type_vars = self._get_field_type_vars(fname)
+                if is_optional(ftype, field_type_vars):
+                    arg = not_none_type_arg(args, field_type_vars)
                     pv = self._pack_value(
-                        fname, args[0], parent, value_name, metadata=metadata
+                        fname, arg, parent, value_name, metadata=metadata
                     )
                     if could_be_none:
                         return f"{pv} if {value_name} is not None else None"
@@ -1116,9 +1119,11 @@ class CodeBuilder:
                 if overridden:
                     return overridden
                 args = get_args(ftype)
-                if is_optional(ftype):
+                field_type_vars = self._get_field_type_vars(fname)
+                if is_optional(ftype, field_type_vars):
+                    arg = not_none_type_arg(args, field_type_vars)
                     ufv = self._unpack_field_value(
-                        fname, args[0], parent, value_name, metadata=metadata
+                        fname, arg, parent, value_name, metadata=metadata
                     )
                     if could_be_none:
                         return f"{ufv} if {value_name} is not None else None"
