@@ -93,19 +93,11 @@ def type_name(
     elif t is typing.Any:
         return _typing_name("Any", short)
     elif is_optional(t, type_vars):
-        if is_pep_604_union(t):
-            return _get_args_str(t, short, type_vars, sep=" | ")
-        else:
-            args_str = type_name(
-                not_none_type_arg(get_args(t), type_vars), short
-            )
-            return f"{_typing_name('Optional', short)}[{args_str}]"
+        args_str = type_name(not_none_type_arg(get_args(t), type_vars), short)
+        return f"{_typing_name('Optional', short)}[{args_str}]"
     elif is_union(t):
-        if is_pep_604_union(t):
-            return _get_args_str(t, short, type_vars, sep=" | ")
-        else:
-            args_str = _get_args_str(t, short, type_vars)
-            return f"{_typing_name('Union', short)}[{args_str}]"
+        args_str = _get_args_str(t, short, type_vars)
+        return f"{_typing_name('Union', short)}[{args_str}]"
     elif is_generic(t) and not is_type_origin:
         args_str = _get_args_str(t, short, type_vars)
         if not args_str:
@@ -194,7 +186,7 @@ def is_named_tuple(t):
 
 def is_union(t):
     try:
-        if is_pep_604_union(t):
+        if PY_310_MIN and isinstance(t, types.UnionType):
             return True
         return t.__origin__ is typing.Union
     except AttributeError:
@@ -212,12 +204,6 @@ def is_optional(t, type_vars: typing.Dict[str, typing.Any] = None):
     for arg in args:
         if type_vars.get(arg, arg) is NoneType:
             return True
-    return False
-
-
-def is_pep_604_union(t):
-    if PY_310_MIN:
-        return isinstance(t, types.UnionType)
     return False
 
 

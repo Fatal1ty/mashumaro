@@ -195,9 +195,9 @@ def test_type_name():
     assert type_name(NoneType) == "None"
 
     if PY_310_MIN:
-        assert type_name(int | None) == "int | None"
-        assert type_name(None | int) == "None | int"
-        assert type_name(int | str) == "int | str"
+        assert type_name(int | None) == "typing.Optional[int]"
+        assert type_name(None | int) == "typing.Optional[int]"
+        assert type_name(int | str) == "typing.Union[int, str]"
 
 
 @pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
@@ -277,9 +277,9 @@ def test_type_name_short():
     assert type_name(NoneType, short=True) == "None"
 
     if PY_310_MIN:
-        assert type_name(int | None, short=True) == "int | None"
-        assert type_name(None | int, short=True) == "None | int"
-        assert type_name(int | str, short=True) == "int | str"
+        assert type_name(int | None, short=True) == "Optional[int]"
+        assert type_name(None | int, short=True) == "Optional[int]"
+        assert type_name(int | str, short=True) == "Union[int, str]"
 
 
 @pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
