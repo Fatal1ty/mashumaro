@@ -827,7 +827,7 @@ class CodeBuilder:
             return overridden or f"int({value_name})"
         elif origin_type is float:
             return overridden or f"float({value_name})"
-        elif origin_type in (bool, NoneType):
+        elif origin_type in (bool, NoneType, None):
             return overridden or value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
             if overridden:
@@ -1178,7 +1178,7 @@ class CodeBuilder:
             return overridden or f"int({value_name})"
         elif origin_type is float:
             return overridden or f"float({value_name})"
-        elif origin_type in (bool, NoneType):
+        elif origin_type in (bool, NoneType, None):
             return overridden or value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
             if overridden:
