@@ -9,6 +9,7 @@ import pytest
 from mashumaro import DataClassDictMixin, DataClassJSONMixin
 from mashumaro.dialect import Dialect
 from mashumaro.meta.helpers import (
+    get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
     get_generic_name,
@@ -19,11 +20,20 @@ from mashumaro.meta.helpers import (
     is_dialect_subclass,
     is_generic,
     is_init_var,
+    is_optional,
     is_type_var_any,
+    is_union,
+    not_none_type_arg,
     resolve_type_vars,
     type_name,
 )
-from mashumaro.meta.macros import PEP_585_COMPATIBLE, PY_37, PY_37_MIN, PY_38
+from mashumaro.meta.macros import (
+    PEP_585_COMPATIBLE,
+    PY_37,
+    PY_37_MIN,
+    PY_38,
+    PY_310_MIN,
+)
 from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
 from .entities import (
@@ -35,6 +45,8 @@ from .entities import (
     TInt,
     TIntStr,
 )
+
+NoneType = type(None)
 
 TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 
@@ -177,7 +189,22 @@ def test_type_name():
             == "typing.OrderedDict[int, int]"
         )
     assert type_name(typing.Optional[int]) == "typing.Optional[int]"
+    assert type_name(typing.Union[None, int]) == "typing.Optional[int]"
+    assert type_name(typing.Union[int, None]) == "typing.Optional[int]"
     assert type_name(None) == "None"
+    assert type_name(NoneType) == "NoneType"
+    assert type_name(NoneType, none_type_as_none=True) == "None"
+    assert type_name(typing.List[NoneType]) == "typing.List[NoneType]"
+    assert (
+        type_name(typing.Union[int, str, None])
+        == "typing.Union[int, str, None]"
+    )
+    assert type_name(typing.Optional[NoneType]) == "NoneType"
+
+    if PY_310_MIN:
+        assert type_name(int | None) == "typing.Optional[int]"
+        assert type_name(None | int) == "typing.Optional[int]"
+        assert type_name(int | str) == "typing.Union[int, str]"
 
 
 @pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
@@ -251,7 +278,22 @@ def test_type_name_short():
             == "OrderedDict[int, int]"
         )
     assert type_name(typing.Optional[int], short=True) == "Optional[int]"
+    assert type_name(typing.Union[None, int], short=True) == "Optional[int]"
+    assert type_name(typing.Union[int, None], short=True) == "Optional[int]"
     assert type_name(None, short=True) == "None"
+    assert type_name(NoneType, short=True) == "NoneType"
+    assert type_name(NoneType, short=True, none_type_as_none=True) == "None"
+    assert type_name(typing.List[NoneType], short=True) == "List[NoneType]"
+    assert (
+        type_name(typing.Union[int, str, None], short=True)
+        == "Union[int, str, None]"
+    )
+    assert type_name(typing.Optional[NoneType], short=True) == "NoneType"
+
+    if PY_310_MIN:
+        assert type_name(int | None, short=True) == "Optional[int]"
+        assert type_name(None | int, short=True) == "Optional[int]"
+        assert type_name(int | str, short=True) == "Union[int, str]"
 
 
 @pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
@@ -339,3 +381,54 @@ def test_is_dialect_subclass():
     assert is_dialect_subclass(Dialect)
     assert is_dialect_subclass(MyDialect)
     assert not is_dialect_subclass(123)
+
+
+def test_is_union():
+    t = typing.Optional[str]
+    assert is_union(t)
+    assert get_args(t) == (str, NoneType)
+    t = typing.Union[str, None]
+    assert is_union(t)
+    assert get_args(t) == (str, NoneType)
+    t = typing.Union[None, str]
+    assert is_union(t)
+    assert get_args(t) == (NoneType, str)
+
+
+@pytest.mark.skipif(not PY_310_MIN, reason="requires python 3.10+")
+def test_is_union_pep_604():
+    t = str | None
+    assert is_union(t)
+    assert get_args(t) == (str, NoneType)
+    t = None | str
+    assert is_union(t)
+    assert get_args(t) == (NoneType, str)
+
+
+def test_is_optional():
+    t = typing.Optional[str]
+    assert is_optional(t)
+    assert get_args(t) == (str, NoneType)
+    t = typing.Union[str, None]
+    assert is_optional(t)
+    assert get_args(t) == (str, NoneType)
+    t = typing.Union[None, str]
+    assert is_optional(t)
+    assert get_args(t) == (NoneType, str)
+
+
+@pytest.mark.skipif(not PY_310_MIN, reason="requires python 3.10+")
+def test_is_optional_pep_604():
+    t = str | None
+    assert is_optional(t)
+    assert get_args(t) == (str, NoneType)
+    t = None | str
+    assert is_optional(t)
+    assert get_args(t) == (NoneType, str)
+
+
+def test_not_non_type_arg():
+    assert not_none_type_arg((str, int)) == str
+    assert not_none_type_arg((NoneType, int)) == int
+    assert not_none_type_arg((str, NoneType)) == str
+    assert not_none_type_arg((T, int), {T: NoneType}) == int

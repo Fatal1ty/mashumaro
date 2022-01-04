@@ -70,9 +70,14 @@ def _get_args_str(
     short: bool,
     type_vars: typing.Dict[str, typing.Any] = None,
     limit: typing.Optional[int] = None,
+    none_type_as_none: bool = False,
+    sep: str = ", ",
 ):
     args = get_args(t)[:limit]
-    return ", ".join(type_name(arg, short, type_vars) for arg in args)
+    return sep.join(
+        type_name(arg, short, type_vars, none_type_as_none=none_type_as_none)
+        for arg in args
+    )
 
 
 def _typing_name(t: str, short: bool = False):
@@ -84,16 +89,19 @@ def type_name(
     short: bool = False,
     type_vars: typing.Dict[str, typing.Any] = None,
     is_type_origin: bool = False,
+    none_type_as_none: bool = False,
 ) -> str:
     if type_vars is None:
         type_vars = {}
-    if t is typing.Any:
+    if t is NoneType and none_type_as_none:
+        return "None"
+    elif t is typing.Any:
         return _typing_name("Any", short)
-    elif is_optional(t):
-        args_str = _get_args_str(t, short, type_vars, 1)
+    elif is_optional(t, type_vars):
+        args_str = type_name(not_none_type_arg(get_args(t), type_vars), short)
         return f"{_typing_name('Optional', short)}[{args_str}]"
     elif is_union(t):
-        args_str = _get_args_str(t, short, type_vars)
+        args_str = _get_args_str(t, short, type_vars, none_type_as_none=True)
         return f"{_typing_name('Union', short)}[{args_str}]"
     elif is_generic(t) and not is_type_origin:
         args_str = _get_args_str(t, short, type_vars)
@@ -183,16 +191,36 @@ def is_named_tuple(t):
 
 def is_union(t):
     try:
+        if PY_310_MIN and isinstance(t, types.UnionType):
+            return True
         return t.__origin__ is typing.Union
     except AttributeError:
         return False
 
 
-def is_optional(t):
+def is_optional(t, type_vars: typing.Dict[str, typing.Any] = None):
+    if type_vars is None:
+        type_vars = {}
     if not is_union(t):
         return False
     args = get_args(t)
-    return len(args) == 2 and args[1] == NoneType
+    if len(args) != 2:
+        return False
+    for arg in args:
+        if type_vars.get(arg, arg) is NoneType:
+            return True
+    return False
+
+
+def not_none_type_arg(
+    args: typing.Tuple[typing.Any, ...],
+    type_vars: typing.Dict[str, typing.Any] = None,
+):
+    if type_vars is None:
+        type_vars = {}
+    for arg in args:
+        if type_vars.get(arg, arg) is not NoneType:
+            return arg
 
 
 def is_type_var(t):
@@ -329,6 +357,7 @@ __all__ = [
     "is_named_tuple",
     "is_optional",
     "is_union",
+    "not_none_type_arg",
     "is_type_var",
     "is_type_var_any",
     "is_class_var",
