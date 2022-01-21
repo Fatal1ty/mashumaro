@@ -56,6 +56,7 @@ from mashumaro.types import (
     SerializationStrategy,
 )
 
+from .conftest import fake_add_from_dict
 from .entities import (
     CustomPath,
     DataClassWithoutMixin,
