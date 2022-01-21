@@ -40,6 +40,7 @@ from mashumaro.exceptions import (  # noqa
     UnsupportedDeserializationEngine,
     UnsupportedSerializationEngine,
 )
+from mashumaro.helper import pass_through
 from mashumaro.meta.helpers import (
     get_args,
     get_class_that_defines_field,
@@ -698,6 +699,7 @@ class CodeBuilder:
         origin_type = get_type_origin(ftype)
 
         overridden: typing.Optional[str] = None
+        strategy: typing.Optional[SerializationStrategy] = None
         serialize_option = metadata.get("serialize")
         overridden_fn_suffix = str(uuid.uuid4().hex)
         if serialize_option is None:
@@ -730,7 +732,9 @@ class CodeBuilder:
                 serialize_option = strategy.get("serialize")
             elif isinstance(strategy, SerializationStrategy):
                 serialize_option = strategy.serialize
-        if callable(serialize_option):
+        if pass_through in (strategy, serialize_option):
+            return value_name
+        elif callable(serialize_option):
             overridden_fn = f"__{fname}_serialize_{overridden_fn_suffix}"
             setattr(self.cls, overridden_fn, staticmethod(serialize_option))
             overridden = f"self.{overridden_fn}({value_name})"
@@ -1043,6 +1047,7 @@ class CodeBuilder:
         origin_type = get_type_origin(ftype)
 
         overridden: typing.Optional[str] = None
+        strategy: typing.Optional[SerializationStrategy] = None
         deserialize_option = metadata.get("deserialize")
         overridden_fn_suffix = str(uuid.uuid4().hex)
         if deserialize_option is None:
@@ -1075,7 +1080,9 @@ class CodeBuilder:
                 deserialize_option = strategy.get("deserialize")
             elif isinstance(strategy, SerializationStrategy):
                 deserialize_option = strategy.deserialize
-        if callable(deserialize_option):
+        if pass_through in (strategy, deserialize_option):
+            return value_name
+        elif callable(deserialize_option):
             overridden_fn = f"__{fname}_deserialize_{overridden_fn_suffix}"
             setattr(self.cls, overridden_fn, deserialize_option)
             overridden = f"cls.{overridden_fn}({value_name})"

@@ -32,4 +32,18 @@ def field_options(
     }
 
 
-__all__ = ["field_options"]
+class _PassThrough(SerializationStrategy):
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def serialize(self, value):
+        return value
+
+    def deserialize(self, value):
+        return value
+
+
+pass_through = _PassThrough()
+
+
+__all__ = ["field_options", "pass_through"]

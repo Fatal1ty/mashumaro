@@ -1,5 +1,5 @@
 from mashumaro.exceptions import MissingField
-from mashumaro.helper import field_options
+from mashumaro.helper import field_options, pass_through
 from mashumaro.serializer.base.dict import DataClassDictMixin
 from mashumaro.serializer.json import DataClassJSONMixin
 from mashumaro.serializer.msgpack import DataClassMessagePackMixin
@@ -12,4 +12,5 @@ __all__ = [
     "DataClassMessagePackMixin",
     "DataClassYAMLMixin",
     "field_options",
+    "pass_through",
 ]
