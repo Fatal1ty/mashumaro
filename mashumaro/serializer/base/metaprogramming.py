@@ -21,6 +21,8 @@ from fractions import Fraction
 from hashlib import md5
 from types import MappingProxyType
 
+import typing_extensions
+
 from mashumaro.config import (
     ADD_DIALECT_SUPPORT,
     TO_DICT_ADD_BY_ALIAS_FLAG,
@@ -64,7 +66,6 @@ from mashumaro.meta.helpers import (
     resolve_type_vars,
     type_name,
 )
-from mashumaro.meta.macros import PY_37_MIN
 from mashumaro.meta.patch import patch_fromisoformat
 from mashumaro.serializer.base.helpers import *  # noqa
 from mashumaro.types import (
@@ -945,7 +946,7 @@ class CodeBuilder:
                         parent,
                         "Use typing.ChainMap[KT,VT] instead",
                     )
-            elif PY_37_MIN and issubclass(origin_type, typing.OrderedDict):
+            elif issubclass(origin_type, typing_extensions.OrderedDict):
                 if is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
@@ -1368,7 +1369,7 @@ class CodeBuilder:
                         parent,
                         "Use typing.ChainMap[KT,VT] instead",
                     )
-            elif PY_37_MIN and issubclass(origin_type, typing.OrderedDict):
+            elif issubclass(origin_type, typing_extensions.OrderedDict):
                 if is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(

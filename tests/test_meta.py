@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from unittest.mock import patch
 
 import pytest
+import typing_extensions
 
 from mashumaro import DataClassDictMixin, DataClassJSONMixin
 from mashumaro.dialect import Dialect
@@ -185,8 +186,13 @@ def test_type_name():
     )
     if PY_37_MIN:
         assert (
-            type_name(typing.OrderedDict[int, int])
+            type_name(typing_extensions.OrderedDict[int, int])
             == "typing.OrderedDict[int, int]"
+        )
+    else:
+        assert (
+            type_name(typing_extensions.OrderedDict[int, int])
+            == "typing_extensions.OrderedDict[int, int]"
         )
     assert type_name(typing.Optional[int]) == "typing.Optional[int]"
     assert type_name(typing.Union[None, int]) == "typing.Optional[int]"
@@ -272,11 +278,10 @@ def test_type_name_short():
         type_name(typing.Union[int, typing.Any], short=True)
         == "Union[int, Any]"
     )
-    if PY_37_MIN:
-        assert (
-            type_name(typing.OrderedDict[int, int], short=True)
-            == "OrderedDict[int, int]"
-        )
+    assert (
+        type_name(typing_extensions.OrderedDict[int, int], short=True)
+        == "OrderedDict[int, int]"
+    )
     assert type_name(typing.Optional[int], short=True) == "Optional[int]"
     assert type_name(typing.Union[None, int], short=True) == "Optional[int]"
     assert type_name(typing.Union[int, None], short=True) == "Optional[int]"

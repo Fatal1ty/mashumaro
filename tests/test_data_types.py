@@ -37,14 +37,8 @@ from typing import (
     Tuple,
 )
 
-from .conftest import fake_add_from_dict
-
-try:
-    from typing import OrderedDict  # New in version 3.7.2
-except ImportError:
-    OrderedDict = Dict  # type: ignore
-
 import pytest
+from typing_extensions import OrderedDict
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
