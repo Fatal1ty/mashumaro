@@ -18,6 +18,7 @@ from contextlib import contextmanager, suppress
 from dataclasses import _FIELDS, MISSING, Field, is_dataclass  # type: ignore
 from decimal import Decimal
 from fractions import Fraction
+from functools import lru_cache
 from hashlib import md5
 from types import MappingProxyType
 
@@ -447,6 +448,7 @@ class CodeBuilder:
                         f"{field_type},value,cls)"
                     )
 
+    @lru_cache()
     def get_config(self, cls=None) -> typing.Type[BaseConfig]:
         if cls is None:
             cls = self.cls
