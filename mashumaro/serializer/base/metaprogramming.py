@@ -420,33 +420,39 @@ class CodeBuilder:
                 )
             self.add_line("else:")
             with self.indent():
-                self.add_line("try:")
-                with self.indent():
+                if unpacked_value == "value":
                     self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
-                self.add_line("except Exception as e:")
-                with self.indent():
-                    field_type = type_name(
-                        ftype, type_vars=self._get_field_type_vars(fname)
-                    )
-                    self.add_line(
-                        f"raise InvalidFieldValue('{fname}',"
-                        f"{field_type},value,cls)"
-                    )
+                else:
+                    self.add_line("try:")
+                    with self.indent():
+                        self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+                    self.add_line("except Exception as e:")
+                    with self.indent():
+                        field_type = type_name(
+                            ftype, type_vars=self._get_field_type_vars(fname)
+                        )
+                        self.add_line(
+                            f"raise InvalidFieldValue('{fname}',"
+                            f"{field_type},value,cls)"
+                        )
         else:
             self.add_line("elif value is not MISSING:")
             with self.indent():
-                self.add_line("try:")
-                with self.indent():
+                if unpacked_value == "value":
                     self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
-                self.add_line("except Exception as e:")
-                with self.indent():
-                    field_type = type_name(
-                        ftype, type_vars=self._get_field_type_vars(fname)
-                    )
-                    self.add_line(
-                        f"raise InvalidFieldValue('{fname}',"
-                        f"{field_type},value,cls)"
-                    )
+                else:
+                    self.add_line("try:")
+                    with self.indent():
+                        self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+                    self.add_line("except Exception as e:")
+                    with self.indent():
+                        field_type = type_name(
+                            ftype, type_vars=self._get_field_type_vars(fname)
+                        )
+                        self.add_line(
+                            f"raise InvalidFieldValue('{fname}',"
+                            f"{field_type},value,cls)"
+                        )
 
     @lru_cache()
     def get_config(self, cls=None) -> typing.Type[BaseConfig]:
