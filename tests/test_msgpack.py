@@ -33,3 +33,15 @@ def test_to_msg_pack_datetime():
     dt = datetime(2018, 10, 29, 12, 46, 55, 308495)
     dumped = msgpack.packb({"x": dt.isoformat()})
     assert DataClass(dt).to_msgpack() == dumped
+
+
+def test_msgpack_with_bytes():
+    @dataclass
+    class DataClass(DataClassMessagePackMixin):
+        x: bytes
+        y: bytearray
+
+    instance = DataClass(b"123", bytearray(b"456"))
+    dumped = msgpack.packb({"x": b"123", "y": bytearray(b"456")})
+    assert DataClass.from_msgpack(dumped) == instance
+    assert instance.to_msgpack() == dumped
