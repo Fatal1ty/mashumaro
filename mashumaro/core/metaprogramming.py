@@ -387,10 +387,11 @@ class CodeBuilder:
         if self.initial_arg_types:
             method_name += f"_{self._hash_arg_types(self.initial_arg_types)}"
         self.add_line("@classmethod")
-        default_kwargs = self.get_to_dict_default_flag_values()
+        default_kwargs = self.get_from_dict_default_flag_values()
         if default_kwargs:
             self.add_line(f"def {method_name}(cls, d, {default_kwargs}):")
-        else:
+        else:  # pragma no cover
+            # there will be at least a dialect parameter
             self.add_line(f"def {method_name}(cls, d):")
         with self.indent():
             self.add_line("if dialect is None:")
@@ -530,10 +531,6 @@ class CodeBuilder:
         if dialects_feature:
             flag_names.append("dialect")
             flag_values.append("None")
-        ###
-        # flag_names.append("MISSING")
-        # flag_values.append("MISSING")
-        ###
         if flag_names:
             pluggable_flags_str = "*, " + ", ".join(
                 [f"{n}={v}" for n, v in zip(flag_names, flag_values)]
@@ -625,7 +622,8 @@ class CodeBuilder:
         default_kwargs = self.get_to_dict_default_flag_values()
         if default_kwargs:
             self.add_line(f"def {method_name}(self, {default_kwargs}):")
-        else:
+        else:  # pragma no cover
+            # there will be at least a dialect parameter
             self.add_line(f"def {method_name}(self):")
         with self.indent():
             self.add_line("if dialect is None:")
