@@ -2,7 +2,6 @@ import collections
 import collections.abc
 import typing
 from dataclasses import dataclass
-from unittest.mock import patch
 
 import pytest
 import typing_extensions
@@ -53,44 +52,44 @@ NoneType = type(None)
 TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 
 
-def test_is_generic_unsupported_python():
-    with patch("mashumaro.core.meta.helpers.PY_36", False):
-        with patch("mashumaro.core.meta.helpers.PY_37", False):
-            with patch("mashumaro.core.meta.helpers.PY_38", False):
-                with patch("mashumaro.core.meta.helpers.PY_39_MIN", False):
-                    with pytest.raises(NotImplementedError):
-                        is_generic(int)
+def test_is_generic_unsupported_python(mocker):
+    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_37", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_38", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_39_MIN", False)
+    with pytest.raises(NotImplementedError):
+        is_generic(int)
 
 
-def test_is_class_var_unsupported_python():
-    with patch("mashumaro.core.meta.helpers.PY_36", False):
-        with patch("mashumaro.core.meta.helpers.PY_37_MIN", False):
-            with pytest.raises(NotImplementedError):
-                is_class_var(int)
+def test_is_class_var_unsupported_python(mocker):
+    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_37_MIN", False)
+    with pytest.raises(NotImplementedError):
+        is_class_var(int)
 
 
-def test_is_init_var_unsupported_python():
-    with patch("mashumaro.core.meta.helpers.PY_36", False):
-        with patch("mashumaro.core.meta.helpers.PY_37", False):
-            with patch("mashumaro.core.meta.helpers.PY_38_MIN", False):
-                with pytest.raises(NotImplementedError):
-                    is_init_var(int)
+def test_is_init_var_unsupported_python(mocker):
+    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_37", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_38_MIN", False)
+    with pytest.raises(NotImplementedError):
+        is_init_var(int)
 
 
-def test_no_code_builder():
-    with patch(
+def test_no_code_builder(mocker):
+    mocker.patch(
         "mashumaro.mixins.dict.DataClassDictMixin.__init_subclass__",
         lambda: ...,
-    ):
+    )
 
-        @dataclass
-        class DataClass(DataClassDictMixin):
-            pass
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        pass
 
-        assert DataClass.__pre_deserialize__({}) is None
-        assert DataClass.__post_deserialize__(DataClass()) is None
-        assert DataClass().__pre_serialize__() is None
-        assert DataClass().__post_serialize__({}) is None
+    assert DataClass.__pre_deserialize__({}) is None
+    assert DataClass.__post_deserialize__(DataClass()) is None
+    assert DataClass().__pre_serialize__() is None
+    assert DataClass().__post_serialize__({}) is None
 
 
 def test_get_class_that_defines_method():
