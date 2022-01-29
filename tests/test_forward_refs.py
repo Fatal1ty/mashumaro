@@ -1,6 +1,6 @@
 import pytest
 
-from mashumaro.meta.macros import PY_37_MIN
+from mashumaro.core.const import PY_37_MIN
 
 
 @pytest.mark.skipif(not PY_37_MIN, reason="requires python>=3.7")

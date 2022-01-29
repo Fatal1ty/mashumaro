@@ -4,7 +4,7 @@ from typing import List
 
 import msgpack
 
-from mashumaro import DataClassMessagePackMixin
+from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 
 
 def test_to_msgpack():

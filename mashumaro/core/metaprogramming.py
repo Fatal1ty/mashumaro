@@ -1,3 +1,4 @@
+# TODO: переименовать в builder.py?
 import collections
 import collections.abc
 import datetime
@@ -30,21 +31,8 @@ from mashumaro.config import (
     TO_DICT_ADD_OMIT_NONE_FLAG,
     BaseConfig,
 )
-from mashumaro.dialect import Dialect
-from mashumaro.exceptions import (  # noqa
-    BadDialect,
-    BadHookSignature,
-    InvalidFieldValue,
-    MissingField,
-    ThirdPartyModuleNotFoundError,
-    UnresolvedTypeReferenceError,
-    UnserializableDataError,
-    UnserializableField,
-    UnsupportedDeserializationEngine,
-    UnsupportedSerializationEngine,
-)
-from mashumaro.helper import pass_through
-from mashumaro.meta.helpers import (
+from mashumaro.core.helpers import *  # noqa
+from mashumaro.core.meta.helpers import (
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
@@ -67,8 +55,21 @@ from mashumaro.meta.helpers import (
     resolve_type_vars,
     type_name,
 )
-from mashumaro.meta.patch import patch_fromisoformat
-from mashumaro.serializer.base.helpers import *  # noqa
+from mashumaro.core.meta.patch import patch_fromisoformat
+from mashumaro.dialect import Dialect
+from mashumaro.exceptions import (  # noqa
+    BadDialect,
+    BadHookSignature,
+    InvalidFieldValue,
+    MissingField,
+    ThirdPartyModuleNotFoundError,
+    UnresolvedTypeReferenceError,
+    UnserializableDataError,
+    UnserializableField,
+    UnsupportedDeserializationEngine,
+    UnsupportedSerializationEngine,
+)
+from mashumaro.helper import pass_through
 from mashumaro.types import (
     GenericSerializableType,
     SerializableType,
@@ -286,10 +287,11 @@ class CodeBuilder:
             method_name += f"_{self._hash_arg_types(self.initial_arg_types)}"
         if self.dialect is None:
             self.add_line("@classmethod")
-        self.add_line(
-            f"def {method_name}(cls, d, "
-            f"{self.get_from_dict_default_flag_values()}):"
-        )
+        default_kwargs = self.get_from_dict_default_flag_values()
+        if default_kwargs:
+            self.add_line(f"def {method_name}(cls, d, {default_kwargs}):")
+        else:
+            self.add_line(f"def {method_name}(cls, d):")
         with self.indent():
             self._add_from_dict_lines()
         if self.dialect is None:
@@ -349,21 +351,22 @@ class CodeBuilder:
             self.add_line("return cls(**kwargs)")
 
     def _add_from_dict_with_dialect_lines(self) -> None:
+        from_dict_args = ", ".join(
+            filter(None, ("cls", "d", self.get_from_dict_flags()))
+        )
         self.add_line(
             "from_dict = cls.__dialect_from_dict_cache__.get(dialect)"
         )
         self.add_line("if from_dict is not None:")
         with self.indent():
-            self.add_line(
-                f"return from_dict(cls,d,{self.get_from_dict_flags()})"
-            )
+            self.add_line(f"return from_dict({from_dict_args})")
         self.add_line(
             "CodeBuilder(cls,dialect=dialect,"
             "first_method='from_dict').add_from_dict()"
         )
         self.add_line(
             f"return cls.__dialect_from_dict_cache__[dialect]"
-            f"(cls,d,{self.get_from_dict_flags()})"
+            f"({from_dict_args})"
         )
 
     def add_from_dict(self) -> None:
@@ -384,10 +387,11 @@ class CodeBuilder:
         if self.initial_arg_types:
             method_name += f"_{self._hash_arg_types(self.initial_arg_types)}"
         self.add_line("@classmethod")
-        self.add_line(
-            f"def {method_name}(cls, d, "
-            f"{self.get_to_dict_default_flag_values()}):"
-        )
+        default_kwargs = self.get_to_dict_default_flag_values()
+        if default_kwargs:
+            self.add_line(f"def {method_name}(cls, d, {default_kwargs}):")
+        else:
+            self.add_line(f"def {method_name}(cls, d):")
         with self.indent():
             self.add_line("if dialect is None:")
             with self.indent():
@@ -468,36 +472,24 @@ class CodeBuilder:
         return config_cls
 
     def get_to_dict_flags(self, cls=None) -> str:
-        config = self.get_config(cls)
-        code_generation_options = config.code_generation_options
-        parent_config = self.get_config()
-        parent_code_generation_options = parent_config.code_generation_options
         pluggable_flags = []
         for option, flag in (
             (TO_DICT_ADD_OMIT_NONE_FLAG, "omit_none"),
             (TO_DICT_ADD_BY_ALIAS_FLAG, "by_alias"),
             (ADD_DIALECT_SUPPORT, "dialect"),
         ):
-            if option in code_generation_options:
-                if option in parent_code_generation_options:
+            if self.is_code_generation_option_enabled(option, cls):
+                if self.is_code_generation_option_enabled(option):
                     pluggable_flags.append(f"{flag}={flag}")
-        return ",".join(
-            ["use_bytes", "use_enum", "use_datetime", *pluggable_flags]
-        )
+        return ", ".join(pluggable_flags)
 
     def get_from_dict_flags(self, cls=None) -> str:
-        config = self.get_config(cls)
-        code_generation_options = config.code_generation_options
-        parent_config = self.get_config()
-        parent_code_generation_options = parent_config.code_generation_options
         pluggable_flags = []
         for option, flag in ((ADD_DIALECT_SUPPORT, "dialect"),):
-            if option in code_generation_options:
-                if option in parent_code_generation_options:
+            if self.is_code_generation_option_enabled(option, cls):
+                if self.is_code_generation_option_enabled(option):
                     pluggable_flags.append(f"{flag}={flag}")
-        return ",".join(
-            ["use_bytes", "use_enum", "use_datetime", *pluggable_flags]
-        )
+        return ", ".join(pluggable_flags)
 
     def get_to_dict_default_flag_values(self, cls=None) -> str:
         flag_names = []
@@ -522,15 +514,12 @@ class CodeBuilder:
             flag_names.append("dialect")
             flag_values.append("None")
         if flag_names:
-            pluggable_flags_str = ", *, " + ", ".join(
+            pluggable_flags_str = "*, " + ", ".join(
                 [f"{n}={v}" for n, v in zip(flag_names, flag_values)]
             )
         else:
             pluggable_flags_str = ""
-        return (
-            f"use_bytes=False, use_enum=False, use_datetime=False"
-            f"{pluggable_flags_str}"
-        )
+        return pluggable_flags_str
 
     def get_from_dict_default_flag_values(self, cls=None) -> str:
         flag_names = []
@@ -541,18 +530,27 @@ class CodeBuilder:
         if dialects_feature:
             flag_names.append("dialect")
             flag_values.append("None")
+        ###
+        # flag_names.append("MISSING")
+        # flag_values.append("MISSING")
+        ###
         if flag_names:
-            pluggable_flags_str = ", *, " + ", ".join(
+            pluggable_flags_str = "*, " + ", ".join(
                 [f"{n}={v}" for n, v in zip(flag_names, flag_values)]
             )
         else:
             pluggable_flags_str = ""
-        return (
-            f"use_bytes=False, use_enum=False, use_datetime=False"
-            f"{pluggable_flags_str}"
-        )
+        return pluggable_flags_str
 
     def is_code_generation_option_enabled(self, option: str, cls=None):
+        if option == ADD_DIALECT_SUPPORT:
+            # TODO: make inheritance for code_generation_options
+            for ancestor in self.cls.__mro__[-1:0:-1]:
+                if (
+                    type_name(ancestor)
+                    == "mashumaro.mixins.msgpack.DataClassMessagePackMixin"
+                ):
+                    return True
         return option in self.get_config(cls).code_generation_options
 
     def _add_to_dict(self) -> None:
@@ -560,10 +558,11 @@ class CodeBuilder:
         if self.initial_arg_types:
             method_name += f"_{self._hash_arg_types(self.initial_arg_types)}"
         self.reset()
-        self.add_line(
-            f"def {method_name}"
-            f"(self, {self.get_to_dict_default_flag_values()}):"
-        )
+        default_kwargs = self.get_to_dict_default_flag_values()
+        if default_kwargs:
+            self.add_line(f"def {method_name}(self, {default_kwargs}):")
+        else:
+            self.add_line(f"def {method_name}(self):")
         with self.indent():
             self._add_to_dict_lines()
         if self.dialect is None:
@@ -589,20 +588,23 @@ class CodeBuilder:
             self.add_line("return kwargs")
 
     def _add_to_dict_with_dialect_lines(self) -> None:
+        to_dict_args = ", ".join(
+            filter(None, ("self", self.get_to_dict_flags()))
+        )
         self.add_line(
             "to_dict = self.__class__."
             "__dialect_to_dict_cache__.get(dialect)"
         )
         self.add_line("if to_dict is not None:")
         with self.indent():
-            self.add_line(f"return to_dict(self,{self.get_to_dict_flags()})")
+            self.add_line(f"return to_dict({to_dict_args})")
         self.add_line(
             "CodeBuilder(self.__class__,dialect=dialect,"
             "first_method='to_dict').add_to_dict()"
         )
         self.add_line(
             f"return self.__class__.__dialect_to_dict_cache__[dialect]"
-            f"(self,{self.get_to_dict_flags()})"
+            f"({to_dict_args})"
         )
 
     def add_to_dict(self) -> None:
@@ -620,10 +622,11 @@ class CodeBuilder:
         method_name = "to_dict"
         if self.initial_arg_types:
             method_name += f"_{self._hash_arg_types(self.initial_arg_types)}"
-        self.add_line(
-            f"def {method_name}"
-            f"(self, {self.get_to_dict_default_flag_values()}):"
-        )
+        default_kwargs = self.get_to_dict_default_flag_values()
+        if default_kwargs:
+            self.add_line(f"def {method_name}(self, {default_kwargs}):")
+        else:
+            self.add_line(f"def {method_name}(self):")
         with self.indent():
             self.add_line("if dialect is None:")
             with self.indent():
@@ -707,7 +710,6 @@ class CodeBuilder:
         ftype = self.__get_real_type(fname, ftype)
         origin_type = get_type_origin(ftype)
 
-        overridden: typing.Optional[str] = None
         strategy: typing.Optional[SerializationStrategy] = None
         serialize_option = metadata.get("serialize")
         overridden_fn_suffix = str(uuid.uuid4().hex)
@@ -746,20 +748,17 @@ class CodeBuilder:
         elif callable(serialize_option):
             overridden_fn = f"__{fname}_serialize_{overridden_fn_suffix}"
             setattr(self.cls, overridden_fn, staticmethod(serialize_option))
-            overridden = f"self.{overridden_fn}({value_name})"
+            return f"self.{overridden_fn}({value_name})"
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
-                return overridden or f"{value_name}._serialize()"
+                return f"{value_name}._serialize()"
         with suppress(TypeError):
             if issubclass(origin_type, GenericSerializableType):
                 arg_type_names = ", ".join(
                     list(map(type_name, get_args(ftype)))
                 )
-                return (
-                    overridden
-                    or f"{value_name}._serialize([{arg_type_names}])"
-                )
+                return f"{value_name}._serialize([{arg_type_names}])"
 
         if is_dataclass_dict_mixin_subclass(origin_type):
             arg_types = get_args(ftype)
@@ -772,14 +771,12 @@ class CodeBuilder:
             else:
                 method_name = "to_dict"
             flags = self.get_to_dict_flags(ftype)
-            return overridden or f"{value_name}.{method_name}({flags})"
+            return f"{value_name}.{method_name}({flags})"
 
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
-                return overridden or value_name
+                return value_name
             elif is_union(ftype):
-                if overridden:
-                    return overridden
                 args = get_args(ftype)
                 field_type_vars = self._get_field_type_vars(fname)
                 if is_optional(ftype, field_type_vars):
@@ -795,19 +792,17 @@ class CodeBuilder:
                     method_name = self._add_pack_union(
                         fname, ftype, args, parent, metadata
                     )
-                    return (
-                        f"self.{method_name}({value_name},"
-                        f"{self.get_to_dict_flags()})"
+                    method_args = ", ".join(
+                        filter(None, (value_name, self.get_to_dict_flags()))
                     )
+                    return f"self.{method_name}({method_args})"
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(
                     "AnyStr is not supported by mashumaro"
                 )
             elif is_type_var_any(ftype):
-                return overridden or value_name
+                return value_name
             elif is_type_var(ftype):
-                if overridden:
-                    return overridden
                 constraints = getattr(ftype, "__constraints__")
                 if constraints:
                     method_name = self._add_pack_union(
@@ -818,10 +813,10 @@ class CodeBuilder:
                         metadata=metadata,
                         prefix="type_var",
                     )
-                    return (
-                        f"self.{method_name}({value_name},"
-                        f"{self.get_to_dict_flags()})"
+                    method_args = ", ".join(
+                        filter(None, (value_name, self.get_to_dict_flags()))
                     )
+                    return f"self.{method_name}({method_args})"
                 else:
                     bound = getattr(ftype, "__bound__")
                     # act as if it was Optional[bound]
@@ -837,23 +832,19 @@ class CodeBuilder:
                     f"{ftype} as a field type is not supported by mashumaro"
                 )
         elif origin_type is int:
-            return overridden or f"int({value_name})"
+            return f"int({value_name})"
         elif origin_type is float:
-            return overridden or f"float({value_name})"
+            return f"float({value_name})"
         elif origin_type in (bool, NoneType, None):
-            return overridden or value_name
+            return value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
-            if overridden:
-                return f"{value_name} if use_datetime else {overridden}"
-            return (
-                f"{value_name} if use_datetime else {value_name}.isoformat()"
-            )
+            return f"{value_name}.isoformat()"
         elif origin_type is datetime.timedelta:
-            return overridden or f"{value_name}.total_seconds()"
+            return f"{value_name}.total_seconds()"
         elif origin_type is datetime.timezone:
-            return overridden or f"{value_name}.tzname(None)"
+            return f"{value_name}.tzname(None)"
         elif origin_type is uuid.UUID:
-            return overridden or f"str({value_name})"
+            return f"str({value_name})"
         elif origin_type in [
             ipaddress.IPv4Address,
             ipaddress.IPv6Address,
@@ -862,11 +853,11 @@ class CodeBuilder:
             ipaddress.IPv4Interface,
             ipaddress.IPv6Interface,
         ]:
-            return overridden or f"str({value_name})"
+            return f"str({value_name})"
         elif origin_type is Decimal:
-            return overridden or f"str({value_name})"
+            return f"str({value_name})"
         elif origin_type is Fraction:
-            return overridden or f"str({value_name})"
+            return f"str({value_name})"
         elif issubclass(origin_type, typing.Collection) and not issubclass(
             origin_type, enum.Enum
         ):
@@ -885,15 +876,12 @@ class CodeBuilder:
                     )
 
             if issubclass(origin_type, typing.ByteString):
-                specific = f"encodebytes({value_name}).decode()"
-                return (
-                    f"{value_name} if use_bytes else {overridden or specific}"
-                )
+                return f"encodebytes({value_name}).decode()"
             elif issubclass(origin_type, str):
-                return overridden or value_name
+                return value_name
             elif issubclass(origin_type, typing.Tuple):
                 if is_named_tuple(ftype):
-                    return overridden or self._pack_named_tuple(
+                    return self._pack_named_tuple(
                         fname,
                         ftype,
                         value_name,
@@ -902,7 +890,7 @@ class CodeBuilder:
                         serialize_option,
                     )
                 elif is_generic(ftype):
-                    return overridden or self._pack_tuple(
+                    return self._pack_tuple(
                         fname, value_name, args, parent, metadata
                     )
                 elif ftype is tuple:
@@ -913,10 +901,7 @@ class CodeBuilder:
                 origin_type, (typing.List, typing.Deque, typing.AbstractSet)
             ):
                 if is_generic(ftype):
-                    return (
-                        overridden
-                        or f"[{inner_expr()} for value in {value_name}]"
-                    )
+                    return f"[{inner_expr()} for value in {value_name}]"
                 elif ftype is list:
                     raise UnserializableField(
                         fname, ftype, parent, "Use typing.List[T] instead"
@@ -942,8 +927,7 @@ class CodeBuilder:
                         )
                     else:
                         return (
-                            overridden
-                            or f'[{{{inner_expr(0,"key")}:{inner_expr(1)} '
+                            f'[{{{inner_expr(0,"key")}:{inner_expr(1)} '
                             f"for key,value in m.items()}} "
                             f"for m in {value_name}.maps]"
                         )
@@ -963,8 +947,7 @@ class CodeBuilder:
                         )
                     else:
                         return (
-                            overridden
-                            or f'{{{inner_expr(0, "key")}: {inner_expr(1)} '
+                            f'{{{inner_expr(0, "key")}: {inner_expr(1)} '
                             f"for key, value in {value_name}.items()}}"
                         )
                 elif ftype is collections.OrderedDict:
@@ -983,8 +966,7 @@ class CodeBuilder:
                         )
                     else:
                         return (
-                            overridden
-                            or f'{{{inner_expr(0, "key")}: '
+                            f'{{{inner_expr(0, "key")}: '
                             f"{inner_expr(1, v_type=int)} "
                             f"for key, value in {value_name}.items()}}"
                         )
@@ -997,16 +979,13 @@ class CodeBuilder:
                     )
             elif issubclass(origin_type, typing.Mapping):
                 if is_typed_dict(ftype):
-                    if overridden:
-                        return overridden
-                    else:
-                        method_name = self._add_pack_typed_dict(
-                            fname, ftype, value_name, parent, metadata
-                        )
-                        return (
-                            f"self.{method_name}({value_name},"
-                            f"{self.get_to_dict_flags()})"
-                        )
+                    method_name = self._add_pack_typed_dict(
+                        fname, ftype, value_name, parent, metadata
+                    )
+                    method_args = ", ".join(
+                        filter(None, (value_name, self.get_to_dict_flags()))
+                    )
+                    return f"self.{method_name}({method_args})"
                 elif is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
@@ -1015,8 +994,7 @@ class CodeBuilder:
                         )
                     else:
                         return (
-                            overridden
-                            or f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
+                            f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
                             f"for key, value in {value_name}.items()}}"
                         )
                 elif ftype is dict:
@@ -1028,17 +1006,11 @@ class CodeBuilder:
                     )
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
-                    return (
-                        overridden
-                        or f"[{inner_expr()} for value in {value_name}]"
-                    )
+                    return f"[{inner_expr()} for value in {value_name}]"
         elif issubclass(origin_type, os.PathLike):
-            return overridden or f"{value_name}.__fspath__()"
+            return f"{value_name}.__fspath__()"
         elif issubclass(origin_type, enum.Enum):
-            specific = f"{value_name}.value"
-            return f"{value_name} if use_enum else {overridden or specific}"
-        if overridden:
-            return overridden
+            return f"{value_name}.value"
 
         raise UnserializableField(fname, ftype, parent)
 
@@ -1055,7 +1027,6 @@ class CodeBuilder:
         ftype = self.__get_real_type(fname, ftype)
         origin_type = get_type_origin(ftype)
 
-        overridden: typing.Optional[str] = None
         strategy: typing.Optional[SerializationStrategy] = None
         deserialize_option = metadata.get("deserialize")
         overridden_fn_suffix = str(uuid.uuid4().hex)
@@ -1094,22 +1065,18 @@ class CodeBuilder:
         elif callable(deserialize_option):
             overridden_fn = f"__{fname}_deserialize_{overridden_fn_suffix}"
             setattr(self.cls, overridden_fn, deserialize_option)
-            overridden = f"cls.{overridden_fn}({value_name})"
+            return f"cls.{overridden_fn}({value_name})"
 
         with suppress(TypeError):
             if issubclass(ftype, SerializableType):
-                return (
-                    overridden
-                    or f"{type_name(ftype)}._deserialize({value_name})"
-                )
+                return f"{type_name(ftype)}._deserialize({value_name})"
         with suppress(TypeError):
             if issubclass(origin_type, GenericSerializableType):
                 arg_type_names = ", ".join(
                     list(map(type_name, get_args(ftype)))
                 )
                 return (
-                    overridden
-                    or f"{type_name(ftype)}._deserialize({value_name}, "
+                    f"{type_name(ftype)}._deserialize({value_name}, "
                     f"[{arg_type_names}])"
                 )
 
@@ -1123,17 +1090,15 @@ class CodeBuilder:
                     builder.add_to_dict()
             else:
                 method_name = "from_dict"
-            return overridden or (
-                f"{type_name(ftype)}.{method_name}({value_name}, "
-                f"{self.get_from_dict_flags(ftype)})"
+            method_args = ", ".join(
+                filter(None, (value_name, self.get_from_dict_flags(ftype)))
             )
+            return f"{type_name(ftype)}.{method_name}({method_args})"
 
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
-                return overridden or value_name
+                return value_name
             elif is_union(ftype):
-                if overridden:
-                    return overridden
                 args = get_args(ftype)
                 field_type_vars = self._get_field_type_vars(fname)
                 if is_optional(ftype, field_type_vars):
@@ -1149,19 +1114,17 @@ class CodeBuilder:
                     method_name = self._add_unpack_union(
                         fname, ftype, args, parent, metadata
                     )
-                    return (
-                        f"cls.{method_name}({value_name},"
-                        f"use_bytes,use_enum,use_datetime)"
+                    method_args = ", ".join(
+                        filter(None, (value_name, self.get_from_dict_flags()))
                     )
+                    return f"cls.{method_name}({method_args})"
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(
                     "AnyStr is not supported by mashumaro"
                 )
             elif is_type_var_any(ftype):
-                return overridden or value_name
+                return value_name
             elif is_type_var(ftype):
-                if overridden:
-                    return overridden
                 constraints = getattr(ftype, "__constraints__")
                 if constraints:
                     method_name = self._add_unpack_union(
@@ -1172,10 +1135,10 @@ class CodeBuilder:
                         metadata=metadata,
                         prefix="type_var",
                     )
-                    return (
-                        f"cls.{method_name}({value_name},"
-                        f"use_bytes,use_enum,use_datetime)"
+                    method_args = ", ".join(
+                        filter(None, (value_name, self.get_from_dict_flags()))
                     )
+                    return f"cls.{method_name}({method_args})"
                 else:
                     bound = getattr(ftype, "__bound__")
                     # act as if it was Optional[bound]
@@ -1191,15 +1154,13 @@ class CodeBuilder:
                     f"{ftype} as a field type is not supported by mashumaro"
                 )
         elif origin_type is int:
-            return overridden or f"int({value_name})"
+            return f"int({value_name})"
         elif origin_type is float:
-            return overridden or f"float({value_name})"
+            return f"float({value_name})"
         elif origin_type in (bool, NoneType, None):
-            return overridden or value_name
+            return value_name
         elif origin_type in (datetime.datetime, datetime.date, datetime.time):
-            if overridden:
-                return f"{value_name} if use_datetime else {overridden}"
-            elif deserialize_option is not None:
+            if deserialize_option is not None:
                 if deserialize_option == "ciso8601":
                     if ciso8601:
                         self.ensure_module_imported(ciso8601)
@@ -1225,37 +1186,32 @@ class CodeBuilder:
                     suffix = ".date()"
                 elif origin_type is datetime.time:
                     suffix = ".time()"
-                return (
-                    f"{value_name} if use_datetime else "
-                    f"{datetime_parser}({value_name}){suffix}"
-                )
+                return f"{datetime_parser}({value_name}){suffix}"
             return (
-                f"{value_name} if use_datetime else "
-                f"datetime.{origin_type.__name__}."
-                f"fromisoformat({value_name})"
+                f"datetime.{origin_type.__name__}.fromisoformat({value_name})"
             )
         elif origin_type is datetime.timedelta:
-            return overridden or f"datetime.timedelta(seconds={value_name})"
+            return f"datetime.timedelta(seconds={value_name})"
         elif origin_type is datetime.timezone:
-            return overridden or f"parse_timezone({value_name})"
+            return f"parse_timezone({value_name})"
         elif origin_type is uuid.UUID:
-            return overridden or f"uuid.UUID({value_name})"
+            return f"uuid.UUID({value_name})"
         elif origin_type is ipaddress.IPv4Address:
-            return overridden or f"ipaddress.IPv4Address({value_name})"
+            return f"ipaddress.IPv4Address({value_name})"
         elif origin_type is ipaddress.IPv6Address:
-            return overridden or f"ipaddress.IPv6Address({value_name})"
+            return f"ipaddress.IPv6Address({value_name})"
         elif origin_type is ipaddress.IPv4Network:
-            return overridden or f"ipaddress.IPv4Network({value_name})"
+            return f"ipaddress.IPv4Network({value_name})"
         elif origin_type is ipaddress.IPv6Network:
-            return overridden or f"ipaddress.IPv6Network({value_name})"
+            return f"ipaddress.IPv6Network({value_name})"
         elif origin_type is ipaddress.IPv4Interface:
-            return overridden or f"ipaddress.IPv4Interface({value_name})"
+            return f"ipaddress.IPv4Interface({value_name})"
         elif origin_type is ipaddress.IPv6Interface:
-            return overridden or f"ipaddress.IPv6Interface({value_name})"
+            return f"ipaddress.IPv6Interface({value_name})"
         elif origin_type is Decimal:
-            return overridden or f"Decimal({value_name})"
+            return f"Decimal({value_name})"
         elif origin_type is Fraction:
-            return overridden or f"Fraction({value_name})"
+            return f"Fraction({value_name})"
         elif issubclass(origin_type, typing.Collection) and not issubclass(
             origin_type, enum.Enum
         ):
@@ -1277,30 +1233,14 @@ class CodeBuilder:
 
             if issubclass(origin_type, typing.ByteString):
                 if origin_type is bytes:
-                    specific = f"decodebytes({value_name}.encode())"
-                    return (
-                        f"{value_name} if use_bytes else "
-                        f"{overridden or specific}"
-                    )
+                    return f"decodebytes({value_name}.encode())"
                 elif origin_type is bytearray:
-                    if overridden:
-                        overridden = (
-                            f"bytearray({value_name}) if use_bytes else "
-                            f"{overridden}"
-                        )
-                    specific = (
-                        f"bytearray({value_name} if use_bytes else "
-                        f"decodebytes({value_name}.encode()))"
-                    )
-                    return overridden or specific
+                    return f"bytearray(decodebytes({value_name}.encode()))"
             elif issubclass(origin_type, str):
-                return overridden or value_name
+                return value_name
             elif issubclass(origin_type, typing.List):
                 if is_generic(ftype):
-                    return (
-                        overridden
-                        or f"[{inner_expr()} for value in {value_name}]"
-                    )
+                    return f"[{inner_expr()} for value in {value_name}]"
                 elif ftype is list:
                     raise UnserializableField(
                         fname, ftype, parent, "Use typing.List[T] instead"
@@ -1308,8 +1248,7 @@ class CodeBuilder:
             elif issubclass(origin_type, typing.Deque):
                 if is_generic(ftype):
                     return (
-                        overridden
-                        or f"collections.deque([{inner_expr()} "
+                        f"collections.deque([{inner_expr()} "
                         f"for value in {value_name}])"
                     )
                 elif ftype is collections.deque:
@@ -1318,7 +1257,7 @@ class CodeBuilder:
                     )
             elif issubclass(origin_type, typing.Tuple):
                 if is_named_tuple(ftype):
-                    return overridden or self._unpack_named_tuple(
+                    return self._unpack_named_tuple(
                         fname,
                         ftype,
                         value_name,
@@ -1327,7 +1266,7 @@ class CodeBuilder:
                         deserialize_option,
                     )
                 elif is_generic(ftype):
-                    return overridden or self._unpack_tuple(
+                    return self._unpack_tuple(
                         fname, value_name, args, parent, metadata
                     )
                 elif ftype is tuple:
@@ -1337,8 +1276,7 @@ class CodeBuilder:
             elif issubclass(origin_type, typing.FrozenSet):
                 if is_generic(ftype):
                     return (
-                        overridden
-                        or f"frozenset([{inner_expr()} "
+                        f"frozenset([{inner_expr()} "
                         f"for value in {value_name}])"
                     )
                 elif ftype is frozenset:
@@ -1347,10 +1285,7 @@ class CodeBuilder:
                     )
             elif issubclass(origin_type, typing.AbstractSet):
                 if is_generic(ftype):
-                    return (
-                        overridden
-                        or f"set([{inner_expr()} for value in {value_name}])"
-                    )
+                    return f"set([{inner_expr()} for value in {value_name}])"
                 elif ftype is set:
                     raise UnserializableField(
                         fname, ftype, parent, "Use typing.Set[T] instead"
@@ -1364,8 +1299,7 @@ class CodeBuilder:
                         )
                     else:
                         return (
-                            overridden
-                            or f"collections.ChainMap("
+                            f"collections.ChainMap("
                             f'*[{{{inner_expr(0,"key")}:{inner_expr(1)} '
                             f"for key, value in m.items()}} "
                             f"for m in {value_name}])"
@@ -1386,8 +1320,7 @@ class CodeBuilder:
                         )
                     else:
                         return (
-                            overridden
-                            or f"collections.OrderedDict("
+                            f"collections.OrderedDict("
                             f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
                             f"for key, value in {value_name}.items()}})"
                         )
@@ -1407,8 +1340,7 @@ class CodeBuilder:
                         )
                     else:
                         return (
-                            overridden
-                            or f"collections.Counter("
+                            f"collections.Counter("
                             f'{{{inner_expr(0,"key")}: '
                             f"{inner_expr(1, v_type=int)} "
                             f"for key, value in {value_name}.items()}})"
@@ -1422,16 +1354,13 @@ class CodeBuilder:
                     )
             elif issubclass(origin_type, typing.Mapping):
                 if is_typed_dict(ftype):
-                    if overridden:
-                        return overridden
-                    else:
-                        method_name = self._add_unpack_typed_dict(
-                            fname, ftype, value_name, parent, metadata
-                        )
-                        return (
-                            f"cls.{method_name}({value_name},"
-                            f"use_bytes,use_enum,use_datetime)"
-                        )
+                    method_name = self._add_unpack_typed_dict(
+                        fname, ftype, value_name, parent, metadata
+                    )
+                    method_args = ", ".join(
+                        filter(None, (value_name, self.get_from_dict_flags()))
+                    )
+                    return f"cls.{method_name}({method_args})"
                 elif is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
@@ -1440,8 +1369,7 @@ class CodeBuilder:
                         )
                     else:
                         return (
-                            overridden
-                            or f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
+                            f'{{{inner_expr(0,"key")}: {inner_expr(1)} '
                             f"for key, value in {value_name}.items()}}"
                         )
                 elif ftype is dict:
@@ -1453,14 +1381,9 @@ class CodeBuilder:
                     )
             elif issubclass(origin_type, typing.Sequence):
                 if is_generic(ftype):
-                    return (
-                        overridden
-                        or f"[{inner_expr()} for value in {value_name}]"
-                    )
+                    return f"[{inner_expr()} for value in {value_name}]"
         elif issubclass(origin_type, os.PathLike):
-            if overridden:
-                return overridden
-            elif issubclass(origin_type, pathlib.PosixPath):
+            if issubclass(origin_type, pathlib.PosixPath):
                 return f"pathlib.PosixPath({value_name})"
             elif issubclass(origin_type, pathlib.WindowsPath):
                 return f"pathlib.WindowsPath({value_name})"
@@ -1477,10 +1400,7 @@ class CodeBuilder:
             else:
                 return f"{type_name(origin_type)}({value_name})"
         elif issubclass(origin_type, enum.Enum):
-            specific = f"{type_name(origin_type)}({value_name})"
-            return f"{value_name} if use_enum else {overridden or specific}"
-        if overridden:
-            return overridden
+            return f"{type_name(origin_type)}({value_name})"
 
         raise UnserializableField(fname, ftype, parent)
 
@@ -1492,10 +1412,11 @@ class CodeBuilder:
             f"__pack_{prefix}_{parent.__name__}_{fname}__"
             f"{str(uuid.uuid4().hex)}"
         )
-        lines.append(
-            f"def {method_name}"
-            f"(self,value, {self.get_to_dict_default_flag_values()}):"
-        )
+        default_kwargs = self.get_to_dict_default_flag_values()
+        if default_kwargs:
+            lines.append(f"def {method_name}(self, value, {default_kwargs}):")
+        else:
+            lines.append(f"def {method_name}(self, value):")
         with lines.indent():
             for packer in (
                 self._pack_value(fname, arg_type, parent, metadata=metadata)
@@ -1528,11 +1449,12 @@ class CodeBuilder:
             f"__unpack_{prefix}_{parent.__name__}_{fname}__"
             f"{str(uuid.uuid4().hex)}"
         )
+        default_kwargs = self.get_from_dict_default_flag_values()
         lines.append("@classmethod")
-        lines.append(
-            f"def {method_name}"
-            f"(cls,value,{self.get_from_dict_default_flag_values()}):"
-        )
+        if default_kwargs:
+            lines.append(f"def {method_name}(cls, value, {default_kwargs}):")
+        else:
+            lines.append(f"def {method_name}(cls, value):")
         with lines.indent():
             for unpacker in (
                 self._unpack_field_value(
@@ -1625,10 +1547,11 @@ class CodeBuilder:
             f"__pack_typed_dict_{parent.__name__}_{fname}__"
             f"{str(uuid.uuid4().hex)}"
         )
-        lines.append(
-            f"def {method_name}"
-            f"(self,value, {self.get_to_dict_default_flag_values()}):"
-        )
+        default_kwargs = self.get_to_dict_default_flag_values()
+        if default_kwargs:
+            lines.append(f"def {method_name}(self, value, {default_kwargs}):")
+        else:
+            lines.append(f"def {method_name}(self, value):")
         with lines.indent():
             lines.append("d = {}")
             for key in sorted(required_keys, key=all_keys.index):
@@ -1672,11 +1595,12 @@ class CodeBuilder:
             f"__unpack_typed_dict_{parent.__name__}_{fname}__"
             f"{str(uuid.uuid4().hex)}"
         )
+        default_kwargs = self.get_from_dict_default_flag_values()
         lines.append("@classmethod")
-        lines.append(
-            f"def {method_name}"
-            f"(cls,value,use_bytes=False,use_enum=False,use_datetime=False):"
-        )
+        if default_kwargs:
+            lines.append(f"def {method_name}(cls, value, {default_kwargs}):")
+        else:
+            lines.append(f"def {method_name}(cls, value):")
         with lines.indent():
             lines.append("d = {}")
             for key in sorted(required_keys, key=all_keys.index):
@@ -1779,10 +1703,11 @@ class CodeBuilder:
             f"{str(uuid.uuid4().hex)}"
         )
         lines.append("@classmethod")
-        lines.append(
-            f"def {method_name}"
-            f"(cls,value,{self.get_from_dict_default_flag_values()}):"
-        )
+        default_kwargs = self.get_from_dict_default_flag_values()
+        if default_kwargs:
+            lines.append(f"def {method_name}(cls, value, {default_kwargs}):")
+        else:
+            lines.append(f"def {method_name}(cls, value):")
         with lines.indent():
             lines.append("fields = []")
             lines.append("try:")
@@ -1798,9 +1723,10 @@ class CodeBuilder:
             print(f"{type_name(self.cls)}:")
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
-        return (
-            f"cls.{method_name}({value_name},use_bytes,use_enum,use_datetime)"
+        method_args = ", ".join(
+            filter(None, (value_name, self.get_from_dict_flags()))
         )
+        return f"cls.{method_name}({method_args})"
 
     @classmethod
     def _hash_arg_types(cls, arg_types) -> str:

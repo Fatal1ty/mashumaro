@@ -10,9 +10,7 @@ from dataclasses import _FIELDS  # type: ignore
 
 import typing_extensions
 
-from mashumaro.dialect import Dialect
-
-from .macros import (
+from mashumaro.core.const import (
     PY_36,
     PY_37,
     PY_37_MIN,
@@ -21,11 +19,11 @@ from .macros import (
     PY_39_MIN,
     PY_310_MIN,
 )
+from mashumaro.dialect import Dialect
 
 NoneType = type(None)
 DataClassDictMixinPath = (
-    f"{__name__.rsplit('.', 2)[:-2][0]}"
-    f".serializer.base.dict.DataClassDictMixin"
+    f"{__name__.rsplit('.', 3)[:-3][0]}" f".mixins.dict.DataClassDictMixin"
 )
 
 

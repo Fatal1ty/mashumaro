@@ -1,7 +1,7 @@
 from typing import Any, Dict, Mapping, Type, TypeVar
 
+from mashumaro.core.metaprogramming import CodeBuilder
 from mashumaro.exceptions import UnresolvedTypeReferenceError
-from mashumaro.serializer.base.metaprogramming import CodeBuilder
 
 T = TypeVar("T", bound="DataClassDictMixin")
 
@@ -25,9 +25,6 @@ class DataClassDictMixin:
 
     def to_dict(
         self: T,
-        use_bytes: bool = False,
-        use_enum: bool = False,
-        use_datetime: bool = False,
         # *
         # keyword-only arguments that exist with the code generation options:
         # omit_none: bool = False
@@ -37,15 +34,12 @@ class DataClassDictMixin:
     ) -> dict:
         builder = CodeBuilder(self.__class__)
         builder.add_to_dict()
-        return self.to_dict(use_bytes, use_enum, use_datetime, **kwargs)
+        return self.to_dict(**kwargs)
 
     @classmethod
     def from_dict(
         cls: Type[T],
         d: Mapping,
-        use_bytes: bool = False,
-        use_enum: bool = False,
-        use_datetime: bool = False,
         # *
         # keyword-only arguments that exist with the code generation options:
         # dialect: Type[Dialect] = None
@@ -53,7 +47,7 @@ class DataClassDictMixin:
     ) -> T:
         builder = CodeBuilder(cls)
         builder.add_from_dict()
-        return cls.from_dict(d, use_bytes, use_enum, use_datetime, **kwargs)
+        return cls.from_dict(d, **kwargs)
 
     @classmethod
     def __pre_deserialize__(cls: Type[T], d: Dict[Any, Any]) -> Dict[Any, Any]:

@@ -2,12 +2,10 @@ from dataclasses import dataclass
 
 import pytest
 
-from mashumaro import (
-    DataClassDictMixin,
-    DataClassJSONMixin,
-    DataClassMessagePackMixin,
-    DataClassYAMLMixin,
-)
+from mashumaro.mixins.dict import DataClassDictMixin
+from mashumaro.mixins.json import DataClassJSONMixin
+from mashumaro.mixins.msgpack import DataClassMessagePackMixin
+from mashumaro.mixins.yaml import DataClassYAMLMixin
 
 
 def test_slots():

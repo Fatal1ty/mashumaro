@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
+from mashumaro.core.const import PEP_586_COMPATIBLE
 from mashumaro.dialect import Dialect
-from mashumaro.meta.macros import PEP_586_COMPATIBLE
 from mashumaro.types import SerializationStrategy
 
 if PEP_586_COMPATIBLE:

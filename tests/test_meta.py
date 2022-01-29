@@ -7,9 +7,15 @@ from unittest.mock import patch
 import pytest
 import typing_extensions
 
-from mashumaro import DataClassDictMixin, DataClassJSONMixin
-from mashumaro.dialect import Dialect
-from mashumaro.meta.helpers import (
+from mashumaro import DataClassDictMixin
+from mashumaro.core.const import (
+    PEP_585_COMPATIBLE,
+    PY_37,
+    PY_37_MIN,
+    PY_38,
+    PY_310_MIN,
+)
+from mashumaro.core.meta.helpers import (
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
@@ -28,14 +34,9 @@ from mashumaro.meta.helpers import (
     resolve_type_vars,
     type_name,
 )
-from mashumaro.meta.macros import (
-    PEP_585_COMPATIBLE,
-    PY_37,
-    PY_37_MIN,
-    PY_38,
-    PY_310_MIN,
-)
-from mashumaro.serializer.base.metaprogramming import CodeBuilder
+from mashumaro.core.metaprogramming import CodeBuilder
+from mashumaro.dialect import Dialect
+from mashumaro.mixins.json import DataClassJSONMixin
 
 from .entities import (
     MyDataClass,
@@ -53,33 +54,32 @@ TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 
 
 def test_is_generic_unsupported_python():
-    with patch("mashumaro.meta.helpers.PY_36", False):
-        with patch("mashumaro.meta.helpers.PY_37", False):
-            with patch("mashumaro.meta.helpers.PY_38", False):
-                with patch("mashumaro.meta.helpers.PY_39_MIN", False):
+    with patch("mashumaro.core.meta.helpers.PY_36", False):
+        with patch("mashumaro.core.meta.helpers.PY_37", False):
+            with patch("mashumaro.core.meta.helpers.PY_38", False):
+                with patch("mashumaro.core.meta.helpers.PY_39_MIN", False):
                     with pytest.raises(NotImplementedError):
                         is_generic(int)
 
 
 def test_is_class_var_unsupported_python():
-    with patch("mashumaro.meta.helpers.PY_36", False):
-        with patch("mashumaro.meta.helpers.PY_37_MIN", False):
+    with patch("mashumaro.core.meta.helpers.PY_36", False):
+        with patch("mashumaro.core.meta.helpers.PY_37_MIN", False):
             with pytest.raises(NotImplementedError):
                 is_class_var(int)
 
 
 def test_is_init_var_unsupported_python():
-    with patch("mashumaro.meta.helpers.PY_36", False):
-        with patch("mashumaro.meta.helpers.PY_37", False):
-            with patch("mashumaro.meta.helpers.PY_38_MIN", False):
+    with patch("mashumaro.core.meta.helpers.PY_36", False):
+        with patch("mashumaro.core.meta.helpers.PY_37", False):
+            with patch("mashumaro.core.meta.helpers.PY_38_MIN", False):
                 with pytest.raises(NotImplementedError):
                     is_init_var(int)
 
 
 def test_no_code_builder():
     with patch(
-        "mashumaro.serializer.base.dict."
-        "DataClassDictMixin.__init_subclass__",
+        "mashumaro.mixins.dict.DataClassDictMixin.__init_subclass__",
         lambda: ...,
     ):
 
