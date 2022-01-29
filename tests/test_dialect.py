@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Generic, List, NamedTuple, TypedDict, TypeVar, Union
+from typing import Generic, List, NamedTuple, TypeVar, Union
 
 import pytest
+from typing_extensions import TypedDict
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
