@@ -1,8 +1,18 @@
 from collections import namedtuple
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
-from typing import Any, Generic, List, NamedTuple, Optional, TypeVar, Union
+from typing import (
+    Any,
+    Generic,
+    List,
+    NamedTuple,
+    NewType,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 from typing_extensions import TypedDict
 
@@ -212,3 +222,6 @@ if PY_37_MIN:
         ("i", "f"),
         defaults=(1, 2.0),
     )
+
+
+MyDatetimeNewType = NewType("MyDatetimeNewType", datetime)

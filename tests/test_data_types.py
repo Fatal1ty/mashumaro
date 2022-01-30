@@ -7,7 +7,6 @@ import os
 import uuid
 from dataclasses import InitVar, dataclass, field
 from datetime import date, datetime, time, timedelta, timezone
-from enum import Enum
 from pathlib import (
     Path,
     PosixPath,
@@ -65,6 +64,7 @@ from .entities import (
     MutableString,
     MyDataClass,
     MyDataClassWithUnion,
+    MyDatetimeNewType,
     MyEnum,
     MyFlag,
     MyIntEnum,
@@ -230,6 +230,7 @@ inner_values = [
         Fixture.GENERIC_SERIALIZABLE_LIST_STR,
         ["_a", "_b", "_c"],
     ),
+    (MyDatetimeNewType, Fixture.DATETIME, Fixture.DATETIME_STR),
 ]
 
 if os.name == "posix":

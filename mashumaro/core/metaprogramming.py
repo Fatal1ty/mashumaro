@@ -45,6 +45,7 @@ from mashumaro.core.meta.helpers import (
     is_generic,
     is_init_var,
     is_named_tuple,
+    is_new_type,
     is_optional,
     is_special_typing_primitive,
     is_type_var,
@@ -825,6 +826,15 @@ class CodeBuilder:
                         return f"{pv} if {value_name} is not None else None"
                     else:
                         return pv
+            elif is_new_type(ftype):
+                return self._pack_value(
+                    fname=fname,
+                    ftype=ftype.__supertype__,
+                    parent=parent,
+                    value_name=value_name,
+                    metadata=metadata,
+                    could_be_none=could_be_none,
+                )
             else:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
@@ -1147,6 +1157,15 @@ class CodeBuilder:
                         return f"{ufv} if {value_name} is not None else None"
                     else:
                         return ufv
+            elif is_new_type(ftype):
+                return self._unpack_field_value(
+                    fname=fname,
+                    ftype=ftype.__supertype__,
+                    parent=parent,
+                    value_name=value_name,
+                    metadata=metadata,
+                    could_be_none=could_be_none,
+                )
             else:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"

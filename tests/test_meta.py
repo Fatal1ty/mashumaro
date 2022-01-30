@@ -26,6 +26,7 @@ from mashumaro.core.meta.helpers import (
     is_dialect_subclass,
     is_generic,
     is_init_var,
+    is_new_type,
     is_optional,
     is_type_var_any,
     is_union,
@@ -436,3 +437,8 @@ def test_not_non_type_arg():
     assert not_none_type_arg((NoneType, int)) == int
     assert not_none_type_arg((str, NoneType)) == str
     assert not_none_type_arg((T, int), {T: NoneType}) == int
+
+
+def test_is_new_type():
+    assert is_new_type(typing.NewType("MyNewType", int))
+    assert not is_new_type(int)

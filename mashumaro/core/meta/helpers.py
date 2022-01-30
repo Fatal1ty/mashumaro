@@ -187,6 +187,10 @@ def is_named_tuple(t):
         return False
 
 
+def is_new_type(t):
+    return hasattr(t, "__supertype__")
+
+
 def is_union(t):
     try:
         if PY_310_MIN and isinstance(t, types.UnionType):
@@ -368,4 +372,5 @@ __all__ = [
     "get_generic_name",
     "get_name_error_name",
     "is_dialect_subclass",
+    "is_new_type",
 ]
