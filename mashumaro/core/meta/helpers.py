@@ -123,14 +123,16 @@ def type_name(
         else:
             bound = getattr(t, "__bound__")
             return type_name(bound, short, type_vars)
-    else:
-        try:
-            if short:
-                return t.__qualname__
-            else:
-                return f"{t.__module__}.{t.__qualname__}"
-        except AttributeError:
-            return str(t)
+    elif is_new_type(t) and not PY_310_MIN:
+        # because __qualname__ and __module__ are messed up
+        t = t.__supertype__
+    try:
+        if short:
+            return t.__qualname__
+        else:
+            return f"{t.__module__}.{t.__qualname__}"
+    except AttributeError:
+        return str(t)
 
 
 def is_special_typing_primitive(t):

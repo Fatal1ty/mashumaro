@@ -2,6 +2,7 @@ import collections
 import collections.abc
 import typing
 from dataclasses import dataclass
+from datetime import datetime
 
 import pytest
 import typing_extensions
@@ -40,6 +41,7 @@ from mashumaro.mixins.json import DataClassJSONMixin
 
 from .entities import (
     MyDataClass,
+    MyDatetimeNewType,
     MyGenericDataClass,
     MyGenericList,
     T,
@@ -211,6 +213,12 @@ def test_type_name():
         assert type_name(int | None) == "typing.Optional[int]"
         assert type_name(None | int) == "typing.Optional[int]"
         assert type_name(int | str) == "typing.Union[int, str]"
+    if PY_310_MIN:
+        assert (
+            type_name(MyDatetimeNewType) == "tests.entities.MyDatetimeNewType"
+        )
+    else:
+        assert type_name(MyDatetimeNewType) == type_name(datetime)
 
 
 @pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
@@ -299,6 +307,12 @@ def test_type_name_short():
         assert type_name(int | None, short=True) == "Optional[int]"
         assert type_name(None | int, short=True) == "Optional[int]"
         assert type_name(int | str, short=True) == "Union[int, str]"
+    if PY_310_MIN:
+        assert type_name(MyDatetimeNewType, short=True) == "MyDatetimeNewType"
+    else:
+        assert type_name(MyDatetimeNewType, short=True) == type_name(
+            datetime, short=True
+        )
 
 
 @pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
