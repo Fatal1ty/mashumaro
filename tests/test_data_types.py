@@ -41,7 +41,7 @@ from typing_extensions import OrderedDict
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
-from mashumaro.core.const import PEP_585_COMPATIBLE, PY_37_MIN
+from mashumaro.core.const import PEP_585_COMPATIBLE, PY_37_MIN, PY_39_MIN
 from mashumaro.exceptions import (
     InvalidFieldValue,
     MissingField,
@@ -88,6 +88,8 @@ from .utils import same_types
 
 if PY_37_MIN:
     from tests.entities import MyUntypedNamedTupleWithDefaults
+if PY_39_MIN:
+    from zoneinfo import ZoneInfo
 
 NoneType = type(None)
 
@@ -306,6 +308,9 @@ if PEP_585_COMPATIBLE:
             (collections.abc.MutableSequence, Fixture.LIST, Fixture.LIST),
         ]
     )
+
+if PY_39_MIN:
+    inner_values.append((ZoneInfo, ZoneInfo("Europe/Moscow"), "Europe/Moscow"))
 
 
 hashable_inner_values = [

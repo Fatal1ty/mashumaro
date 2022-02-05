@@ -146,6 +146,7 @@ for built-in datetime oriented types (see [more](#deserialize-option) details):
 * [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
 * [`timedelta`](https://docs.python.org/3/library/datetime.html#datetime.timedelta)
 * [`timezone`](https://docs.python.org/3/library/datetime.html#datetime.timezone)
+* [`ZoneInfo`](https://docs.python.org/3/library/zoneinfo.html#zoneinfo.ZoneInfo)
 
 for pathlike types:
 * [`PurePath`](https://docs.python.org/3/library/pathlib.html#pathlib.PurePath)

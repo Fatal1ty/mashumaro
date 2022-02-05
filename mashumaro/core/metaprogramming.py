@@ -30,6 +30,7 @@ from mashumaro.config import (
     TO_DICT_ADD_OMIT_NONE_FLAG,
     BaseConfig,
 )
+from mashumaro.core.const import PY_39_MIN
 from mashumaro.core.helpers import *  # noqa
 from mashumaro.core.meta.helpers import (
     get_args,
@@ -75,6 +76,9 @@ from mashumaro.types import (
     SerializableType,
     SerializationStrategy,
 )
+
+if PY_39_MIN:
+    import zoneinfo
 
 try:
     import ciso8601
@@ -854,6 +858,8 @@ class CodeBuilder:
             return f"{value_name}.total_seconds()"
         elif origin_type is datetime.timezone:
             return f"{value_name}.tzname(None)"
+        elif PY_39_MIN and origin_type is zoneinfo.ZoneInfo:
+            return f"str({value_name})"
         elif origin_type is uuid.UUID:
             return f"str({value_name})"
         elif origin_type in [
@@ -1214,6 +1220,8 @@ class CodeBuilder:
             return f"datetime.timedelta(seconds={value_name})"
         elif origin_type is datetime.timezone:
             return f"parse_timezone({value_name})"
+        elif PY_39_MIN and origin_type is zoneinfo.ZoneInfo:
+            return f"zoneinfo.ZoneInfo({value_name})"
         elif origin_type is uuid.UUID:
             return f"uuid.UUID({value_name})"
         elif origin_type is ipaddress.IPv4Address:
