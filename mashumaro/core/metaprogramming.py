@@ -1105,7 +1105,7 @@ class CodeBuilder:
             method_args = ", ".join(
                 filter(None, (value_name, self.get_from_dict_flags(ftype)))
             )
-            return f"{type_name(ftype)}.{method_name}({method_args})"
+            return f"{type_name(origin_type)}.{method_name}({method_args})"
 
         if is_special_typing_primitive(origin_type):
             if origin_type is typing.Any:
