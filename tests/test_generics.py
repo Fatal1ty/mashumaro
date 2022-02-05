@@ -3,7 +3,7 @@ from datetime import date, datetime
 from typing import Generic, List, Mapping, TypeVar
 
 from mashumaro import DataClassDictMixin
-from tests.entities import MyGenericDataClass
+from tests.entities import MyGenericDataClass, SerializableTypeGenericList
 
 T = TypeVar("T")
 S = TypeVar("S")
@@ -188,3 +188,13 @@ def test_generic_dataclass_as_field_type():
     dictionary = {"date": {"x": "2021-09-14"}, "str": {"x": "2021-09-14"}}
     assert DataClass.from_dict(dictionary) == obj
     assert obj.to_dict() == dictionary
+
+
+def test_serializable_type_generic_class():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: SerializableTypeGenericList[str]
+
+    obj = DataClass(SerializableTypeGenericList(["a", "b", "c"]))
+    assert DataClass.from_dict({"x": ["a", "b", "c"]}) == obj
+    assert obj.to_dict() == {"x": ["a", "b", "c"]}

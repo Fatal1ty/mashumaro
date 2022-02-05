@@ -186,6 +186,21 @@ class MyGenericList(List[T]):
     pass
 
 
+class SerializableTypeGenericList(Generic[T], SerializableType):
+    def __init__(self, value: List[T]):
+        self.value = value
+
+    def _serialize(self):
+        return self.value
+
+    @classmethod
+    def _deserialize(cls, value):
+        return SerializableTypeGenericList(value)
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+
 TMyDataClass = TypeVar("TMyDataClass", bound=MyDataClass)
 
 
