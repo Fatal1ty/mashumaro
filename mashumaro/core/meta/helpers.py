@@ -39,14 +39,14 @@ def get_type_origin(t):
     return origin or t
 
 
-def is_builtin_type(t):
+def is_builtin_type(t) -> bool:
     try:
         return t.__module__ == "builtins"
     except AttributeError:
         return False
 
 
-def get_generic_name(t, short: bool = False):
+def get_generic_name(t, short: bool = False) -> str:
     if PY_36:
         name = getattr(t, "__name__")
     elif PY_37_MIN:
@@ -59,7 +59,7 @@ def get_generic_name(t, short: bool = False):
         return f"{t.__module__}.{name}"
 
 
-def get_args(t: typing.Any):
+def get_args(t: typing.Any) -> typing.Tuple[typing.Any, ...]:
     return getattr(t, "__args__", None) or ()
 
 
@@ -70,7 +70,7 @@ def _get_args_str(
     limit: typing.Optional[int] = None,
     none_type_as_none: bool = False,
     sep: str = ", ",
-):
+) -> str:
     args = get_args(t)[:limit]
     return sep.join(
         type_name(arg, short, type_vars, none_type_as_none=none_type_as_none)
@@ -78,7 +78,7 @@ def _get_args_str(
     )
 
 
-def _typing_name(t: str, short: bool = False):
+def _typing_name(t: str, short: bool = False) -> str:
     return t if short else f"typing.{t}"
 
 
@@ -135,7 +135,7 @@ def type_name(
         return str(t)
 
 
-def is_special_typing_primitive(t):
+def is_special_typing_primitive(t) -> bool:
     try:
         issubclass(t, object)
         return False
@@ -174,7 +174,7 @@ def is_generic(t):
         raise NotImplementedError
 
 
-def is_typed_dict(t):
+def is_typed_dict(t) -> bool:
     for module in (typing, typing_extensions):
         with suppress(AttributeError):
             if type(t) is getattr(module, "_TypedDictMeta"):
@@ -182,14 +182,16 @@ def is_typed_dict(t):
     return False
 
 
-def is_named_tuple(t):
+def is_named_tuple(t) -> bool:
     try:
-        return issubclass(t, typing.Tuple) and hasattr(t, "_fields")
+        return issubclass(t, typing.Tuple) and hasattr(  # type: ignore
+            t, "_fields"
+        )
     except TypeError:
         return False
 
 
-def is_new_type(t):
+def is_new_type(t) -> bool:
     return hasattr(t, "__supertype__")
 
 
@@ -202,7 +204,7 @@ def is_union(t):
         return False
 
 
-def is_optional(t, type_vars: typing.Dict[str, typing.Any] = None):
+def is_optional(t, type_vars: typing.Dict[str, typing.Any] = None) -> bool:
     if type_vars is None:
         type_vars = {}
     if not is_union(t):
@@ -227,11 +229,11 @@ def not_none_type_arg(
             return arg
 
 
-def is_type_var(t):
+def is_type_var(t) -> bool:
     return hasattr(t, "__constraints__")
 
 
-def is_type_var_any(t):
+def is_type_var_any(t) -> bool:
     if not is_type_var(t):
         return False
     elif t.__constraints__ != ():
@@ -242,7 +244,7 @@ def is_type_var_any(t):
         return True
 
 
-def is_class_var(t):
+def is_class_var(t) -> bool:
     if PY_36:
         return (
             is_special_typing_primitive(t) and type(t).__name__ == "_ClassVar"
@@ -253,7 +255,7 @@ def is_class_var(t):
         raise NotImplementedError
 
 
-def is_init_var(t):
+def is_init_var(t) -> bool:
     if PY_36 or PY_37:
         return get_type_origin(t) is dataclasses.InitVar
     elif PY_38_MIN:
@@ -280,11 +282,11 @@ def get_class_that_defines_field(field_name, cls):
     return prev_cls or cls
 
 
-def is_dataclass_dict_mixin(t):
+def is_dataclass_dict_mixin(t) -> bool:
     return type_name(t) == DataClassDictMixinPath
 
 
-def is_dataclass_dict_mixin_subclass(t):
+def is_dataclass_dict_mixin_subclass(t) -> bool:
     with suppress(AttributeError):
         for cls in t.__mro__:
             if is_dataclass_dict_mixin(cls):

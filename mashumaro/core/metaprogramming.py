@@ -1,4 +1,3 @@
-# TODO: переименовать в builder.py?
 import collections
 import collections.abc
 import datetime
@@ -103,7 +102,7 @@ class CodeLines:
         self._lines: typing.List[str] = []
         self._current_indent: str = ""
 
-    def append(self, line: str):
+    def append(self, line: str) -> None:
         self._lines.append(f"{self._current_indent}{line}")
 
     @contextmanager
@@ -117,7 +116,7 @@ class CodeLines:
     def as_text(self) -> str:
         return "\n".join(self._lines)
 
-    def reset(self):
+    def reset(self) -> None:
         self._lines = []
         self._current_indent = ""
 
@@ -181,7 +180,7 @@ class CodeBuilder:
                 fields[fname] = ftype
         return fields
 
-    def _get_field_class(self, field_name):
+    def _get_field_class(self, field_name) -> typing.Any:
         try:
             cls = self.field_classes[field_name]
         except KeyError:
@@ -189,11 +188,11 @@ class CodeBuilder:
             self.field_classes[field_name] = cls
         return cls
 
-    def __get_real_type(self, field_name, field_type):
+    def __get_real_type(self, field_name, field_type) -> typing.Any:
         cls = self._get_field_class(field_name)
         return self.type_vars[cls].get(field_type, field_type)
 
-    def _get_field_type_vars(self, field_name):
+    def _get_field_type_vars(self, field_name) -> typing.Dict[str, typing.Any]:
         cls = self._get_field_class(field_name)
         return self.type_vars[cls]
 
@@ -279,7 +278,7 @@ class CodeBuilder:
             print(code)
         exec(code, self.globals, self.__dict__)
 
-    def get_declared_hook(self, method_name: str):
+    def get_declared_hook(self, method_name: str) -> typing.Any:
         if not hasattr(self.cls, method_name):
             return
         cls = get_class_that_defines_method(method_name, self.cls)
@@ -307,7 +306,7 @@ class CodeBuilder:
             )
         self.compile()
 
-    def _add_from_dict_lines(self):
+    def _add_from_dict_lines(self) -> None:
         config = self.get_config()
         pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
         if pre_deserialize:
@@ -408,7 +407,7 @@ class CodeBuilder:
         self.add_line(f"setattr(cls, '{method_name}', {method_name})")
         self.compile()
 
-    def _from_dict_set_value(self, fname, ftype, metadata, alias=None):
+    def _from_dict_set_value(self, fname, ftype, metadata, alias=None) -> None:
         unpacked_value = self._unpack_field_value(
             fname=fname,
             ftype=ftype,
@@ -544,7 +543,7 @@ class CodeBuilder:
             pluggable_flags_str = ""
         return pluggable_flags_str
 
-    def is_code_generation_option_enabled(self, option: str, cls=None):
+    def is_code_generation_option_enabled(self, option: str, cls=None) -> bool:
         if option == ADD_DIALECT_SUPPORT:
             # TODO: make inheritance for code_generation_options
             for ancestor in self.cls.__mro__[-1:0:-1]:
@@ -640,7 +639,7 @@ class CodeBuilder:
         self.add_line(f"setattr(cls, '{method_name}', {method_name})")
         self.compile()
 
-    def _to_dict_set_value(self, fname, ftype, metadata):
+    def _to_dict_set_value(self, fname, ftype, metadata) -> None:
         omit_none_feature = self.is_code_generation_option_enabled(
             TO_DICT_ADD_OMIT_NONE_FLAG
         )

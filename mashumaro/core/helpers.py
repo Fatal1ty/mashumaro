@@ -2,7 +2,7 @@ import datetime
 import re
 
 
-def parse_timezone(s: str):
+def parse_timezone(s: str) -> datetime.timezone:
     regexp = re.compile(r"^UTC(([+-][0-2][0-9]):([0-5][0-9]))?$")
     match = regexp.match(s)
     if not match:
