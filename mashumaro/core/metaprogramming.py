@@ -201,7 +201,7 @@ class CodeBuilder:
     def field_types(self) -> typing.Dict[str, typing.Any]:
         return self.__get_field_types()
 
-    @property
+    @property  # type: ignore
     @lru_cache()
     def dataclass_fields(self) -> typing.Dict[str, Field]:
         d = {}
@@ -225,11 +225,13 @@ class CodeBuilder:
     def metadatas(self) -> typing.Dict[str, typing.Mapping[str, typing.Any]]:
         return {
             name: field.metadata
-            for name, field in self.dataclass_fields.items()
+            for name, field in self.dataclass_fields.items()  # type: ignore
+            # https://github.com/python/mypy/issues/1362
         }
 
     def get_field_default(self, name: str) -> typing.Any:
-        field = self.dataclass_fields.get(name)
+        field = self.dataclass_fields.get(name)  # type: ignore
+        # https://github.com/python/mypy/issues/1362
         if field:
             if field.default is not MISSING:
                 return field.default
