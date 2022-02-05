@@ -202,39 +202,41 @@ class CodeBuilder:
         return self.__get_field_types()
 
     @property
-    def defaults(self) -> typing.Dict[str, typing.Any]:
+    @lru_cache()
+    def dataclass_fields(self) -> typing.Dict[str, Field]:
         d = {}
         for ancestor in self.cls.__mro__[-1:0:-1]:
             if is_dataclass(ancestor):
                 for field in getattr(ancestor, _FIELDS).values():
-                    if field.default is not MISSING:
-                        d[field.name] = field.default
-                    else:
-                        d[field.name] = field.default_factory
+                    d[field.name] = field
         for name in self.__get_field_types(recursive=False):
             field = self.namespace.get(name, MISSING)
             if isinstance(field, Field):
-                if field.default is not MISSING:
-                    d[name] = field.default
-                else:
-                    # https://github.com/python/mypy/issues/6910
-                    d[name] = field.default_factory  # type: ignore
-            else:
                 d[name] = field
+            else:
+                field = self.namespace.get(_FIELDS, {}).get(name, MISSING)
+                if isinstance(field, Field):
+                    d[name] = field
+                else:
+                    d.pop(name, None)
         return d
 
     @property
     def metadatas(self) -> typing.Dict[str, typing.Mapping[str, typing.Any]]:
-        d = {}
-        for ancestor in self.cls.__mro__[-1:0:-1]:
-            if is_dataclass(ancestor):
-                for field in getattr(ancestor, _FIELDS).values():
-                    d[field.name] = field.metadata
-        for name in self.__get_field_types(recursive=False):
-            field = self.namespace.get(name, MISSING)
-            if isinstance(field, Field):
-                d[name] = field.metadata
-        return d
+        return {
+            name: field.metadata
+            for name, field in self.dataclass_fields.items()
+        }
+
+    def get_field_default(self, name: str) -> typing.Any:
+        field = self.dataclass_fields.get(name)
+        if field:
+            if field.default is not MISSING:
+                return field.default
+            else:
+                return field.default_factory
+        else:
+            return self.namespace.get(name, MISSING)
 
     def _add_type_modules(self, *types_) -> None:
         for t in types_:
@@ -415,7 +417,7 @@ class CodeBuilder:
         self.add_line("if value is None:")
         with self.indent():
             self.add_line(f"kwargs['{fname}'] = None")
-        if self.defaults[fname] is MISSING:
+        if self.get_field_default(fname) is MISSING:
             self.add_line("elif value is MISSING:")
             with self.indent():
                 field_type = type_name(
