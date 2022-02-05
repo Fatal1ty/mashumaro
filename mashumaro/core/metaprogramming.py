@@ -754,7 +754,7 @@ class CodeBuilder:
             return f"self.{overridden_fn}({value_name})"
 
         with suppress(TypeError):
-            if issubclass(ftype, SerializableType):
+            if issubclass(origin_type, SerializableType):
                 return f"{value_name}._serialize()"
         with suppress(TypeError):
             if issubclass(origin_type, GenericSerializableType):
@@ -1080,7 +1080,7 @@ class CodeBuilder:
             return f"cls.{overridden_fn}({value_name})"
 
         with suppress(TypeError):
-            if issubclass(ftype, SerializableType):
+            if issubclass(origin_type, SerializableType):
                 return f"{type_name(ftype)}._deserialize({value_name})"
         with suppress(TypeError):
             if issubclass(origin_type, GenericSerializableType):
