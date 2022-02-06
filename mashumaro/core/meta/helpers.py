@@ -224,6 +224,10 @@ def is_annotated(t) -> bool:
         with suppress(AttributeError):
             if type(t) is getattr(module, "_AnnotatedAlias"):
                 return True
+        with suppress(AttributeError):
+            if type(t) is getattr(module, "AnnotatedMeta"):
+                # Annotated from typing-extensions on Python 3.6
+                return True
     return False
 
 
