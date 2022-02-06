@@ -363,6 +363,10 @@ def test_get_type_origin():
     assert get_type_origin(typing.List) == list
     assert get_type_origin(MyGenericDataClass[int]) == MyGenericDataClass
     assert get_type_origin(MyGenericDataClass) == MyGenericDataClass
+    assert (
+        get_type_origin(typing_extensions.Annotated[datetime, None])
+        == datetime
+    )
 
 
 def test_resolve_type_vars():

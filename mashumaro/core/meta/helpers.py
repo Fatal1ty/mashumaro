@@ -31,6 +31,8 @@ def get_type_origin(t):
     origin = None
     try:
         if PY_36:
+            if is_annotated(t):
+                return get_type_origin(t.__args__[0])
             origin = t.__extra__ or t.__origin__
         elif PY_37_MIN:
             origin = t.__origin__
