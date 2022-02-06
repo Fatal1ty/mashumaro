@@ -96,11 +96,15 @@ def type_name(
     elif t is typing.Any:
         return _typing_name("Any", short)
     elif is_optional(t, type_vars):
-        args_str = type_name(not_none_type_arg(get_args(t), type_vars), short)
+        args_str = type_name(
+            not_none_type_arg(get_args(t), type_vars), short, type_vars
+        )
         return f"{_typing_name('Optional', short)}[{args_str}]"
     elif is_union(t):
         args_str = _get_args_str(t, short, type_vars, none_type_as_none=True)
         return f"{_typing_name('Union', short)}[{args_str}]"
+    elif is_annotated(t):
+        return type_name(get_args(t)[0], short, type_vars)
     elif is_generic(t) and not is_type_origin:
         args_str = _get_args_str(t, short, type_vars)
         if not args_str:
@@ -150,10 +154,7 @@ def is_generic(t):
     elif PY_37 or PY_38:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
-        return t.__class__ in (
-            typing._GenericAlias,
-            typing._VariadicGenericAlias,
-        )
+        return issubclass(t.__class__, typing._GenericAlias)
     elif PY_39_MIN:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
@@ -215,6 +216,14 @@ def is_optional(t, type_vars: typing.Dict[str, typing.Any] = None) -> bool:
     for arg in args:
         if type_vars.get(arg, arg) is NoneType:
             return True
+    return False
+
+
+def is_annotated(t) -> bool:
+    for module in (typing, typing_extensions):
+        with suppress(AttributeError):
+            if type(t) is getattr(module, "_AnnotatedAlias"):
+                return True
     return False
 
 

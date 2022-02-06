@@ -219,6 +219,10 @@ def test_type_name():
         )
     else:
         assert type_name(MyDatetimeNewType) == type_name(datetime)
+    assert (
+        type_name(typing_extensions.Annotated[TMyDataClass, None])
+        == "tests.entities.MyDataClass"
+    )
 
 
 @pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
@@ -313,6 +317,10 @@ def test_type_name_short():
         assert type_name(MyDatetimeNewType, short=True) == type_name(
             datetime, short=True
         )
+    assert (
+        type_name(typing_extensions.Annotated[TMyDataClass, None], short=True)
+        == "MyDataClass"
+    )
 
 
 @pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
