@@ -36,6 +36,7 @@ from mashumaro.core.meta.helpers import (
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
+    get_literal_values,
     get_name_error_name,
     get_type_origin,
     is_class_var,
@@ -44,6 +45,7 @@ from mashumaro.core.meta.helpers import (
     is_dialect_subclass,
     is_generic,
     is_init_var,
+    is_literal,
     is_named_tuple,
     is_new_type,
     is_optional,
@@ -247,11 +249,15 @@ class CodeBuilder:
         for t in types_:
             module = inspect.getmodule(t)
             if not module:
-                return
+                continue
             self.ensure_module_imported(module)
-            args = get_args(t)
-            if args:
+            if is_literal(t):
+                args = get_literal_values(t)
                 self._add_type_modules(*args)
+            else:
+                args = get_args(t)
+                if args:
+                    self._add_type_modules(*args)
             constraints = getattr(t, "__constraints__", ())
             if constraints:
                 self._add_type_modules(*constraints)
@@ -795,13 +801,9 @@ class CodeBuilder:
                     else:
                         return pv
                 else:
-                    method_name = self._add_pack_union(
-                        fname, ftype, args, parent, metadata
+                    return self._pack_union(
+                        fname, ftype, value_name, args, parent, metadata
                     )
-                    method_args = ", ".join(
-                        filter(None, (value_name, self.get_to_dict_flags()))
-                    )
-                    return f"self.{method_name}({method_args})"
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(
                     "AnyStr is not supported by mashumaro"
@@ -811,18 +813,15 @@ class CodeBuilder:
             elif is_type_var(ftype):
                 constraints = getattr(ftype, "__constraints__")
                 if constraints:
-                    method_name = self._add_pack_union(
+                    return self._pack_union(
                         fname=fname,
                         ftype=ftype,
+                        value_name=value_name,
                         args=constraints,
                         parent=parent,
                         metadata=metadata,
                         prefix="type_var",
                     )
-                    method_args = ", ".join(
-                        filter(None, (value_name, self.get_to_dict_flags()))
-                    )
-                    return f"self.{method_name}({method_args})"
                 else:
                     bound = getattr(ftype, "__bound__")
                     # act as if it was Optional[bound]
@@ -841,6 +840,10 @@ class CodeBuilder:
                     value_name=value_name,
                     metadata=metadata,
                     could_be_none=could_be_none,
+                )
+            elif is_literal(ftype):
+                return self._pack_literal(
+                    fname, ftype, value_name, parent, metadata
                 )
             else:
                 raise UnserializableDataError(
@@ -996,13 +999,9 @@ class CodeBuilder:
                     )
             elif issubclass(origin_type, typing.Mapping):
                 if is_typed_dict(ftype):
-                    method_name = self._add_pack_typed_dict(
+                    return self._pack_typed_dict(
                         fname, ftype, value_name, parent, metadata
                     )
-                    method_args = ", ".join(
-                        filter(None, (value_name, self.get_to_dict_flags()))
-                    )
-                    return f"self.{method_name}({method_args})"
                 elif is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
@@ -1128,13 +1127,9 @@ class CodeBuilder:
                     else:
                         return ufv
                 else:
-                    method_name = self._add_unpack_union(
-                        fname, ftype, args, parent, metadata
+                    return self._unpack_union(
+                        fname, ftype, value_name, args, parent, metadata
                     )
-                    method_args = ", ".join(
-                        filter(None, (value_name, self.get_from_dict_flags()))
-                    )
-                    return f"cls.{method_name}({method_args})"
             elif origin_type is typing.AnyStr:
                 raise UnserializableDataError(
                     "AnyStr is not supported by mashumaro"
@@ -1144,18 +1139,15 @@ class CodeBuilder:
             elif is_type_var(ftype):
                 constraints = getattr(ftype, "__constraints__")
                 if constraints:
-                    method_name = self._add_unpack_union(
+                    return self._unpack_union(
                         fname=fname,
                         ftype=ftype,
+                        value_name=value_name,
                         args=constraints,
                         parent=parent,
                         metadata=metadata,
                         prefix="type_var",
                     )
-                    method_args = ", ".join(
-                        filter(None, (value_name, self.get_from_dict_flags()))
-                    )
-                    return f"cls.{method_name}({method_args})"
                 else:
                     bound = getattr(ftype, "__bound__")
                     # act as if it was Optional[bound]
@@ -1174,6 +1166,10 @@ class CodeBuilder:
                     value_name=value_name,
                     metadata=metadata,
                     could_be_none=could_be_none,
+                )
+            elif is_literal(ftype):
+                return self._unpack_literal(
+                    fname, ftype, value_name, parent, metadata
                 )
             else:
                 raise UnserializableDataError(
@@ -1382,13 +1378,9 @@ class CodeBuilder:
                     )
             elif issubclass(origin_type, typing.Mapping):
                 if is_typed_dict(ftype):
-                    method_name = self._add_unpack_typed_dict(
+                    return self._unpack_typed_dict(
                         fname, ftype, value_name, parent, metadata
                     )
-                    method_args = ", ".join(
-                        filter(None, (value_name, self.get_from_dict_flags()))
-                    )
-                    return f"cls.{method_name}({method_args})"
                 elif is_generic(ftype):
                     if args and is_dataclass(args[0]):
                         raise UnserializableDataError(
@@ -1432,8 +1424,8 @@ class CodeBuilder:
 
         raise UnserializableField(fname, ftype, parent)
 
-    def _add_pack_union(
-        self, fname, ftype, args, parent, metadata, prefix="union"
+    def _pack_union(
+        self, fname, ftype, value_name, args, parent, metadata, prefix="union"
     ) -> str:
         lines = CodeLines()
         method_name = (
@@ -1467,10 +1459,13 @@ class CodeBuilder:
             print(f"{type_name(self.cls)}:")
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
-        return method_name
+        method_args = ", ".join(
+            filter(None, (value_name, self.get_to_dict_flags()))
+        )
+        return f"self.{method_name}({method_args})"
 
-    def _add_unpack_union(
-        self, fname, ftype, args, parent, metadata, prefix="union"
+    def _unpack_union(
+        self, fname, ftype, value_name, args, parent, metadata, prefix="union"
     ) -> str:
         lines = CodeLines()
         method_name = (
@@ -1507,7 +1502,10 @@ class CodeBuilder:
             print(f"{type_name(self.cls)}:")
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
-        return method_name
+        method_args = ", ".join(
+            filter(None, (value_name, self.get_from_dict_flags()))
+        )
+        return f"cls.{method_name}({method_args})"
 
     def _pack_tuple(self, fname, value_name, args, parent, metadata) -> str:
         if not args:
@@ -1563,7 +1561,7 @@ class CodeBuilder:
             ]
             return f"tuple([{', '.join(unpackers)}])"
 
-    def _add_pack_typed_dict(
+    def _pack_typed_dict(
         self, fname, ftype, value_name, parent, metadata
     ) -> str:
         annotations = ftype.__annotations__
@@ -1609,9 +1607,12 @@ class CodeBuilder:
             print(f"{type_name(self.cls)}:")
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
-        return method_name
+        method_args = ", ".join(
+            filter(None, (value_name, self.get_to_dict_flags()))
+        )
+        return f"self.{method_name}({method_args})"
 
-    def _add_unpack_typed_dict(
+    def _unpack_typed_dict(
         self, fname, ftype, value_name, parent, metadata
     ) -> str:
         annotations = ftype.__annotations__
@@ -1658,7 +1659,10 @@ class CodeBuilder:
             print(f"{type_name(self.cls)}:")
             print(lines.as_text())
         exec(lines.as_text(), self.globals, self.__dict__)
-        return method_name
+        method_args = ", ".join(
+            filter(None, (value_name, self.get_from_dict_flags()))
+        )
+        return f"cls.{method_name}({method_args})"
 
     def _pack_named_tuple(
         self, fname, ftype, value_name, parent, metadata, serialize_option
@@ -1755,6 +1759,115 @@ class CodeBuilder:
             filter(None, (value_name, self.get_from_dict_flags()))
         )
         return f"cls.{method_name}({method_args})"
+
+    def _unpack_literal(
+        self, fname, ftype, value_name, parent, metadata
+    ) -> str:
+        lines = CodeLines()
+        method_name = (
+            f"__unpack_literal_{parent.__name__}_{fname}__"
+            f"{str(uuid.uuid4().hex)}"
+        )
+        default_kwargs = self.get_from_dict_default_flag_values()
+        lines.append("@classmethod")
+        if default_kwargs:
+            lines.append(f"def {method_name}(cls, value, {default_kwargs}):")
+        else:
+            lines.append(f"def {method_name}(cls, value):")
+        with lines.indent():
+            for literal_value in get_literal_values(ftype):
+                if isinstance(literal_value, enum.Enum):
+                    enum_type_name = type_name(type(literal_value))
+                    lines.append(
+                        f"if {value_name} == {enum_type_name}."
+                        f"{literal_value.name}.value:"
+                    )
+                    with lines.indent():
+                        lines.append(
+                            f"return {enum_type_name}.{literal_value.name}"
+                        )
+                elif isinstance(literal_value, bytes):
+                    unpacker = self._unpack_field_value(
+                        fname, bytes, parent, value_name, metadata
+                    )
+                    lines.append("try:")
+                    with lines.indent():
+                        lines.append(
+                            f"if {unpacker} == {repr(literal_value)}:"
+                        )
+                        with lines.indent():
+                            lines.append(f"return {literal_value}")
+                    lines.append("except:")
+                    with lines.indent():
+                        lines.append("pass")
+                elif isinstance(literal_value, (int, str, bool, NoneType)):
+                    lines.append(f"if {value_name} == {repr(literal_value)}:")
+                    with lines.indent():
+                        lines.append(f"return {repr(literal_value)}")
+            lines.append(f"raise ValueError({value_name})")
+        lines.append(f"setattr(cls, '{method_name}', {method_name})")
+        if self.get_config().debug:
+            print(f"{type_name(self.cls)}:")
+            print(lines.as_text())
+        exec(lines.as_text(), self.globals, self.__dict__)
+        method_args = ", ".join(
+            filter(None, (value_name, self.get_from_dict_flags()))
+        )
+        return f"cls.{method_name}({method_args})"
+
+    def _pack_literal(self, fname, ftype, value_name, parent, metadata) -> str:
+        self._add_type_modules(ftype)
+        lines = CodeLines()
+        method_name = (
+            f"__pack_literal_{parent.__name__}_{fname}__"
+            f"{str(uuid.uuid4().hex)}"
+        )
+        default_kwargs = self.get_to_dict_default_flag_values()
+        if default_kwargs:
+            lines.append(f"def {method_name}(self, value, {default_kwargs}):")
+        else:
+            lines.append(f"def {method_name}(self, value):")
+        with lines.indent():
+            for literal_value in get_literal_values(ftype):
+                value_type = type(literal_value)
+                if isinstance(literal_value, enum.Enum):
+                    enum_type_name = type_name(
+                        value_type, type_vars=self._get_field_type_vars(fname)
+                    )
+                    lines.append(
+                        f"if {value_name} == {enum_type_name}."
+                        f"{literal_value.name}:"
+                    )
+                    with lines.indent():
+                        packer = self._pack_value(
+                            fname, value_type, parent, value_name, metadata
+                        )
+                        lines.append(f"return {packer}")
+                elif isinstance(
+                    literal_value, (int, str, bytes, bool, NoneType)
+                ):
+                    lines.append(f"if {value_name} == {repr(literal_value)}:")
+                    with lines.indent():
+                        packer = self._pack_value(
+                            fname, value_type, parent, value_name, metadata
+                        )
+                        lines.append(f"return {packer}")
+            field_type = type_name(
+                ftype, type_vars=self._get_field_type_vars(fname)
+            )
+            lines.append(
+                f"raise InvalidFieldValue('{fname}',"
+                f"{field_type},{value_name},type(self))"
+            )
+        lines.append(f"setattr(cls, '{method_name}', {method_name})")
+        if self.get_config().debug:
+            print(f"{type_name(self.cls)}:")
+            print(lines.as_text())
+        exec(lines.as_text(), self.globals, self.__dict__)
+        method_args = ", ".join(
+            filter(None, (value_name, self.get_to_dict_flags()))
+        )
+        return f"self.{method_name}({method_args})"
 
     @classmethod
     def _hash_arg_types(cls, arg_types) -> str:

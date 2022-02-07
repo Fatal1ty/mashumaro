@@ -1,4 +1,5 @@
 import dataclasses
+import enum
 import inspect
 import re
 import types
@@ -54,7 +55,11 @@ def get_generic_name(t, short: bool = False) -> str:
     elif PY_37_MIN:
         name = getattr(t, "_name", None)
         if name is None:
-            return type_name(get_type_origin(t), short, is_type_origin=True)
+            origin = get_type_origin(t)
+            if origin is t:
+                return type_name(origin, short, is_type_origin=True)
+            else:
+                return get_generic_name(origin, short)
     if short:
         return name
     else:
@@ -80,8 +85,40 @@ def _get_args_str(
     )
 
 
-def _typing_name(t: str, short: bool = False) -> str:
-    return t if short else f"typing.{t}"
+def get_literal_values(t: typing.Any) -> typing.Tuple[typing.Any, ...]:
+    if PY_36:
+        values = t.__values__ or ()
+    elif PY_37_MIN:
+        values = t.__args__
+    else:
+        raise NotImplementedError
+    result = []
+    for value in values:
+        if is_literal(value):
+            result.extend(get_literal_values(value))
+        else:
+            result.append(value)
+    return tuple(result)
+
+
+def _get_literal_values_str(t: typing.Any, short: bool) -> str:
+    values_str = []
+    for value in get_literal_values(t):
+        if isinstance(value, enum.Enum):
+            values_str.append(f"{type_name(type(value), short)}.{value.name}")
+        elif isinstance(value, (int, str, bytes, bool, NoneType)):
+            values_str.append(repr(value))
+        elif is_literal(value):
+            values_str.append(_get_literal_values_str(value, short))
+    return ", ".join(values_str)
+
+
+def _typing_name(
+    t: str,
+    short: bool = False,
+    module_name: str = "typing",
+) -> str:
+    return t if short else f"{module_name}.{t}"
 
 
 def type_name(
@@ -107,6 +144,9 @@ def type_name(
         return f"{_typing_name('Union', short)}[{args_str}]"
     elif is_annotated(t):
         return type_name(get_args(t)[0], short, type_vars)
+    elif is_literal(t):
+        args_str = _get_literal_values_str(t, short)
+        return f"{_typing_name('Literal', short, t.__module__)}[{args_str}]"
     elif is_generic(t) and not is_type_origin:
         args_str = _get_args_str(t, short, type_vars)
         if not args_str:
@@ -230,6 +270,26 @@ def is_annotated(t) -> bool:
             if type(t) is getattr(module, "AnnotatedMeta"):
                 # Annotated from typing-extensions on Python 3.6
                 return True
+    return False
+
+
+def is_literal(t) -> bool:
+    if PY_36:
+        with suppress(AttributeError):
+            # noinspection PyProtectedMember
+            # noinspection PyUnresolvedReferences
+            return (
+                isinstance(t, typing_extensions._Literal)
+                and len(get_literal_values(t)) > 0
+            )
+    elif PY_37:
+        with suppress(AttributeError):
+            return is_generic(t) and get_generic_name(t, True) == "Literal"
+    elif PY_38_MIN:
+        with suppress(AttributeError):
+            # noinspection PyProtectedMember
+            # noinspection PyUnresolvedReferences
+            return type(t) is typing._LiteralGenericAlias
     return False
 
 
@@ -392,4 +452,7 @@ __all__ = [
     "get_name_error_name",
     "is_dialect_subclass",
     "is_new_type",
+    "is_annotated",
+    "is_literal",
+    "get_literal_values",
 ]

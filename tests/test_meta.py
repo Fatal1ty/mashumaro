@@ -13,6 +13,7 @@ from mashumaro.core.const import (
     PY_37,
     PY_37_MIN,
     PY_38,
+    PY_38_MIN,
     PY_310_MIN,
 )
 from mashumaro.core.meta.helpers import (
@@ -20,13 +21,16 @@ from mashumaro.core.meta.helpers import (
     get_class_that_defines_field,
     get_class_that_defines_method,
     get_generic_name,
+    get_literal_values,
     get_type_origin,
+    is_annotated,
     is_class_var,
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
     is_dialect_subclass,
     is_generic,
     is_init_var,
+    is_literal,
     is_new_type,
     is_optional,
     is_type_var_any,
@@ -42,8 +46,13 @@ from mashumaro.mixins.json import DataClassJSONMixin
 from .entities import (
     MyDataClass,
     MyDatetimeNewType,
+    MyEnum,
+    MyFlag,
     MyGenericDataClass,
     MyGenericList,
+    MyIntEnum,
+    MyIntFlag,
+    MyStrEnum,
     T,
     TAny,
     TInt,
@@ -77,6 +86,13 @@ def test_is_init_var_unsupported_python(mocker):
     mocker.patch("mashumaro.core.meta.helpers.PY_38_MIN", False)
     with pytest.raises(NotImplementedError):
         is_init_var(int)
+
+
+def test_get_literal_values_unsupported_python(mocker):
+    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_37_MIN", False)
+    with pytest.raises(NotImplementedError):
+        get_literal_values(typing_extensions.Literal[1])
 
 
 def test_no_code_builder(mocker):
@@ -468,3 +484,52 @@ def test_not_non_type_arg():
 def test_is_new_type():
     assert is_new_type(typing.NewType("MyNewType", int))
     assert not is_new_type(int)
+
+
+def test_is_annotated():
+    assert is_annotated(typing_extensions.Annotated[datetime, None])
+    assert not is_annotated(datetime)
+
+
+def test_is_literal():
+    assert is_literal(typing_extensions.Literal[1, 2, 3])
+    assert not is_literal(typing_extensions.Literal)
+    assert not is_literal([1, 2, 3])
+
+
+def test_get_literal_values():
+    assert get_literal_values(typing_extensions.Literal[1, 2, 3]) == (1, 2, 3)
+    assert get_literal_values(
+        typing_extensions.Literal[
+            1, typing_extensions.Literal[typing_extensions.Literal[2], 3]
+        ]
+    ) == (1, 2, 3)
+
+
+def test_type_name_literal():
+    if PY_38_MIN:
+        module_name = "typing"
+    else:
+        module_name = "typing_extensions"
+    assert type_name(
+        typing_extensions.Literal[
+            1,
+            "a",
+            b"\x00",
+            True,
+            False,
+            None,
+            MyEnum.a,
+            MyStrEnum.a,
+            MyIntEnum.a,
+            MyFlag.a,
+            MyIntFlag.a,
+            typing_extensions.Literal[2, 3],
+            typing_extensions.Literal[typing_extensions.Literal["b", "c"]],
+        ]
+    ) == (
+        f"{module_name}.Literal[1, 'a', b'\\x00', True, False, None, "
+        "tests.entities.MyEnum.a, tests.entities.MyStrEnum.a, "
+        "tests.entities.MyIntEnum.a, tests.entities.MyFlag.a, "
+        "tests.entities.MyIntFlag.a, 2, 3, 'b', 'c']"
+    )
