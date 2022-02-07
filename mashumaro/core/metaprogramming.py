@@ -1792,18 +1792,18 @@ class CodeBuilder:
                     )
                     lines.append("try:")
                     with lines.indent():
-                        lines.append(
-                            f"if {unpacker} == {repr(literal_value)}:"
-                        )
+                        lines.append(f"if {unpacker} == {literal_value!r}:")
                         with lines.indent():
-                            lines.append(f"return {literal_value}")
+                            lines.append(f"return {literal_value!r}")
                     lines.append("except:")
                     with lines.indent():
                         lines.append("pass")
-                elif isinstance(literal_value, (int, str, bool, NoneType)):
-                    lines.append(f"if {value_name} == {repr(literal_value)}:")
+                elif isinstance(  # type: ignore
+                    literal_value, (int, str, bool, NoneType)  # type: ignore
+                ):
+                    lines.append(f"if {value_name} == {literal_value!r}:")
                     with lines.indent():
-                        lines.append(f"return {repr(literal_value)}")
+                        lines.append(f"return {literal_value!r}")
             lines.append(f"raise ValueError({value_name})")
         lines.append(f"setattr(cls, '{method_name}', {method_name})")
         if self.get_config().debug:
@@ -1843,10 +1843,11 @@ class CodeBuilder:
                             fname, value_type, parent, value_name, metadata
                         )
                         lines.append(f"return {packer}")
-                elif isinstance(
-                    literal_value, (int, str, bytes, bool, NoneType)
+                elif isinstance(  # type: ignore
+                    literal_value,
+                    (int, str, bytes, bool, NoneType),  # type: ignore
                 ):
-                    lines.append(f"if {value_name} == {repr(literal_value)}:")
+                    lines.append(f"if {value_name} == {literal_value!r}:")
                     with lines.indent():
                         packer = self._pack_value(
                             fname, value_type, parent, value_name, metadata

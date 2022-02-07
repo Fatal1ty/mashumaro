@@ -85,7 +85,7 @@ def _get_args_str(
     )
 
 
-def get_literal_values(t: typing.Any) -> typing.Tuple[typing.Any, ...]:
+def get_literal_values(t: typing.Any):
     if PY_36:
         values = t.__values__ or ()
     elif PY_37_MIN:
@@ -101,12 +101,14 @@ def get_literal_values(t: typing.Any) -> typing.Tuple[typing.Any, ...]:
     return tuple(result)
 
 
-def _get_literal_values_str(t: typing.Any, short: bool) -> str:
+def _get_literal_values_str(t: typing.Any, short: bool):
     values_str = []
     for value in get_literal_values(t):
         if isinstance(value, enum.Enum):
             values_str.append(f"{type_name(type(value), short)}.{value.name}")
-        elif isinstance(value, (int, str, bytes, bool, NoneType)):
+        elif isinstance(  # type: ignore
+            value, (int, str, bytes, bool, NoneType)  # type: ignore
+        ):
             values_str.append(repr(value))
         elif is_literal(value):
             values_str.append(_get_literal_values_str(value, short))
@@ -279,7 +281,7 @@ def is_literal(t) -> bool:
             # noinspection PyProtectedMember
             # noinspection PyUnresolvedReferences
             return (
-                isinstance(t, typing_extensions._Literal)
+                isinstance(t, typing_extensions._Literal)  # type: ignore
                 and len(get_literal_values(t)) > 0
             )
     elif PY_37:
@@ -289,7 +291,7 @@ def is_literal(t) -> bool:
         with suppress(AttributeError):
             # noinspection PyProtectedMember
             # noinspection PyUnresolvedReferences
-            return type(t) is typing._LiteralGenericAlias
+            return type(t) is typing._LiteralGenericAlias  # type: ignore
     return False
 
 
