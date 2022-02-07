@@ -76,12 +76,12 @@ def test_literal_with_bytes():
     class DataClass(DataClassDictMixin):
         x: Literal[b"\x00"]
 
-    assert DataClass.from_dict({"x": 'AA==\n'}) == DataClass(b'\x00')
-    assert DataClass(b'\x00').to_dict() == {"x": 'AA==\n'}
+    assert DataClass.from_dict({"x": "AA==\n"}) == DataClass(b"\x00")
+    assert DataClass(b"\x00").to_dict() == {"x": "AA==\n"}
     with pytest.raises(InvalidFieldValue):
         DataClass.from_dict({"x": "\x00"})
     with pytest.raises(InvalidFieldValue):
-        DataClass('AA==\n').to_dict()
+        DataClass("AA==\n").to_dict()
 
 
 def test_literal_with_bytes_overridden():
@@ -90,14 +90,12 @@ def test_literal_with_bytes_overridden():
         x: Literal[b"\x00"]
 
         class Config(BaseConfig):
-            serialization_strategy = {
-                bytes: pass_through
-            }
+            serialization_strategy = {bytes: pass_through}
 
-    assert DataClass.from_dict({"x": b'\x00'}) == DataClass(b'\x00')
-    assert DataClass(b'\x00').to_dict() == {"x": b'\x00'}
+    assert DataClass.from_dict({"x": b"\x00"}) == DataClass(b"\x00")
+    assert DataClass(b"\x00").to_dict() == {"x": b"\x00"}
     with pytest.raises(InvalidFieldValue):
-        DataClass.from_dict({"x": 'AA==\n'})
+        DataClass.from_dict({"x": "AA==\n"})
 
 
 def test_literal_with_enum():
@@ -105,8 +103,8 @@ def test_literal_with_enum():
     class DataClass(DataClassDictMixin):
         x: Literal[MyEnum.a]
 
-    assert DataClass.from_dict({"x": 'letter a'}) == DataClass(MyEnum.a)
+    assert DataClass.from_dict({"x": "letter a"}) == DataClass(MyEnum.a)
     with pytest.raises(InvalidFieldValue):
-        DataClass.from_dict({"x": 'letter b'})
+        DataClass.from_dict({"x": "letter b"})
     with pytest.raises(InvalidFieldValue):
         DataClass(MyEnum.b).to_dict()
