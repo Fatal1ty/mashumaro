@@ -284,10 +284,10 @@ def is_literal(t) -> bool:
                 isinstance(t, typing_extensions._Literal)  # type: ignore
                 and len(get_literal_values(t)) > 0
             )
-    elif PY_37:
+    elif PY_37_MIN:
         with suppress(AttributeError):
             return is_generic(t) and get_generic_name(t, True) == "Literal"
-    elif PY_38_MIN:
+    elif PY_39_MIN:
         with suppress(AttributeError):
             # noinspection PyProtectedMember
             # noinspection PyUnresolvedReferences
