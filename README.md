@@ -171,6 +171,12 @@ for other less popular built-in types:
 * [`ipaddress.IPv4Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv4Interface)
 * [`ipaddress.IPv6Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv6Interface)
 
+for backported types from [`typing-extensions`](https://github.com/python/typing/blob/master/typing_extensions/README.rst):
+* `TypedDict`
+* `OrderedDict`
+* `Annotated`
+* `Literal`
+
 for arbitrary types:
 * [user-defined classes](#serializabletype-interface)
 * [user-defined generic types](#user-defined-generic-types)
