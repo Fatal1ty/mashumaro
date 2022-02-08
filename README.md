@@ -356,6 +356,13 @@ from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 This mixins adds MessagePack serialization functionality to a dataclass.
 It adds methods `from_msgpack` and `to_msgpack`.
 
+In order to use this mixin, the [`msgpack`](https://pypi.org/project/msgpack/) package must be installed.
+You can install it manually or using an extra option for mashumaro:
+
+```shell
+pip install mashumaro[msgpack]
+```
+
 #### [`DataClassYAMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L34)
 
 Can be imported as:
@@ -365,6 +372,13 @@ from mashumaro.mixins.yaml import DataClassYAMLMixin
 
 This mixins adds YAML serialization functionality to a dataclass.
 It adds methods `from_yaml` and `to_yaml`.
+
+In order to use this mixin, the [`pyyaml`](https://pypi.org/project/PyYAML/) package must be installed.
+You can install it manually or using an extra option for mashumaro:
+
+```shell
+pip install mashumaro[yaml]
+```
 
 Customization
 --------------------------------------------------------------------------------
