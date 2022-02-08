@@ -39,7 +39,7 @@ from mashumaro.core.meta.helpers import (
     resolve_type_vars,
     type_name,
 )
-from mashumaro.core.metaprogramming import CodeBuilder
+from mashumaro.core.meta.builder import CodeBuilder
 from mashumaro.dialect import Dialect
 from mashumaro.mixins.json import DataClassJSONMixin
 

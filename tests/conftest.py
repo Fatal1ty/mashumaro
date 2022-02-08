@@ -7,6 +7,6 @@ if not PY_37_MIN:
 
 
 fake_add_from_dict = patch(
-    "mashumaro.core.metaprogramming." "CodeBuilder.add_from_dict",
+    "mashumaro.core.meta.builder." "CodeBuilder.add_from_dict",
     lambda *args, **kwargs: ...,
 )

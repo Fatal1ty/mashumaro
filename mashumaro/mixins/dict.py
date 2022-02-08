@@ -1,6 +1,6 @@
 from typing import Any, Dict, Mapping, Type, TypeVar
 
-from mashumaro.core.metaprogramming import CodeBuilder
+from mashumaro.core.meta.builder import CodeBuilder
 from mashumaro.exceptions import UnresolvedTypeReferenceError
 
 T = TypeVar("T", bound="DataClassDictMixin")
