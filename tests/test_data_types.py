@@ -30,6 +30,7 @@ from typing import (
     Mapping,
     MutableMapping,
     MutableSet,
+    NewType,
     Optional,
     Sequence,
     Set,
@@ -1208,3 +1209,28 @@ def test_data_class_with_none():
     obj = DataClass(x=None, y=None, z=[None])
     assert DataClass.from_dict({"x": None, "y": None, "z": [None]}) == obj
     assert obj.to_dict() == {"x": None, "y": None, "z": [None]}
+
+
+def test_data_class_with_new_type_overridden():
+    MyStr = NewType("MyStr", str)
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: str
+        y: MyStr
+
+        class Config(BaseConfig):
+            serialization_strategy = {
+                str: {
+                    "serialize": lambda x: f"str_{x}",
+                    "deserialize": lambda x: x[4:],
+                },
+                MyStr: {
+                    "serialize": lambda x: f"MyStr_{x}",
+                    "deserialize": lambda x: x[6:],
+                },
+            }
+
+    instance = DataClass("a", "b")
+    assert DataClass.from_dict({"x": "str_a", "y": "MyStr_b"}) == instance
+    assert instance.to_dict() == {"x": "str_a", "y": "MyStr_b"}
