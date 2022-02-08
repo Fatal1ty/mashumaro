@@ -110,8 +110,6 @@ def _get_literal_values_str(t: typing.Any, short: bool):
             value, (int, str, bytes, bool, NoneType)  # type: ignore
         ):
             values_str.append(repr(value))
-        elif is_literal(value):
-            values_str.append(_get_literal_values_str(value, short))
     return ", ".join(values_str)
 
 
