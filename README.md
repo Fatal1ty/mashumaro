@@ -356,7 +356,7 @@ from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 This mixins adds MessagePack serialization functionality to a dataclass.
 It adds methods `from_msgpack` and `to_msgpack`.
 
-#### [`DataClassYAMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L22)
+#### [`DataClassYAMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L34)
 
 Can be imported as:
 ```python
