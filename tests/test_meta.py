@@ -16,6 +16,7 @@ from mashumaro.core.const import (
     PY_38_MIN,
     PY_310_MIN,
 )
+from mashumaro.core.meta.builder import CodeBuilder
 from mashumaro.core.meta.helpers import (
     get_args,
     get_class_that_defines_field,
@@ -39,7 +40,6 @@ from mashumaro.core.meta.helpers import (
     resolve_type_vars,
     type_name,
 )
-from mashumaro.core.meta.builder import CodeBuilder
 from mashumaro.dialect import Dialect
 from mashumaro.mixins.json import DataClassJSONMixin
 
