@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Union
 
 import pytest
+from typing_extensions import Literal
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
@@ -29,6 +30,7 @@ def test_debug_true_option(mocker):
         union: Union[int, str]
         typed_dict: TypedDictRequiredKeys
         named_tuple: MyNamedTupleWithDefaults
+        literal: Literal[1, 2, 3]
 
         class Config(BaseConfig):
             debug = True

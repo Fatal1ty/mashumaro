@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from mashumaro.config import BaseConfig
 
 import pytest
 from typing_extensions import Literal
 
 from mashumaro import DataClassDictMixin
+from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
+from mashumaro.dialect import Dialect
 from mashumaro.exceptions import InvalidFieldValue
 from mashumaro.helper import pass_through
 from tests.entities import MyEnum
@@ -108,3 +109,21 @@ def test_literal_with_enum():
         DataClass.from_dict({"x": "letter b"})
     with pytest.raises(InvalidFieldValue):
         DataClass(MyEnum.b).to_dict()
+
+
+def test_literal_with_dialect():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Literal[b"\x00"]
+
+        class Config(BaseConfig):
+            code_generation_options = [ADD_DIALECT_SUPPORT]
+
+    class MyDialect(Dialect):
+        serialization_strategy = {bytes: pass_through}
+
+    instance = DataClass(b"\x00")
+    assert DataClass.from_dict({"x": b"\x00"}, dialect=MyDialect) == instance
+    assert instance.to_dict(dialect=MyDialect) == {"x": b"\x00"}
+    with pytest.raises(InvalidFieldValue):
+        DataClass.from_dict({"x": "AA==\n"}, dialect=MyDialect)
