@@ -1231,6 +1231,6 @@ def test_data_class_with_new_type_overridden():
                 },
             }
 
-    instance = DataClass("a", "b")
+    instance = DataClass("a", MyStr("b"))
     assert DataClass.from_dict({"x": "str_a", "y": "MyStr_b"}) == instance
     assert instance.to_dict() == {"x": "str_a", "y": "MyStr_b"}
