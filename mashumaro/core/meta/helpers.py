@@ -290,8 +290,7 @@ def is_literal(t) -> bool:
             # noinspection PyProtectedMember
             # noinspection PyUnresolvedReferences
             return type(t) is typing._LiteralGenericAlias  # type: ignore
-    else:
-        raise NotImplementedError
+    return False
 
 
 def not_none_type_arg(

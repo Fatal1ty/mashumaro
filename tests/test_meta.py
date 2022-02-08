@@ -93,8 +93,7 @@ def test_is_literal_unsupported_python(mocker):
     mocker.patch("mashumaro.core.meta.helpers.PY_37", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_38", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_39_MIN", False)
-    with pytest.raises(NotImplementedError):
-        is_literal(typing_extensions.Literal[1])
+    assert not is_literal(typing_extensions.Literal[1])
 
 
 def test_get_literal_values_unsupported_python(mocker):
