@@ -23,6 +23,10 @@ Table of contents
 * [How does it work?](#how-does-it-work)
 * [Benchmark](#benchmark)
 * [Serialization mixins](#serialization-mixins)
+  * [`DataClassDictMixin`](#dataclassdictmixinhttpsgithubcomfatal1tymashumaroblobmastermashumaromixinsdictpyl9)
+  * [`DataClassJSONMixin`](#dataclassjsonmixinhttpsgithubcomfatal1tymashumaroblobmastermashumaromixinsjsonpyl22)
+  * [`DataClassMessagePackMixin`](#dataclassmessagepackmixinhttpsgithubcomfatal1tymashumaroblobmastermashumaromixinsmsgpackpyl26)
+  * [`DataClassYAMLMixin`](#dataclassyamlmixinhttpsgithubcomfatal1tymashumaroblobmastermashumaromixinsyamlpyl22)
 * [Customization](#customization)
     * [`SerializableType` interface](#serializabletype-interface)
     * [Field options](#field-options)
@@ -320,7 +324,7 @@ Serialization mixins
 
 Mashumaro provides mixins for each serialization format.
 
-#### [DataClassDictMixin](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L9)
+#### [`DataClassDictMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L9)
 
 Can be imported in two ways:
 ```python
@@ -332,7 +336,7 @@ The core mixin that adds serialization functionality to a dataclass.
 This mixin is a base class for all other serialization format mixins.
 It adds methods `from_dict` and `to_dict`.
 
-#### [DataClassJSONMixin](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L22)
+#### [`DataClassJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L22)
 
 Can be imported as:
 ```python
@@ -342,7 +346,7 @@ from mashumaro.mixins.json import DataClassJSONMixin
 This mixins adds json serialization functionality to a dataclass.
 It adds methods `from_json` and `to_json`.
 
-#### [DataClassMessagePackMixin](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L26)
+#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L26)
 
 Can be imported as:
 ```python
@@ -352,7 +356,7 @@ from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 This mixins adds MessagePack serialization functionality to a dataclass.
 It adds methods `from_msgpack` and `to_msgpack`.
 
-#### [DataClassYAMLMixin](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L22)
+#### [`DataClassYAMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L22)
 
 Can be imported as:
 ```python
