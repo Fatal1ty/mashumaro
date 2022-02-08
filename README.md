@@ -172,10 +172,10 @@ for other less popular built-in types:
 * [`ipaddress.IPv6Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv6Interface)
 
 for backported types from [`typing-extensions`](https://github.com/python/typing/blob/master/typing_extensions/README.rst):
-* `TypedDict`
-* `OrderedDict`
-* `Annotated`
-* `Literal`
+* [`OrderedDict`](https://docs.python.org/3/library/typing.html#typing.OrderedDict)
+* [`TypedDict`](https://docs.python.org/3/library/typing.html#typing.TypedDict)
+* [`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated)
+* [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)
 
 for arbitrary types:
 * [user-defined classes](#serializabletype-interface)
