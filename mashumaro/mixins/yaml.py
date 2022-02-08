@@ -19,12 +19,24 @@ class Decoder(Protocol):  # pragma no cover
         ...
 
 
+DefaultLoader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+DefaultDumper = getattr(yaml, "CDumper", yaml.Dumper)
+
+
+def default_encoder(data) -> EncodedData:
+    return yaml.dump(data, Dumper=DefaultDumper)
+
+
+def default_decoder(data: EncodedData) -> Dict[Any, Any]:
+    return yaml.load(data, DefaultLoader)
+
+
 class DataClassYAMLMixin(DataClassDictMixin):
     __slots__ = ()
 
     def to_yaml(
         self: T,
-        encoder: Encoder = yaml.dump,  # type: ignore
+        encoder: Encoder = default_encoder,  # type: ignore
         **to_dict_kwargs,
     ) -> EncodedData:
         return encoder(self.to_dict(**to_dict_kwargs))
@@ -33,7 +45,7 @@ class DataClassYAMLMixin(DataClassDictMixin):
     def from_yaml(
         cls: Type[T],
         data: EncodedData,
-        decoder: Decoder = yaml.safe_load,  # type: ignore
+        decoder: Decoder = default_decoder,  # type: ignore
         **from_dict_kwargs,
     ) -> T:
         return cls.from_dict(decoder(data), **from_dict_kwargs)
