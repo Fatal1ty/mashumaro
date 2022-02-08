@@ -22,7 +22,7 @@ Table of contents
 * [Usage example](#usage-example)
 * [How does it work?](#how-does-it-work)
 * [Benchmark](#benchmark)
-* [API](#api)
+* [Serialization mixins](#serialization-mixins)
 * [Customization](#customization)
     * [`SerializableType` interface](#serializabletype-interface)
     * [Field options](#field-options)
@@ -188,7 +188,7 @@ Usage example
 from enum import Enum
 from typing import List
 from dataclasses import dataclass
-from mashumaro import DataClassJSONMixin
+from mashumaro.mixins.json import DataClassJSONMixin
 
 class Currency(Enum):
     USD = "USD"
@@ -315,90 +315,52 @@ pip install -r requirements-dev.txt
 python benchmark/run.py
 ```
 
-API
+Serialization mixins
 --------------------------------------------------------------------------------
 
-Mashumaro provides a couple of mixins for each format.
+Mashumaro provides mixins for each serialization format.
 
-#### `DataClassDictMixin.to_dict(use_bytes: bool, use_enum: bool, use_datetime: bool)`
+#### [DataClassDictMixin](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L9)
 
-Make a dictionary from dataclass object based on the dataclass schema provided.
-Options include:
+Can be imported in two ways:
 ```python
-use_bytes: False     # False - convert bytes/bytearray objects to base64 encoded string, True - keep untouched
-use_enum: False      # False - convert enum objects to enum values, True - keep untouched
-use_datetime: False  # False - convert datetime oriented objects to ISO 8601 formatted string, True - keep untouched
+from mashumaro import DataClassDictMixin
+from mashumaro.mixins.dict import DataClassDictMixin
 ```
 
-#### `DataClassDictMixin.from_dict(data: Mapping, use_bytes: bool, use_enum: bool, use_datetime: bool)`
+The core mixin that adds serialization functionality to a dataclass.
+This mixin is a base class for all other serialization format mixins.
+It adds methods `from_dict` and `to_dict`.
 
-Make a new object from dict object based on the dataclass schema provided.
-Options include:
+#### [DataClassJSONMixin](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L22)
+
+Can be imported as:
 ```python
-use_bytes: False     # False - load bytes/bytearray objects from base64 encoded string, True - keep untouched
-use_enum: False      # False - load enum objects from enum values, True - keep untouched
-use_datetime: False  # False - load datetime oriented objects from ISO 8601 formatted string, True - keep untouched
+from mashumaro.mixins.json import DataClassJSONMixin
 ```
 
-#### `DataClassJSONMixin.to_json(encoder: Optional[Encoder], dict_params: Optional[Mapping], **encoder_kwargs)`
+This mixins adds json serialization functionality to a dataclass.
+It adds methods `from_json` and `to_json`.
 
-Make a JSON formatted string from dataclass object based on the dataclass
-schema provided. Options include:
-```
-encoder        # function called for json encoding, defaults to json.dumps
-dict_params    # dictionary of parameter values passed underhood to `to_dict` function
-encoder_kwargs # keyword arguments for encoder function
-```
+#### [DataClassMessagePackMixin](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L26)
 
-#### `DataClassJSONMixin.from_json(data: Union[str, bytes, bytearray], decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
-
-Make a new object from JSON formatted string based on the dataclass schema
-provided. Options include:
-```
-decoder        # function called for json decoding, defaults to json.loads
-dict_params    # dictionary of parameter values passed underhood to `from_dict` function
-decoder_kwargs # keyword arguments for decoder function
+Can be imported as:
+```python
+from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 ```
 
-#### `DataClassMessagePackMixin.to_msgpack(encoder: Optional[Encoder], dict_params: Optional[Mapping], **encoder_kwargs)`
+This mixins adds MessagePack serialization functionality to a dataclass.
+It adds methods `from_msgpack` and `to_msgpack`.
 
-Make a MessagePack formatted bytes object from dataclass object based on the
-dataclass schema provided. Options include:
-```
-encoder        # function called for MessagePack encoding, defaults to msgpack.packb
-dict_params    # dictionary of parameter values passed underhood to `to_dict` function
-encoder_kwargs # keyword arguments for encoder function
-```
+#### [DataClassYAMLMixin](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L22)
 
-#### `DataClassMessagePackMixin.from_msgpack(data: Union[str, bytes, bytearray], decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
-
-Make a new object from MessagePack formatted data based on the
-dataclass schema provided. Options include:
-```
-decoder        # function called for MessagePack decoding, defaults to msgpack.unpackb
-dict_params    # dictionary of parameter values passed underhood to `from_dict` function
-decoder_kwargs # keyword arguments for decoder function
+Can be imported as:
+```python
+from mashumaro.mixins.yaml import DataClassYAMLMixin
 ```
 
-#### `DataClassYAMLMixin.to_yaml(encoder: Optional[Encoder], dict_params: Optional[Mapping], **encoder_kwargs)`
-
-Make an YAML formatted bytes object from dataclass object based on the
-dataclass schema provided. Options include:
-```
-encoder        # function called for YAML encoding, defaults to yaml.dump
-dict_params    # dictionary of parameter values passed underhood to `to_dict` function
-encoder_kwargs # keyword arguments for encoder function
-```
-
-#### `DataClassYAMLMixin.from_yaml(data: Union[str, bytes], decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
-
-Make a new object from YAML formatted data based on the
-dataclass schema provided. Options include:
-```
-decoder        # function called for YAML decoding, defaults to yaml.safe_load
-dict_params    # dictionary of parameter values passed underhood to `from_dict` function
-decoder_kwargs # keyword arguments for decoder function
-```
+This mixins adds YAML serialization functionality to a dataclass.
+It adds methods `from_yaml` and `to_yaml`.
 
 Customization
 --------------------------------------------------------------------------------
@@ -476,9 +438,9 @@ A value of type `str` sets a specific engine for serialization. Keep in mind
 that all possible engines depend on the field type that this option is used
 with. At this moment there are next serialization engines to choose from:
 
-| Applicable field types     | Supported engines        | Description
-|:-------------------------- |:-------------------------|:------------------------------|
-| `NamedTuple`, `namedtuple` | `as_list`, `as_dict`     | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine.
+| Applicable field types     | Supported engines        | Description                                                                                                                                                                                                  |
+|:-------------------------- |:-------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `NamedTuple`, `namedtuple` | `as_list`, `as_dict`     | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine. |
 
 Example:
 
@@ -516,10 +478,10 @@ A value of type `str` sets a specific engine for deserialization. Keep in mind
 that all possible engines depend on the field type that this option is used
 with. At this moment there are next deserialization engines to choose from:
 
-| Applicable field types     | Supported engines        | Description
-|:-------------------------- |:-------------------------|:------------------------------|
+| Applicable field types     | Supported engines                                                                                                                   | Description                                                                                                                                                                                                                                                                                             |
+|:---------------------------|:------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
-| `NamedTuple`, `namedtuple` | `as_list`, `as_dict`     | How to unpack named tuples. By default `as_list` engine is used that means your named tuple class instance will be created from a list of its values. You can unpack it from a dictionary using `as_dict` engine.
+| `NamedTuple`, `namedtuple` | `as_list`, `as_dict`                                                                                                                | How to unpack named tuples. By default `as_list` engine is used that means your named tuple class instance will be created from a list of its values. You can unpack it from a dictionary using `as_dict` engine.                                                                                       |
 
 Example:
 
@@ -709,8 +671,8 @@ so the fastest basic behavior of the library will always remain by default.
 The following table provides a brief overview of all the available constants
 described below.
 
-| Constant                                                        | Description
-|:--------------------------------------------------------------- |:---------------------------------------------------------------------------|
+| Constant                                                        | Description                                                                |
+|:----------------------------------------------------------------|:---------------------------------------------------------------------------|
 | [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_dict` method.                |
 | [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-by_alias-keyword-argument)   | Adds `by_alias` keyword-only argument to `to_dict` method.                 |
 | [`ADD_DIALECT_SUPPORT`](#add-dialect-keyword-argument)          | Adds `dialect` keyword-only argument to `from_dict` and `to_dict` methods. |
