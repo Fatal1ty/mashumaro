@@ -1,14 +1,24 @@
 from collections import namedtuple
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
-from typing import Any, Generic, List, NamedTuple, Optional, TypeVar, Union
+from typing import (
+    Any,
+    Generic,
+    List,
+    NamedTuple,
+    NewType,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 from typing_extensions import TypedDict
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
-from mashumaro.meta.macros import PY_37_MIN
+from mashumaro.core.const import PY_37_MIN
 from mashumaro.types import GenericSerializableType, SerializableType
 
 T = TypeVar("T")
@@ -176,6 +186,21 @@ class MyGenericList(List[T]):
     pass
 
 
+class SerializableTypeGenericList(Generic[T], SerializableType):
+    def __init__(self, value: List[T]):
+        self.value = value
+
+    def _serialize(self):
+        return self.value
+
+    @classmethod
+    def _deserialize(cls, value):
+        return SerializableTypeGenericList(value)
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+
 TMyDataClass = TypeVar("TMyDataClass", bound=MyDataClass)
 
 
@@ -212,3 +237,6 @@ if PY_37_MIN:
         ("i", "f"),
         defaults=(1, 2.0),
     )
+
+
+MyDatetimeNewType = NewType("MyDatetimeNewType", datetime)

@@ -1,19 +1,16 @@
 from functools import partial
-from types import MappingProxyType
-from typing import Any, Dict, Mapping, Type, TypeVar
+from typing import Any, Dict, Type, TypeVar
 
 import msgpack
 from typing_extensions import Protocol
 
-from mashumaro.serializer.base import DataClassDictMixin
+from mashumaro.dialects.msgpack import MessagePackDialect
+from mashumaro.mixins.dict import DataClassDictMixin
 
-DEFAULT_DICT_PARAMS = {
-    "use_bytes": True,
-    "use_enum": False,
-    "use_datetime": False,
-}
 EncodedData = bytes
 T = TypeVar("T", bound="DataClassMessagePackMixin")
+
+DEFAULT_DICT_PARAMS = {"dialect": MessagePackDialect}
 
 
 class Encoder(Protocol):  # pragma no cover
@@ -32,13 +29,11 @@ class DataClassMessagePackMixin(DataClassDictMixin):
     def to_msgpack(
         self: T,
         encoder: Encoder = partial(msgpack.packb, use_bin_type=True),
-        dict_params: Mapping = MappingProxyType({}),
-        **encoder_kwargs,
+        **to_dict_kwargs,
     ) -> EncodedData:
 
         return encoder(
-            self.to_dict(**dict(DEFAULT_DICT_PARAMS, **dict_params)),
-            **encoder_kwargs,
+            self.to_dict(**dict(DEFAULT_DICT_PARAMS, **to_dict_kwargs))
         )
 
     @classmethod
@@ -46,10 +41,9 @@ class DataClassMessagePackMixin(DataClassDictMixin):
         cls: Type[T],
         data: EncodedData,
         decoder: Decoder = partial(msgpack.unpackb, raw=False),
-        dict_params: Mapping = MappingProxyType({}),
-        **decoder_kwargs,
+        **from_dict_kwargs,
     ) -> T:
         return cls.from_dict(
-            decoder(data, **decoder_kwargs),
-            **dict(DEFAULT_DICT_PARAMS, **dict_params),
+            decoder(data),
+            **dict(DEFAULT_DICT_PARAMS, **from_dict_kwargs),
         )

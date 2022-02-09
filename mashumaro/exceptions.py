@@ -1,4 +1,4 @@
-from mashumaro.meta.helpers import type_name
+from mashumaro.core.meta.helpers import type_name
 
 
 class MissingField(LookupError):

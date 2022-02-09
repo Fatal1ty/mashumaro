@@ -7,12 +7,12 @@ import ciso8601
 import pytest
 
 from mashumaro import DataClassDictMixin
+from mashumaro.core.const import PY_37_MIN
 from mashumaro.exceptions import (
-    UnserializableField,
+    InvalidFieldValue,
     UnsupportedDeserializationEngine,
     UnsupportedSerializationEngine,
 )
-from mashumaro.meta.macros import PY_37_MIN
 from mashumaro.types import SerializationStrategy
 
 from .entities import (
@@ -195,6 +195,19 @@ def test_derived_dataclass_metadata_deserialize_option():
         {"x": "2021-01-02T03:04:05Z", "y": "2021-01-02T03:04:05Z"}
     )
     assert instance == should_be
+
+
+def test_derived_dataclass_metadata_deserialize_option_removed():
+    @dataclass
+    class A:
+        x: datetime = field(metadata={"deserialize": ciso8601.parse_datetime})
+
+    @dataclass
+    class B(A, DataClassDictMixin):
+        x: datetime
+
+    with pytest.raises(InvalidFieldValue):
+        B.from_dict({"x": "2021-01-02T03:04:05Z", "y": "2021-01-02T03:04:05Z"})
 
 
 def test_bytearray_overridden():

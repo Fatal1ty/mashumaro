@@ -3,7 +3,7 @@ from typing import List
 
 import yaml
 
-from mashumaro import DataClassYAMLMixin
+from mashumaro.mixins.yaml import DataClassYAMLMixin
 
 
 def test_to_yaml():

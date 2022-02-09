@@ -1,4 +1,4 @@
-from .macros import PY_36
+from mashumaro.core.const import PY_36
 
 
 def patch_fromisoformat():

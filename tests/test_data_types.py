@@ -7,7 +7,6 @@ import os
 import uuid
 from dataclasses import InitVar, dataclass, field
 from datetime import date, datetime, time, timedelta, timezone
-from enum import Enum
 from pathlib import (
     Path,
     PosixPath,
@@ -31,30 +30,25 @@ from typing import (
     Mapping,
     MutableMapping,
     MutableSet,
+    NewType,
     Optional,
     Sequence,
     Set,
     Tuple,
 )
 
-from .conftest import fake_add_from_dict
-
-try:
-    from typing import OrderedDict  # New in version 3.7.2
-except ImportError:
-    OrderedDict = Dict  # type: ignore
-
 import pytest
+from typing_extensions import OrderedDict
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
+from mashumaro.core.const import PEP_585_COMPATIBLE, PY_37_MIN, PY_39_MIN
 from mashumaro.exceptions import (
     InvalidFieldValue,
     MissingField,
     UnserializableDataError,
     UnserializableField,
 )
-from mashumaro.meta.macros import PEP_585_COMPATIBLE, PY_37_MIN
 from mashumaro.types import (
     GenericSerializableType,
     RoundedDecimal,
@@ -62,6 +56,7 @@ from mashumaro.types import (
     SerializationStrategy,
 )
 
+from .conftest import fake_add_from_dict
 from .entities import (
     CustomPath,
     DataClassWithoutMixin,
@@ -70,6 +65,7 @@ from .entities import (
     MutableString,
     MyDataClass,
     MyDataClassWithUnion,
+    MyDatetimeNewType,
     MyEnum,
     MyFlag,
     MyIntEnum,
@@ -93,6 +89,8 @@ from .utils import same_types
 
 if PY_37_MIN:
     from tests.entities import MyUntypedNamedTupleWithDefaults
+if PY_39_MIN:
+    from zoneinfo import ZoneInfo
 
 NoneType = type(None)
 
@@ -130,8 +128,11 @@ class Fixture:
     DATA_CLASS_WITH_UNION = MyDataClassWithUnion(a=1, b=2)
     NONE = None
     DATETIME = datetime(2018, 10, 29, 12, 46, 55, 308495)
+    DATETIME_STR = "2018-10-29T12:46:55.308495"
     DATE = DATETIME.date()
+    DATE_STR = "2018-10-29"
     TIME = DATETIME.time()
+    TIME_STR = "12:46:55.308495"
     TIMEDELTA = timedelta(3.14159265358979323846)
     TIMEZONE = timezone(timedelta(hours=3))
     UUID = uuid.UUID("3c25dd74-f208-46a2-9606-dd3919e975b7")
@@ -194,21 +195,21 @@ inner_values = [
     (MutableMapping, Fixture.DICT, Fixture.DICT),
     (Sequence[int], Fixture.LIST, Fixture.LIST),
     (Sequence, Fixture.LIST, Fixture.LIST),
-    (bytes, Fixture.BYTES, Fixture.BYTES),
-    (bytearray, Fixture.BYTE_ARRAY, Fixture.BYTE_ARRAY),
+    (bytes, Fixture.BYTES, Fixture.BYTES_BASE64),
+    (bytearray, Fixture.BYTE_ARRAY, Fixture.BYTES_BASE64),
     (str, Fixture.STR, Fixture.STR),
-    (MyEnum, Fixture.ENUM, Fixture.ENUM),
-    (MyStrEnum, Fixture.STR_ENUM, Fixture.STR_ENUM),
-    (MyIntEnum, Fixture.INT_ENUM, Fixture.INT_ENUM),
-    (MyFlag, Fixture.FLAG, Fixture.FLAG),
-    (MyIntFlag, Fixture.INT_FLAG, Fixture.INT_FLAG),
+    (MyEnum, Fixture.ENUM, Fixture.ENUM.value),
+    (MyStrEnum, Fixture.STR_ENUM, Fixture.STR_ENUM.value),
+    (MyIntEnum, Fixture.INT_ENUM, Fixture.INT_ENUM.value),
+    (MyFlag, Fixture.FLAG, Fixture.FLAG.value),
+    (MyIntFlag, Fixture.INT_FLAG, Fixture.INT_FLAG.value),
     (MyDataClass, Fixture.DATA_CLASS, Fixture.DICT),
     (TMyDataClass, Fixture.T_DATA_CLASS, Fixture.DICT),
     (MyDataClassWithUnion, Fixture.DATA_CLASS_WITH_UNION, Fixture.DICT),
     (NoneType, Fixture.NONE, Fixture.NONE),
-    (datetime, Fixture.DATETIME, Fixture.DATETIME),
-    (date, Fixture.DATE, Fixture.DATE),
-    (time, Fixture.TIME, Fixture.TIME),
+    (datetime, Fixture.DATETIME, Fixture.DATETIME_STR),
+    (date, Fixture.DATE, Fixture.DATE_STR),
+    (time, Fixture.TIME, Fixture.TIME_STR),
     (timedelta, Fixture.TIMEDELTA, Fixture.TIMEDELTA.total_seconds()),
     (timezone, Fixture.TIMEZONE, "UTC+03:00"),
     (uuid.UUID, Fixture.UUID, Fixture.UUID_STR),
@@ -232,6 +233,7 @@ inner_values = [
         Fixture.GENERIC_SERIALIZABLE_LIST_STR,
         ["_a", "_b", "_c"],
     ),
+    (MyDatetimeNewType, Fixture.DATETIME, Fixture.DATETIME_STR),
 ]
 
 if os.name == "posix":
@@ -307,6 +309,9 @@ if PEP_585_COMPATIBLE:
             (collections.abc.MutableSequence, Fixture.LIST, Fixture.LIST),
         ]
     )
+
+if PY_39_MIN:
+    inner_values.append((ZoneInfo, ZoneInfo("Europe/Moscow"), "Europe/Moscow"))
 
 
 hashable_inner_values = [
@@ -404,9 +409,7 @@ if PEP_585_COMPATIBLE:
 
 
 # noinspection PyCallingNonCallable
-def check_collection_generic(
-    type_, value_info, use_bytes, use_enum, use_datetime, x_values_number=3
-):
+def check_collection_generic(type_, value_info, x_values_number=3):
     x_type, x_value, x_value_dumped = value_info
 
     @dataclass
@@ -416,47 +419,19 @@ def check_collection_generic(
     x_factory = x_factory_mapping[type_]
     x = x_factory([x_value for _ in range(x_values_number)])
     instance = DataClass(x)
-    if x_value_dumped is Fixture.BYTES:
-        v_dumped = Fixture.BYTES if use_bytes else Fixture.BYTES_BASE64
-    elif x_value_dumped is Fixture.BYTE_ARRAY:
-        v_dumped = Fixture.BYTE_ARRAY if use_bytes else Fixture.BYTES_BASE64
-    elif isinstance(x_value_dumped, Enum):
-        v_dumped = x_value_dumped if use_enum else x_value_dumped.value
-    elif isinstance(x_value_dumped, (datetime, date, time)):
-        v_dumped = (
-            x_value_dumped if use_datetime else x_value_dumped.isoformat()
-        )
-    else:
-        v_dumped = x_value_dumped
-    dumped = {"x": list(x_factory([v_dumped for _ in range(x_values_number)]))}
-    instance_dumped = instance.to_dict(
-        use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
-    )
-    instance_loaded = DataClass.from_dict(
-        dumped,
-        use_bytes=use_bytes,
-        use_enum=use_enum,
-        use_datetime=use_datetime,
-    )
+    dumped = {
+        "x": list(x_factory([x_value_dumped for _ in range(x_values_number)]))
+    }
+    instance_dumped = instance.to_dict()
+    instance_loaded = DataClass.from_dict(dumped)
     assert instance_dumped == dumped
     assert instance_loaded == instance
-    instance_dumped = instance.to_dict(
-        use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
-    )
-    instance_loaded = DataClass.from_dict(
-        dumped,
-        use_bytes=use_bytes,
-        use_enum=use_enum,
-        use_datetime=use_datetime,
-    )
     assert same_types(instance_dumped, dumped)
     assert same_types(instance_loaded.x, x)
 
 
 # noinspection PyCallingNonCallable
-def check_mapping_generic(
-    type_, key_info, value_info, use_bytes, use_enum, use_datetime
-):
+def check_mapping_generic(type_, key_info, value_info):
     k_type, k_value, k_value_dumped = key_info
     v_type, v_value, v_value_dumped = value_info
 
@@ -475,31 +450,8 @@ def check_mapping_generic(
     else:
         x = x_factory([(k_value, v_value) for _ in range(3)])
     instance = DataClass(x)
-    if k_value_dumped is Fixture.BYTES:
-        k_dumped = Fixture.BYTES if use_bytes else Fixture.BYTES_BASE64
-    # Fixture.BYTE_ARRAY is not hashable
-    # elif k_value_dumped is Fixture.BYTE_ARRAY:
-    #     k_dumped = Fixture.BYTE_ARRAY if use_bytes else Fixture.BYTES_BASE64
-    elif isinstance(k_value_dumped, Enum):
-        k_dumped = k_value_dumped if use_enum else k_value_dumped.value
-    elif isinstance(k_value_dumped, (datetime, date, time)):
-        k_dumped = (
-            k_value_dumped if use_datetime else k_value_dumped.isoformat()
-        )
-    else:
-        k_dumped = k_value_dumped
-    if v_value_dumped is Fixture.BYTES:
-        v_dumped = Fixture.BYTES if use_bytes else Fixture.BYTES_BASE64
-    elif v_value_dumped is Fixture.BYTE_ARRAY:
-        v_dumped = Fixture.BYTE_ARRAY if use_bytes else Fixture.BYTES_BASE64
-    elif isinstance(v_value_dumped, Enum):
-        v_dumped = v_value_dumped if use_enum else v_value_dumped.value
-    elif isinstance(v_value_dumped, (datetime, date, time)):
-        v_dumped = (
-            v_value_dumped if use_datetime else v_value_dumped.isoformat()
-        )
-    else:
-        v_dumped = v_value_dumped
+    k_dumped = k_value_dumped
+    v_dumped = v_value_dumped
     if type_ is ChainMap:
         dumped = {
             "x": x_factory([(k_dumped, v_dumped) for _ in range(3)]).maps
@@ -508,35 +460,16 @@ def check_mapping_generic(
         dumped = {"x": x_factory([(k_dumped, 1) for _ in range(3)])}
     else:
         dumped = {"x": x_factory([(k_dumped, v_dumped) for _ in range(3)])}
-    instance_dumped = instance.to_dict(
-        use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
-    )
-    instance_loaded = DataClass.from_dict(
-        dumped,
-        use_bytes=use_bytes,
-        use_enum=use_enum,
-        use_datetime=use_datetime,
-    )
+    instance_dumped = instance.to_dict()
+    instance_loaded = DataClass.from_dict(dumped)
     assert instance_dumped == dumped
     assert instance_loaded == instance
-    instance_dumped = instance.to_dict(
-        use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
-    )
-    instance_loaded = DataClass.from_dict(
-        dumped,
-        use_bytes=use_bytes,
-        use_enum=use_enum,
-        use_datetime=use_datetime,
-    )
     assert same_types(instance_dumped, dumped)
     assert same_types(instance_loaded.x, x)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
-def test_one_level(value_info, use_bytes, use_enum, use_datetime):
+def test_one_level(value_info):
     x_type, x_value, x_value_dumped = value_info
 
     @dataclass
@@ -544,181 +477,79 @@ def test_one_level(value_info, use_bytes, use_enum, use_datetime):
         x: x_type
 
     instance = DataClass(x_value)
-    if x_value_dumped is Fixture.BYTES:
-        v_dumped = Fixture.BYTES if use_bytes else Fixture.BYTES_BASE64
-    elif x_value_dumped is Fixture.BYTE_ARRAY:
-        v_dumped = Fixture.BYTE_ARRAY if use_bytes else Fixture.BYTES_BASE64
-    elif isinstance(x_value_dumped, Enum):
-        v_dumped = x_value_dumped if use_enum else x_value_dumped.value
-    elif isinstance(x_value_dumped, (datetime, date, time)):
-        v_dumped = (
-            x_value_dumped if use_datetime else x_value_dumped.isoformat()
-        )
-    else:
-        v_dumped = x_value_dumped
-    dumped = {"x": v_dumped}
-    instance_dumped = instance.to_dict(
-        use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
-    )
-    instance_loaded = DataClass.from_dict(
-        dumped,
-        use_bytes=use_bytes,
-        use_enum=use_enum,
-        use_datetime=use_datetime,
-    )
+    dumped = {"x": x_value_dumped}
+    instance_dumped = instance.to_dict()
+    instance_loaded = DataClass.from_dict(dumped)
     assert instance_dumped == dumped
     assert instance_loaded == instance
-    instance_dumped = instance.to_dict(
-        use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
-    )
-    instance_loaded = DataClass.from_dict(
-        dumped,
-        use_bytes=use_bytes,
-        use_enum=use_enum,
-        use_datetime=use_datetime,
-    )
     assert same_types(instance_dumped, dumped)
     assert same_types(instance_loaded.x, x_value)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
-def test_with_generic_list(value_info, use_bytes, use_enum, use_datetime):
-    check_collection_generic(
-        List, value_info, use_bytes, use_enum, use_datetime
-    )
+def test_with_generic_list(value_info):
+    check_collection_generic(List, value_info)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
-def test_with_generic_deque(value_info, use_bytes, use_enum, use_datetime):
-    check_collection_generic(
-        Deque, value_info, use_bytes, use_enum, use_datetime
-    )
+def test_with_generic_deque(value_info):
+    check_collection_generic(Deque, value_info)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
-def test_with_generic_tuple(value_info, use_bytes, use_enum, use_datetime):
-    check_collection_generic(
-        Tuple, value_info, use_bytes, use_enum, use_datetime, 1
-    )
+def test_with_generic_tuple(value_info):
+    check_collection_generic(Tuple, value_info, 1)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", hashable_inner_values)
-def test_with_generic_set(value_info, use_bytes, use_enum, use_datetime):
-    check_collection_generic(
-        Set, value_info, use_bytes, use_enum, use_datetime
-    )
+def test_with_generic_set(value_info):
+    check_collection_generic(Set, value_info)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", hashable_inner_values)
-def test_with_generic_frozenset(value_info, use_bytes, use_enum, use_datetime):
-    check_collection_generic(
-        FrozenSet, value_info, use_bytes, use_enum, use_datetime
-    )
+def test_with_generic_frozenset(value_info):
+    check_collection_generic(FrozenSet, value_info)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", hashable_inner_values)
-def test_with_generic_mutable_set(
-    value_info, use_bytes, use_enum, use_datetime
-):
-    check_collection_generic(
-        MutableSet, value_info, use_bytes, use_enum, use_datetime
-    )
+def test_with_generic_mutable_set(value_info):
+    check_collection_generic(MutableSet, value_info)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
 @pytest.mark.parametrize("key_info", hashable_inner_values)
-def test_with_generic_dict(
-    key_info, value_info, use_bytes, use_enum, use_datetime
-):
-    check_mapping_generic(
-        Dict, key_info, value_info, use_bytes, use_enum, use_datetime
-    )
+def test_with_generic_dict(key_info, value_info):
+    check_mapping_generic(Dict, key_info, value_info)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
 @pytest.mark.parametrize("key_info", hashable_inner_values)
-def test_with_generic_mapping(
-    key_info, value_info, use_bytes, use_enum, use_datetime
-):
-    check_mapping_generic(
-        Mapping, key_info, value_info, use_bytes, use_enum, use_datetime
-    )
+def test_with_generic_mapping(key_info, value_info):
+    check_mapping_generic(Mapping, key_info, value_info)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
 @pytest.mark.parametrize("key_info", hashable_inner_values)
-def test_with_generic_ordered_dict(
-    key_info, value_info, use_bytes, use_enum, use_datetime
-):
-    check_mapping_generic(
-        OrderedDict, key_info, value_info, use_bytes, use_enum, use_datetime
-    )
+def test_with_generic_ordered_dict(key_info, value_info):
+    check_mapping_generic(OrderedDict, key_info, value_info)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
 @pytest.mark.parametrize("key_info", hashable_inner_values)
-def test_with_generic_counter(
-    key_info, value_info, use_bytes, use_enum, use_datetime
-):
-    check_mapping_generic(
-        Counter, key_info, value_info, use_bytes, use_enum, use_datetime
-    )
+def test_with_generic_counter(key_info, value_info):
+    check_mapping_generic(Counter, key_info, value_info)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
 @pytest.mark.parametrize("key_info", hashable_inner_values)
-def test_with_generic_mutable_mapping(
-    key_info, value_info, use_bytes, use_enum, use_datetime
-):
-    check_mapping_generic(
-        MutableMapping, key_info, value_info, use_bytes, use_enum, use_datetime
-    )
+def test_with_generic_mutable_mapping(key_info, value_info):
+    check_mapping_generic(MutableMapping, key_info, value_info)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
 @pytest.mark.parametrize("key_info", hashable_inner_values)
-def test_with_generic_chain_map(
-    key_info, value_info, use_bytes, use_enum, use_datetime
-):
-    check_mapping_generic(
-        ChainMap, key_info, value_info, use_bytes, use_enum, use_datetime
-    )
+def test_with_generic_chain_map(key_info, value_info):
+    check_mapping_generic(ChainMap, key_info, value_info)
 
 
 @pytest.mark.parametrize("x_type", unsupported_field_types)
@@ -849,11 +680,8 @@ def test_data_class_as_chain_map_key():
                 x: ChainMap[Key, int]
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
-def test_with_any(value_info, use_bytes, use_enum, use_datetime):
+def test_with_any(value_info):
     @dataclass
     class DataClass(DataClassDictMixin):
         x: Any
@@ -861,26 +689,16 @@ def test_with_any(value_info, use_bytes, use_enum, use_datetime):
     x = value_info[1]
     dumped = {"x": x}
     instance = DataClass(x)
-    instance_dumped = instance.to_dict(
-        use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
-    )
-    instance_loaded = DataClass.from_dict(
-        dumped,
-        use_bytes=use_bytes,
-        use_enum=use_enum,
-        use_datetime=use_datetime,
-    )
+    instance_dumped = instance.to_dict()
+    instance_loaded = DataClass.from_dict(dumped)
     assert instance_dumped == dumped
     assert instance_loaded == instance
     assert same_types(instance_dumped, dumped)
     assert same_types(instance_loaded.x, x)
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize("value_info", inner_values)
-def test_with_optional(value_info, use_bytes, use_enum, use_datetime):
+def test_with_optional(value_info):
     x_type, x_value, x_value_dumped = value_info
 
     @dataclass
@@ -890,41 +708,13 @@ def test_with_optional(value_info, use_bytes, use_enum, use_datetime):
     for instance in [DataClass(x_value), DataClass()]:
         if instance.x is None:
             v_dumped = None
-        elif x_value_dumped is Fixture.BYTES:
-            v_dumped = Fixture.BYTES if use_bytes else Fixture.BYTES_BASE64
-        elif x_value_dumped is Fixture.BYTE_ARRAY:
-            v_dumped = (
-                Fixture.BYTE_ARRAY if use_bytes else Fixture.BYTES_BASE64
-            )
-        elif isinstance(x_value_dumped, Enum):
-            v_dumped = x_value_dumped if use_enum else x_value_dumped.value
-        elif isinstance(x_value_dumped, (datetime, date, time)):
-            v_dumped = (
-                x_value_dumped if use_datetime else x_value_dumped.isoformat()
-            )
         else:
             v_dumped = x_value_dumped
         dumped = {"x": v_dumped}
-        instance_dumped = instance.to_dict(
-            use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
-        )
-        instance_loaded = DataClass.from_dict(
-            dumped,
-            use_bytes=use_bytes,
-            use_enum=use_enum,
-            use_datetime=use_datetime,
-        )
+        instance_dumped = instance.to_dict()
+        instance_loaded = DataClass.from_dict(dumped)
         assert instance_dumped == dumped
         assert instance_loaded == instance
-        instance_dumped = instance.to_dict(
-            use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
-        )
-        instance_loaded = DataClass.from_dict(
-            dumped,
-            use_bytes=use_bytes,
-            use_enum=use_enum,
-            use_datetime=use_datetime,
-        )
         assert same_types(instance_dumped, dumped)
         assert same_types(instance_loaded.x, instance.x)
 
@@ -1174,9 +964,6 @@ def test_invalid_field_value_deserialization_with_rounded_decimal_with_default()
         DataClass.from_dict({"x": "bad_value"})
 
 
-@pytest.mark.parametrize("use_datetime", [True, False])
-@pytest.mark.parametrize("use_enum", [True, False])
-@pytest.mark.parametrize("use_bytes", [True, False])
 @pytest.mark.parametrize(
     "value_info",
     [
@@ -1185,9 +972,7 @@ def test_invalid_field_value_deserialization_with_rounded_decimal_with_default()
         if v[0] not in [MyDataClass, NoneType, MutableString]
     ],
 )
-def test_serialize_deserialize_options(
-    value_info, use_bytes, use_enum, use_datetime
-):
+def test_serialize_deserialize_options(value_info):
     x_type, x_value, x_value_dumped = value_info
 
     @dataclass
@@ -1202,39 +987,12 @@ def test_serialize_deserialize_options(
         )
 
     instance = DataClass(x_value)
-    if x_value_dumped is Fixture.BYTES:
-        v_dumped = Fixture.BYTES if use_bytes else Fixture.CUSTOM_SERIALIZE
-    elif x_value_dumped is Fixture.BYTE_ARRAY:
-        v_dumped = (
-            Fixture.BYTE_ARRAY if use_bytes else Fixture.CUSTOM_SERIALIZE
-        )
-    elif isinstance(x_value_dumped, Enum):
-        v_dumped = x_value_dumped if use_enum else Fixture.CUSTOM_SERIALIZE
-    elif isinstance(x_value_dumped, (datetime, date, time)):
-        v_dumped = x_value_dumped if use_datetime else Fixture.CUSTOM_SERIALIZE
-    else:
-        v_dumped = Fixture.CUSTOM_SERIALIZE
+    v_dumped = Fixture.CUSTOM_SERIALIZE
     dumped = {"x": v_dumped}
-    instance_dumped = instance.to_dict(
-        use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
-    )
-    instance_loaded = DataClass.from_dict(
-        dumped,
-        use_bytes=use_bytes,
-        use_enum=use_enum,
-        use_datetime=use_datetime,
-    )
+    instance_dumped = instance.to_dict()
+    instance_loaded = DataClass.from_dict(dumped)
     assert instance_dumped == dumped
     assert instance_loaded == instance
-    instance_dumped = instance.to_dict(
-        use_bytes=use_bytes, use_enum=use_enum, use_datetime=use_datetime
-    )
-    instance_loaded = DataClass.from_dict(
-        dumped,
-        use_bytes=use_bytes,
-        use_enum=use_enum,
-        use_datetime=use_datetime,
-    )
     assert same_types(instance_dumped, dumped)
     assert same_types(instance_loaded.x, x_value)
 
@@ -1451,3 +1209,28 @@ def test_data_class_with_none():
     obj = DataClass(x=None, y=None, z=[None])
     assert DataClass.from_dict({"x": None, "y": None, "z": [None]}) == obj
     assert obj.to_dict() == {"x": None, "y": None, "z": [None]}
+
+
+def test_data_class_with_new_type_overridden():
+    MyStr = NewType("MyStr", str)
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: str
+        y: MyStr
+
+        class Config(BaseConfig):
+            serialization_strategy = {
+                str: {
+                    "serialize": lambda x: f"str_{x}",
+                    "deserialize": lambda x: x[4:],
+                },
+                MyStr: {
+                    "serialize": lambda x: f"MyStr_{x}",
+                    "deserialize": lambda x: x[6:],
+                },
+            }
+
+    instance = DataClass("a", MyStr("b"))
+    assert DataClass.from_dict({"x": "str_a", "y": "MyStr_b"}) == instance
+    assert instance.to_dict() == {"x": "str_a", "y": "MyStr_b"}

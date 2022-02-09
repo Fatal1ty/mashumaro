@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Generic, List, TypeVar
+from typing import Generic, List, NamedTuple, TypeVar, Union
 
 import pytest
+from typing_extensions import TypedDict
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
@@ -121,6 +122,56 @@ class GenericDataClassWithDialectSupportAndDefaultDialect(
     class Config(BaseConfig):
         code_generation_options = [ADD_DIALECT_SUPPORT]
         dialect = FormattedDialect
+
+
+class MyNamedTuple(NamedTuple):
+    x: DataClassWithDialectSupport = DataClassWithDialectSupport(
+        dt=date(2022, 1, 1),
+        i=999,
+    )
+    y: DataClassWithoutDialects = DataClassWithoutDialects(
+        dt=date(2022, 1, 1),
+        i=999,
+    )
+
+
+class MyTypedDict(TypedDict):
+    x: DataClassWithDialectSupport
+    y: DataClassWithoutDialects
+
+
+@dataclass
+class DataClassWithNamedTupleWithDialectSupport(DataClassDictMixin):
+    x: MyNamedTuple
+
+    class Config(BaseConfig):
+        code_generation_options = [ADD_DIALECT_SUPPORT]
+
+
+@dataclass
+class DataClassWithNamedTupleWithoutDialectSupport(DataClassDictMixin):
+    x: MyNamedTuple
+
+
+@dataclass
+class DataClassWithTypedDictWithDialectSupport(DataClassDictMixin):
+    x: MyTypedDict
+
+    class Config(BaseConfig):
+        code_generation_options = [ADD_DIALECT_SUPPORT]
+
+
+@dataclass
+class DataClassWithTypedDictWithoutDialectSupport(DataClassDictMixin):
+    x: MyTypedDict
+
+
+@dataclass
+class DataClassWithUnionWithDialectSupport(DataClassDictMixin):
+    x: List[Union[DataClassWithDialectSupport, DataClassWithoutDialects]]
+
+    class Config(BaseConfig):
+        code_generation_options = [ADD_DIALECT_SUPPORT]
 
 
 def test_default_dialect():
@@ -698,3 +749,95 @@ def test_debug_true_option_with_dialect(mocker):
     DataClass(date.today()).to_dict(dialect=FormattedDialect)
     mocked_print.assert_called()
     assert mocked_print.call_count == 6
+
+
+def test_dialect_with_named_tuple_with_dialect_support():
+    dt = date.today()
+    ordinal = dt.toordinal()
+    iso = dt.isoformat()
+    obj = DataClassWithNamedTupleWithDialectSupport(
+        x=MyNamedTuple(
+            x=DataClassWithDialectSupport(dt, 255),
+            y=DataClassWithoutDialects(dt, 255),
+        )
+    )
+    dumped = {"x": [{"dt": ordinal, "i": "0xff"}, {"dt": iso, "i": 255}]}
+    assert obj.to_dict(dialect=OrdinalDialect) == dumped
+    assert (
+        DataClassWithNamedTupleWithDialectSupport.from_dict(
+            dumped, dialect=OrdinalDialect
+        )
+        == obj
+    )
+
+
+def test_dialect_with_named_tuple_without_dialect_support():
+    dt = date.today()
+    iso = dt.isoformat()
+    obj = DataClassWithNamedTupleWithoutDialectSupport(
+        x=MyNamedTuple(
+            x=DataClassWithDialectSupport(dt, 255),
+            y=DataClassWithoutDialects(dt, 255),
+        )
+    )
+    dumped = {"x": [{"dt": iso, "i": 255}, {"dt": iso, "i": 255}]}
+    assert obj.to_dict() == dumped
+    assert (
+        DataClassWithNamedTupleWithoutDialectSupport.from_dict(dumped) == obj
+    )
+
+
+def test_dialect_with_typed_dict_with_dialect_support():
+    dt = date.today()
+    ordinal = dt.toordinal()
+    iso = dt.isoformat()
+    obj = DataClassWithTypedDictWithDialectSupport(
+        x=MyTypedDict(
+            x=DataClassWithDialectSupport(dt, 255),
+            y=DataClassWithoutDialects(dt, 255),
+        )
+    )
+    dumped = {
+        "x": {"x": {"dt": ordinal, "i": "0xff"}, "y": {"dt": iso, "i": 255}}
+    }
+    assert obj.to_dict(dialect=OrdinalDialect) == dumped
+    assert (
+        DataClassWithTypedDictWithDialectSupport.from_dict(
+            dumped, dialect=OrdinalDialect
+        )
+        == obj
+    )
+
+
+def test_dialect_with_typed_dict_without_dialect_support():
+    dt = date.today()
+    iso = dt.isoformat()
+    obj = DataClassWithTypedDictWithoutDialectSupport(
+        x=MyTypedDict(
+            x=DataClassWithDialectSupport(dt, 255),
+            y=DataClassWithoutDialects(dt, 255),
+        )
+    )
+    dumped = {"x": {"x": {"dt": iso, "i": 255}, "y": {"dt": iso, "i": 255}}}
+    assert obj.to_dict() == dumped
+    assert DataClassWithTypedDictWithoutDialectSupport.from_dict(dumped) == obj
+
+
+def test_dialect_with_union_with_dialect_support():
+    dt = date.today()
+    ordinal = dt.toordinal()
+    iso = dt.isoformat()
+    obj = DataClassWithUnionWithDialectSupport(
+        x=[
+            DataClassWithDialectSupport(dt, 255),
+            DataClassWithoutDialects(dt, 255),
+        ]
+    )
+    dumped = {"x": [{"dt": ordinal, "i": "0xff"}, {"dt": iso, "i": 255}]}
+    assert obj.to_dict(dialect=OrdinalDialect) == dumped
+    assert (
+        DataClassWithUnionWithDialectSupport.from_dict(
+            dumped, dialect=OrdinalDialect
+        )
+        == obj
+    )

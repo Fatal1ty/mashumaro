@@ -2,12 +2,10 @@ from dataclasses import dataclass
 
 import pytest
 
-from mashumaro import (
-    DataClassDictMixin,
-    DataClassJSONMixin,
-    DataClassMessagePackMixin,
-    DataClassYAMLMixin,
-)
+from mashumaro.mixins.dict import DataClassDictMixin
+from mashumaro.mixins.json import DataClassJSONMixin
+from mashumaro.mixins.msgpack import DataClassMessagePackMixin
+from mashumaro.mixins.yaml import DataClassYAMLMixin
 
 
 def test_slots():
@@ -50,3 +48,11 @@ def test_slots():
             str(e.value)
             == f"'{cls.__name__}' object has no attribute 'new_attribute'"
         )
+
+
+def test_data_class_dict_mixin_from_dict():
+    assert DataClassDictMixin.from_dict({}) is None
+
+
+def test_data_class_dict_mixin_to_dict():
+    assert DataClassDictMixin().to_dict() is None

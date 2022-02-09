@@ -1,4 +1,5 @@
 import dataclasses
+import enum
 import inspect
 import re
 import types
@@ -10,9 +11,7 @@ from dataclasses import _FIELDS  # type: ignore
 
 import typing_extensions
 
-from mashumaro.dialect import Dialect
-
-from .macros import (
+from mashumaro.core.const import (
     PY_36,
     PY_37,
     PY_37_MIN,
@@ -21,11 +20,11 @@ from .macros import (
     PY_39_MIN,
     PY_310_MIN,
 )
+from mashumaro.dialect import Dialect
 
 NoneType = type(None)
 DataClassDictMixinPath = (
-    f"{__name__.rsplit('.', 2)[:-2][0]}"
-    f".serializer.base.dict.DataClassDictMixin"
+    f"{__name__.rsplit('.', 3)[:-3][0]}" f".mixins.dict.DataClassDictMixin"
 )
 
 
@@ -33,6 +32,8 @@ def get_type_origin(t):
     origin = None
     try:
         if PY_36:
+            if is_annotated(t):
+                return get_type_origin(t.__args__[0])
             origin = t.__extra__ or t.__origin__
         elif PY_37_MIN:
             origin = t.__origin__
@@ -41,27 +42,31 @@ def get_type_origin(t):
     return origin or t
 
 
-def is_builtin_type(t):
+def is_builtin_type(t) -> bool:
     try:
         return t.__module__ == "builtins"
     except AttributeError:
         return False
 
 
-def get_generic_name(t, short: bool = False):
+def get_generic_name(t, short: bool = False) -> str:
     if PY_36:
         name = getattr(t, "__name__")
     elif PY_37_MIN:
         name = getattr(t, "_name", None)
         if name is None:
-            return type_name(get_type_origin(t), short, is_type_origin=True)
+            origin = get_type_origin(t)
+            if origin is t:
+                return type_name(origin, short, is_type_origin=True)
+            else:
+                return get_generic_name(origin, short)
     if short:
         return name
     else:
         return f"{t.__module__}.{name}"
 
 
-def get_args(t: typing.Any):
+def get_args(t: typing.Any) -> typing.Tuple[typing.Any, ...]:
     return getattr(t, "__args__", None) or ()
 
 
@@ -72,7 +77,7 @@ def _get_args_str(
     limit: typing.Optional[int] = None,
     none_type_as_none: bool = False,
     sep: str = ", ",
-):
+) -> str:
     args = get_args(t)[:limit]
     return sep.join(
         type_name(arg, short, type_vars, none_type_as_none=none_type_as_none)
@@ -80,8 +85,40 @@ def _get_args_str(
     )
 
 
-def _typing_name(t: str, short: bool = False):
-    return t if short else f"typing.{t}"
+def get_literal_values(t: typing.Any):
+    if PY_36:
+        values = t.__values__ or ()
+    elif PY_37_MIN:
+        values = t.__args__
+    else:
+        raise NotImplementedError
+    result = []
+    for value in values:
+        if is_literal(value):
+            result.extend(get_literal_values(value))
+        else:
+            result.append(value)
+    return tuple(result)
+
+
+def _get_literal_values_str(t: typing.Any, short: bool):
+    values_str = []
+    for value in get_literal_values(t):
+        if isinstance(value, enum.Enum):
+            values_str.append(f"{type_name(type(value), short)}.{value.name}")
+        elif isinstance(  # type: ignore
+            value, (int, str, bytes, bool, NoneType)  # type: ignore
+        ):
+            values_str.append(repr(value))
+    return ", ".join(values_str)
+
+
+def _typing_name(
+    t: str,
+    short: bool = False,
+    module_name: str = "typing",
+) -> str:
+    return t if short else f"{module_name}.{t}"
 
 
 def type_name(
@@ -98,11 +135,18 @@ def type_name(
     elif t is typing.Any:
         return _typing_name("Any", short)
     elif is_optional(t, type_vars):
-        args_str = type_name(not_none_type_arg(get_args(t), type_vars), short)
+        args_str = type_name(
+            not_none_type_arg(get_args(t), type_vars), short, type_vars
+        )
         return f"{_typing_name('Optional', short)}[{args_str}]"
     elif is_union(t):
         args_str = _get_args_str(t, short, type_vars, none_type_as_none=True)
         return f"{_typing_name('Union', short)}[{args_str}]"
+    elif is_annotated(t):
+        return type_name(get_args(t)[0], short, type_vars)
+    elif is_literal(t):
+        args_str = _get_literal_values_str(t, short)
+        return f"{_typing_name('Literal', short, t.__module__)}[{args_str}]"
     elif is_generic(t) and not is_type_origin:
         args_str = _get_args_str(t, short, type_vars)
         if not args_str:
@@ -125,17 +169,19 @@ def type_name(
         else:
             bound = getattr(t, "__bound__")
             return type_name(bound, short, type_vars)
-    else:
-        try:
-            if short:
-                return t.__qualname__
-            else:
-                return f"{t.__module__}.{t.__qualname__}"
-        except AttributeError:
-            return str(t)
+    elif is_new_type(t) and not PY_310_MIN:
+        # because __qualname__ and __module__ are messed up
+        t = t.__supertype__
+    try:
+        if short:
+            return t.__qualname__
+        else:
+            return f"{t.__module__}.{t.__qualname__}"
+    except AttributeError:
+        return str(t)
 
 
-def is_special_typing_primitive(t):
+def is_special_typing_primitive(t) -> bool:
     try:
         issubclass(t, object)
         return False
@@ -150,10 +196,7 @@ def is_generic(t):
     elif PY_37 or PY_38:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
-        return t.__class__ in (
-            typing._GenericAlias,
-            typing._VariadicGenericAlias,
-        )
+        return issubclass(t.__class__, typing._GenericAlias)
     elif PY_39_MIN:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
@@ -174,7 +217,7 @@ def is_generic(t):
         raise NotImplementedError
 
 
-def is_typed_dict(t):
+def is_typed_dict(t) -> bool:
     for module in (typing, typing_extensions):
         with suppress(AttributeError):
             if type(t) is getattr(module, "_TypedDictMeta"):
@@ -182,11 +225,17 @@ def is_typed_dict(t):
     return False
 
 
-def is_named_tuple(t):
+def is_named_tuple(t) -> bool:
     try:
-        return issubclass(t, typing.Tuple) and hasattr(t, "_fields")
+        return issubclass(t, typing.Tuple) and hasattr(  # type: ignore
+            t, "_fields"
+        )
     except TypeError:
         return False
+
+
+def is_new_type(t) -> bool:
+    return hasattr(t, "__supertype__")
 
 
 def is_union(t):
@@ -198,7 +247,7 @@ def is_union(t):
         return False
 
 
-def is_optional(t, type_vars: typing.Dict[str, typing.Any] = None):
+def is_optional(t, type_vars: typing.Dict[str, typing.Any] = None) -> bool:
     if type_vars is None:
         type_vars = {}
     if not is_union(t):
@@ -209,6 +258,38 @@ def is_optional(t, type_vars: typing.Dict[str, typing.Any] = None):
     for arg in args:
         if type_vars.get(arg, arg) is NoneType:
             return True
+    return False
+
+
+def is_annotated(t) -> bool:
+    for module in (typing, typing_extensions):
+        with suppress(AttributeError):
+            if type(t) is getattr(module, "_AnnotatedAlias"):
+                return True
+        with suppress(AttributeError):
+            if type(t) is getattr(module, "AnnotatedMeta"):
+                # Annotated from typing-extensions on Python 3.6
+                return True
+    return False
+
+
+def is_literal(t) -> bool:
+    if PY_36:
+        with suppress(AttributeError):
+            # noinspection PyProtectedMember
+            # noinspection PyUnresolvedReferences
+            return (
+                isinstance(t, typing_extensions._Literal)  # type: ignore
+                and len(get_literal_values(t)) > 0
+            )
+    elif PY_37 or PY_38:
+        with suppress(AttributeError):
+            return is_generic(t) and get_generic_name(t, True) == "Literal"
+    elif PY_39_MIN:
+        with suppress(AttributeError):
+            # noinspection PyProtectedMember
+            # noinspection PyUnresolvedReferences
+            return type(t) is typing._LiteralGenericAlias  # type: ignore
     return False
 
 
@@ -223,11 +304,11 @@ def not_none_type_arg(
             return arg
 
 
-def is_type_var(t):
+def is_type_var(t) -> bool:
     return hasattr(t, "__constraints__")
 
 
-def is_type_var_any(t):
+def is_type_var_any(t) -> bool:
     if not is_type_var(t):
         return False
     elif t.__constraints__ != ():
@@ -238,7 +319,7 @@ def is_type_var_any(t):
         return True
 
 
-def is_class_var(t):
+def is_class_var(t) -> bool:
     if PY_36:
         return (
             is_special_typing_primitive(t) and type(t).__name__ == "_ClassVar"
@@ -249,7 +330,7 @@ def is_class_var(t):
         raise NotImplementedError
 
 
-def is_init_var(t):
+def is_init_var(t) -> bool:
     if PY_36 or PY_37:
         return get_type_origin(t) is dataclasses.InitVar
     elif PY_38_MIN:
@@ -276,11 +357,11 @@ def get_class_that_defines_field(field_name, cls):
     return prev_cls or cls
 
 
-def is_dataclass_dict_mixin(t):
+def is_dataclass_dict_mixin(t) -> bool:
     return type_name(t) == DataClassDictMixinPath
 
 
-def is_dataclass_dict_mixin_subclass(t):
+def is_dataclass_dict_mixin_subclass(t) -> bool:
     with suppress(AttributeError):
         for cls in t.__mro__:
             if is_dataclass_dict_mixin(cls):
@@ -370,4 +451,8 @@ __all__ = [
     "get_generic_name",
     "get_name_error_name",
     "is_dialect_subclass",
+    "is_new_type",
+    "is_annotated",
+    "is_literal",
+    "get_literal_values",
 ]

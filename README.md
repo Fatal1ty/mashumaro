@@ -22,7 +22,11 @@ Table of contents
 * [Usage example](#usage-example)
 * [How does it work?](#how-does-it-work)
 * [Benchmark](#benchmark)
-* [API](#api)
+* [Serialization mixins](#serialization-mixins)
+  * [`DataClassDictMixin`](#dataclassdictmixin)
+  * [`DataClassJSONMixin`](#dataclassjsonmixin)
+  * [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
+  * [`DataClassYAMLMixin`](#dataclassyamlmixin)
 * [Customization](#customization)
     * [`SerializableType` interface](#serializabletype-interface)
     * [Field options](#field-options)
@@ -39,6 +43,7 @@ Table of contents
         * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
         * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
         * [`dialect` config option](#dialect-config-option)
+    * [Passing field values as is](#passing-field-values-as-is)
     * [Dialects](#dialects)
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
       * [Changing the default dialect](#changing-the-default-dialect)
@@ -120,6 +125,9 @@ for special primitives from the [`typing`](https://docs.python.org/3/library/typ
 * [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)
 * [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)
 * [`TypeVar`](https://docs.python.org/3/library/typing.html#typing.TypeVar)
+* [`NewType`](https://docs.python.org/3/library/typing.html#newtype)
+* [`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated)
+* [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)
 
 for standard interpreter types from [`types`](https://docs.python.org/3/library/types.html#standard-interpreter-types) module:
 * [`NoneType`](https://docs.python.org/3/library/types.html#types.NoneType)
@@ -145,6 +153,7 @@ for built-in datetime oriented types (see [more](#deserialize-option) details):
 * [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
 * [`timedelta`](https://docs.python.org/3/library/datetime.html#datetime.timedelta)
 * [`timezone`](https://docs.python.org/3/library/datetime.html#datetime.timezone)
+* [`ZoneInfo`](https://docs.python.org/3/library/zoneinfo.html#zoneinfo.ZoneInfo)
 
 for pathlike types:
 * [`PurePath`](https://docs.python.org/3/library/pathlib.html#pathlib.PurePath)
@@ -167,6 +176,12 @@ for other less popular built-in types:
 * [`ipaddress.IPv4Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv4Interface)
 * [`ipaddress.IPv6Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv6Interface)
 
+for backported types from [`typing-extensions`](https://github.com/python/typing/blob/master/typing_extensions/README.rst):
+* [`OrderedDict`](https://docs.python.org/3/library/typing.html#typing.OrderedDict)
+* [`TypedDict`](https://docs.python.org/3/library/typing.html#typing.TypedDict)
+* [`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated)
+* [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)
+
 for arbitrary types:
 * [user-defined classes](#serializabletype-interface)
 * [user-defined generic types](#user-defined-generic-types)
@@ -178,7 +193,7 @@ Usage example
 from enum import Enum
 from typing import List
 from dataclasses import dataclass
-from mashumaro import DataClassJSONMixin
+from mashumaro.mixins.json import DataClassJSONMixin
 
 class Currency(Enum):
     USD = "USD"
@@ -305,89 +320,65 @@ pip install -r requirements-dev.txt
 python benchmark/run.py
 ```
 
-API
+Serialization mixins
 --------------------------------------------------------------------------------
 
-Mashumaro provides a couple of mixins for each format.
+Mashumaro provides mixins for each serialization format.
 
-#### `DataClassDictMixin.to_dict(use_bytes: bool, use_enum: bool, use_datetime: bool)`
+#### [`DataClassDictMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L9)
 
-Make a dictionary from dataclass object based on the dataclass schema provided.
-Options include:
+Can be imported in two ways:
 ```python
-use_bytes: False     # False - convert bytes/bytearray objects to base64 encoded string, True - keep untouched
-use_enum: False      # False - convert enum objects to enum values, True - keep untouched
-use_datetime: False  # False - convert datetime oriented objects to ISO 8601 formatted string, True - keep untouched
+from mashumaro import DataClassDictMixin
+from mashumaro.mixins.dict import DataClassDictMixin
 ```
 
-#### `DataClassDictMixin.from_dict(data: Mapping, use_bytes: bool, use_enum: bool, use_datetime: bool)`
+The core mixin that adds serialization functionality to a dataclass.
+This mixin is a base class for all other serialization format mixins.
+It adds methods `from_dict` and `to_dict`.
 
-Make a new object from dict object based on the dataclass schema provided.
-Options include:
+#### [`DataClassJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L22)
+
+Can be imported as:
 ```python
-use_bytes: False     # False - load bytes/bytearray objects from base64 encoded string, True - keep untouched
-use_enum: False      # False - load enum objects from enum values, True - keep untouched
-use_datetime: False  # False - load datetime oriented objects from ISO 8601 formatted string, True - keep untouched
+from mashumaro.mixins.json import DataClassJSONMixin
 ```
 
-#### `DataClassJSONMixin.to_json(encoder: Optional[Encoder], dict_params: Optional[Mapping], **encoder_kwargs)`
+This mixins adds json serialization functionality to a dataclass.
+It adds methods `from_json` and `to_json`.
 
-Make a JSON formatted string from dataclass object based on the dataclass
-schema provided. Options include:
-```
-encoder        # function called for json encoding, defaults to json.dumps
-dict_params    # dictionary of parameter values passed underhood to `to_dict` function
-encoder_kwargs # keyword arguments for encoder function
-```
+#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L26)
 
-#### `DataClassJSONMixin.from_json(data: Union[str, bytes, bytearray], decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
-
-Make a new object from JSON formatted string based on the dataclass schema
-provided. Options include:
-```
-decoder        # function called for json decoding, defaults to json.loads
-dict_params    # dictionary of parameter values passed underhood to `from_dict` function
-decoder_kwargs # keyword arguments for decoder function
+Can be imported as:
+```python
+from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 ```
 
-#### `DataClassMessagePackMixin.to_msgpack(encoder: Optional[Encoder], dict_params: Optional[Mapping], **encoder_kwargs)`
+This mixins adds MessagePack serialization functionality to a dataclass.
+It adds methods `from_msgpack` and `to_msgpack`.
 
-Make a MessagePack formatted bytes object from dataclass object based on the
-dataclass schema provided. Options include:
-```
-encoder        # function called for MessagePack encoding, defaults to msgpack.packb
-dict_params    # dictionary of parameter values passed underhood to `to_dict` function
-encoder_kwargs # keyword arguments for encoder function
-```
+In order to use this mixin, the [`msgpack`](https://pypi.org/project/msgpack/) package must be installed.
+You can install it manually or using an extra option for mashumaro:
 
-#### `DataClassMessagePackMixin.from_msgpack(data: Union[str, bytes, bytearray], decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
-
-Make a new object from MessagePack formatted data based on the
-dataclass schema provided. Options include:
-```
-decoder        # function called for MessagePack decoding, defaults to msgpack.unpackb
-dict_params    # dictionary of parameter values passed underhood to `from_dict` function
-decoder_kwargs # keyword arguments for decoder function
+```shell
+pip install mashumaro[msgpack]
 ```
 
-#### `DataClassYAMLMixin.to_yaml(encoder: Optional[Encoder], dict_params: Optional[Mapping], **encoder_kwargs)`
+#### [`DataClassYAMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L34)
 
-Make an YAML formatted bytes object from dataclass object based on the
-dataclass schema provided. Options include:
-```
-encoder        # function called for YAML encoding, defaults to yaml.dump
-dict_params    # dictionary of parameter values passed underhood to `to_dict` function
-encoder_kwargs # keyword arguments for encoder function
+Can be imported as:
+```python
+from mashumaro.mixins.yaml import DataClassYAMLMixin
 ```
 
-#### `DataClassYAMLMixin.from_yaml(data: Union[str, bytes], decoder: Optional[Decoder], dict_params: Optional[Mapping], **decoder_kwargs)`
+This mixins adds YAML serialization functionality to a dataclass.
+It adds methods `from_yaml` and `to_yaml`.
 
-Make a new object from YAML formatted data based on the
-dataclass schema provided. Options include:
-```
-decoder        # function called for YAML decoding, defaults to yaml.safe_load
-dict_params    # dictionary of parameter values passed underhood to `from_dict` function
-decoder_kwargs # keyword arguments for decoder function
+In order to use this mixin, the [`pyyaml`](https://pypi.org/project/PyYAML/) package must be installed.
+You can install it manually or using an extra option for mashumaro:
+
+```shell
+pip install mashumaro[yaml]
 ```
 
 Customization
@@ -466,9 +457,12 @@ A value of type `str` sets a specific engine for serialization. Keep in mind
 that all possible engines depend on the field type that this option is used
 with. At this moment there are next serialization engines to choose from:
 
-| Applicable field types     | Supported engines        | Description
-|:-------------------------- |:-------------------------|:------------------------------|
-| `NamedTuple`, `namedtuple` | `as_list`, `as_dict`     | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine.
+| Applicable field types     | Supported engines        | Description                                                                                                                                                                                                  |
+|:-------------------------- |:-------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `NamedTuple`, `namedtuple` | `as_list`, `as_dict`     | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine. |
+
+In addition, you can pass a field value as is without changes using
+[`pass_through`](#passing-field-values-as-is).
 
 Example:
 
@@ -506,10 +500,13 @@ A value of type `str` sets a specific engine for deserialization. Keep in mind
 that all possible engines depend on the field type that this option is used
 with. At this moment there are next deserialization engines to choose from:
 
-| Applicable field types     | Supported engines        | Description
-|:-------------------------- |:-------------------------|:------------------------------|
+| Applicable field types     | Supported engines                                                                                                                   | Description                                                                                                                                                                                                                                                                                             |
+|:---------------------------|:------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
-| `NamedTuple`, `namedtuple` | `as_list`, `as_dict`     | How to unpack named tuples. By default `as_list` engine is used that means your named tuple class instance will be created from a list of its values. You can unpack it from a dictionary using `as_dict` engine.
+| `NamedTuple`, `namedtuple` | `as_list`, `as_dict`                                                                                                                | How to unpack named tuples. By default `as_list` engine is used that means your named tuple class instance will be created from a list of its values. You can unpack it from a dictionary using `as_dict` engine.                                                                                       |
+
+In addition, you can pass a field value as is without changes using
+[`pass_through`](#passing-field-values-as-is).
 
 Example:
 
@@ -596,6 +593,9 @@ dictionary = formats.to_dict()
 # {'short': '01012019120000', 'verbose': 'Tuesday January 01, 2019, 12:00:00'}
 assert DateTimeFormats.from_dict(dictionary) == formats
 ```
+
+In addition, you can pass a field value as is without changes using `pass_through`
+as a value for `serialize` option.
 
 #### `alias` option
 
@@ -699,8 +699,8 @@ so the fastest basic behavior of the library will always remain by default.
 The following table provides a brief overview of all the available constants
 described below.
 
-| Constant                                                        | Description
-|:--------------------------------------------------------------- |:---------------------------------------------------------------------------|
+| Constant                                                        | Description                                                                |
+|:----------------------------------------------------------------|:---------------------------------------------------------------------------|
 | [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_dict` method.                |
 | [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-by_alias-keyword-argument)   | Adds `by_alias` keyword-only argument to `to_dict` method.                 |
 | [`ADD_DIALECT_SUPPORT`](#add-dialect-keyword-argument)          | Adds `dialect` keyword-only argument to `from_dict` and `to_dict` methods. |
@@ -912,6 +912,75 @@ class B is declared below or not.
 
 This option is described [below](#changing-the-default-dialect) in the
 Dialects section.
+
+### Passing field values as is
+
+In some cases it's needed to pass a field value as is without any changes
+during serialization / deserialization. There is a predefined
+[`pass_through`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/helper.py#L46)
+object that can be used as `serialization_strategy` or
+`serialize` / `deserialize` options:
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import DataClassDictMixin, pass_through
+
+class MyClass:
+    def __init__(self, some_value):
+        self.some_value = some_value
+
+@dataclass
+class A1(DataClassDictMixin):
+    x: MyClass = field(
+        metadata={
+            "serialize": pass_through,
+            "deserialize": pass_through,
+        }
+    )
+
+@dataclass
+class A2(DataClassDictMixin):
+    x: MyClass = field(
+        metadata={
+            "serialization_strategy": pass_through,
+        }
+    )
+
+@dataclass
+class A3(DataClassDictMixin):
+    x: MyClass
+
+    class Config:
+        serialization_strategy = {
+            MyClass: pass_through,
+        }
+
+@dataclass
+class A4(DataClassDictMixin):
+    x: MyClass
+
+    class Config:
+        serialization_strategy = {
+            MyClass: {
+                "serialize": pass_through,
+                "deserialize": pass_through,
+            }
+        }
+
+my_class_instance = MyClass(42)
+
+assert A1.from_dict({'x': my_class_instance}).x == my_class_instance
+assert A2.from_dict({'x': my_class_instance}).x == my_class_instance
+assert A3.from_dict({'x': my_class_instance}).x == my_class_instance
+assert A4.from_dict({'x': my_class_instance}).x == my_class_instance
+
+a1_dict = A1(my_class_instance).to_dict()
+a2_dict = A2(my_class_instance).to_dict()
+a3_dict = A3(my_class_instance).to_dict()
+a4_dict = A4(my_class_instance).to_dict()
+
+assert a1_dict == a2_dict == a3_dict == a4_dict == {"x": my_class_instance}
+```
 
 ### Dialects
 
@@ -1155,8 +1224,7 @@ called `GenericSerializableType`. It makes it possible to serialize and deserial
 instances of generic types depending on the types provided:
 
 ```python
-from typing import Dict, TypeVar, Iterator
-from datetime import datetime
+from typing import Dict, TypeVar
 from dataclasses import dataclass
 from mashumaro import DataClassDictMixin
 from mashumaro.types import GenericSerializableType

@@ -2,24 +2,37 @@ import collections
 import collections.abc
 import typing
 from dataclasses import dataclass
-from unittest.mock import patch
+from datetime import datetime
 
 import pytest
+import typing_extensions
 
-from mashumaro import DataClassDictMixin, DataClassJSONMixin
-from mashumaro.dialect import Dialect
-from mashumaro.meta.helpers import (
+from mashumaro import DataClassDictMixin
+from mashumaro.core.const import (
+    PEP_585_COMPATIBLE,
+    PY_37,
+    PY_37_MIN,
+    PY_38,
+    PY_38_MIN,
+    PY_310_MIN,
+)
+from mashumaro.core.meta.builder import CodeBuilder
+from mashumaro.core.meta.helpers import (
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
     get_generic_name,
+    get_literal_values,
     get_type_origin,
+    is_annotated,
     is_class_var,
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
     is_dialect_subclass,
     is_generic,
     is_init_var,
+    is_literal,
+    is_new_type,
     is_optional,
     is_type_var_any,
     is_union,
@@ -27,19 +40,19 @@ from mashumaro.meta.helpers import (
     resolve_type_vars,
     type_name,
 )
-from mashumaro.meta.macros import (
-    PEP_585_COMPATIBLE,
-    PY_37,
-    PY_37_MIN,
-    PY_38,
-    PY_310_MIN,
-)
-from mashumaro.serializer.base.metaprogramming import CodeBuilder
+from mashumaro.dialect import Dialect
+from mashumaro.mixins.json import DataClassJSONMixin
 
 from .entities import (
     MyDataClass,
+    MyDatetimeNewType,
+    MyEnum,
+    MyFlag,
     MyGenericDataClass,
     MyGenericList,
+    MyIntEnum,
+    MyIntFlag,
+    MyStrEnum,
     T,
     TAny,
     TInt,
@@ -51,45 +64,59 @@ NoneType = type(None)
 TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 
 
-def test_is_generic_unsupported_python():
-    with patch("mashumaro.meta.helpers.PY_36", False):
-        with patch("mashumaro.meta.helpers.PY_37", False):
-            with patch("mashumaro.meta.helpers.PY_38", False):
-                with patch("mashumaro.meta.helpers.PY_39_MIN", False):
-                    with pytest.raises(NotImplementedError):
-                        is_generic(int)
+def test_is_generic_unsupported_python(mocker):
+    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_37", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_38", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_39_MIN", False)
+    with pytest.raises(NotImplementedError):
+        is_generic(int)
 
 
-def test_is_class_var_unsupported_python():
-    with patch("mashumaro.meta.helpers.PY_36", False):
-        with patch("mashumaro.meta.helpers.PY_37_MIN", False):
-            with pytest.raises(NotImplementedError):
-                is_class_var(int)
+def test_is_class_var_unsupported_python(mocker):
+    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_37_MIN", False)
+    with pytest.raises(NotImplementedError):
+        is_class_var(int)
 
 
-def test_is_init_var_unsupported_python():
-    with patch("mashumaro.meta.helpers.PY_36", False):
-        with patch("mashumaro.meta.helpers.PY_37", False):
-            with patch("mashumaro.meta.helpers.PY_38_MIN", False):
-                with pytest.raises(NotImplementedError):
-                    is_init_var(int)
+def test_is_init_var_unsupported_python(mocker):
+    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_37", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_38_MIN", False)
+    with pytest.raises(NotImplementedError):
+        is_init_var(int)
 
 
-def test_no_code_builder():
-    with patch(
-        "mashumaro.serializer.base.dict."
-        "DataClassDictMixin.__init_subclass__",
+def test_is_literal_unsupported_python(mocker):
+    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_37", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_38", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_39_MIN", False)
+    assert not is_literal(typing_extensions.Literal[1])
+
+
+def test_get_literal_values_unsupported_python(mocker):
+    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
+    mocker.patch("mashumaro.core.meta.helpers.PY_37_MIN", False)
+    with pytest.raises(NotImplementedError):
+        get_literal_values(typing_extensions.Literal[1])
+
+
+def test_no_code_builder(mocker):
+    mocker.patch(
+        "mashumaro.mixins.dict.DataClassDictMixin.__init_subclass__",
         lambda: ...,
-    ):
+    )
 
-        @dataclass
-        class DataClass(DataClassDictMixin):
-            pass
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        pass
 
-        assert DataClass.__pre_deserialize__({}) is None
-        assert DataClass.__post_deserialize__(DataClass()) is None
-        assert DataClass().__pre_serialize__() is None
-        assert DataClass().__post_serialize__({}) is None
+    assert DataClass.__pre_deserialize__({}) is None
+    assert DataClass.__post_deserialize__(DataClass()) is None
+    assert DataClass().__pre_serialize__() is None
+    assert DataClass().__post_serialize__({}) is None
 
 
 def test_get_class_that_defines_method():
@@ -185,8 +212,13 @@ def test_type_name():
     )
     if PY_37_MIN:
         assert (
-            type_name(typing.OrderedDict[int, int])
+            type_name(typing_extensions.OrderedDict[int, int])
             == "typing.OrderedDict[int, int]"
+        )
+    else:
+        assert (
+            type_name(typing_extensions.OrderedDict[int, int])
+            == "typing_extensions.OrderedDict[int, int]"
         )
     assert type_name(typing.Optional[int]) == "typing.Optional[int]"
     assert type_name(typing.Union[None, int]) == "typing.Optional[int]"
@@ -205,6 +237,16 @@ def test_type_name():
         assert type_name(int | None) == "typing.Optional[int]"
         assert type_name(None | int) == "typing.Optional[int]"
         assert type_name(int | str) == "typing.Union[int, str]"
+    if PY_310_MIN:
+        assert (
+            type_name(MyDatetimeNewType) == "tests.entities.MyDatetimeNewType"
+        )
+    else:
+        assert type_name(MyDatetimeNewType) == type_name(datetime)
+    assert (
+        type_name(typing_extensions.Annotated[TMyDataClass, None])
+        == "tests.entities.MyDataClass"
+    )
 
 
 @pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
@@ -272,11 +314,10 @@ def test_type_name_short():
         type_name(typing.Union[int, typing.Any], short=True)
         == "Union[int, Any]"
     )
-    if PY_37_MIN:
-        assert (
-            type_name(typing.OrderedDict[int, int], short=True)
-            == "OrderedDict[int, int]"
-        )
+    assert (
+        type_name(typing_extensions.OrderedDict[int, int], short=True)
+        == "OrderedDict[int, int]"
+    )
     assert type_name(typing.Optional[int], short=True) == "Optional[int]"
     assert type_name(typing.Union[None, int], short=True) == "Optional[int]"
     assert type_name(typing.Union[int, None], short=True) == "Optional[int]"
@@ -294,6 +335,16 @@ def test_type_name_short():
         assert type_name(int | None, short=True) == "Optional[int]"
         assert type_name(None | int, short=True) == "Optional[int]"
         assert type_name(int | str, short=True) == "Union[int, str]"
+    if PY_310_MIN:
+        assert type_name(MyDatetimeNewType, short=True) == "MyDatetimeNewType"
+    else:
+        assert type_name(MyDatetimeNewType, short=True) == type_name(
+            datetime, short=True
+        )
+    assert (
+        type_name(typing_extensions.Annotated[TMyDataClass, None], short=True)
+        == "MyDataClass"
+    )
 
 
 @pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
@@ -336,6 +387,10 @@ def test_get_type_origin():
     assert get_type_origin(typing.List) == list
     assert get_type_origin(MyGenericDataClass[int]) == MyGenericDataClass
     assert get_type_origin(MyGenericDataClass) == MyGenericDataClass
+    assert (
+        get_type_origin(typing_extensions.Annotated[datetime, None])
+        == datetime
+    )
 
 
 def test_resolve_type_vars():
@@ -432,3 +487,57 @@ def test_not_non_type_arg():
     assert not_none_type_arg((NoneType, int)) == int
     assert not_none_type_arg((str, NoneType)) == str
     assert not_none_type_arg((T, int), {T: NoneType}) == int
+
+
+def test_is_new_type():
+    assert is_new_type(typing.NewType("MyNewType", int))
+    assert not is_new_type(int)
+
+
+def test_is_annotated():
+    assert is_annotated(typing_extensions.Annotated[datetime, None])
+    assert not is_annotated(datetime)
+
+
+def test_is_literal():
+    assert is_literal(typing_extensions.Literal[1, 2, 3])
+    assert not is_literal(typing_extensions.Literal)
+    assert not is_literal([1, 2, 3])
+
+
+def test_get_literal_values():
+    assert get_literal_values(typing_extensions.Literal[1, 2, 3]) == (1, 2, 3)
+    assert get_literal_values(
+        typing_extensions.Literal[
+            1, typing_extensions.Literal[typing_extensions.Literal[2], 3]
+        ]
+    ) == (1, 2, 3)
+
+
+def test_type_name_literal():
+    if PY_38_MIN:
+        module_name = "typing"
+    else:
+        module_name = "typing_extensions"
+    assert type_name(
+        typing_extensions.Literal[
+            1,
+            "a",
+            b"\x00",
+            True,
+            False,
+            None,
+            MyEnum.a,
+            MyStrEnum.a,
+            MyIntEnum.a,
+            MyFlag.a,
+            MyIntFlag.a,
+            typing_extensions.Literal[2, 3],
+            typing_extensions.Literal[typing_extensions.Literal["b", "c"]],
+        ]
+    ) == (
+        f"{module_name}.Literal[1, 'a', b'\\x00', True, False, None, "
+        "tests.entities.MyEnum.a, tests.entities.MyStrEnum.a, "
+        "tests.entities.MyIntEnum.a, tests.entities.MyFlag.a, "
+        "tests.entities.MyIntFlag.a, 2, 3, 'b', 'c']"
+    )
