@@ -134,6 +134,7 @@ class CodeBuilder:
         arg_types: typing.Tuple = (),
         dialect: typing.Optional[typing.Type[Dialect]] = None,
         first_method: str = "from_dict",
+        allow_postponed_evaluation: bool = True,
     ):
         self.cls = cls
         self.lines: CodeLines = CodeLines()
@@ -147,6 +148,7 @@ class CodeBuilder:
                 f"in {type_name(self.cls)}.{first_method}"
             )
         self.dialect = dialect
+        self.allow_postponed_evaluation = allow_postponed_evaluation
 
     def reset(self) -> None:
         self.lines.reset()
@@ -318,51 +320,68 @@ class CodeBuilder:
 
     def _add_from_dict_lines(self) -> None:
         config = self.get_config()
-        pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
-        if pre_deserialize:
-            if not isinstance(pre_deserialize, classmethod):
-                raise BadHookSignature(
-                    f"`{__PRE_DESERIALIZE__}` must be a class method with "
-                    f"Callable[[Dict[Any, Any]], Dict[Any, Any]] signature"
-                )
-            else:
-                self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
-        self.add_line("try:")
-        with self.indent():
-            self.add_line("kwargs = {}")
-            for fname, ftype in self.field_types.items():
-                self._add_type_modules(ftype)
-                metadata = self.metadatas.get(fname, {})
-                alias = metadata.get("alias")
-                if alias is None:
-                    alias = config.aliases.get(fname)
-                self._from_dict_set_value(fname, ftype, metadata, alias)
-        self.add_line("except AttributeError:")
-        with self.indent():
-            self.add_line("if not isinstance(d, dict):")
-            with self.indent():
-                self.add_line(
-                    f"raise ValueError('Argument for "
-                    f"{type_name(self.cls)}.from_dict method "
-                    f"should be a dict instance') from None"
-                )
-            self.add_line("else:")
-            with self.indent():
-                self.add_line("raise")
-        post_deserialize = self.get_declared_hook(__POST_DESERIALIZE__)
-        if post_deserialize:
-            if not isinstance(post_deserialize, classmethod):
-                raise BadHookSignature(
-                    f"`{__POST_DESERIALIZE__}` must be a class method "
-                    f"with Callable[[{type_name(self.cls)}], "
-                    f"{type_name(self.cls)}] signature"
-                )
-            else:
-                self.add_line(
-                    f"return cls.{__POST_DESERIALIZE__}(cls(**kwargs))"
-                )
+        try:
+            field_types = self.field_types
+        except UnresolvedTypeReferenceError:
+            if (
+                not self.allow_postponed_evaluation
+                or not config.allow_postponed_evaluation
+            ):
+                raise
+            self.add_line(
+                "builder = CodeBuilder(cls, allow_postponed_evaluation=False)"
+            )
+            self.add_line("builder.add_from_dict()")
+            from_dict_args = ", ".join(
+                filter(None, ("d", self.get_from_dict_flags()))
+            )
+            self.add_line(f"return cls.from_dict({from_dict_args})")
         else:
-            self.add_line("return cls(**kwargs)")
+            pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
+            if pre_deserialize:
+                if not isinstance(pre_deserialize, classmethod):
+                    raise BadHookSignature(
+                        f"`{__PRE_DESERIALIZE__}` must be a class method with "
+                        f"Callable[[Dict[Any, Any]], Dict[Any, Any]] signature"
+                    )
+                else:
+                    self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
+            self.add_line("try:")
+            with self.indent():
+                self.add_line("kwargs = {}")
+                for fname, ftype in field_types.items():
+                    self._add_type_modules(ftype)
+                    metadata = self.metadatas.get(fname, {})
+                    alias = metadata.get("alias")
+                    if alias is None:
+                        alias = config.aliases.get(fname)
+                    self._from_dict_set_value(fname, ftype, metadata, alias)
+            self.add_line("except AttributeError:")
+            with self.indent():
+                self.add_line("if not isinstance(d, dict):")
+                with self.indent():
+                    self.add_line(
+                        f"raise ValueError('Argument for "
+                        f"{type_name(self.cls)}.from_dict method "
+                        f"should be a dict instance') from None"
+                    )
+                self.add_line("else:")
+                with self.indent():
+                    self.add_line("raise")
+            post_deserialize = self.get_declared_hook(__POST_DESERIALIZE__)
+            if post_deserialize:
+                if not isinstance(post_deserialize, classmethod):
+                    raise BadHookSignature(
+                        f"`{__POST_DESERIALIZE__}` must be a class method "
+                        f"with Callable[[{type_name(self.cls)}], "
+                        f"{type_name(self.cls)}] signature"
+                    )
+                else:
+                    self.add_line(
+                        f"return cls.{__POST_DESERIALIZE__}(cls(**kwargs))"
+                    )
+            else:
+                self.add_line("return cls(**kwargs)")
 
     def _add_from_dict_with_dialect_lines(self) -> None:
         from_dict_args = ", ".join(
@@ -585,18 +604,34 @@ class CodeBuilder:
         self.compile()
 
     def _add_to_dict_lines(self) -> None:
-        pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
-        if pre_serialize:
-            self.add_line(f"self = self.{__PRE_SERIALIZE__}()")
-        self.add_line("kwargs = {}")
-        for fname, ftype in self.field_types.items():
-            metadata = self.metadatas.get(fname, {})
-            self._to_dict_set_value(fname, ftype, metadata)
-        post_serialize = self.get_declared_hook(__POST_SERIALIZE__)
-        if post_serialize:
-            self.add_line(f"return self.{__POST_SERIALIZE__}(kwargs)")
+        config = self.get_config()
+        try:
+            field_types = self.field_types
+        except UnresolvedTypeReferenceError:
+            if (
+                not self.allow_postponed_evaluation
+                or not config.allow_postponed_evaluation
+            ):
+                raise
+            self.add_line(
+                "builder = CodeBuilder(self.__class__, "
+                "allow_postponed_evaluation=False)"
+            )
+            self.add_line("builder.add_to_dict()")
+            self.add_line(f"return self.to_dict({self.get_to_dict_flags()})")
         else:
-            self.add_line("return kwargs")
+            pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
+            if pre_serialize:
+                self.add_line(f"self = self.{__PRE_SERIALIZE__}()")
+            self.add_line("kwargs = {}")
+            for fname, ftype in field_types.items():
+                metadata = self.metadatas.get(fname, {})
+                self._to_dict_set_value(fname, ftype, metadata)
+            post_serialize = self.get_declared_hook(__POST_SERIALIZE__)
+            if post_serialize:
+                self.add_line(f"return self.{__POST_SERIALIZE__}(kwargs)")
+            else:
+                self.add_line("return kwargs")
 
     def _add_to_dict_with_dialect_lines(self) -> None:
         to_dict_args = ", ".join(

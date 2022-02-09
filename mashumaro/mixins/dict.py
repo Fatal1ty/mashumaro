@@ -32,9 +32,7 @@ class DataClassDictMixin:
         # dialect: Type[Dialect] = None
         **kwargs,
     ) -> dict:
-        builder = CodeBuilder(self.__class__)
-        builder.add_to_dict()
-        return self.to_dict(**kwargs)
+        ...
 
     @classmethod
     def from_dict(
@@ -45,9 +43,7 @@ class DataClassDictMixin:
         # dialect: Type[Dialect] = None
         **kwargs,
     ) -> T:
-        builder = CodeBuilder(cls)
-        builder.add_from_dict()
-        return cls.from_dict(d, **kwargs)
+        ...
 
     @classmethod
     def __pre_deserialize__(cls: Type[T], d: Dict[Any, Any]) -> Dict[Any, Any]:
