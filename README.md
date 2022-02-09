@@ -43,6 +43,7 @@ Table of contents
         * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
         * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
         * [`dialect` config option](#dialect-config-option)
+    * [Passing field values as is](#passing-field-values-as-is)
     * [Dialects](#dialects)
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
       * [Changing the default dialect](#changing-the-default-dialect)
@@ -460,6 +461,9 @@ with. At this moment there are next serialization engines to choose from:
 |:-------------------------- |:-------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict`     | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine. |
 
+In addition, you can pass a field value as is without changes using
+[`pass_through`](#passing-field-values-as-is).
+
 Example:
 
 ```python
@@ -500,6 +504,9 @@ with. At this moment there are next deserialization engines to choose from:
 |:---------------------------|:------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict`                                                                                                                | How to unpack named tuples. By default `as_list` engine is used that means your named tuple class instance will be created from a list of its values. You can unpack it from a dictionary using `as_dict` engine.                                                                                       |
+
+In addition, you can pass a field value as is without changes using
+[`pass_through`](#passing-field-values-as-is).
 
 Example:
 
@@ -586,6 +593,9 @@ dictionary = formats.to_dict()
 # {'short': '01012019120000', 'verbose': 'Tuesday January 01, 2019, 12:00:00'}
 assert DateTimeFormats.from_dict(dictionary) == formats
 ```
+
+In addition, you can pass a field value as is without changes using `pass_through`
+as a value for `serialize` option.
 
 #### `alias` option
 
@@ -902,6 +912,61 @@ class B is declared below or not.
 
 This option is described [below](#changing-the-default-dialect) in the
 Dialects section.
+
+### Passing field values as is
+
+In some cases it's needed to pass a field value as is without any changes
+during serialization / deserialization. There is a predefined
+[`pass_through`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/helper.py#L46)
+object that can be used as `serialization_strategy` or
+`serialize` / `deserialize` options:
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import DataClassDictMixin, pass_through
+
+class MyClass:
+    def __init__(self, some_value):
+        self.some_value = some_value
+
+@dataclass
+class A1(DataClassDictMixin):
+    x: MyClass = field(
+        metadata={
+            "serialize": pass_through,
+            "deserialize": pass_through,
+        }
+    )
+
+@dataclass
+class A2(DataClassDictMixin):
+    x: MyClass = field(
+        metadata={
+            "serialization_strategy": pass_through,
+        }
+    )
+
+@dataclass
+class A3(DataClassDictMixin):
+    x: MyClass
+
+    class Config:
+        serialization_strategy = {
+            MyClass: pass_through,
+        }
+
+my_class_instance = MyClass(42)
+
+assert A1.from_dict({'x': my_class_instance}).x == my_class_instance
+assert A2.from_dict({'x': my_class_instance}).x == my_class_instance
+assert A3.from_dict({'x': my_class_instance}).x == my_class_instance
+
+a1_dict = A1(my_class_instance).to_dict()
+a2_dict = A2(my_class_instance).to_dict()
+a3_dict = A3(my_class_instance).to_dict()
+
+assert a1_dict == a2_dict == a3_dict == {"x": my_class_instance}
+```
 
 ### Dialects
 
