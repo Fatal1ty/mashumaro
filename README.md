@@ -955,17 +955,31 @@ class A3(DataClassDictMixin):
             MyClass: pass_through,
         }
 
+@dataclass
+class A4(DataClassDictMixin):
+    x: MyClass
+
+    class Config:
+        serialization_strategy = {
+            MyClass: {
+                "serialize": pass_through,
+                "deserialize": pass_through,
+            }
+        }
+
 my_class_instance = MyClass(42)
 
 assert A1.from_dict({'x': my_class_instance}).x == my_class_instance
 assert A2.from_dict({'x': my_class_instance}).x == my_class_instance
 assert A3.from_dict({'x': my_class_instance}).x == my_class_instance
+assert A4.from_dict({'x': my_class_instance}).x == my_class_instance
 
 a1_dict = A1(my_class_instance).to_dict()
 a2_dict = A2(my_class_instance).to_dict()
 a3_dict = A3(my_class_instance).to_dict()
+a4_dict = A4(my_class_instance).to_dict()
 
-assert a1_dict == a2_dict == a3_dict == {"x": my_class_instance}
+assert a1_dict == a2_dict == a3_dict == a4_dict == {"x": my_class_instance}
 ```
 
 ### Dialects
