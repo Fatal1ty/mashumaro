@@ -48,3 +48,11 @@ def test_slots():
             str(e.value)
             == f"'{cls.__name__}' object has no attribute 'new_attribute'"
         )
+
+
+def test_data_class_dict_mixin_from_dict():
+    assert DataClassDictMixin.from_dict({}) is None
+
+
+def test_data_class_dict_mixin_to_dict():
+    assert DataClassDictMixin().to_dict() is None
