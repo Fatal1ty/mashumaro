@@ -594,8 +594,8 @@ dictionary = formats.to_dict()
 assert DateTimeFormats.from_dict(dictionary) == formats
 ```
 
-In addition, you can pass a field value as is without changes using `pass_through`
-as a value for `serialize` option.
+In addition, you can pass a field value as is without changes using
+[`pass_through`](#passing-field-values-as-is).
 
 #### `alias` option
 
