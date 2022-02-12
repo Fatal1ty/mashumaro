@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Any, Dict, Type, TypeVar
 
 import msgpack
@@ -23,12 +22,20 @@ class Decoder(Protocol):  # pragma no cover
         ...
 
 
+def default_encoder(data) -> EncodedData:
+    return msgpack.packb(data, use_bin_type=True)
+
+
+def default_decoder(data: EncodedData) -> Dict[Any, Any]:
+    return msgpack.unpackb(data, raw=False)
+
+
 class DataClassMessagePackMixin(DataClassDictMixin):
     __slots__ = ()
 
     def to_msgpack(
         self: T,
-        encoder: Encoder = partial(msgpack.packb, use_bin_type=True),
+        encoder: Encoder = default_encoder,  # type: ignore
         **to_dict_kwargs,
     ) -> EncodedData:
 
@@ -40,7 +47,7 @@ class DataClassMessagePackMixin(DataClassDictMixin):
     def from_msgpack(
         cls: Type[T],
         data: EncodedData,
-        decoder: Decoder = partial(msgpack.unpackb, raw=False),
+        decoder: Decoder = default_decoder,  # type: ignore
         **from_dict_kwargs,
     ) -> T:
         return cls.from_dict(
