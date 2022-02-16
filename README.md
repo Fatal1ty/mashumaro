@@ -73,7 +73,7 @@ $ pip install mashumaro
 Changelog
 --------------------------------------------------------------------------------
 
-This project follows the principles of [Semantic Versioning](https://semver.org).
+This project follows the principles of [Semantic Versioning](https://semver.org).  
 Changelog is available on [GitHub Releases page](https://github.com/Fatal1ty/mashumaro/releases).
 
 Supported serialization formats
