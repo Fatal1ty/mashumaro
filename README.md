@@ -17,6 +17,7 @@ but also makes **serialization rapidly**.
 Table of contents
 --------------------------------------------------------------------------------
 * [Installation](#installation)
+* [Changelog](#changelog)
 * [Supported serialization formats](#supported-serialization-formats)
 * [Supported field types](#supported-field-types)
 * [Usage example](#usage-example)
@@ -68,6 +69,12 @@ Use pip to install:
 ```shell
 $ pip install mashumaro
 ```
+
+Changelog
+--------------------------------------------------------------------------------
+
+This project follows the principles of [Semantic Versioning](https://semver.org).
+Changelog is available on [GitHub Releases page](https://github.com/Fatal1ty/mashumaro/releases).
 
 Supported serialization formats
 --------------------------------------------------------------------------------
