@@ -1135,9 +1135,6 @@ DataClass(field_a=1).to_dict()  # {'field_a': 1}
 DataClass(field_a=1).to_dict(by_alias=True)  # {'FieldA': 1}
 ```
 
-Keep in mind, if you're serializing data in JSON or another format, then you
-need to pass `by_alias` argument to [`dict_params`](#dataclassjsonmixinto_jsonencoder-optionalencoder-dict_params-optionalmapping-encoder_kwargs) dictionary.
-
 #### Add `dialect` keyword argument
 
 Support for [dialects](#dialects) is disabled by default for performance reasons. You can enable
