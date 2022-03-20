@@ -72,6 +72,7 @@ from .entities import (
     MyIntFlag,
     MyNamedTuple,
     MyNamedTupleWithDefaults,
+    MyNamedTupleWithOptional,
     MyStrEnum,
     MyUntypedNamedTuple,
     SerializableTypeDataClass,
@@ -1241,10 +1242,10 @@ def test_tuple_with_optional():
     class DataClass(DataClassDictMixin):
         x: Tuple[Optional[int], int] = field(default_factory=lambda: (None, 7))
 
-    assert DataClass.from_dict({'x': [None, 42]}) == DataClass((None, 42))
-    assert DataClass((None, 42)).to_dict() == {'x': [None, 42]}
+    assert DataClass.from_dict({"x": [None, 42]}) == DataClass((None, 42))
+    assert DataClass((None, 42)).to_dict() == {"x": [None, 42]}
     assert DataClass.from_dict({}) == DataClass((None, 7))
-    assert DataClass().to_dict() == {'x': [None, 7]}
+    assert DataClass().to_dict() == {"x": [None, 7]}
 
 
 def test_tuple_with_optional_and_ellipsis():
@@ -1252,7 +1253,26 @@ def test_tuple_with_optional_and_ellipsis():
     class DataClass(DataClassDictMixin):
         x: Tuple[Optional[int], ...] = field(default_factory=lambda: (None, 7))
 
-    assert DataClass.from_dict({'x': [None, 42]}) == DataClass((None, 42))
-    assert DataClass((None, 42)).to_dict() == {'x': [None, 42]}
+    assert DataClass.from_dict({"x": [None, 42]}) == DataClass((None, 42))
+    assert DataClass((None, 42)).to_dict() == {"x": [None, 42]}
     assert DataClass.from_dict({}) == DataClass((None, 7))
-    assert DataClass().to_dict() == {'x': [None, 7]}
+    assert DataClass().to_dict() == {"x": [None, 7]}
+
+
+def test_named_tuple_with_optional():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MyNamedTupleWithOptional = field(
+            default_factory=lambda: MyNamedTupleWithOptional(None, 7)
+        )
+
+    assert DataClass.from_dict({"x": [None, 42]}) == DataClass(
+        MyNamedTupleWithOptional(None, 42)
+    )
+    assert DataClass(MyNamedTupleWithOptional(None, 42)).to_dict() == {
+        "x": [None, 42]
+    }
+    assert DataClass.from_dict({}) == DataClass(
+        MyNamedTupleWithOptional(None, 7)
+    )
+    assert DataClass().to_dict() == {"x": [None, 7]}
