@@ -83,8 +83,10 @@ from .entities import (
     TIntStr,
     TMyDataClass,
     TypedDictOptionalKeys,
+    TypedDictOptionalKeysWithOptional,
     TypedDictRequiredAndOptionalKeys,
     TypedDictRequiredKeys,
+    TypedDictRequiredKeysWithOptional,
 )
 from .utils import same_types
 
@@ -1276,3 +1278,31 @@ def test_named_tuple_with_optional():
         MyNamedTupleWithOptional(None, 7)
     )
     assert DataClass().to_dict() == {"x": [None, 7]}
+
+
+def test_typed_dict_required_keys_with_optional():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: TypedDictRequiredKeysWithOptional
+
+    obj = DataClass({"x": None, "y": 42})
+    assert DataClass.from_dict({"x": {"x": None, "y": 42}}) == obj
+    assert obj.to_dict() == {"x": {"x": None, "y": 42}}
+
+    obj = DataClass({"x": 33, "y": 42})
+    assert DataClass.from_dict({"x": {"x": 33, "y": 42}}) == obj
+    assert obj.to_dict()
+
+
+def test_typed_dict_optional_keys_with_optional():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: TypedDictOptionalKeysWithOptional
+
+    obj = DataClass({"x": None, "y": 42})
+    assert DataClass.from_dict({"x": {"x": None, "y": 42}}) == obj
+    assert obj.to_dict() == {"x": {"x": None, "y": 42}}
+
+    obj = DataClass({"x": 33, "y": 42})
+    assert DataClass.from_dict({"x": {"x": 33, "y": 42}}) == obj
+    assert obj.to_dict()

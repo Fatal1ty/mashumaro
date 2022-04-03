@@ -1626,6 +1626,7 @@ class CodeBuilder:
                     parent,
                     f"{value_name}['{key}']",
                     metadata=metadata,
+                    could_be_none=True,
                 )
                 lines.append(f"d['{key}'] = {packer}")
             for key in sorted(optional_keys, key=all_keys.index):
@@ -1638,6 +1639,7 @@ class CodeBuilder:
                         parent,
                         "key_value",
                         metadata=metadata,
+                        could_be_none=True,
                     )
                     lines.append(f"d['{key}'] = {packer}")
             lines.append("return d")
@@ -1678,6 +1680,7 @@ class CodeBuilder:
                     parent,
                     f"{value_name}['{key}']",
                     metadata=metadata,
+                    could_be_none=True,
                 )
                 lines.append(f"d['{key}'] = {unpacker}")
             for key in sorted(optional_keys, key=all_keys.index):
@@ -1690,6 +1693,7 @@ class CodeBuilder:
                         parent,
                         "key_value",
                         metadata=metadata,
+                        could_be_none=True,
                     )
                     lines.append(f"d['{key}'] = {unpacker}")
             lines.append("return d")

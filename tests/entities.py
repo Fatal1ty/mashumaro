@@ -218,6 +218,16 @@ class TypedDictRequiredAndOptionalKeys(TypedDictRequiredKeys, total=False):
     str: str
 
 
+class TypedDictRequiredKeysWithOptional(TypedDict):
+    x: Optional[int]
+    y: int
+
+
+class TypedDictOptionalKeysWithOptional(TypedDict, total=False):
+    x: Optional[int]
+    y: float
+
+
 class MyNamedTuple(NamedTuple):
     i: int
     f: float
