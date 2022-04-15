@@ -228,6 +228,11 @@ class MyNamedTupleWithDefaults(NamedTuple):
     f: float = 2.0
 
 
+class MyNamedTupleWithOptional(NamedTuple):
+    i: Optional[int]
+    f: int
+
+
 MyUntypedNamedTuple = namedtuple("MyUntypedNamedTuple", ("i", "f"))
 
 

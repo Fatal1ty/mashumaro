@@ -1726,6 +1726,7 @@ class CodeBuilder:
                 parent,
                 f"{value_name}[{idx}]",
                 metadata=metadata,
+                could_be_none=True,
             )
             packers.append(packer)
         if as_dict:
@@ -1762,6 +1763,7 @@ class CodeBuilder:
                 parent,
                 f"{value_name}[{idx}]",
                 metadata=metadata,
+                could_be_none=True,
             )
             unpackers.append(unpacker)
 
