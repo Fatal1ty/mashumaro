@@ -1554,6 +1554,7 @@ class CodeBuilder:
                 parent,
                 value_name,
                 metadata=metadata,
+                could_be_none=True,
             )
             return f"[{packer} for value in value]"
         else:
@@ -1564,6 +1565,7 @@ class CodeBuilder:
                     parent,
                     f"{value_name}[{arg_idx}]",
                     metadata=metadata,
+                    could_be_none=True,
                 )
                 for arg_idx, arg_type in enumerate(args)
             ]
@@ -1581,6 +1583,7 @@ class CodeBuilder:
                 parent,
                 value_name,
                 metadata=metadata,
+                could_be_none=True,
             )
             return f"tuple([{unpacker} for value in value])"
         else:
@@ -1591,6 +1594,7 @@ class CodeBuilder:
                     parent,
                     f"{value_name}[{arg_idx}]",
                     metadata=metadata,
+                    could_be_none=True,
                 )
                 for arg_idx, arg_type in enumerate(args)
             ]

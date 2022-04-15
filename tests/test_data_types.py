@@ -1234,3 +1234,25 @@ def test_data_class_with_new_type_overridden():
     instance = DataClass("a", MyStr("b"))
     assert DataClass.from_dict({"x": "str_a", "y": "MyStr_b"}) == instance
     assert instance.to_dict() == {"x": "str_a", "y": "MyStr_b"}
+
+
+def test_tuple_with_optional():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Tuple[Optional[int], int] = field(default_factory=lambda: (None, 7))
+
+    assert DataClass.from_dict({'x': [None, 42]}) == DataClass((None, 42))
+    assert DataClass((None, 42)).to_dict() == {'x': [None, 42]}
+    assert DataClass.from_dict({}) == DataClass((None, 7))
+    assert DataClass().to_dict() == {'x': [None, 7]}
+
+
+def test_tuple_with_optional_and_ellipsis():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Tuple[Optional[int], ...] = field(default_factory=lambda: (None, 7))
+
+    assert DataClass.from_dict({'x': [None, 42]}) == DataClass((None, 42))
+    assert DataClass((None, 42)).to_dict() == {'x': [None, 42]}
+    assert DataClass.from_dict({}) == DataClass((None, 7))
+    assert DataClass().to_dict() == {'x': [None, 7]}
