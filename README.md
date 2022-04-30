@@ -354,7 +354,7 @@ from mashumaro.mixins.json import DataClassJSONMixin
 This mixins adds json serialization functionality to a dataclass.
 It adds methods `from_json` and `to_json`.
 
-#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L26)
+#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L33)
 
 Can be imported as:
 ```python
