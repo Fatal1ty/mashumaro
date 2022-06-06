@@ -79,6 +79,22 @@ class DataClassWithDialectSupport(DataClassDictMixin):
 
 
 @dataclass
+class BaseEntityWithDialect(DataClassDictMixin):
+    class Config:
+        code_generation_options = [ADD_DIALECT_SUPPORT]
+
+
+@dataclass
+class Entity1(BaseEntityWithDialect):
+    dt1: date
+
+
+@dataclass
+class Entity2(BaseEntityWithDialect):
+    dt2: date
+
+
+@dataclass
 class DataClassWithDialectSupportAndDefaultDialect(DataClassDictMixin):
     dt: date
     i: int
@@ -841,3 +857,21 @@ def test_dialect_with_union_with_dialect_support():
         )
         == obj
     )
+
+
+def test_dialect_with_inheritance():
+    dt = date.today()
+    formatted = dt.strftime("%Y/%m/%d")
+    entity1 = Entity1(dt)
+    entity2 = Entity2(dt)
+
+    assert (
+        Entity1.from_dict({"dt1": formatted}, dialect=FormattedDialect)
+        == entity1
+    )
+    assert (
+        Entity2.from_dict({"dt2": formatted}, dialect=FormattedDialect)
+        == entity2
+    )
+    assert entity1.to_dict(dialect=FormattedDialect) == {"dt1": formatted}
+    assert entity2.to_dict(dialect=FormattedDialect) == {"dt2": formatted}

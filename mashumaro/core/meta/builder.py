@@ -409,7 +409,7 @@ class CodeBuilder:
         )
         if dialects_feature:
             self.add_line(
-                "if not hasattr(cls, '__dialect_from_dict_cache__'):"
+                "if not '__dialect_from_dict_cache__' in cls.__dict__:"
             )
             with self.indent():
                 self.add_line("cls.__dialect_from_dict_cache__ = {}")
@@ -659,7 +659,9 @@ class CodeBuilder:
             ADD_DIALECT_SUPPORT
         )
         if dialects_feature:
-            self.add_line("if not hasattr(cls, '__dialect_to_dict_cache__'):")
+            self.add_line(
+                "if not '__dialect_to_dict_cache__' in cls.__dict__:"
+            )
             with self.indent():
                 self.add_line("cls.__dialect_to_dict_cache__ = {}")
         if not dialects_feature or dialects_feature and self.dialect:
