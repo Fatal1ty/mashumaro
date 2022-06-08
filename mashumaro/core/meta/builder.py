@@ -577,7 +577,7 @@ class CodeBuilder:
             cls = self.cls
         if option == ADD_DIALECT_SUPPORT:
             # TODO: make inheritance for code_generation_options
-            for ancestor in cls.__mro__[-1:0:-1]:
+            for ancestor in get_type_origin(cls).__mro__[-1:0:-1]:
                 if (
                     type_name(ancestor)
                     == "mashumaro.mixins.msgpack.DataClassMessagePackMixin"

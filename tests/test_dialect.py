@@ -195,9 +195,10 @@ class DataClassWithUnionWithDialectSupport(DataClassDictMixin):
 
 @dataclass
 class MessagePackDataClass(DataClassMessagePackMixin):
-    b: bytes
-    bb: bytearray
-    dep: DataClassWithoutDialects
+    b_1: bytes
+    b_2: bytearray
+    dep_1: DataClassWithoutDialects
+    dep_2: GenericDataClassWithoutDialects[date]
 
 
 def test_default_dialect():
@@ -890,14 +891,16 @@ def test_dialect_with_inheritance():
 def test_msgpack_dialect_class_with_dependency_without_dialect():
     dt = date(2022, 6, 8)
     obj = MessagePackDataClass(
-        b=b"123",
-        bb=bytearray([4, 5, 6]),
-        dep=DataClassWithoutDialects(dt, 123),
+        b_1=b"123",
+        b_2=bytearray([4, 5, 6]),
+        dep_1=DataClassWithoutDialects(dt, 123),
+        dep_2=GenericDataClassWithoutDialects(dt, 123),
     )
     d = {
-        "b": b"123",
-        "bb": bytearray([4, 5, 6]),
-        "dep": {"dt": "2022-06-08", "i": 123},
+        "b_1": b"123",
+        "b_2": bytearray([4, 5, 6]),
+        "dep_1": {"dt": "2022-06-08", "i": 123},
+        "dep_2": {"dt": "2022-06-08", "i": 123},
     }
     encoded = msgpack_encoder(d)
     assert obj.to_msgpack() == encoded
