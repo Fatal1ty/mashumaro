@@ -8,7 +8,10 @@ from typing_extensions import TypedDict
 from mashumaro import DataClassDictMixin
 from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
 from mashumaro.dialect import Dialect
+from mashumaro.dialects.msgpack import MessagePackDialect
 from mashumaro.exceptions import BadDialect
+from mashumaro.mixins.msgpack import DataClassMessagePackMixin
+from mashumaro.mixins.msgpack import default_encoder as msgpack_encoder
 from mashumaro.types import SerializationStrategy
 
 from .conftest import fake_add_from_dict
@@ -188,6 +191,13 @@ class DataClassWithUnionWithDialectSupport(DataClassDictMixin):
 
     class Config(BaseConfig):
         code_generation_options = [ADD_DIALECT_SUPPORT]
+
+
+@dataclass
+class MessagePackDataClass(DataClassMessagePackMixin):
+    b: bytes
+    bb: bytearray
+    dep: DataClassWithoutDialects
 
 
 def test_default_dialect():
@@ -875,3 +885,20 @@ def test_dialect_with_inheritance():
     )
     assert entity1.to_dict(dialect=FormattedDialect) == {"dt1": formatted}
     assert entity2.to_dict(dialect=FormattedDialect) == {"dt2": formatted}
+
+
+def test_msgpack_dialect_class_with_dependency_without_dialect():
+    dt = date(2022, 6, 8)
+    obj = MessagePackDataClass(
+        b=b"123",
+        bb=bytearray([4, 5, 6]),
+        dep=DataClassWithoutDialects(dt, 123),
+    )
+    d = {
+        "b": b"123",
+        "bb": bytearray([4, 5, 6]),
+        "dep": {"dt": "2022-06-08", "i": 123},
+    }
+    encoded = msgpack_encoder(d)
+    assert obj.to_msgpack() == encoded
+    assert MessagePackDataClass.from_msgpack(encoded) == obj
