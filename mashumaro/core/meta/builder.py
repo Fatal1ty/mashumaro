@@ -346,28 +346,39 @@ class CodeBuilder:
                     )
                 else:
                     self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
-            self.add_line("try:")
-            with self.indent():
+            filtered_fields = []
+            for fname, ftype in field_types.items():
+                field = self.dataclass_fields.get(fname)
+                if field and not field.init:
+                    continue
+                filtered_fields.append((fname, ftype))
+            if filtered_fields:
+                self.add_line("try:")
+                with self.indent():
+                    self.add_line("kwargs = {}")
+                    for fname, ftype in filtered_fields:
+                        self._add_type_modules(ftype)
+                        metadata = self.metadatas.get(fname, {})
+                        alias = metadata.get("alias")
+                        if alias is None:
+                            alias = config.aliases.get(fname)
+                        self._from_dict_set_value(
+                            fname, ftype, metadata, alias
+                        )
+                self.add_line("except AttributeError:")
+                with self.indent():
+                    self.add_line("if not isinstance(d, dict):")
+                    with self.indent():
+                        self.add_line(
+                            f"raise ValueError('Argument for "
+                            f"{type_name(self.cls)}.from_dict method "
+                            f"should be a dict instance') from None"
+                        )
+                    self.add_line("else:")
+                    with self.indent():
+                        self.add_line("raise")
+            else:
                 self.add_line("kwargs = {}")
-                for fname, ftype in field_types.items():
-                    self._add_type_modules(ftype)
-                    metadata = self.metadatas.get(fname, {})
-                    alias = metadata.get("alias")
-                    if alias is None:
-                        alias = config.aliases.get(fname)
-                    self._from_dict_set_value(fname, ftype, metadata, alias)
-            self.add_line("except AttributeError:")
-            with self.indent():
-                self.add_line("if not isinstance(d, dict):")
-                with self.indent():
-                    self.add_line(
-                        f"raise ValueError('Argument for "
-                        f"{type_name(self.cls)}.from_dict method "
-                        f"should be a dict instance') from None"
-                    )
-                self.add_line("else:")
-                with self.indent():
-                    self.add_line("raise")
             post_deserialize = self.get_declared_hook(__POST_DESERIALIZE__)
             if post_deserialize:
                 if not isinstance(post_deserialize, classmethod):
