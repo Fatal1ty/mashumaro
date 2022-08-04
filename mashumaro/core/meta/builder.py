@@ -348,7 +348,8 @@ class CodeBuilder:
                     self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
             filtered_fields = []
             for fname, ftype in field_types.items():
-                field = self.dataclass_fields.get(fname)
+                field = self.dataclass_fields.get(fname)  # type: ignore
+                # https://github.com/python/mypy/issues/1362
                 if field and not field.init:
                     continue
                 filtered_fields.append((fname, ftype))
