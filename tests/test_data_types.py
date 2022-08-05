@@ -1306,3 +1306,17 @@ def test_typed_dict_optional_keys_with_optional():
     obj = DataClass({"x": 33, "y": 42})
     assert DataClass.from_dict({"x": {"x": 33, "y": 42}}) == obj
     assert obj.to_dict()
+
+
+def test_dataclass_with_init_false_field():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(init=False)
+
+        def __post_init__(self):
+            self.x = 42
+
+    obj = DataClass()
+    assert obj.to_dict() == {"x": 42}
+    assert DataClass.from_dict({"x": 42}) == obj
+    assert DataClass.from_dict({}) == obj
