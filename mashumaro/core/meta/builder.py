@@ -30,7 +30,7 @@ from mashumaro.config import (
     TO_DICT_ADD_OMIT_NONE_FLAG,
     BaseConfig,
 )
-from mashumaro.core.const import PY_39_MIN
+from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.helpers import *  # noqa
 from mashumaro.core.meta.helpers import (
     get_args,
@@ -836,10 +836,10 @@ class CodeBuilder:
             flags = self.get_to_dict_flags(ftype)
             return f"{value_name}.{method_name}({flags})"
 
-        if is_special_typing_primitive(origin_type):
-            if origin_type is typing.Any:
-                return value_name
-            elif is_union(ftype):
+        if origin_type is typing.Any:
+            return value_name
+        elif is_special_typing_primitive(origin_type):
+            if is_union(ftype):
                 args = get_args(ftype)
                 field_type_vars = self._get_field_type_vars(fname)
                 if is_optional(ftype, field_type_vars):
@@ -1162,10 +1162,10 @@ class CodeBuilder:
             )
             return f"{type_name(origin_type)}.{method_name}({method_args})"
 
-        if is_special_typing_primitive(origin_type):
-            if origin_type is typing.Any:
-                return value_name
-            elif is_union(ftype):
+        if origin_type is typing.Any:
+            return value_name
+        elif is_special_typing_primitive(origin_type):
+            if is_union(ftype):
                 args = get_args(ftype)
                 field_type_vars = self._get_field_type_vars(fname)
                 if is_optional(ftype, field_type_vars):
@@ -1561,9 +1561,13 @@ class CodeBuilder:
     def _pack_tuple(self, fname, value_name, args, parent, metadata) -> str:
         if not args:
             args = [typing.Any, ...]
-        if len(args) == 1 and args[0] == ():
-            return "[]"
-        elif len(args) == 2 and args[1] is Ellipsis:
+        elif len(args) == 1 and args[0] == ():
+            if PY_311_MIN:
+                # https://github.com/python/cpython/pull/31836
+                args = [typing.Any, ...]
+            else:
+                return "[]"
+        if len(args) == 2 and args[1] is Ellipsis:
             packer = self._pack_value(
                 fname,
                 args[0],
@@ -1590,9 +1594,13 @@ class CodeBuilder:
     def _unpack_tuple(self, fname, value_name, args, parent, metadata) -> str:
         if not args:
             args = [typing.Any, ...]
-        if len(args) == 1 and args[0] == ():
-            return "()"
-        elif len(args) == 2 and args[1] is Ellipsis:
+        elif len(args) == 1 and args[0] == ():
+            if PY_311_MIN:
+                # https://github.com/python/cpython/pull/31836
+                args = [typing.Any, ...]
+            else:
+                return "()"
+        if len(args) == 2 and args[1] is Ellipsis:
             unpacker = self._unpack_field_value(
                 fname,
                 args[0],

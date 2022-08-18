@@ -9,7 +9,7 @@ import pytest
 from mashumaro import DataClassDictMixin
 from mashumaro.core.const import PY_37_MIN
 from mashumaro.exceptions import (
-    InvalidFieldValue,
+    UnserializableField,
     UnsupportedDeserializationEngine,
     UnsupportedSerializationEngine,
 )
@@ -198,16 +198,20 @@ def test_derived_dataclass_metadata_deserialize_option():
 
 
 def test_derived_dataclass_metadata_deserialize_option_removed():
+    class MyClass:
+        pass
+
     @dataclass
     class A:
-        x: datetime = field(metadata={"deserialize": ciso8601.parse_datetime})
+        x: MyClass = field(
+            metadata={"deserialize": MyClass, "serialize": lambda obj: obj.i}
+        )
 
-    @dataclass
-    class B(A, DataClassDictMixin):
-        x: datetime
+    with pytest.raises(UnserializableField):
 
-    with pytest.raises(InvalidFieldValue):
-        B.from_dict({"x": "2021-01-02T03:04:05Z", "y": "2021-01-02T03:04:05Z"})
+        @dataclass
+        class _(A, DataClassDictMixin):
+            x: MyClass
 
 
 def test_bytearray_overridden():

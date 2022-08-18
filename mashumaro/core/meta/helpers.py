@@ -19,6 +19,7 @@ from mashumaro.core.const import (
     PY_38_MIN,
     PY_39_MIN,
     PY_310_MIN,
+    PY_311_MIN,
 )
 from mashumaro.dialect import Dialect
 
