@@ -1,25 +1,18 @@
-from typing import Any, Dict, Type, TypeVar
+from typing import Any, Callable, Dict, Type, TypeVar
 
 import msgpack
-from typing_extensions import Protocol
 
 from mashumaro.dialects.msgpack import MessagePackDialect
 from mashumaro.mixins.dict import DataClassDictMixin
 
-EncodedData = bytes
 T = TypeVar("T", bound="DataClassMessagePackMixin")
 
 DEFAULT_DICT_PARAMS = {"dialect": MessagePackDialect}
 
 
-class Encoder(Protocol):  # pragma no cover
-    def __call__(self, o, **kwargs) -> EncodedData:
-        ...
-
-
-class Decoder(Protocol):  # pragma no cover
-    def __call__(self, packed: EncodedData, **kwargs) -> Dict[Any, Any]:
-        ...
+EncodedData = bytes
+Encoder = Callable[[Any], EncodedData]
+Decoder = Callable[[EncodedData], Dict[Any, Any]]
 
 
 def default_encoder(data) -> EncodedData:
@@ -35,7 +28,7 @@ class DataClassMessagePackMixin(DataClassDictMixin):
 
     def to_msgpack(
         self: T,
-        encoder: Encoder = default_encoder,  # type: ignore
+        encoder: Encoder = default_encoder,
         **to_dict_kwargs,
     ) -> EncodedData:
 
@@ -47,7 +40,7 @@ class DataClassMessagePackMixin(DataClassDictMixin):
     def from_msgpack(
         cls: Type[T],
         data: EncodedData,
-        decoder: Decoder = default_decoder,  # type: ignore
+        decoder: Decoder = default_decoder,
         **from_dict_kwargs,
     ) -> T:
         return cls.from_dict(

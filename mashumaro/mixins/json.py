@@ -1,22 +1,14 @@
 import json
-from typing import Any, Dict, Type, TypeVar, Union
-
-from typing_extensions import Protocol
+from typing import Any, Callable, Dict, Type, TypeVar, Union
 
 from mashumaro.mixins.dict import DataClassDictMixin
 
-EncodedData = Union[str, bytes, bytearray]
 T = TypeVar("T", bound="DataClassJSONMixin")
 
 
-class Encoder(Protocol):  # pragma no cover
-    def __call__(self, obj, **kwargs) -> EncodedData:
-        ...
-
-
-class Decoder(Protocol):  # pragma no cover
-    def __call__(self, s: EncodedData, **kwargs) -> Dict[Any, Any]:
-        ...
+EncodedData = Union[str, bytes, bytearray]
+Encoder = Callable[[Any], EncodedData]
+Decoder = Callable[[EncodedData], Dict[Any, Any]]
 
 
 class DataClassJSONMixin(DataClassDictMixin):
