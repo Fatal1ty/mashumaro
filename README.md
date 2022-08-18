@@ -28,6 +28,7 @@ Table of contents
   * [`DataClassJSONMixin`](#dataclassjsonmixin)
   * [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
   * [`DataClassYAMLMixin`](#dataclassyamlmixin)
+  * [`DataClassTOMLMixin`](#dataclasstomlmixin)
 * [Customization](#customization)
     * [`SerializableType` interface](#serializabletype-interface)
     * [Field options](#field-options)
@@ -86,6 +87,7 @@ following formats:
 * [JSON](https://www.json.org)
 * [YAML](https://yaml.org)
 * [MessagePack](https://msgpack.org)
+* [TOML](https://toml.io)
 
 Plain dict can be useful when you need to pass a dict object to a
 third-party library, such as a client for MongoDB.
@@ -386,6 +388,27 @@ You can install it manually or using an extra option for mashumaro:
 
 ```shell
 pip install mashumaro[yaml]
+```
+
+#### [`DataClassTOMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L20)
+
+Can be imported as:
+```python
+from mashumaro.mixins.toml import DataClassTOMLMixin
+```
+
+This mixins adds TOML serialization functionality to a dataclass.
+It adds methods `from_toml` and `to_toml`.
+
+In order to use this mixin, the [`tomli`](https://pypi.org/project/tomli/) and
+[`tomli-w`](https://pypi.org/project/tomli-w/) packages must be installed.
+In Python 3.11+, `tomli` is included as
+[`tomlib`](https://docs.python.org/3.11/library/tomllib.html) standard library
+module and can be used my this mixin.
+You can install the missing packages manually or using an extra option for mashumaro:
+
+```shell
+pip install mashumaro[toml]
 ```
 
 Customization

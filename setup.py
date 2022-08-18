@@ -35,6 +35,7 @@ setup(
     extras_require={
         "msgpack": ["msgpack>=0.5.6"],
         "yaml": ["pyyaml>=3.13"],
+        "toml": ["tomli-w>=1.0", "tomli>=1.1.0;python_version<'3.11'"],
     },
     zip_safe=False,
 )
