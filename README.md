@@ -74,7 +74,7 @@ $ pip install mashumaro
 Changelog
 --------------------------------------------------------------------------------
 
-This project follows the principles of [Semantic Versioning](https://semver.org).  
+This project follows the principles of [Semantic Versioning](https://semver.org).
 Changelog is available on [GitHub Releases page](https://github.com/Fatal1ty/mashumaro/releases).
 
 Supported serialization formats
@@ -346,7 +346,7 @@ The core mixin that adds serialization functionality to a dataclass.
 This mixin is a base class for all other serialization format mixins.
 It adds methods `from_dict` and `to_dict`.
 
-#### [`DataClassJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L22)
+#### [`DataClassJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L14)
 
 Can be imported as:
 ```python
@@ -356,7 +356,7 @@ from mashumaro.mixins.json import DataClassJSONMixin
 This mixins adds json serialization functionality to a dataclass.
 It adds methods `from_json` and `to_json`.
 
-#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L33)
+#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L26)
 
 Can be imported as:
 ```python
@@ -373,7 +373,7 @@ You can install it manually or using an extra option for mashumaro:
 pip install mashumaro[msgpack]
 ```
 
-#### [`DataClassYAMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L34)
+#### [`DataClassYAMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L27)
 
 Can be imported as:
 ```python
