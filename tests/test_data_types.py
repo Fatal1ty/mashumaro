@@ -1103,7 +1103,7 @@ def test_dataclass_with_different_tuples():
 @pytest.mark.skipif(
     PY_311_MIN, reason="https://github.com/python/cpython/pull/31836"
 )
-def test_dataclass_with_empty_tuple():
+def test_dataclass_with_empty_tuple_before_3_11():
     @dataclass
     class DataClass(DataClassDictMixin):
         x: Tuple[()]
@@ -1119,6 +1119,28 @@ def test_dataclass_with_empty_tuple():
     )
     assert obj.to_dict() == {
         "x": [],
+    }
+
+
+@pytest.mark.skipif(
+    not PY_311_MIN, reason="https://github.com/python/cpython/pull/31836"
+)
+def test_dataclass_with_empty_tuple_since_3_11():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Tuple[()]
+
+    obj = DataClass(x=(1, 2, 3))
+    assert (
+        DataClass.from_dict(
+            {
+                "x": [1, 2, 3],
+            }
+        )
+        == obj
+    )
+    assert obj.to_dict() == {
+        "x": [1, 2, 3],
     }
 
 
