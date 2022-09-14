@@ -255,3 +255,7 @@ if PY_37_MIN:
 
 
 MyDatetimeNewType = NewType("MyDatetimeNewType", datetime)
+
+@dataclass
+class MyDataClassWithChild(DataClassDictMixin):
+    child: MyDataClass

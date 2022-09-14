@@ -476,6 +476,9 @@ class CodeBuilder:
                     self.add_line("try:")
                     with self.indent():
                         self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+                    self.add_line("except InvalidFieldValue as e:")
+                    with self.indent():
+                        self.add_line("raise e")
                     self.add_line("except Exception as e:")
                     with self.indent():
                         field_type = type_name(
@@ -494,6 +497,9 @@ class CodeBuilder:
                     self.add_line("try:")
                     with self.indent():
                         self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+                    self.add_line("except InvalidFieldValue as e:")
+                    with self.indent():
+                        self.add_line("raise e")
                     self.add_line("except Exception as e:")
                     with self.indent():
                         field_type = type_name(

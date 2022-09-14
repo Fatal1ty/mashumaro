@@ -1144,7 +1144,7 @@ def test_dataclass_with_typed_dict_required_and_optional_keys():
         {"int": 1, "str": "str"},
         {"float": 1.0, "str": "str"},
     ):
-        with pytest.raises(InvalidFieldValue):
+        with pytest.raises(invalidfieldvalue):
             DataClass.from_dict({"x": data})
 
     assert DataClass.from_dict(
@@ -1320,3 +1320,16 @@ def test_dataclass_with_init_false_field():
     assert obj.to_dict() == {"x": 42}
     assert DataClass.from_dict({"x": 42}) == obj
     assert DataClass.from_dict({}) == obj
+
+def test_dataclass_with_nested_bad_field():
+    from .entities import MyDataClassWithChild
+    from mashumaro.mixins.json import DataClassJSONMixin
+
+    @dataclass
+    class DataClass(DataClassJSONMixin):
+        x: int
+        child: MyDataClassWithChild
+
+    with pytest.raises(InvalidFieldValue) as exc_info:
+        obj = DataClass.from_dict({"x": 1, "child": {"child": {"a": "invalid", "b": 1}}})
+    assert exc_info.value.args[0] == "a"
