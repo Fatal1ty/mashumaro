@@ -361,7 +361,7 @@ from mashumaro.mixins.json import DataClassJSONMixin
 This mixins adds json serialization functionality to a dataclass.
 It adds methods `from_json` and `to_json`.
 
-#### [`DataClassORJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/orjson.py#L20)
+#### [`DataClassORJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/orjson.py#L32)
 
 Can be imported as:
 ```python
@@ -386,7 +386,7 @@ Using this mixin the following data types will be handled by
 * [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
 * [`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)
 
-#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L26)
+#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L39)
 
 Can be imported as:
 ```python
@@ -425,7 +425,7 @@ You can install it manually or using an extra option for mashumaro:
 pip install mashumaro[yaml]
 ```
 
-#### [`DataClassTOMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L20)
+#### [`DataClassTOMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L35)
 
 Can be imported as:
 ```python
