@@ -1562,7 +1562,7 @@ class CodeBuilder:
         if not args:
             args = [typing.Any, ...]
         elif len(args) == 1 and args[0] == ():
-            if PY_311_MIN:
+            if PY_311_MIN:  # pragma no cover
                 # https://github.com/python/cpython/pull/31836
                 args = [typing.Any, ...]
             else:
@@ -1595,7 +1595,7 @@ class CodeBuilder:
         if not args:
             args = [typing.Any, ...]
         elif len(args) == 1 and args[0] == ():
-            if PY_311_MIN:
+            if PY_311_MIN:  # pragma no cover
                 # https://github.com/python/cpython/pull/31836
                 args = [typing.Any, ...]
             else:
