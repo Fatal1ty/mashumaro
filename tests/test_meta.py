@@ -541,3 +541,65 @@ def test_type_name_literal():
         "tests.entities.MyIntEnum.a, tests.entities.MyFlag.a, "
         "tests.entities.MyIntFlag.a, 2, 3, 'b', 'c']"
     )
+
+
+def test_code_builder_get_pack_method_name():
+    builder = CodeBuilder(object)
+    arg_types = (int,)
+    arg_types_hash = builder._hash_arg_types((int,))
+    assert builder.get_pack_method_name() == "to_dict"
+    assert (
+        builder.get_pack_method_name(arg_types=arg_types)
+        == f"to_dict_{arg_types_hash}"
+    )
+    assert (
+        builder.get_pack_method_name(arg_types=arg_types, format_name="yaml")
+        == f"to_dict_yaml_{arg_types_hash}"
+    )
+    assert builder.get_pack_method_name(format_name="yaml") == "to_dict_yaml"
+    assert (
+        builder.get_pack_method_name(format_name="yaml", encoder=object)
+        == "to_yaml"
+    )
+    assert (
+        builder.get_pack_method_name(arg_types=arg_types, encoder=object)
+        == f"to_dict_{arg_types_hash}"
+    )
+    assert builder.get_pack_method_name(encoder=object) == "to_dict"
+    assert (
+        builder.get_pack_method_name(
+            arg_types=arg_types, format_name="yaml", encoder=object
+        )
+        == f"to_yaml"
+    )
+
+
+def test_code_builder_get_unpack_method_name():
+    builder = CodeBuilder(object)
+    arg_types = (int,)
+    arg_types_hash = builder._hash_arg_types((int,))
+    assert builder.get_unpack_method_name() == "from_dict"
+    assert (
+        builder.get_unpack_method_name(arg_types=arg_types)
+        == f"from_dict_{arg_types_hash}"
+    )
+    assert (
+        builder.get_unpack_method_name(arg_types=arg_types, format_name="yaml")
+        == f"from_dict_yaml_{arg_types_hash}"
+    )
+    assert builder.get_unpack_method_name(format_name="yaml") == "from_dict_yaml"
+    assert (
+        builder.get_unpack_method_name(format_name="yaml", decoder=object)
+        == "from_yaml"
+    )
+    assert (
+        builder.get_unpack_method_name(arg_types=arg_types, decoder=object)
+        == f"from_dict_{arg_types_hash}"
+    )
+    assert builder.get_unpack_method_name(decoder=object) == "from_dict"
+    assert (
+        builder.get_unpack_method_name(
+            arg_types=arg_types, format_name="yaml", decoder=object
+        )
+        == f"from_yaml"
+    )

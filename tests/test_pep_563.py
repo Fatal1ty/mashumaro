@@ -9,7 +9,7 @@ from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
 from mashumaro.dialect import Dialect
 from mashumaro.exceptions import UnresolvedTypeReferenceError
 
-from .conftest import fake_add_from_dict
+from .conftest import add_unpack_method
 
 
 @dataclass
@@ -79,7 +79,7 @@ def test_unresolved_type_with_disallowed_postponed_annotation_evaluation():
             class Config(BaseConfig):
                 allow_postponed_evaluation = False
 
-    with fake_add_from_dict:
+    with add_unpack_method:
         with pytest.raises(UnresolvedTypeReferenceError):
 
             @dataclass

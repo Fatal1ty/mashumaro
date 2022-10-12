@@ -56,7 +56,7 @@ from mashumaro.types import (
     SerializationStrategy,
 )
 
-from .conftest import fake_add_from_dict
+from .conftest import add_unpack_method
 from .entities import (
     CustomPath,
     DataClassWithoutMixin,
@@ -565,7 +565,7 @@ def test_unsupported_generic_field_types(x_type, generic_type):
             # noinspection PyTypeChecker
             x: generic_type[x_type]
 
-    with fake_add_from_dict:
+    with add_unpack_method:
         with pytest.raises(UnserializableField):
 
             @dataclass
@@ -584,7 +584,7 @@ def test_unsupported_generic_typing_primitives(x_type, generic_type):
             # noinspection PyTypeChecker
             x: generic_type[x_type]
 
-    with fake_add_from_dict:
+    with add_unpack_method:
         with pytest.raises(UnserializableDataError):
 
             @dataclass
@@ -601,7 +601,7 @@ def test_unsupported_field_types(x_type):
         class _(DataClassDictMixin):
             x: x_type
 
-    with fake_add_from_dict:
+    with add_unpack_method:
         with pytest.raises(UnserializableField):
 
             @dataclass
@@ -617,7 +617,7 @@ def test_unsupported_typing_primitives(x_type):
         class _(DataClassDictMixin):
             x: x_type
 
-    with fake_add_from_dict:
+    with add_unpack_method:
         with pytest.raises(UnserializableDataError):
 
             @dataclass
@@ -637,7 +637,7 @@ def test_data_class_as_mapping_key(generic_type):
         class _(DataClassDictMixin):
             x: generic_type[Key, int]
 
-    with fake_add_from_dict:
+    with add_unpack_method:
         with pytest.raises(UnserializableDataError):
 
             @dataclass
@@ -656,7 +656,7 @@ def test_data_class_as_mapping_key_for_counter():
         class _(DataClassDictMixin):
             x: Counter[Key]
 
-    with fake_add_from_dict:
+    with add_unpack_method:
         with pytest.raises(UnserializableDataError):
 
             @dataclass
@@ -675,7 +675,7 @@ def test_data_class_as_chain_map_key():
         class _(DataClassDictMixin):
             x: ChainMap[Key, int]
 
-    with fake_add_from_dict:
+    with add_unpack_method:
         with pytest.raises(UnserializableDataError):
 
             @dataclass
@@ -748,7 +748,7 @@ def test_weird_field_type():
         class _(DataClassDictMixin):
             x: 123
 
-    with fake_add_from_dict:
+    with add_unpack_method:
         with pytest.raises(UnserializableDataError):
 
             @dataclass
@@ -1007,7 +1007,7 @@ def test_dataclass_field_without_mixin():
         class _(DataClassDictMixin):
             p: DataClassWithoutMixin
 
-    with fake_add_from_dict:
+    with add_unpack_method:
         with pytest.raises(UnserializableField):
 
             @dataclass
