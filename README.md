@@ -365,7 +365,8 @@ from mashumaro.mixins.orjson import DataClassORJSONMixin
 ```
 
 This mixins adds json serialization functionality to a dataclass using
-a third-party `orjson` library. It adds methods `from_json`, `to_jsonb`, `to_json`.
+a third-party [`orjson`](https://pypi.org/project/orjson/) library.
+It adds methods `from_json`, `to_jsonb`, `to_json`.
 
 In order to use this mixin, the [`orjson`](https://pypi.org/project/orjson/) package must be installed.
 You can install it manually or using an extra option for mashumaro:
