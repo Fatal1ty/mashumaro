@@ -14,6 +14,14 @@ from typing import (
     Union,
 )
 
+try:
+    from enum import StrEnum
+except ImportError:  # pragma no cover
+
+    class StrEnum(str, Enum):
+        pass
+
+
 from typing_extensions import TypedDict
 
 from mashumaro import DataClassDictMixin
@@ -34,6 +42,11 @@ class MyEnum(Enum):
 
 
 class MyStrEnum(str, Enum):
+    a = "letter a"
+    b = "letter b"
+
+
+class MyNativeStrEnum(StrEnum):
     a = "letter a"
     b = "letter b"
 

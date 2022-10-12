@@ -42,7 +42,12 @@ from typing_extensions import OrderedDict
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
-from mashumaro.core.const import PEP_585_COMPATIBLE, PY_37_MIN, PY_39_MIN
+from mashumaro.core.const import (
+    PEP_585_COMPATIBLE,
+    PY_37_MIN,
+    PY_39_MIN,
+    PY_311_MIN,
+)
 from mashumaro.exceptions import (
     InvalidFieldValue,
     MissingField,
@@ -73,6 +78,7 @@ from .entities import (
     MyNamedTuple,
     MyNamedTupleWithDefaults,
     MyNamedTupleWithOptional,
+    MyNativeStrEnum,
     MyStrEnum,
     MyUntypedNamedTuple,
     SerializableTypeDataClass,
@@ -124,6 +130,7 @@ class Fixture:
     ENUM = MyEnum.a
     INT_ENUM = MyIntEnum.a
     STR_ENUM = MyStrEnum.a
+    STR_ENUM_NATIVE = MyNativeStrEnum.a
     FLAG = MyFlag.a
     INT_FLAG = MyIntFlag.a
     DATA_CLASS = MyDataClass(a=1, b=2)
@@ -203,6 +210,7 @@ inner_values = [
     (str, Fixture.STR, Fixture.STR),
     (MyEnum, Fixture.ENUM, Fixture.ENUM.value),
     (MyStrEnum, Fixture.STR_ENUM, Fixture.STR_ENUM.value),
+    (MyNativeStrEnum, Fixture.STR_ENUM_NATIVE, Fixture.STR_ENUM_NATIVE.value),
     (MyIntEnum, Fixture.INT_ENUM, Fixture.INT_ENUM.value),
     (MyFlag, Fixture.FLAG, Fixture.FLAG.value),
     (MyIntFlag, Fixture.INT_FLAG, Fixture.INT_FLAG.value),
@@ -1071,17 +1079,15 @@ def test_dataclass_with_different_tuples():
     @dataclass
     class DataClass(DataClassDictMixin):
         a: Tuple
-        b: Tuple[()]
         c: Tuple[int]
         d: Tuple[int, float, int]
         e: Tuple[int, ...]
 
-    obj = DataClass(a=(1, "2", 3.0), b=(), c=(1,), d=(1, 2.0, 3), e=(1, 2, 3))
+    obj = DataClass(a=(1, "2", 3.0), c=(1,), d=(1, 2.0, 3), e=(1, 2, 3))
     assert (
         DataClass.from_dict(
             {
                 "a": [1, "2", 3.0],
-                "b": [1, 2, 3],
                 "c": [1, 2, 3],
                 "d": ["1", "2.0", "3"],
                 "e": [1, 2, 3],
@@ -1091,10 +1097,53 @@ def test_dataclass_with_different_tuples():
     )
     assert obj.to_dict() == {
         "a": [1, "2", 3.0],
-        "b": [],
         "c": [1],
         "d": [1, 2.0, 3],
         "e": [1, 2, 3],
+    }
+
+
+@pytest.mark.skipif(
+    PY_311_MIN, reason="https://github.com/python/cpython/pull/31836"
+)
+def test_dataclass_with_empty_tuple_before_3_11():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Tuple[()]
+
+    obj = DataClass(x=())
+    assert (
+        DataClass.from_dict(
+            {
+                "x": [1, 2, 3],
+            }
+        )
+        == obj
+    )
+    assert obj.to_dict() == {
+        "x": [],
+    }
+
+
+@pytest.mark.skipif(
+    not PY_311_MIN, reason="https://github.com/python/cpython/pull/31836"
+)
+def test_dataclass_with_empty_tuple_since_3_11():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Tuple[()]
+
+    obj = DataClass(x=(1, 2, 3))
+    assert (
+        DataClass.from_dict(
+            {
+                "x": [1, 2, 3],
+            }
+        )
+        == obj
+    )
+    assert obj.to_dict() == {
+        "x": [1, 2, 3],
     }
 
 
