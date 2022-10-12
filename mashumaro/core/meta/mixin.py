@@ -1,5 +1,4 @@
 from mashumaro.core.meta.builder import CodeBuilder
-from mashumaro.exceptions import UnresolvedTypeReferenceError
 
 
 def compile_mixin_unpacker(cls, format_name, dialect, decoder):
@@ -9,12 +8,7 @@ def compile_mixin_unpacker(cls, format_name, dialect, decoder):
         decoder=decoder,
         default_dialect=dialect,
     )
-    config = builder.get_config()
-    try:
-        builder.add_unpack_method()
-    except UnresolvedTypeReferenceError:
-        if not config.allow_postponed_evaluation:
-            raise
+    builder.add_unpack_method()
 
 
 def compile_mixin_packer(self, format_name, dialect, encoder):
@@ -24,12 +18,7 @@ def compile_mixin_packer(self, format_name, dialect, encoder):
         encoder=encoder,
         default_dialect=dialect,
     )
-    config = builder.get_config()
-    try:
-        builder.add_pack_method()
-    except UnresolvedTypeReferenceError:
-        if not config.allow_postponed_evaluation:
-            raise
+    builder.add_pack_method()
 
 
 __all__ = ["compile_mixin_unpacker", "compile_mixin_packer"]
