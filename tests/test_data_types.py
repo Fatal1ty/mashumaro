@@ -78,6 +78,7 @@ from .entities import (
     MyNamedTuple,
     MyNamedTupleWithDefaults,
     MyNamedTupleWithOptional,
+    MyNativeStrEnum,
     MyStrEnum,
     MyUntypedNamedTuple,
     SerializableTypeDataClass,
@@ -129,6 +130,7 @@ class Fixture:
     ENUM = MyEnum.a
     INT_ENUM = MyIntEnum.a
     STR_ENUM = MyStrEnum.a
+    STR_ENUM_NATIVE = MyNativeStrEnum.a
     FLAG = MyFlag.a
     INT_FLAG = MyIntFlag.a
     DATA_CLASS = MyDataClass(a=1, b=2)
@@ -208,6 +210,7 @@ inner_values = [
     (str, Fixture.STR, Fixture.STR),
     (MyEnum, Fixture.ENUM, Fixture.ENUM.value),
     (MyStrEnum, Fixture.STR_ENUM, Fixture.STR_ENUM.value),
+    (MyNativeStrEnum, Fixture.STR_ENUM_NATIVE, Fixture.STR_ENUM_NATIVE.value),
     (MyIntEnum, Fixture.INT_ENUM, Fixture.INT_ENUM.value),
     (MyFlag, Fixture.FLAG, Fixture.FLAG.value),
     (MyIntFlag, Fixture.INT_FLAG, Fixture.INT_FLAG.value),

@@ -52,6 +52,7 @@ from .entities import (
     MyGenericList,
     MyIntEnum,
     MyIntFlag,
+    MyNativeStrEnum,
     MyStrEnum,
     T,
     TAny,
@@ -529,6 +530,7 @@ def test_type_name_literal():
             None,
             MyEnum.a,
             MyStrEnum.a,
+            MyNativeStrEnum.a,
             MyIntEnum.a,
             MyFlag.a,
             MyIntFlag.a,
@@ -538,6 +540,6 @@ def test_type_name_literal():
     ) == (
         f"{module_name}.Literal[1, 'a', b'\\x00', True, False, None, "
         "tests.entities.MyEnum.a, tests.entities.MyStrEnum.a, "
-        "tests.entities.MyIntEnum.a, tests.entities.MyFlag.a, "
-        "tests.entities.MyIntFlag.a, 2, 3, 'b', 'c']"
+        "tests.entities.MyNativeStrEnum.a, tests.entities.MyIntEnum.a, "
+        "tests.entities.MyFlag.a, tests.entities.MyIntFlag.a, 2, 3, 'b', 'c']"
     )

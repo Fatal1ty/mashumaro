@@ -143,6 +143,7 @@ for standard interpreter types from [`types`](https://docs.python.org/3/library/
 for enumerations based on classes from the standard [`enum`](https://docs.python.org/3/library/enum.html) module:
 * [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
 * [`IntEnum`](https://docs.python.org/3/library/enum.html#enum.IntEnum)
+* [`StrEnum`](https://docs.python.org/3.11/library/enum.html#enum.StrEnum)
 * [`Flag`](https://docs.python.org/3/library/enum.html#enum.Flag)
 * [`IntFlag`](https://docs.python.org/3/library/enum.html#enum.IntFlag)
 
