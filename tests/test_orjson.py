@@ -28,7 +28,6 @@ serialization_strategy = {
         "serialize": lambda x: f"uuid:{x}",
         "deserialize": lambda s: UUID(s[5:]),
     },
-
 }
 
 
@@ -79,14 +78,14 @@ def test_orjson_with_serialization_strategy():
         "datetime": [_datetime_dumped],
         "date": [_date_dumped],
         "time": [_time_dumped],
-        "uuid": [_uuid_dumped]
+        "uuid": [_uuid_dumped],
     }
     orjson_dumped = orjson.dumps(
         {
             "datetime": [_datetime_dumped],
             "date": [_date_dumped],
             "time": [_time_dumped],
-            "uuid": [_uuid_dumped]
+            "uuid": [_uuid_dumped],
         }
     )
     assert DataClass.from_dict(dict_dumped) == instance
@@ -119,14 +118,14 @@ def test_orjson_with_dialect():
         "datetime": [_datetime_dumped],
         "date": [_date_dumped],
         "time": [_time_dumped],
-        "uuid": [_uuid_dumped]
+        "uuid": [_uuid_dumped],
     }
     orjson_dumped = orjson.dumps(
         {
             "datetime": [_datetime_dumped],
             "date": [_date_dumped],
             "time": [_time_dumped],
-            "uuid": [_uuid_dumped]
+            "uuid": [_uuid_dumped],
         }
     )
     assert DataClass.from_dict(dict_dumped) == instance
@@ -173,7 +172,7 @@ def test_orjson_with_dialect_support():
             "datetime": [_datetime],
             "date": [_date],
             "time": [_time],
-            "uuid": [_uuid]
+            "uuid": [_uuid],
         }
     )
     orjson_dumped_dialect = orjson.dumps(
@@ -181,7 +180,7 @@ def test_orjson_with_dialect_support():
             "datetime": [_datetime_dumped],
             "date": [_date_dumped],
             "time": [_time_dumped],
-            "uuid": [_uuid_dumped]
+            "uuid": [_uuid_dumped],
         }
     )
     assert DataClass.from_dict(dict_dumped) == instance
@@ -190,7 +189,8 @@ def test_orjson_with_dialect_support():
     )
     assert DataClass.from_json(orjson_dumped) == instance
     assert (
-        DataClass.from_json(orjson_dumped_dialect, dialect=MyDialect) == instance
+        DataClass.from_json(orjson_dumped_dialect, dialect=MyDialect)
+        == instance
     )
     assert instance.to_dict() == dict_dumped
     assert instance.to_dict(dialect=MyDialect) == dict_dumped_dialect
