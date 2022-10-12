@@ -12,7 +12,7 @@ from mashumaro.dialect import Dialect
 from mashumaro.helper import pass_through
 from mashumaro.mixins.dict import DataClassDictMixin
 
-T = TypeVar("T", bound="DataClassJSONMixin")
+T = TypeVar("T", bound="DataClassORJSONMixin")
 
 
 EncodedData = Union[str, bytes, bytearray]
