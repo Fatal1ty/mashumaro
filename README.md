@@ -244,9 +244,13 @@ How does it work?
 --------------------------------------------------------------------------------
 
 This framework works by taking the schema of the data and generating a
-specific parser and builder for exactly that schema.
-This is much faster than inspection of field types on every call of parsing or
-building at runtime.
+specific parser and builder for exactly that schema, taking into account the
+specifics of the serialization format. This is much faster than inspection of
+field types on every call of parsing or building at runtime.
+
+These specific parsers and builders are presented by the corresponding
+`from_*` and `to_*` methods. They are compiled during import time (or at
+runtime in some cases) and are set as attributes to your dataclasses.
 
 Benchmark
 --------------------------------------------------------------------------------
