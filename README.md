@@ -26,8 +26,10 @@ Table of contents
 * [Serialization mixins](#serialization-mixins)
   * [`DataClassDictMixin`](#dataclassdictmixin)
   * [`DataClassJSONMixin`](#dataclassjsonmixin)
+  * [`DataClassORJSONMixin`](#dataclassorjsonmixin)
   * [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
   * [`DataClassYAMLMixin`](#dataclassyamlmixin)
+  * [`DataClassTOMLMixin`](#dataclasstomlmixin)
 * [Customization](#customization)
     * [`SerializableType` interface](#serializabletype-interface)
     * [Field options](#field-options)
@@ -73,7 +75,7 @@ $ pip install mashumaro
 Changelog
 --------------------------------------------------------------------------------
 
-This project follows the principles of [Semantic Versioning](https://semver.org).  
+This project follows the principles of [Semantic Versioning](https://semver.org).
 Changelog is available on [GitHub Releases page](https://github.com/Fatal1ty/mashumaro/releases).
 
 Supported serialization formats
@@ -86,6 +88,7 @@ following formats:
 * [JSON](https://www.json.org)
 * [YAML](https://yaml.org)
 * [MessagePack](https://msgpack.org)
+* [TOML](https://toml.io)
 
 Plain dict can be useful when you need to pass a dict object to a
 third-party library, such as a client for MongoDB.
@@ -241,9 +244,13 @@ How does it work?
 --------------------------------------------------------------------------------
 
 This framework works by taking the schema of the data and generating a
-specific parser and builder for exactly that schema.
-This is much faster than inspection of field types on every call of parsing or
-building at runtime.
+specific parser and builder for exactly that schema, taking into account the
+specifics of the serialization format. This is much faster than inspection of
+field types on every call of parsing or building at runtime.
+
+These specific parsers and builders are presented by the corresponding
+`from_*` and `to_*` methods. They are compiled during import time (or at
+runtime in some cases) and are set as attributes to your dataclasses.
 
 Benchmark
 --------------------------------------------------------------------------------
@@ -344,7 +351,7 @@ The core mixin that adds serialization functionality to a dataclass.
 This mixin is a base class for all other serialization format mixins.
 It adds methods `from_dict` and `to_dict`.
 
-#### [`DataClassJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L22)
+#### [`DataClassJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L14)
 
 Can be imported as:
 ```python
@@ -354,7 +361,32 @@ from mashumaro.mixins.json import DataClassJSONMixin
 This mixins adds json serialization functionality to a dataclass.
 It adds methods `from_json` and `to_json`.
 
-#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L33)
+#### [`DataClassORJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/orjson.py#L20)
+
+Can be imported as:
+```python
+from mashumaro.mixins.orjson import DataClassORJSONMixin
+```
+
+This mixins adds json serialization functionality to a dataclass using
+a third-party [`orjson`](https://pypi.org/project/orjson/) library.
+It adds methods `from_json`, `to_jsonb`, `to_json`.
+
+In order to use this mixin, the [`orjson`](https://pypi.org/project/orjson/) package must be installed.
+You can install it manually or using an extra option for mashumaro:
+
+```shell
+pip install mashumaro[orjson]
+```
+
+Using this mixin the following data types will be handled by
+[`orjson`](https://pypi.org/project/orjson/) library by default:
+* [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime)
+* [`date`](https://docs.python.org/3/library/datetime.html#datetime.date)
+* [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
+* [`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)
+
+#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L26)
 
 Can be imported as:
 ```python
@@ -371,7 +403,12 @@ You can install it manually or using an extra option for mashumaro:
 pip install mashumaro[msgpack]
 ```
 
-#### [`DataClassYAMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L34)
+Using this mixin the following data types will be handled by
+[`msgpack`](https://pypi.org/project/msgpack/) library by default:
+* [`bytes`](https://docs.python.org/3/library/stdtypes.html#bytes)
+* [`bytearray`](https://docs.python.org/3/library/stdtypes.html#bytearray)
+
+#### [`DataClassYAMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L27)
 
 Can be imported as:
 ```python
@@ -387,6 +424,34 @@ You can install it manually or using an extra option for mashumaro:
 ```shell
 pip install mashumaro[yaml]
 ```
+
+#### [`DataClassTOMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L20)
+
+Can be imported as:
+```python
+from mashumaro.mixins.toml import DataClassTOMLMixin
+```
+
+This mixins adds TOML serialization functionality to a dataclass.
+It adds methods `from_toml` and `to_toml`.
+
+In order to use this mixin, the [`tomli`](https://pypi.org/project/tomli/) and
+[`tomli-w`](https://pypi.org/project/tomli-w/) packages must be installed.
+In Python 3.11+, `tomli` is included as
+[`tomlib`](https://docs.python.org/3.11/library/tomllib.html) standard library
+module and can be used my this mixin.
+You can install the missing packages manually or using an extra option for mashumaro:
+
+```shell
+pip install mashumaro[toml]
+```
+
+Using this mixin the following data types will be handled by
+[`tomli`](https://pypi.org/project/tomli/)/
+[`tomli-w`](https://pypi.org/project/tomli-w/) library by default:
+* [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime)
+* [`date`](https://docs.python.org/3/library/datetime.html#datetime.date)
+* [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
 
 Customization
 --------------------------------------------------------------------------------

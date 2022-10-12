@@ -8,13 +8,12 @@ from typing_extensions import TypedDict
 from mashumaro import DataClassDictMixin
 from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
 from mashumaro.dialect import Dialect
-from mashumaro.dialects.msgpack import MessagePackDialect
 from mashumaro.exceptions import BadDialect
 from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 from mashumaro.mixins.msgpack import default_encoder as msgpack_encoder
 from mashumaro.types import SerializationStrategy
 
-from .conftest import fake_add_from_dict
+from .conftest import add_unpack_method
 
 T_Date = TypeVar("T_Date", bound=date)
 
@@ -269,7 +268,7 @@ def test_bad_default_dialect():
             class Config(BaseConfig):
                 dialect = int
 
-    with fake_add_from_dict:
+    with add_unpack_method:
         with pytest.raises(BadDialect):
 
             @dataclass

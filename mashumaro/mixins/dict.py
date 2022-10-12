@@ -13,12 +13,12 @@ class DataClassDictMixin:
         builder = CodeBuilder(cls)
         config = builder.get_config()
         try:
-            builder.add_from_dict()
+            builder.add_unpack_method()
         except UnresolvedTypeReferenceError:
             if not config.allow_postponed_evaluation:
                 raise
         try:
-            builder.add_to_dict()
+            builder.add_pack_method()
         except UnresolvedTypeReferenceError:
             if not config.allow_postponed_evaluation:
                 raise

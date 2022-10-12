@@ -33,8 +33,13 @@ setup(
         "typing_extensions",
     ],
     extras_require={
+        "orjson": ["orjson"],
         "msgpack": ["msgpack>=0.5.6"],
         "yaml": ["pyyaml>=3.13"],
+        "toml": [
+            "tomli-w>=1.0;python_version>='3.7'",
+            "tomli>=1.1.0;python_version<'3.11' and python_version>='3.7'",
+        ],
     },
     zip_safe=False,
 )
