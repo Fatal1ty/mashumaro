@@ -587,7 +587,9 @@ def test_code_builder_get_unpack_method_name():
         builder.get_unpack_method_name(arg_types=arg_types, format_name="yaml")
         == f"from_dict_yaml_{arg_types_hash}"
     )
-    assert builder.get_unpack_method_name(format_name="yaml") == "from_dict_yaml"
+    assert (
+        builder.get_unpack_method_name(format_name="yaml") == "from_dict_yaml"
+    )
     assert (
         builder.get_unpack_method_name(format_name="yaml", decoder=object)
         == "from_yaml"
