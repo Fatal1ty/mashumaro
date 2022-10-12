@@ -26,6 +26,7 @@ Table of contents
 * [Serialization mixins](#serialization-mixins)
   * [`DataClassDictMixin`](#dataclassdictmixin)
   * [`DataClassJSONMixin`](#dataclassjsonmixin)
+  * [`DataClassORJSONMixin`](#dataclassorjsonmixin)
   * [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
   * [`DataClassYAMLMixin`](#dataclassyamlmixin)
   * [`DataClassTOMLMixin`](#dataclasstomlmixin)
@@ -356,6 +357,30 @@ from mashumaro.mixins.json import DataClassJSONMixin
 This mixins adds json serialization functionality to a dataclass.
 It adds methods `from_json` and `to_json`.
 
+#### [`DataClassORJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/orjson.py#L20)
+
+Can be imported as:
+```python
+from mashumaro.mixins.orjson import DataClassORJSONMixin
+```
+
+This mixins adds json serialization functionality to a dataclass using
+a third-party `orjson` library. It adds methods `from_json`, `to_jsonb`, `to_json`.
+
+In order to use this mixin, the [`orjson`](https://pypi.org/project/orjson/) package must be installed.
+You can install it manually or using an extra option for mashumaro:
+
+```shell
+pip install mashumaro[orjson]
+```
+
+Using this mixin the following data types will be handled by
+[`orjson`](https://pypi.org/project/orjson/) library by default:
+* [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime)
+* [`date`](https://docs.python.org/3/library/datetime.html#datetime.date)
+* [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
+* [`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)
+
 #### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L26)
 
 Can be imported as:
@@ -372,6 +397,11 @@ You can install it manually or using an extra option for mashumaro:
 ```shell
 pip install mashumaro[msgpack]
 ```
+
+Using this mixin the following data types will be handled by
+[`msgpack`](https://pypi.org/project/msgpack/) library by default:
+* [`bytes`](https://docs.python.org/3/library/stdtypes.html#bytes)
+* [`bytearray`](https://docs.python.org/3/library/stdtypes.html#bytearray)
 
 #### [`DataClassYAMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L27)
 
@@ -410,6 +440,13 @@ You can install the missing packages manually or using an extra option for mashu
 ```shell
 pip install mashumaro[toml]
 ```
+
+Using this mixin the following data types will be handled by
+[`tomli`](https://pypi.org/project/tomli/)/
+[`tomli-w`](https://pypi.org/project/tomli-w/) library by default:
+* [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime)
+* [`date`](https://docs.python.org/3/library/datetime.html#datetime.date)
+* [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
 
 Customization
 --------------------------------------------------------------------------------

@@ -33,6 +33,7 @@ setup(
         "typing_extensions",
     ],
     extras_require={
+        "orjson": ["orjson"],
         "msgpack": ["msgpack>=0.5.6"],
         "yaml": ["pyyaml>=3.13"],
         "toml": [
