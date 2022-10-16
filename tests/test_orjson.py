@@ -33,6 +33,11 @@ class MyDialect(Dialect):
     serialization_strategy = serialization_strategy
 
 
+def test_data_class_orjson_mixin():
+    assert DataClassORJSONMixin.from_json("") is None
+    assert DataClassORJSONMixin().to_jsonb() is None
+
+
 def test_to_orjson():
     @dataclass
     class DataClass(DataClassORJSONMixin):

@@ -34,6 +34,7 @@ from mashumaro.core.meta.helpers import (
     is_literal,
     is_new_type,
     is_optional,
+    is_self,
     is_type_var_any,
     is_union,
     not_none_type_arg,
@@ -607,3 +608,8 @@ def test_code_builder_get_unpack_method_name():
         )
         == f"from_yaml"
     )
+
+
+def test_is_self():
+    assert is_self(typing_extensions.Self)
+    assert not is_self(object)

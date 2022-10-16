@@ -30,6 +30,11 @@ class DataClass(DataClassMessagePackMixin):
     inner: InnerDataClass
 
 
+def test_data_class_msgpack_mixin():
+    assert DataClassMessagePackMixin.from_msgpack(b"") is None
+    assert DataClassMessagePackMixin().to_msgpack() is None
+
+
 def test_to_msgpack():
     @dataclass
     class DataClass(DataClassMessagePackMixin):

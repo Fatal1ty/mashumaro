@@ -34,6 +34,11 @@ class MyDialect(Dialect):
     serialization_strategy = serialization_strategy
 
 
+def test_data_class_toml_mixin():
+    assert DataClassTOMLMixin.from_toml("") is None
+    assert DataClassTOMLMixin().to_toml() is None
+
+
 def test_to_toml():
     @dataclass
     class DataClass(DataClassTOMLMixin):
