@@ -1,4 +1,4 @@
-from typing import Any, ClassVar, Dict, Mapping, Type, TypeVar
+from typing import Any, Dict, Mapping, Type, TypeVar
 
 from mashumaro.core.meta.mixin import (
     compile_mixin_packer,
