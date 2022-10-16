@@ -698,7 +698,7 @@ If you want to write all the field aliases in one place there is
 
 If you want to serialize all the fields by aliases you have two options to do so:
 * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
-* [`by_alias` keyword argument in `to_dict` method](#add-by_alias-keyword-argument)
+* [`by_alias` keyword argument in `to_*` methods](#add-by_alias-keyword-argument)
 
 It's hard to imagine when it might be necessary to serialize only specific
 fields by alias, but such functionality is easily added to the library. Open
@@ -774,11 +774,11 @@ so the fastest basic behavior of the library will always remain by default.
 The following table provides a brief overview of all the available constants
 described below.
 
-| Constant                                                        | Description                                                                |
-|:----------------------------------------------------------------|:---------------------------------------------------------------------------|
-| [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_dict` method.                |
-| [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-by_alias-keyword-argument)   | Adds `by_alias` keyword-only argument to `to_dict` method.                 |
-| [`ADD_DIALECT_SUPPORT`](#add-dialect-keyword-argument)          | Adds `dialect` keyword-only argument to `from_dict` and `to_dict` methods. |
+| Constant                                                        | Description                                                          |
+|:----------------------------------------------------------------|:---------------------------------------------------------------------|
+| [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_*` methods.            |
+| [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-by_alias-keyword-argument)   | Adds `by_alias` keyword-only argument to `to_*` methods.             |
+| [`ADD_DIALECT_SUPPORT`](#add-dialect-keyword-argument)          | Adds `dialect` keyword-only argument to `from_*` and `to_*` methods. |
 
 #### `serialization_strategy` config option
 
@@ -955,7 +955,7 @@ obj = A.from_dict({'x': {'y': 1}})
 
 You don't need to write anything special here, forward references work out of
 the box. If a field of a dataclass has a forward reference in the type
-annotations, building of `from_dict` and `to_dict` methods of this dataclass
+annotations, building of `from_*` and `to_*` methods of this dataclass
 will be postponed until they are called once. However, if for some reason you
 don't want the evaluation to be possibly postponed, you can disable it using
 `allow_postponed_evaluation` option:
@@ -1154,7 +1154,7 @@ assert Entity.from_dict({'dt': '2021年12月31日'}) == entity
 #### Add `omit_none` keyword argument
 
 If you want to have control over whether to skip `None` values on serialization
-you can add `omit_none` parameter to `to_dict` method using the
+you can add `omit_none` parameter to `to_*` method using the
 `code_generation_options` list:
 
 ```python
@@ -1182,7 +1182,7 @@ Model(x=Inner(), a=1).to_dict(omit_none=True)  # {'x': {'x': None}, 'a': 1}
 #### Add `by_alias` keyword argument
 
 If you want to have control over whether to serialize fields by their
-[aliases](#alias-option) you can add `by_alias` parameter to `to_dict` method
+[aliases](#alias-option) you can add `by_alias` parameter to `to_*` method
 using the `code_generation_options` list. The default value of `by_alias`
 parameter depends on whether the [`serialize_by_alias`](#serialize_by_alias-config-option)
 config option is enabled.
