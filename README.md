@@ -1154,7 +1154,7 @@ assert Entity.from_dict({'dt': '2021年12月31日'}) == entity
 #### Add `omit_none` keyword argument
 
 If you want to have control over whether to skip `None` values on serialization
-you can add `omit_none` parameter to `to_*` method using the
+you can add `omit_none` parameter to `to_*` methods using the
 `code_generation_options` list:
 
 ```python
@@ -1182,7 +1182,7 @@ Model(x=Inner(), a=1).to_dict(omit_none=True)  # {'x': {'x': None}, 'a': 1}
 #### Add `by_alias` keyword argument
 
 If you want to have control over whether to serialize fields by their
-[aliases](#alias-option) you can add `by_alias` parameter to `to_*` method
+[aliases](#alias-option) you can add `by_alias` parameter to `to_*` methods
 using the `code_generation_options` list. The default value of `by_alias`
 parameter depends on whether the [`serialize_by_alias`](#serialize_by_alias-config-option)
 config option is enabled.
