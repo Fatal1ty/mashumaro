@@ -34,6 +34,11 @@ class MyDialect(Dialect):
     serialization_strategy = serialization_strategy
 
 
+def test_data_class_toml_mixin():
+    assert DataClassTOMLMixin.from_toml("") is None
+    assert DataClassTOMLMixin().to_toml() is None
+
+
 def test_to_toml():
     @dataclass
     class DataClass(DataClassTOMLMixin):
@@ -131,7 +136,6 @@ def test_toml_with_dialect_support():
 
         class Config(BaseConfig):
             code_generation_options = [ADD_DIALECT_SUPPORT]
-            debug = True
 
     _datetime = datetime(2022, 10, 12, 12, 54, 30)
     _date = date(2022, 10, 12)

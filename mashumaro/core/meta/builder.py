@@ -49,6 +49,7 @@ from mashumaro.core.meta.helpers import (
     is_named_tuple,
     is_new_type,
     is_optional,
+    is_self,
     is_special_typing_primitive,
     is_type_var,
     is_type_var_any,
@@ -315,15 +316,25 @@ class CodeBuilder:
                 or not config.allow_postponed_evaluation
             ):
                 raise
+            self._add_type_modules(self.default_dialect)
             self.add_line(
-                "builder = CodeBuilder(cls, allow_postponed_evaluation=False)"
+                f"CodeBuilder("
+                f"cls,"
+                f"first_method='{method_name}',"
+                f"allow_postponed_evaluation=False,"
+                f"format_name='{self.format_name}',"
+                f"decoder={type_name(self.decoder)},"
+                f"default_dialect={type_name(self.default_dialect)}"
+                f").add_unpack_method()"
             )
-            self.add_line("builder.add_unpack_method()")
-            from_dict_args = ", ".join(
-                filter(None, ("d", self.get_unpack_method_flags()))
-            )
-            self.add_line(f"return cls.from_dict({from_dict_args})")
+            unpacker_args = ["d", self.get_unpack_method_flags()]
+            if self.decoder:
+                unpacker_args.insert(1, "decoder=decoder")
+            unpacker_args_s = ", ".join(filter(None, unpacker_args))
+            self.add_line(f"return cls.{method_name}({unpacker_args_s})")
         else:
+            if self.decoder is not None:
+                self.add_line("d = decoder(d)")
             pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
             if pre_deserialize:
                 if not isinstance(pre_deserialize, classmethod):
@@ -383,6 +394,8 @@ class CodeBuilder:
                 self.add_line("return cls(**kwargs)")
 
     def _add_unpack_method_with_dialect_lines(self, method_name: str) -> None:
+        if self.decoder is not None:
+            self.add_line("d = decoder(d)")
         unpacker_args = ", ".join(
             filter(None, ("cls", "d", self.get_unpack_method_flags()))
         )
@@ -425,8 +438,6 @@ class CodeBuilder:
             self.add_line("@classmethod")
         self._add_unpack_method_definition(method_name)
         with self.indent():
-            if self.decoder is not None:
-                self.add_line("d = decoder(d)")
             if dialects_feature and self.dialect is None:
                 self.add_line("if dialect is None:")
                 with self.indent():
@@ -628,7 +639,7 @@ class CodeBuilder:
                 method_name += f"_{cls._hash_arg_types(arg_types)}"
             return method_name
 
-    def _add_pack_method_lines(self) -> None:
+    def _add_pack_method_lines(self, method_name: str) -> None:
         config = self.get_config()
         try:
             field_types = self.field_types
@@ -638,14 +649,22 @@ class CodeBuilder:
                 or not config.allow_postponed_evaluation
             ):
                 raise
+            self._add_type_modules(self.default_dialect)
             self.add_line(
-                "builder = CodeBuilder(self.__class__, "
-                "allow_postponed_evaluation=False)"
+                f"CodeBuilder("
+                f"self.__class__,"
+                f"first_method='{method_name}',"
+                f"allow_postponed_evaluation=False,"
+                f"format_name='{self.format_name}',"
+                f"encoder={type_name(self.encoder)},"
+                f"default_dialect={type_name(self.default_dialect)}"
+                f").add_pack_method()"
             )
-            self.add_line("builder.add_pack_method()")
-            self.add_line(
-                f"return self.to_dict({self.get_pack_method_flags()})"
-            )
+            packer_args = [self.get_pack_method_flags()]
+            if self.encoder:
+                packer_args.insert(0, "encoder=encoder")
+            packer_args_s = ", ".join(filter(None, packer_args))
+            self.add_line(f"return self.{method_name}({packer_args_s})")
         else:
             pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
             if pre_serialize:
@@ -729,12 +748,12 @@ class CodeBuilder:
             if dialects_feature and self.dialect is None:
                 self.add_line("if dialect is None:")
                 with self.indent():
-                    self._add_pack_method_lines()
+                    self._add_pack_method_lines(method_name)
                 self.add_line("else:")
                 with self.indent():
                     self._add_pack_method_with_dialect_lines(method_name)
             else:
-                self._add_pack_method_lines()
+                self._add_pack_method_lines(method_name)
         if self.dialect is None:
             self.add_line(f"setattr(cls, '{method_name}', {method_name})")
         else:
@@ -934,6 +953,29 @@ class CodeBuilder:
                 return self._pack_literal(
                     fname, ftype, value_name, parent, metadata
                 )
+            elif is_self(ftype):
+                method_name = self.get_pack_method_name(
+                    format_name=self.format_name
+                )
+                if (
+                    get_class_that_defines_method(method_name, self.cls)
+                    != self.cls
+                    # not hasattr(self.cls, method_name)
+                    and self.get_pack_method_name(
+                        format_name=self.format_name,
+                        encoder=self.encoder,
+                    )
+                    != method_name
+                ):
+                    builder = CodeBuilder(
+                        self.cls,
+                        dialect=self.dialect,
+                        format_name=self.format_name,
+                        default_dialect=self.default_dialect,
+                    )
+                    builder.add_pack_method()
+                flags = self.get_pack_method_flags(self.cls)
+                return f"{value_name}.{method_name}({flags})"
             else:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
@@ -1241,6 +1283,35 @@ class CodeBuilder:
                 return self._unpack_literal(
                     fname, ftype, value_name, parent, metadata
                 )
+            elif is_self(ftype):
+                method_name = self.get_unpack_method_name(
+                    format_name=self.format_name
+                )
+                if (
+                    get_class_that_defines_method(method_name, self.cls)
+                    != self.cls
+                    # not hasattr(self.cls, method_name)
+                    and self.get_unpack_method_name(
+                        format_name=self.format_name,
+                        decoder=self.decoder,
+                    )
+                    != method_name
+                ):
+                    builder = CodeBuilder(
+                        self.cls,
+                        dialect=self.dialect,
+                        format_name=self.format_name,
+                        default_dialect=self.default_dialect,
+                    )
+                    builder.add_unpack_method()
+                method_args = ", ".join(
+                    filter(
+                        None,
+                        (value_name, self.get_unpack_method_flags(self.cls)),
+                    )
+                )
+                self._add_type_modules(self.cls)
+                return f"{type_name(self.cls)}.{method_name}({method_args})"
             else:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"

@@ -31,7 +31,7 @@ setup(
     install_requires=[
         "dataclasses;python_version=='3.6'",
         "backports-datetime-fromisoformat;python_version=='3.6'",
-        "typing_extensions",
+        "typing_extensions>=4.0.1",
     ],
     extras_require={
         "orjson": ["orjson"],

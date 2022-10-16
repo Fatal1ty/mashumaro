@@ -428,6 +428,10 @@ def is_dialect_subclass(t) -> bool:
         return False
 
 
+def is_self(t) -> bool:
+    return t is typing_extensions.Self
+
+
 __all__ = [
     "get_type_origin",
     "get_args",
@@ -455,4 +459,5 @@ __all__ = [
     "is_annotated",
     "is_literal",
     "get_literal_values",
+    "is_self",
 ]

@@ -1,7 +1,9 @@
 from typing import Any, Dict, Mapping, Type, TypeVar
 
-from mashumaro.core.meta.builder import CodeBuilder
-from mashumaro.exceptions import UnresolvedTypeReferenceError
+from mashumaro.core.meta.mixin import (
+    compile_mixin_packer,
+    compile_mixin_unpacker,
+)
 
 T = TypeVar("T", bound="DataClassDictMixin")
 
@@ -9,19 +11,15 @@ T = TypeVar("T", bound="DataClassDictMixin")
 class DataClassDictMixin:
     __slots__ = ()
 
+    __mashumaro_builder_params = {"packer": {}, "unpacker": {}}  # type: ignore
+
     def __init_subclass__(cls: Type[T], **kwargs):
-        builder = CodeBuilder(cls)
-        config = builder.get_config()
-        try:
-            builder.add_unpack_method()
-        except UnresolvedTypeReferenceError:
-            if not config.allow_postponed_evaluation:
-                raise
-        try:
-            builder.add_pack_method()
-        except UnresolvedTypeReferenceError:
-            if not config.allow_postponed_evaluation:
-                raise
+        for ancestor in cls.__mro__[-1:0:-1]:
+            builder_params_ = f"_{ancestor.__name__}__mashumaro_builder_params"
+            builder_params = getattr(ancestor, builder_params_, None)
+            if builder_params:
+                compile_mixin_unpacker(cls, **builder_params["unpacker"])
+                compile_mixin_packer(cls, **builder_params["packer"])
 
     def to_dict(
         self: T,

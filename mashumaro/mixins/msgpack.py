@@ -2,10 +2,6 @@ from typing import Any, Callable, Dict, Type, TypeVar
 
 import msgpack
 
-from mashumaro.core.meta.mixin import (
-    compile_mixin_packer,
-    compile_mixin_unpacker,
-)
 from mashumaro.dialect import Dialect
 from mashumaro.helper import pass_through
 from mashumaro.mixins.dict import DataClassDictMixin
@@ -39,13 +35,25 @@ def default_decoder(data: EncodedData) -> Dict[Any, Any]:
 class DataClassMessagePackMixin(DataClassDictMixin):
     __slots__ = ()
 
+    __mashumaro_builder_params = {
+        "packer": {
+            "format_name": "msgpack",
+            "dialect": MessagePackDialect,
+            "encoder": default_encoder,
+        },
+        "unpacker": {
+            "format_name": "msgpack",
+            "dialect": MessagePackDialect,
+            "decoder": default_decoder,
+        },
+    }
+
     def to_msgpack(
         self: T,
         encoder: Encoder = default_encoder,
         **to_dict_kwargs,
     ) -> EncodedData:
-        compile_mixin_packer(self, "msgpack", MessagePackDialect, encoder)
-        return self.to_msgpack(encoder, **to_dict_kwargs)
+        ...
 
     @classmethod
     def from_msgpack(
@@ -54,5 +62,4 @@ class DataClassMessagePackMixin(DataClassDictMixin):
         decoder: Decoder = default_decoder,
         **from_dict_kwargs,
     ) -> T:
-        compile_mixin_unpacker(cls, "msgpack", MessagePackDialect, decoder)
-        return cls.from_msgpack(data, decoder, **from_dict_kwargs)
+        ...
