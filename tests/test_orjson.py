@@ -1,13 +1,11 @@
 from dataclasses import dataclass
 from datetime import date, datetime, time
 from typing import List
-
 from uuid import UUID, uuid4
+
 import orjson
 
 from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
-
-
 from mashumaro.dialect import Dialect
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
@@ -144,7 +142,6 @@ def test_orjson_with_dialect_support():
 
         class Config(BaseConfig):
             code_generation_options = [ADD_DIALECT_SUPPORT]
-            debug = True
 
     _datetime = datetime(2022, 10, 12, 12, 54, 30)
     _date = date(2022, 10, 12)

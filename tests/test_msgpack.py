@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List
+from typing import Dict, List
 
 import msgpack
 
+from mashumaro import DataClassDictMixin
 from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
 from mashumaro.dialect import Dialect
 from mashumaro.mixins.msgpack import DataClassMessagePackMixin
@@ -16,6 +17,17 @@ class MyDialect(Dialect):
             "deserialize": lambda x: x.encode(),
         }
     }
+
+
+@dataclass
+class InnerDataClass(DataClassDictMixin):
+    x: bytes
+
+
+@dataclass
+class DataClass(DataClassMessagePackMixin):
+    x: bytes
+    inner: InnerDataClass
 
 
 def test_to_msgpack():
@@ -102,7 +114,6 @@ def test_msgpack_with_dialect_support():
 
         class Config(BaseConfig):
             code_generation_options = [ADD_DIALECT_SUPPORT]
-            debug = True
 
     instance = DataClass(b"123")
     dumped = msgpack.packb({"x": b"123"})
@@ -117,3 +128,34 @@ def test_msgpack_with_dialect_support():
     assert instance.to_dict(dialect=MyDialect) == {"x": "123"}
     assert instance.to_msgpack() == dumped
     assert instance.to_msgpack(dialect=MyDialect) == dumped_dialect
+
+
+def test_msgpack_with_custom_encoder_and_decoder():
+    def decoder(data) -> Dict[str, bytes]:
+        def to_lower(d):
+            result = {}
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    result[k] = to_lower(v)
+                else:
+                    result[k] = v.lower()
+            return result
+
+        return to_lower(msgpack.loads(data))
+
+    def encoder(data: Dict[str, bytes]) -> bytes:
+        def to_upper(d):
+            result = {}
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    result[k] = to_upper(v)
+                else:
+                    result[k] = v.upper()
+            return result
+
+        return msgpack.dumps(to_upper(data))
+
+    instance = DataClass(b"abc", InnerDataClass(b"def"))
+    dumped = msgpack.packb({"x": b"ABC", "inner": {"x": b"DEF"}})
+    assert instance.to_msgpack(encoder=encoder) == dumped
+    assert DataClass.from_msgpack(dumped, decoder=decoder) == instance

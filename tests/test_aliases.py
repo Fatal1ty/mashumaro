@@ -115,7 +115,6 @@ def test_serialize_by_alias_flag_for_inner_class_without_it():
         x: Aliased = field(default=None, metadata={"alias": "alias_x"})
 
         class Config(BaseConfig):
-            debug = True
             code_generation_options = [TO_DICT_ADD_BY_ALIAS_FLAG]
 
     instance = DataClass(Aliased(a=1))

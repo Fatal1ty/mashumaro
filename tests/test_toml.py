@@ -131,7 +131,6 @@ def test_toml_with_dialect_support():
 
         class Config(BaseConfig):
             code_generation_options = [ADD_DIALECT_SUPPORT]
-            debug = True
 
     _datetime = datetime(2022, 10, 12, 12, 54, 30)
     _date = date(2022, 10, 12)

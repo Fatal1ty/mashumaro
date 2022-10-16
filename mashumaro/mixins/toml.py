@@ -3,10 +3,6 @@ from typing import Any, Callable, Dict, Type, TypeVar
 
 import tomli_w
 
-from mashumaro.core.meta.mixin import (
-    compile_mixin_packer,
-    compile_mixin_unpacker,
-)
 from mashumaro.dialect import Dialect
 from mashumaro.helper import pass_through
 from mashumaro.mixins.dict import DataClassDictMixin
@@ -35,13 +31,25 @@ class TOMLDialect(Dialect):
 class DataClassTOMLMixin(DataClassDictMixin):
     __slots__ = ()
 
+    __mashumaro_builder_params = {
+        "packer": {
+            "format_name": "toml",
+            "dialect": TOMLDialect,
+            "encoder": tomli_w.dumps,
+        },
+        "unpacker": {
+            "format_name": "toml",
+            "dialect": TOMLDialect,
+            "decoder": tomllib.loads,
+        },
+    }
+
     def to_toml(
         self: T,
         encoder: Encoder = tomli_w.dumps,
         **to_dict_kwargs,
     ) -> EncodedData:
-        compile_mixin_packer(self, "toml", TOMLDialect, encoder)
-        return self.to_toml(encoder, **to_dict_kwargs)
+        ...
 
     @classmethod
     def from_toml(
@@ -50,5 +58,4 @@ class DataClassTOMLMixin(DataClassDictMixin):
         decoder: Decoder = tomllib.loads,
         **from_dict_kwargs,
     ) -> T:
-        compile_mixin_unpacker(cls, "toml", TOMLDialect, decoder)
-        return cls.from_toml(data, decoder, **from_dict_kwargs)
+        ...
