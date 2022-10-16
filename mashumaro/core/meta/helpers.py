@@ -19,6 +19,7 @@ from mashumaro.core.const import (
     PY_38_MIN,
     PY_39_MIN,
     PY_310_MIN,
+    PY_311_MIN,
 )
 from mashumaro.dialect import Dialect
 
@@ -428,6 +429,10 @@ def is_dialect_subclass(t) -> bool:
         return False
 
 
+def is_self(t) -> bool:
+    return t is typing_extensions.Self
+
+
 __all__ = [
     "get_type_origin",
     "get_args",
@@ -455,4 +460,5 @@ __all__ = [
     "is_annotated",
     "is_literal",
     "get_literal_values",
+    "is_self",
 ]

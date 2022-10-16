@@ -49,6 +49,7 @@ from mashumaro.core.meta.helpers import (
     is_named_tuple,
     is_new_type,
     is_optional,
+    is_self,
     is_special_typing_primitive,
     is_type_var,
     is_type_var_any,
@@ -952,6 +953,29 @@ class CodeBuilder:
                 return self._pack_literal(
                     fname, ftype, value_name, parent, metadata
                 )
+            elif is_self(ftype):
+                method_name = self.get_pack_method_name(
+                    format_name=self.format_name
+                )
+                if (
+                    get_class_that_defines_method(method_name, self.cls)
+                    != self.cls
+                    # not hasattr(self.cls, method_name)
+                    and self.get_pack_method_name(
+                        format_name=self.format_name,
+                        encoder=self.encoder,
+                    )
+                    != method_name
+                ):
+                    builder = CodeBuilder(
+                        self.cls,
+                        dialect=self.dialect,
+                        format_name=self.format_name,
+                        default_dialect=self.default_dialect,
+                    )
+                    builder.add_pack_method()
+                flags = self.get_pack_method_flags(self.cls)
+                return f"{value_name}.{method_name}({flags})"
             else:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
@@ -1259,6 +1283,35 @@ class CodeBuilder:
                 return self._unpack_literal(
                     fname, ftype, value_name, parent, metadata
                 )
+            elif is_self(ftype):
+                method_name = self.get_unpack_method_name(
+                    format_name=self.format_name
+                )
+                if (
+                    get_class_that_defines_method(method_name, self.cls)
+                    != self.cls
+                    # not hasattr(self.cls, method_name)
+                    and self.get_unpack_method_name(
+                        format_name=self.format_name,
+                        decoder=self.decoder,
+                    )
+                    != method_name
+                ):
+                    builder = CodeBuilder(
+                        self.cls,
+                        dialect=self.dialect,
+                        format_name=self.format_name,
+                        default_dialect=self.default_dialect,
+                    )
+                    builder.add_unpack_method()
+                method_args = ", ".join(
+                    filter(
+                        None,
+                        (value_name, self.get_unpack_method_flags(self.cls)),
+                    )
+                )
+                self._add_type_modules(self.cls)
+                return f"{type_name(self.cls)}.{method_name}({method_args})"
             else:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
