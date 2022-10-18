@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from datetime import date, datetime, time
-from typing import List
+from typing import Dict, List
 from uuid import UUID, uuid4
 
 import orjson
+import pytest
 
+from mashumaro import DataClassDictMixin
 from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
 from mashumaro.dialect import Dialect
 from mashumaro.mixins.orjson import DataClassORJSONMixin
@@ -31,6 +33,17 @@ serialization_strategy = {
 
 class MyDialect(Dialect):
     serialization_strategy = serialization_strategy
+
+
+@dataclass
+class InnerDataClass(DataClassDictMixin):
+    x: str
+
+
+@dataclass
+class DataClass(DataClassORJSONMixin):
+    x: str
+    inner: InnerDataClass
 
 
 def test_data_class_orjson_mixin():
@@ -198,3 +211,47 @@ def test_orjson_with_dialect_support():
     assert instance.to_dict(dialect=MyDialect) == dict_dumped_dialect
     assert instance.to_jsonb() == orjson_dumped
     assert instance.to_jsonb(dialect=MyDialect) == orjson_dumped_dialect
+
+
+def test_orjson_with_custom_encoder_and_decoder():
+    def decoder(data) -> Dict[str, bytes]:
+        def to_lower(d):
+            result = {}
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    result[k] = to_lower(v)
+                else:
+                    result[k] = v.lower()
+            return result
+
+        return to_lower(orjson.loads(data))
+
+    def encoder(data: Dict[str, bytes], **_) -> bytes:
+        def to_upper(d):
+            result = {}
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    result[k] = to_upper(v)
+                else:
+                    result[k] = v.upper()
+            return result
+
+        return orjson.dumps(to_upper(data))
+
+    instance = DataClass("abc", InnerDataClass("def"))
+    dumped = orjson.dumps({"x": "ABC", "inner": {"x": "DEF"}})
+    assert instance.to_jsonb(encoder=encoder) == dumped
+    assert DataClass.from_json(dumped, decoder=decoder) == instance
+
+
+def test_to_orjson_with_non_str_keys():
+    @dataclass
+    class DataClass(DataClassORJSONMixin):
+        x: Dict[int, int]
+
+    instance = DataClass({1: 2})
+    dumped = b'{"x":{"1":2}}'
+    with pytest.raises(TypeError):
+        instance.to_jsonb()
+    assert instance.to_jsonb(orjson_options=orjson.OPT_NON_STR_KEYS) == dumped
+    assert DataClass.from_json(dumped) == instance

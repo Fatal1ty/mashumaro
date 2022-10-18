@@ -139,6 +139,7 @@ class CodeBuilder:
         format_name: str = "dict",
         decoder: typing.Optional[typing.Any] = None,
         encoder: typing.Optional[typing.Any] = None,
+        encoder_kwargs: typing.Optional[typing.Dict[str, typing.Any]] = None,
         default_dialect: typing.Optional[typing.Type[Dialect]] = None,
     ):
         self.cls = cls
@@ -158,6 +159,7 @@ class CodeBuilder:
         self.format_name = format_name
         self.decoder = decoder
         self.encoder = encoder
+        self.encoder_kwargs = encoder_kwargs or {}
 
     def reset(self) -> None:
         self.lines.reset()
@@ -327,9 +329,10 @@ class CodeBuilder:
                 f"default_dialect={type_name(self.default_dialect)}"
                 f").add_unpack_method()"
             )
-            unpacker_args = ["d", self.get_unpack_method_flags()]
-            if self.decoder:
-                unpacker_args.insert(1, "decoder=decoder")
+            unpacker_args = [
+                "d",
+                self.get_unpack_method_flags(pass_decoder=True),
+            ]
             unpacker_args_s = ", ".join(filter(None, unpacker_args))
             self.add_line(f"return cls.{method_name}({unpacker_args_s})")
         else:
@@ -455,9 +458,9 @@ class CodeBuilder:
 
     def _add_unpack_method_definition(self, method_name: str):
         kwargs = ""
-        if self.decoder is not None:
-            kwargs += f", decoder={type_name(self.decoder)}"
-        default_kwargs = self.get_unpack_method_default_flag_values()
+        default_kwargs = self.get_unpack_method_default_flag_values(
+            pass_decoder=True
+        )
         if default_kwargs:
             kwargs += f", {default_kwargs}"
         self.add_line(f"def {method_name}(cls, d{kwargs}):")
@@ -533,8 +536,17 @@ class CodeBuilder:
             )
         return config_cls
 
-    def get_pack_method_flags(self, cls=None) -> str:
+    def get_pack_method_flags(
+        self,
+        cls=None,
+        pass_encoder: bool = False,
+    ) -> str:
         pluggable_flags = []
+        if pass_encoder and self.encoder is not None:
+            pluggable_flags.append("encoder=encoder")
+            for value in self.encoder_kwargs.values():
+                pluggable_flags.append(f"{value[0]}={value[0]}")
+
         for option, flag in (
             (TO_DICT_ADD_OMIT_NONE_FLAG, "omit_none"),
             (TO_DICT_ADD_BY_ALIAS_FLAG, "by_alias"),
@@ -545,59 +557,98 @@ class CodeBuilder:
                     pluggable_flags.append(f"{flag}={flag}")
         return ", ".join(pluggable_flags)
 
-    def get_unpack_method_flags(self, cls=None) -> str:
+    def get_unpack_method_flags(
+        self,
+        cls=None,
+        pass_decoder: bool = False,
+    ) -> str:
         pluggable_flags = []
+        if pass_decoder and self.decoder is not None:
+            pluggable_flags.append("decoder=decoder")
         for option, flag in ((ADD_DIALECT_SUPPORT, "dialect"),):
             if self.is_code_generation_option_enabled(option, cls):
                 if self.is_code_generation_option_enabled(option):
                     pluggable_flags.append(f"{flag}={flag}")
         return ", ".join(pluggable_flags)
 
-    def get_pack_method_default_flag_values(self, cls=None) -> str:
-        flag_names = []
-        flag_values = []
+    def get_pack_method_default_flag_values(
+        self,
+        cls=None,
+        pass_encoder: bool = False,
+    ) -> str:
+        pos_param_names = []
+        pos_param_values = []
+        kw_param_names = []
+        kw_param_values = []
+        if pass_encoder and self.encoder is not None:
+            pos_param_names.append("encoder")
+            pos_param_values.append(type_name(self.encoder))
+            for value in self.encoder_kwargs.values():
+                kw_param_names.append(value[0])
+                kw_param_values.append(value[1])
         omit_none_feature = self.is_code_generation_option_enabled(
             TO_DICT_ADD_OMIT_NONE_FLAG, cls
         )
         if omit_none_feature:
-            flag_names.append("omit_none")
-            flag_values.append("False")
+            kw_param_names.append("omit_none")
+            kw_param_values.append("False")
         by_alias_feature = self.is_code_generation_option_enabled(
             TO_DICT_ADD_BY_ALIAS_FLAG, cls
         )
         if by_alias_feature:
             serialize_by_alias = self.get_config(cls).serialize_by_alias
-            flag_names.append("by_alias")
-            flag_values.append("True" if serialize_by_alias else "False")
+            kw_param_names.append("by_alias")
+            kw_param_values.append("True" if serialize_by_alias else "False")
         dialects_feature = self.is_code_generation_option_enabled(
             ADD_DIALECT_SUPPORT, cls
         )
         if dialects_feature:
-            flag_names.append("dialect")
-            flag_values.append("None")
-        if flag_names:
-            pluggable_flags_str = "*, " + ", ".join(
-                [f"{n}={v}" for n, v in zip(flag_names, flag_values)]
+            kw_param_names.append("dialect")
+            kw_param_values.append("None")
+        if pos_param_names:
+            pluggable_flags_str = ", ".join(
+                [f"{n}={v}" for n, v in zip(pos_param_names, pos_param_values)]
             )
         else:
             pluggable_flags_str = ""
+        if kw_param_names:
+            if pos_param_names:
+                pluggable_flags_str += ", "
+            pluggable_flags_str += "*, " + ", ".join(
+                [f"{n}={v}" for n, v in zip(kw_param_names, kw_param_values)]
+            )
         return pluggable_flags_str
 
-    def get_unpack_method_default_flag_values(self, cls=None) -> str:
-        flag_names = []
-        flag_values = []
+    def get_unpack_method_default_flag_values(
+        self,
+        cls=None,
+        pass_decoder: bool = False,
+    ) -> str:
+        pos_param_names = []
+        pos_param_values = []
+        kw_param_names = []
+        kw_param_values = []
+        if pass_decoder and self.decoder is not None:
+            pos_param_names.append("decoder")
+            pos_param_values.append(type_name(self.decoder))
         dialects_feature = self.is_code_generation_option_enabled(
             ADD_DIALECT_SUPPORT, cls
         )
         if dialects_feature:
-            flag_names.append("dialect")
-            flag_values.append("None")
-        if flag_names:
-            pluggable_flags_str = "*, " + ", ".join(
-                [f"{n}={v}" for n, v in zip(flag_names, flag_values)]
+            kw_param_names.append("dialect")
+            kw_param_values.append("None")
+        if pos_param_names:
+            pluggable_flags_str = ", ".join(
+                [f"{n}={v}" for n, v in zip(pos_param_names, pos_param_values)]
             )
         else:
             pluggable_flags_str = ""
+        if kw_param_names:
+            if pos_param_names:
+                pluggable_flags_str += ", "
+            pluggable_flags_str += "*, " + ", ".join(
+                [f"{n}={v}" for n, v in zip(kw_param_names, kw_param_values)]
+            )
         return pluggable_flags_str
 
     def is_code_generation_option_enabled(self, option: str, cls=None) -> bool:
@@ -657,14 +708,12 @@ class CodeBuilder:
                 f"allow_postponed_evaluation=False,"
                 f"format_name='{self.format_name}',"
                 f"encoder={type_name(self.encoder)},"
+                f"encoder_kwargs={self.encoder_kwargs},"
                 f"default_dialect={type_name(self.default_dialect)}"
                 f").add_pack_method()"
             )
-            packer_args = [self.get_pack_method_flags()]
-            if self.encoder:
-                packer_args.insert(0, "encoder=encoder")
-            packer_args_s = ", ".join(filter(None, packer_args))
-            self.add_line(f"return self.{method_name}({packer_args_s})")
+            packer_args = self.get_pack_method_flags(pass_encoder=True)
+            self.add_line(f"return self.{method_name}({packer_args})")
         else:
             pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
             if pre_serialize:
@@ -675,7 +724,15 @@ class CodeBuilder:
                 self._pack_method_set_value(fname, ftype, metadata)
             post_serialize = self.get_declared_hook(__POST_SERIALIZE__)
             if self.encoder is not None:
-                return_statement = "return encoder({})"
+                if self.encoder_kwargs:
+                    encoder_options = ", ".join(
+                        f"{k}={v[0]}" for k, v in self.encoder_kwargs.items()
+                    )
+                    return_statement = (
+                        f"return encoder({{}}, {encoder_options})"
+                    )
+                else:
+                    return_statement = "return encoder({})"
             else:
                 return_statement = "return {}"
             if post_serialize:
@@ -718,9 +775,9 @@ class CodeBuilder:
 
     def _add_pack_method_definition(self, method_name: str):
         kwargs = ""
-        if self.encoder is not None:
-            kwargs += f", encoder={type_name(self.encoder)}"
-        default_kwargs = self.get_pack_method_default_flag_values()
+        default_kwargs = self.get_pack_method_default_flag_values(
+            pass_encoder=True
+        )
         if default_kwargs:
             kwargs += f", {default_kwargs}"
         self.add_line(f"def {method_name}(self{kwargs}):")

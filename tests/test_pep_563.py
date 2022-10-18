@@ -11,6 +11,7 @@ from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
 from mashumaro.dialect import Dialect
 from mashumaro.exceptions import UnresolvedTypeReferenceError
 from mashumaro.mixins.msgpack import DataClassMessagePackMixin
+from mashumaro.mixins.orjson import DataClassORJSONMixin
 
 from .conftest import add_unpack_method
 
@@ -90,6 +91,20 @@ class A3MessagePack(BaseMessagePack):
 
 @dataclass
 class B1MessagePack(BaseMessagePack):
+    b: int
+
+
+@dataclass
+class A3ORJSON(DataClassORJSONMixin):
+    a: B1ORJSON
+    x: int
+
+    class Config(BaseConfig):
+        code_generation_options = [ADD_DIALECT_SUPPORT]
+
+
+@dataclass
+class B1ORJSON(DataClassORJSONMixin):
     b: int
 
 
@@ -243,3 +258,34 @@ def test_postponed_msgpack_with_custom_encoder_and_decoder():
     dumped = msgpack.packb({"a": {"b": 123000}, "x": 456000})
     assert instance.to_msgpack(encoder=encoder) == dumped
     assert A3MessagePack.from_msgpack(dumped, decoder=decoder) == instance
+
+
+def test_postponed_orjson_with_custom_encoder_and_decoder():
+    def decoder(data) -> Dict[str, bytes]:
+        def modify(d):
+            result = {}
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    result[k] = modify(v)
+                else:
+                    result[k] = v // 1000
+            return result
+
+        return modify(msgpack.loads(data))
+
+    def encoder(data: Dict[str, bytes], **_) -> bytes:
+        def modify(d):
+            result = {}
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    result[k] = modify(v)
+                else:
+                    result[k] = v * 1000
+            return result
+
+        return msgpack.dumps(modify(data))
+
+    instance = A3ORJSON(B1ORJSON(123), 456)
+    dumped = msgpack.packb({"a": {"b": 123000}, "x": 456000})
+    assert instance.to_jsonb(encoder=encoder) == dumped
+    assert A3ORJSON.from_json(dumped, decoder=decoder) == instance

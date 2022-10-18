@@ -33,6 +33,9 @@ class DataClassORJSONMixin(DataClassDictMixin):
             "format_name": "jsonb",
             "dialect": OrjsonDialect,
             "encoder": orjson.dumps,
+            "encoder_kwargs": {
+                "option": ("orjson_options", 0),
+            },
         },
         "unpacker": {
             "format_name": "json",
@@ -44,6 +47,8 @@ class DataClassORJSONMixin(DataClassDictMixin):
     def to_jsonb(
         self: T,
         encoder: Encoder = orjson.dumps,
+        *,
+        orjson_options: int = 0,
         **to_dict_kwargs,
     ) -> bytes:
         ...
@@ -51,9 +56,15 @@ class DataClassORJSONMixin(DataClassDictMixin):
     def to_json(
         self: T,
         encoder: Encoder = orjson.dumps,
+        *,
+        orjson_options: int = 0,
         **to_dict_kwargs,
     ) -> str:
-        return self.to_jsonb(encoder, **to_dict_kwargs).decode()
+        return self.to_jsonb(
+            encoder=encoder,
+            orjson_options=orjson_options,
+            **to_dict_kwargs,
+        ).decode()
 
     @classmethod
     def from_json(
