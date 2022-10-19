@@ -991,7 +991,7 @@ Dialects section.
 
 #### `orjson_options` config option
 
-This option sets default options for `orjson.dumps` encoder which is
+This option changes default options for `orjson.dumps` encoder which is
 used in [`DataClassORJSONMixin`](#dataclassorjsonmixin). For example, you can
 tell orjson to handle non-`str` `dict` keys as the built-in `json.dumps`
 encoder does. See [orjson documentation](https://github.com/ijl/orjson#option)
