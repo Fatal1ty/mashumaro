@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Dict
 
 import msgpack
+import orjson
 import pytest
 
 from mashumaro import DataClassDictMixin
@@ -271,7 +272,7 @@ def test_postponed_orjson_with_custom_encoder_and_decoder():
                     result[k] = v // 1000
             return result
 
-        return modify(msgpack.loads(data))
+        return modify(orjson.loads(data))
 
     def encoder(data: Dict[str, bytes], **_) -> bytes:
         def modify(d):
@@ -283,9 +284,9 @@ def test_postponed_orjson_with_custom_encoder_and_decoder():
                     result[k] = v * 1000
             return result
 
-        return msgpack.dumps(modify(data))
+        return orjson.dumps(modify(data))
 
     instance = A3ORJSON(B1ORJSON(123), 456)
-    dumped = msgpack.packb({"a": {"b": 123000}, "x": 456000})
+    dumped = orjson.dumps({"a": {"b": 123000}, "x": 456000})
     assert instance.to_jsonb(encoder=encoder) == dumped
     assert A3ORJSON.from_json(dumped, decoder=decoder) == instance

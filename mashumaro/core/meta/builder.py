@@ -32,6 +32,7 @@ from mashumaro.config import (
 )
 from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.helpers import *  # noqa
+from mashumaro.core.helpers import ConfigValue
 from mashumaro.core.meta.helpers import (
     get_args,
     get_class_that_defines_field,
@@ -544,7 +545,7 @@ class CodeBuilder:
         pluggable_flags = []
         if pass_encoder and self.encoder is not None:
             pluggable_flags.append("encoder=encoder")
-            for value in self.encoder_kwargs.values():
+            for value in self._get_encoder_kwargs(cls).values():
                 pluggable_flags.append(f"{value[0]}={value[0]}")
 
         for option, flag in (
@@ -583,7 +584,7 @@ class CodeBuilder:
         if pass_encoder and self.encoder is not None:
             pos_param_names.append("encoder")
             pos_param_values.append(type_name(self.encoder))
-            for value in self.encoder_kwargs.values():
+            for value in self._get_encoder_kwargs(cls).values():
                 kw_param_names.append(value[0])
                 kw_param_values.append(value[1])
         omit_none_feature = self.is_code_generation_option_enabled(
@@ -708,7 +709,7 @@ class CodeBuilder:
                 f"allow_postponed_evaluation=False,"
                 f"format_name='{self.format_name}',"
                 f"encoder={type_name(self.encoder)},"
-                f"encoder_kwargs={self.encoder_kwargs},"
+                f"encoder_kwargs={self._get_encoder_kwargs()},"
                 f"default_dialect={type_name(self.default_dialect)}"
                 f").add_pack_method()"
             )
@@ -772,6 +773,16 @@ class CodeBuilder:
                 f"self.__class__.{cache_name}[dialect]({packer_args})"
             )
         )
+
+    def _get_encoder_kwargs(self, cls=None) -> typing.Dict[str, typing.Any]:
+        result = {}
+        for encoder_param, value in self.encoder_kwargs.items():
+            packer_param = value[0]
+            packer_value = value[1]
+            if isinstance(packer_value, ConfigValue):
+                packer_value = getattr(self.get_config(cls), packer_value.name)
+            result[encoder_param] = (packer_param, packer_value)
+        return result
 
     def _add_pack_method_definition(self, method_name: str):
         kwargs = ""

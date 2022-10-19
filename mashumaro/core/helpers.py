@@ -21,6 +21,15 @@ def parse_timezone(s: str) -> datetime.timezone:
         return datetime.timezone.utc
 
 
+class ConfigValue:
+    def __init__(self, name):
+        self.name = name
+
+    def __class_getitem__(cls, name):
+        return ConfigValue(name)
+
+
 __all__ = [
     "parse_timezone",
+    "ConfigValue",
 ]

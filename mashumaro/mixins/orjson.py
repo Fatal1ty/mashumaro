@@ -4,6 +4,7 @@ from uuid import UUID
 
 import orjson
 
+from mashumaro.core.helpers import ConfigValue
 from mashumaro.dialect import Dialect
 from mashumaro.helper import pass_through
 from mashumaro.mixins.dict import DataClassDictMixin
@@ -34,7 +35,7 @@ class DataClassORJSONMixin(DataClassDictMixin):
             "dialect": OrjsonDialect,
             "encoder": orjson.dumps,
             "encoder_kwargs": {
-                "option": ("orjson_options", 0),
+                "option": ("orjson_options", ConfigValue["orjson_options"]),
             },
         },
         "unpacker": {

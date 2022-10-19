@@ -36,6 +36,7 @@ class BaseConfig:
     namedtuple_as_dict: bool = False
     allow_postponed_evaluation: bool = True
     dialect: Optional[Type[Dialect]] = None
+    orjson_options: Optional[int] = 0
 
 
 __all__ = [
