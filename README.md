@@ -46,6 +46,7 @@ Table of contents
         * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
         * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
         * [`dialect` config option](#dialect-config-option)
+        * [`orjson_options`](#orjson_options-config-option)
     * [Passing field values as is](#passing-field-values-as-is)
     * [Dialects](#dialects)
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
@@ -342,7 +343,7 @@ Serialization mixins
 
 Mashumaro provides mixins for each serialization format.
 
-#### [`DataClassDictMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L9)
+#### [`DataClassDictMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#11)
 
 Can be imported in two ways:
 ```python
@@ -364,7 +365,7 @@ from mashumaro.mixins.json import DataClassJSONMixin
 This mixins adds json serialization functionality to a dataclass.
 It adds methods `from_json` and `to_json`.
 
-#### [`DataClassORJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/orjson.py#L32)
+#### [`DataClassORJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/orjson.py#L29)
 
 Can be imported as:
 ```python
@@ -389,7 +390,7 @@ Using this mixin the following data types will be handled by
 * [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
 * [`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)
 
-#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L39)
+#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L35)
 
 Can be imported as:
 ```python
@@ -428,7 +429,7 @@ You can install it manually or using an extra option for mashumaro:
 pip install mashumaro[yaml]
 ```
 
-#### [`DataClassTOMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L35)
+#### [`DataClassTOMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L31)
 
 Can be imported as:
 ```python
@@ -987,6 +988,31 @@ class B is declared below or not.
 
 This option is described [below](#changing-the-default-dialect) in the
 Dialects section.
+
+#### `orjson_options` config option
+
+This option sets default options for `orjson.dumps` encoder which is
+used in [`DataClassORJSONMixin`](#dataclassorjsonmixin). For example, you can
+tell orjson to handle non-`str` `dict` keys as the built-in `json.dumps`
+encoder does. See [orjson documentation](https://github.com/ijl/orjson#option)
+to read more about these options.
+
+```python
+import orjson
+from dataclasses import dataclass
+from typing import Dict
+from mashumaro.config import BaseConfig
+from mashumaro.mixins.orjson import DataClassORJSONMixin
+
+@dataclass
+class MyClass(DataClassORJSONMixin):
+    x: Dict[int, int]
+
+    class Config(BaseConfig):
+        orjson_options = orjson.OPT_NON_STR_KEYS
+
+assert MyClass({1: 2}).to_json() == {"1": 2}
+```
 
 ### Passing field values as is
 
