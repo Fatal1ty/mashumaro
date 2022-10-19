@@ -49,23 +49,13 @@ class DataClassORJSONMixin(DataClassDictMixin):
         self: T,
         encoder: Encoder = orjson.dumps,
         *,
-        orjson_options: int = 0,
+        orjson_options: int = ...,
         **to_dict_kwargs,
     ) -> bytes:
         ...
 
-    def to_json(
-        self: T,
-        encoder: Encoder = orjson.dumps,
-        *,
-        orjson_options: int = 0,
-        **to_dict_kwargs,
-    ) -> str:
-        return self.to_jsonb(
-            encoder=encoder,
-            orjson_options=orjson_options,
-            **to_dict_kwargs,
-        ).decode()
+    def to_json(self: T, **kwargs) -> str:
+        return self.to_jsonb(**kwargs).decode()
 
     @classmethod
     def from_json(
