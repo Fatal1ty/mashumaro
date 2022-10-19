@@ -35,7 +35,11 @@ class DataClassORJSONMixin(DataClassDictMixin):
             "dialect": OrjsonDialect,
             "encoder": orjson.dumps,
             "encoder_kwargs": {
-                "option": ("orjson_options", ConfigValue["orjson_options"]),
+                "option": (
+                    "orjson_options",
+                    ConfigValue["orjson_options"],  # type: ignore
+                    # https://github.com/python/mypy/issues/11501
+                ),
             },
         },
         "unpacker": {
