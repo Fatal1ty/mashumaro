@@ -139,7 +139,7 @@ for special primitives from the [`typing`](https://docs.python.org/3/library/typ
 * [`NewType`](https://docs.python.org/3/library/typing.html#newtype)
 * [`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated)
 * [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)
-* [`Self`](https://docs.python.org/3.11/library/typing.html#typing.Self)
+* [`Self`](https://docs.python.org/3/library/typing.html#typing.Self)
 
 for standard interpreter types from [`types`](https://docs.python.org/3/library/types.html#standard-interpreter-types) module:
 * [`NoneType`](https://docs.python.org/3/library/types.html#types.NoneType)
@@ -148,7 +148,7 @@ for standard interpreter types from [`types`](https://docs.python.org/3/library/
 for enumerations based on classes from the standard [`enum`](https://docs.python.org/3/library/enum.html) module:
 * [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
 * [`IntEnum`](https://docs.python.org/3/library/enum.html#enum.IntEnum)
-* [`StrEnum`](https://docs.python.org/3.11/library/enum.html#enum.StrEnum)
+* [`StrEnum`](https://docs.python.org/3/library/enum.html#enum.StrEnum)
 * [`Flag`](https://docs.python.org/3/library/enum.html#enum.Flag)
 * [`IntFlag`](https://docs.python.org/3/library/enum.html#enum.IntFlag)
 
@@ -194,7 +194,7 @@ for backported types from [`typing-extensions`](https://github.com/python/typing
 * [`TypedDict`](https://docs.python.org/3/library/typing.html#typing.TypedDict)
 * [`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated)
 * [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)
-* [`Self`](https://docs.python.org/3.11/library/typing.html#typing.Self)
+* [`Self`](https://docs.python.org/3/library/typing.html#typing.Self)
 
 for arbitrary types:
 * [user-defined classes](#serializabletype-interface)
@@ -442,7 +442,7 @@ It adds methods `from_toml` and `to_toml`.
 In order to use this mixin, the [`tomli`](https://pypi.org/project/tomli/) and
 [`tomli-w`](https://pypi.org/project/tomli-w/) packages must be installed.
 In Python 3.11+, `tomli` is included as
-[`tomlib`](https://docs.python.org/3.11/library/tomllib.html) standard library
+[`tomlib`](https://docs.python.org/3/library/tomllib.html) standard library
 module and can be used my this mixin.
 You can install the missing packages manually or using an extra option for mashumaro:
 
