@@ -193,5 +193,6 @@ def test_toml_omit_none():
     assert obj.to_dict() == {"x": None, "y": None}
     assert obj.to_toml() == ""
     obj = DataClass(InnerDataClassWithOptionalField())
+    assert obj.to_dict() == {"x": {"x": None}, "y": None}
     assert obj.to_toml() == "[x]\n"
     assert DataClass.from_toml("[x]\n") == obj
