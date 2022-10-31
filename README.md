@@ -879,7 +879,7 @@ DataClass(field_a=1).to_dict()  # {'FieldA': 1}
 
 #### `omit_none` config option
 
-> ⏳ Will be available in the upcoming release
+> 🔜 Will be available in the upcoming release
 
 All the fields with `None` values will be skipped during serialization by
 default when this option is enabled. You can mix this config option with
@@ -1181,7 +1181,7 @@ but for the dialect scope. You can register custom `SerializationStrategy`,
 
 #### `omit_none` dialect option
 
-> ⏳ Will be available in the upcoming release
+> 🔜 Will be available in the upcoming release
 
 This dialect option has the same meaning as the
 [similar config option](#omit_none-config-option) but for the dialect scope.
