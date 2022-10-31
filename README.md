@@ -43,6 +43,7 @@ Table of contents
         * [`serialization_strategy` config option](#serialization_strategy-config-option)
         * [`aliases` config option](#aliases-config-option)
         * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
+        * [`omit_none` config option](#omit_none-config-option)
         * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
         * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
         * [`dialect` config option](#dialect-config-option)
@@ -50,6 +51,7 @@ Table of contents
     * [Passing field values as is](#passing-field-values-as-is)
     * [Dialects](#dialects)
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
+      * [`omit_none` dialect option](#omit_none-dialect-option)
       * [Changing the default dialect](#changing-the-default-dialect)
     * [Code generation options](#code-generation-options)
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
@@ -875,6 +877,28 @@ class DataClass(DataClassDictMixin):
 DataClass(field_a=1).to_dict()  # {'FieldA': 1}
 ```
 
+#### `omit_none` config option
+
+All the fields with `None` values will be skipped during serialization by
+default when this option is enabled. You can mix this config option with
+[`omit_none`](#add-omit_none-keyword-argument) keyword argument.
+
+```python
+from dataclasses import dataclass, field
+from typing import Optional
+from mashumaro import DataClassDictMixin, field_options
+from mashumaro.config import BaseConfig
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    x: Optional[int] = None
+
+    class Config(BaseConfig):
+        omit_none = True
+
+DataClass().to_dict()  # {}
+```
+
 #### `namedtuple_as_dict` config option
 
 Dataclasses are a great way to declare and use data models. But it's not the only way.
@@ -1153,6 +1177,11 @@ This dialect option has the same meaning as the
 but for the dialect scope. You can register custom `SerializationStrategy`,
 `serialize` and `deserialize` methods for specific types.
 
+#### `omit_none` dialect option
+
+This dialect option has the same meaning as the
+[similar config option](#omit_none-config-option) but for the dialect scope.
+
 #### Changing the default dialect
 
 You can change the default serialization and deserialization methods for
@@ -1181,7 +1210,9 @@ assert Entity.from_dict({'dt': '2021年12月31日'}) == entity
 
 If you want to have control over whether to skip `None` values on serialization
 you can add `omit_none` parameter to `to_*` methods using the
-`code_generation_options` list:
+`code_generation_options` list. The default value of `omit_none`
+parameter depends on whether the [`omit_none`](#omit_none-config-option)
+config option or [`omit_none`](#omit_none-dialect-option) dialect option is enabled.
 
 ```python
 from dataclasses import dataclass
