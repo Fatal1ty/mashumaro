@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
-from mashumaro.core.const import PEP_586_COMPATIBLE
+from mashumaro.core.const import PEP_586_COMPATIBLE, Sentinel
 from mashumaro.dialect import Dialect
 from mashumaro.types import SerializationStrategy
 
@@ -36,6 +36,7 @@ class BaseConfig:
     namedtuple_as_dict: bool = False
     allow_postponed_evaluation: bool = True
     dialect: Optional[Type[Dialect]] = None
+    omit_none: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
     orjson_options: Optional[int] = 0
 
 

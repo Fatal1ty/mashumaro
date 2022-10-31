@@ -1,3 +1,4 @@
+import enum
 import sys
 
 PY_36 = sys.version_info.major == 3 and sys.version_info.minor == 6
@@ -17,6 +18,10 @@ PEP_585_COMPATIBLE = PY_39_MIN  # Type Hinting Generics In Standard Collections
 PEP_586_COMPATIBLE = PY_38_MIN  # Literal Types
 
 
+class Sentinel(enum.Enum):
+    MISSING = enum.auto()
+
+
 __all__ = [
     "PY_36",
     "PY_37",
@@ -27,6 +32,8 @@ __all__ = [
     "PY_38_MIN",
     "PY_39_MIN",
     "PY_310_MIN",
+    "PY_311_MIN",
     "PEP_585_COMPATIBLE",
     "PEP_586_COMPATIBLE",
+    "Sentinel",
 ]

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime, time
-from typing import List
+from typing import List, Optional
 
 import tomli_w
 
@@ -32,6 +32,11 @@ serialization_strategy = {
 
 class MyDialect(Dialect):
     serialization_strategy = serialization_strategy
+
+
+@dataclass
+class InnerDataClassWithOptionalField(DataClassTOMLMixin):
+    x: Optional[int] = None
 
 
 def test_data_class_toml_mixin():
@@ -176,3 +181,17 @@ def test_toml_with_dialect_support():
     assert instance.to_dict(dialect=MyDialect) == dict_dumped_dialect
     assert instance.to_toml() == toml_dumped
     assert instance.to_toml(dialect=MyDialect) == toml_dumped_dialect
+
+
+def test_toml_omit_none():
+    @dataclass
+    class DataClass(DataClassTOMLMixin):
+        x: Optional[InnerDataClassWithOptionalField] = None
+        y: Optional[int] = None
+
+    obj = DataClass()
+    assert obj.to_dict() == {"x": None, "y": None}
+    assert obj.to_toml() == ""
+    obj = DataClass(InnerDataClassWithOptionalField())
+    assert obj.to_toml() == "[x]\n"
+    assert DataClass.from_toml("[x]\n") == obj

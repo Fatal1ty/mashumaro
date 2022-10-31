@@ -219,3 +219,17 @@ def test_named_tuple_as_dict_and_as_list_engine():
     }
     assert obj.to_dict() == obj_dict
     assert DataClass.from_dict(obj_dict) == obj
+
+
+def test_omit_none_code_generation_flag_with_omit_none_by_default():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Optional[int] = None
+
+        class Config(BaseConfig):
+            code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
+            omit_none = True
+
+    assert DataClass().to_dict() == {}
+    assert DataClass().to_dict(omit_none=True) == {}
+    assert DataClass().to_dict(omit_none=False) == {"x": None}

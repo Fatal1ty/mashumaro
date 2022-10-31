@@ -21,6 +21,7 @@ Decoder = Callable[[EncodedData], Dict[Any, Any]]
 
 
 class TOMLDialect(Dialect):
+    omit_none = True
     serialization_strategy = {
         datetime: pass_through,
         date: pass_through,

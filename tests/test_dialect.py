@@ -1,12 +1,16 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Generic, List, NamedTuple, TypeVar, Union
+from typing import Generic, List, NamedTuple, Optional, TypeVar, Union
 
 import pytest
 from typing_extensions import TypedDict
 
 from mashumaro import DataClassDictMixin
-from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
+from mashumaro.config import (
+    ADD_DIALECT_SUPPORT,
+    TO_DICT_ADD_OMIT_NONE_FLAG,
+    BaseConfig,
+)
 from mashumaro.dialect import Dialect
 from mashumaro.exceptions import BadDialect
 from mashumaro.mixins.msgpack import DataClassMessagePackMixin
@@ -54,6 +58,18 @@ class ISODialect(Dialect):
         },
         int: HexSerializationStrategy(),
     }
+
+
+class EmptyDialect(Dialect):
+    pass
+
+
+class OmitNoneDialect(Dialect):
+    omit_none = True
+
+
+class NotOmitNoneDialect(Dialect):
+    omit_none = False
 
 
 @dataclass
@@ -198,6 +214,53 @@ class MessagePackDataClass(DataClassMessagePackMixin):
     b_2: bytearray
     dep_1: DataClassWithoutDialects
     dep_2: GenericDataClassWithoutDialects[date]
+
+
+@dataclass
+class DataClassWithOptionalAndOmitNoneDialect(DataClassDictMixin):
+    x: Optional[int] = None
+
+    class Config(BaseConfig):
+        dialect = OmitNoneDialect
+
+
+@dataclass
+class DataClassWithOptionalAndOmitNoneDialectAndOmitNoneFalse(
+    DataClassDictMixin
+):
+    x: Optional[int] = None
+
+    class Config(BaseConfig):
+        dialect = OmitNoneDialect
+        omit_none = False
+
+
+@dataclass
+class DataClassWithOptionalAndNotOmitNoneDialectAndOmitNoneTrue(
+    DataClassDictMixin
+):
+    x: Optional[int] = None
+
+    class Config(BaseConfig):
+        dialect = NotOmitNoneDialect
+        omit_none = True
+
+
+@dataclass
+class DataClassWithOptionalAndEmptyDialect(DataClassDictMixin):
+    x: Optional[int] = None
+
+    class Config(BaseConfig):
+        dialect = EmptyDialect
+        omit_none = True
+
+
+@dataclass
+class DataClassWithOptionalAndDialectSupport(DataClassDictMixin):
+    x: Optional[int] = None
+
+    class Config(BaseConfig):
+        code_generation_options = [ADD_DIALECT_SUPPORT]
 
 
 def test_default_dialect():
@@ -904,3 +967,29 @@ def test_msgpack_dialect_class_with_dependency_without_dialect():
     encoded = msgpack_encoder(d)
     assert obj.to_msgpack() == encoded
     assert MessagePackDataClass.from_msgpack(encoded) == obj
+
+
+def test_dataclass_omit_none_dialects():
+    assert DataClassWithOptionalAndOmitNoneDialect().to_dict() == {}
+    assert (
+        DataClassWithOptionalAndOmitNoneDialectAndOmitNoneFalse().to_dict()
+        == {}
+    )
+    assert (
+        DataClassWithOptionalAndNotOmitNoneDialectAndOmitNoneTrue().to_dict()
+        == {"x": None}
+    )
+    assert DataClassWithOptionalAndEmptyDialect().to_dict() == {}
+    assert DataClassWithOptionalAndDialectSupport().to_dict() == {"x": None}
+    assert (
+        DataClassWithOptionalAndDialectSupport().to_dict(
+            dialect=OmitNoneDialect
+        )
+        == {}
+    )
+    assert DataClassWithOptionalAndDialectSupport().to_dict(
+        dialect=NotOmitNoneDialect
+    ) == {"x": None}
+    assert DataClassWithOptionalAndDialectSupport().to_dict(
+        dialect=EmptyDialect
+    ) == {"x": None}

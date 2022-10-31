@@ -30,7 +30,7 @@ from mashumaro.config import (
     TO_DICT_ADD_OMIT_NONE_FLAG,
     BaseConfig,
 )
-from mashumaro.core.const import PY_39_MIN, PY_311_MIN
+from mashumaro.core.const import PY_39_MIN, PY_311_MIN, Sentinel
 from mashumaro.core.helpers import *  # noqa
 from mashumaro.core.helpers import ConfigValue
 from mashumaro.core.meta.helpers import (
@@ -591,8 +591,11 @@ class CodeBuilder:
             TO_DICT_ADD_OMIT_NONE_FLAG, cls
         )
         if omit_none_feature:
+            omit_none = self._get_dialect_or_config_option(
+                "omit_none", False, None
+            )
             kw_param_names.append("omit_none")
-            kw_param_values.append("False")
+            kw_param_values.append("True" if omit_none else "False")
         by_alias_feature = self.is_code_generation_option_enabled(
             TO_DICT_ADD_BY_ALIAS_FLAG, cls
         )
@@ -839,6 +842,7 @@ class CodeBuilder:
         alias = metadata.get("alias")
         if alias is None:
             alias = config.aliases.get(fname)
+        omit_none = self._get_dialect_or_config_option("omit_none", False)
         serialize_by_alias = self.get_config().serialize_by_alias
         if serialize_by_alias and alias is not None:
             fname_or_alias = alias
@@ -846,7 +850,26 @@ class CodeBuilder:
             fname_or_alias = fname
 
         self.add_line(f"value = getattr(self, '{fname}')")
-        self.add_line("if value is None:")
+        self.add_line("if value is not None:")
+        with self.indent():
+            packed_value = self._pack_value(
+                fname=fname,
+                ftype=ftype,
+                parent=self.cls,
+                metadata=metadata,
+            )
+            if by_alias_feature and alias is not None:
+                self.add_line("if by_alias:")
+                with self.indent():
+                    self.add_line(f"kwargs['{alias}'] = {packed_value}")
+                self.add_line("else:")
+                with self.indent():
+                    self.add_line(f"kwargs['{fname}'] = {packed_value}")
+            else:
+                self.add_line(f"kwargs['{fname_or_alias}'] = {packed_value}")
+        if omit_none and not omit_none_feature:
+            return
+        self.add_line("else:")
         with self.indent():
             if omit_none_feature:
                 self.add_line("if not omit_none:")
@@ -870,23 +893,6 @@ class CodeBuilder:
                         self.add_line(f"kwargs['{fname}'] = None")
                 else:
                     self.add_line(f"kwargs['{fname_or_alias}'] = None")
-        self.add_line("else:")
-        with self.indent():
-            packed_value = self._pack_value(
-                fname=fname,
-                ftype=ftype,
-                parent=self.cls,
-                metadata=metadata,
-            )
-            if by_alias_feature and alias is not None:
-                self.add_line("if by_alias:")
-                with self.indent():
-                    self.add_line(f"kwargs['{alias}'] = {packed_value}")
-                self.add_line("else:")
-                with self.indent():
-                    self.add_line(f"kwargs['{fname}'] = {packed_value}")
-            else:
-                self.add_line(f"kwargs['{fname_or_alias}'] = {packed_value}")
 
     def _iter_serialization_strategies(self, metadata, ftype):
         yield metadata.get("serialization_strategy")
@@ -903,6 +909,23 @@ class CodeBuilder:
         yield self.get_config().serialization_strategy.get(ftype)
         if self.default_dialect is not None:
             yield self.default_dialect.serialization_strategy.get(ftype)
+
+    def _get_dialect_or_config_option(
+        self,
+        option: str,
+        default: typing.Any,
+        cls=None,
+    ) -> typing.Any:
+        for ns in (
+            self.dialect,
+            self.get_config(cls).dialect,
+            self.get_config(cls),
+            self.default_dialect,
+        ):
+            value = getattr(ns, option, Sentinel.MISSING)
+            if value is not Sentinel.MISSING:
+                return value
+        return default
 
     def _pack_value(
         self,
