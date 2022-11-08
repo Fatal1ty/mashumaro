@@ -459,6 +459,8 @@ Using this mixin the following data types will be handled by
 * [`date`](https://docs.python.org/3/library/datetime.html#datetime.date)
 * [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
 
+Fields with value `None` will be omitted on serialization because TOML doesn't support null values.
+
 Customization
 --------------------------------------------------------------------------------
 
