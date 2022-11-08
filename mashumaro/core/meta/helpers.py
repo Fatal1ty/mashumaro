@@ -73,7 +73,7 @@ def get_args(t: typing.Any) -> typing.Tuple[typing.Any, ...]:
 def _get_args_str(
     t: typing.Any,
     short: bool,
-    type_vars: typing.Dict[str, typing.Any] = None,
+    type_vars: typing.Optional[typing.Dict[str, typing.Any]] = None,
     limit: typing.Optional[int] = None,
     none_type_as_none: bool = False,
     sep: str = ", ",
@@ -124,7 +124,7 @@ def _typing_name(
 def type_name(
     t: typing.Any,
     short: bool = False,
-    type_vars: typing.Dict[str, typing.Any] = None,
+    type_vars: typing.Optional[typing.Dict[str, typing.Any]] = None,
     is_type_origin: bool = False,
     none_type_as_none: bool = False,
 ) -> str:
@@ -247,7 +247,10 @@ def is_union(t):
         return False
 
 
-def is_optional(t, type_vars: typing.Dict[str, typing.Any] = None) -> bool:
+def is_optional(
+    t,
+    type_vars: typing.Optional[typing.Dict[str, typing.Any]] = None,
+) -> bool:
     if type_vars is None:
         type_vars = {}
     if not is_union(t):
@@ -295,7 +298,7 @@ def is_literal(t) -> bool:
 
 def not_none_type_arg(
     args: typing.Tuple[typing.Any, ...],
-    type_vars: typing.Dict[str, typing.Any] = None,
+    type_vars: typing.Optional[typing.Dict[str, typing.Any]] = None,
 ):
     if type_vars is None:
         type_vars = {}

@@ -106,7 +106,7 @@ __POST_DESERIALIZE__ = "__post_deserialize__"
 
 
 class CodeLines:
-    def __init__(self):
+    def __init__(self) -> None:
         self._lines: typing.List[str] = []
         self._current_indent: str = ""
 
@@ -935,7 +935,7 @@ class CodeBuilder:
         value_name="value",
         metadata=MappingProxyType({}),
         could_be_none=False,
-    ):
+    ) -> str:
 
         ftype = self.__get_real_type(fname, ftype)
         origin_type = get_type_origin(ftype)
@@ -1121,7 +1121,7 @@ class CodeBuilder:
                 return f"encodebytes({value_name}).decode()"
             elif issubclass(origin_type, str):
                 return value_name
-            elif issubclass(origin_type, typing.Tuple):
+            elif issubclass(origin_type, typing.Tuple):  # type: ignore
                 if is_named_tuple(ftype):
                     return self._pack_named_tuple(
                         fname,
@@ -1260,7 +1260,7 @@ class CodeBuilder:
         value_name="value",
         metadata=MappingProxyType({}),
         could_be_none=False,
-    ):
+    ) -> str:
 
         ftype = self.__get_real_type(fname, ftype)
         origin_type = get_type_origin(ftype)
@@ -1511,7 +1511,7 @@ class CodeBuilder:
                     raise UnserializableField(
                         fname, ftype, parent, "Use typing.Deque[T] instead"
                     )
-            elif issubclass(origin_type, typing.Tuple):
+            elif issubclass(origin_type, typing.Tuple):  # type: ignore
                 if is_named_tuple(ftype):
                     return self._unpack_named_tuple(
                         fname,

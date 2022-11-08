@@ -1,6 +1,14 @@
 [tool.mypy]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = [
+    'mashumaro.mixins.dict',
+    'mashumaro.mixins.msgpack',
+    'mashumaro.mixins.toml',
+]
+disable_error_code = 'empty-body'
+
 [flake8]
 max-line-length = 79
 

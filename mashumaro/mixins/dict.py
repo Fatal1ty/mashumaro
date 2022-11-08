@@ -29,7 +29,7 @@ class DataClassDictMixin:
         # by_alias: bool = False
         # dialect: Type[Dialect] = None
         **kwargs,
-    ) -> dict:
+    ) -> Dict[Any, Any]:
         ...
 
     @classmethod
