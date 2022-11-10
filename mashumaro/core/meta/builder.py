@@ -49,7 +49,9 @@ from mashumaro.core.meta.helpers import (
     is_literal,
     is_named_tuple,
     is_new_type,
+    is_not_required,
     is_optional,
+    is_required,
     is_self,
     is_special_typing_primitive,
     is_type_var,
@@ -1067,6 +1069,15 @@ class CodeBuilder:
                     builder.add_pack_method()
                 flags = self.get_pack_method_flags(self.cls)
                 return f"{value_name}.{method_name}({flags})"
+            elif is_required(ftype) or is_not_required(ftype):
+                return self._pack_value(
+                    fname=fname,
+                    ftype=get_args(ftype)[0],
+                    parent=parent,
+                    value_name=value_name,
+                    metadata=metadata,
+                    could_be_none=could_be_none,
+                )
             else:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"
@@ -1403,6 +1414,15 @@ class CodeBuilder:
                 )
                 self._add_type_modules(self.cls)
                 return f"{type_name(self.cls)}.{method_name}({method_args})"
+            elif is_required(ftype) or is_not_required(ftype):
+                return self._unpack_field_value(
+                    fname=fname,
+                    ftype=get_args(ftype)[0],
+                    parent=parent,
+                    value_name=value_name,
+                    metadata=metadata,
+                    could_be_none=could_be_none,
+                )
             else:
                 raise UnserializableDataError(
                     f"{ftype} as a field type is not supported by mashumaro"

@@ -435,6 +435,14 @@ def is_self(t) -> bool:
     return t is typing_extensions.Self
 
 
+def is_required(t) -> bool:
+    return get_type_origin(t) is typing_extensions.Required  # noqa
+
+
+def is_not_required(t) -> bool:
+    return get_type_origin(t) is typing_extensions.NotRequired  # noqa
+
+
 __all__ = [
     "get_type_origin",
     "get_args",
@@ -463,4 +471,6 @@ __all__ = [
     "is_literal",
     "get_literal_values",
     "is_self",
+    "is_required",
+    "is_not_required",
 ]
