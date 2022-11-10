@@ -62,7 +62,6 @@ from mashumaro.core.meta.helpers import (
     resolve_type_vars,
     type_name,
 )
-from mashumaro.core.meta.patch import patch_fromisoformat
 from mashumaro.dialect import Dialect
 from mashumaro.exceptions import (  # noqa
     BadDialect,
@@ -94,8 +93,6 @@ try:
     import pendulum
 except ImportError:  # pragma no cover
     pendulum: typing.Optional[types.ModuleType] = None  # type: ignore
-
-patch_fromisoformat()
 
 
 NoneType = type(None)
@@ -167,11 +164,7 @@ class CodeBuilder:
     def reset(self) -> None:
         self.lines.reset()
         self.globals = globals().copy()
-        self.type_vars = resolve_type_vars(
-            cls=self.cls,
-            arg_types=self.initial_arg_types,
-            is_cls_created=bool(self.initial_arg_types),
-        )
+        self.type_vars = resolve_type_vars(self.cls, self.initial_arg_types)
         self.field_classes = {}
 
     @property

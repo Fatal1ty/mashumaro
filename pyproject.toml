@@ -19,4 +19,4 @@ ensure_newline_before_comments = true
 
 [tool.black]
 line-length = 79
-target-version = ['py36', 'py37', 'py38', 'py39']
+target-version = ['py37', 'py38', 'py39']

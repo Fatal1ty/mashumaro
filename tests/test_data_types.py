@@ -42,12 +42,7 @@ from typing_extensions import OrderedDict
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
-from mashumaro.core.const import (
-    PEP_585_COMPATIBLE,
-    PY_37_MIN,
-    PY_39_MIN,
-    PY_311_MIN,
-)
+from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN, PY_311_MIN
 from mashumaro.exceptions import (
     InvalidFieldValue,
     MissingField,
@@ -60,6 +55,7 @@ from mashumaro.types import (
     SerializableType,
     SerializationStrategy,
 )
+from tests.entities import MyUntypedNamedTupleWithDefaults
 
 from .conftest import add_unpack_method
 from .entities import (
@@ -96,8 +92,6 @@ from .entities import (
 )
 from .utils import same_types
 
-if PY_37_MIN:
-    from tests.entities import MyUntypedNamedTupleWithDefaults
 if PY_39_MIN:
     from zoneinfo import ZoneInfo
 
@@ -1240,7 +1234,6 @@ def test_dataclass_with_untyped_named_tuple():
     assert obj.to_dict() == {"x": ["1", "2.0"]}
 
 
-@pytest.mark.skipif(not PY_37_MIN, reason="requires python>=3.7")
 def test_dataclass_with_untyped_named_tuple_with_defaults():
     @dataclass
     class DataClass(DataClassDictMixin):

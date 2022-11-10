@@ -1,6 +1,5 @@
 import dataclasses
 import enum
-import inspect
 import re
 import types
 import typing
@@ -11,15 +10,7 @@ from dataclasses import _FIELDS  # type: ignore
 
 import typing_extensions
 
-from mashumaro.core.const import (
-    PY_36,
-    PY_37,
-    PY_37_MIN,
-    PY_38,
-    PY_38_MIN,
-    PY_39_MIN,
-    PY_310_MIN,
-)
+from mashumaro.core.const import PY_37, PY_38, PY_38_MIN, PY_39_MIN, PY_310_MIN
 from mashumaro.dialect import Dialect
 
 NoneType = type(None)
@@ -29,17 +20,10 @@ DataClassDictMixinPath = (
 
 
 def get_type_origin(t):
-    origin = None
     try:
-        if PY_36:
-            if is_annotated(t):
-                return get_type_origin(t.__args__[0])
-            origin = t.__extra__ or t.__origin__
-        elif PY_37_MIN:
-            origin = t.__origin__
+        return t.__origin__
     except AttributeError:
-        origin = t
-    return origin or t
+        return t
 
 
 def is_builtin_type(t) -> bool:
@@ -50,16 +34,13 @@ def is_builtin_type(t) -> bool:
 
 
 def get_generic_name(t, short: bool = False) -> str:
-    if PY_36:
-        name = getattr(t, "__name__")
-    elif PY_37_MIN:
-        name = getattr(t, "_name", None)
-        if name is None:
-            origin = get_type_origin(t)
-            if origin is t:
-                return type_name(origin, short, is_type_origin=True)
-            else:
-                return get_generic_name(origin, short)
+    name = getattr(t, "_name", None)
+    if name is None:
+        origin = get_type_origin(t)
+        if origin is t:
+            return type_name(origin, short, is_type_origin=True)
+        else:
+            return get_generic_name(origin, short)
     if short:
         return name
     else:
@@ -85,14 +66,9 @@ def _get_args_str(
     )
 
 
-def get_literal_values(t: typing.Any):
-    if PY_36:
-        values = t.__values__ or ()
-    elif PY_37_MIN:
-        values = t.__args__
-    else:
-        raise NotImplementedError
-    result = []
+def get_literal_values(t: typing.Any) -> typing.Tuple[typing.Any, ...]:
+    values = t.__args__
+    result: typing.List[typing.Any] = []
     for value in values:
         if is_literal(value):
             result.extend(get_literal_values(value))
@@ -189,27 +165,24 @@ def is_special_typing_primitive(t) -> bool:
         return True
 
 
-def is_generic(t):
-    if PY_36:
-        # noinspection PyUnresolvedReferences
-        return issubclass(t.__class__, typing.GenericMeta)
-    elif PY_37 or PY_38:
+def is_generic(t) -> bool:
+    if PY_37 or PY_38:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
-        return issubclass(t.__class__, typing._GenericAlias)
+        return issubclass(t.__class__, typing._GenericAlias)  # type: ignore
     elif PY_39_MIN:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
         if (
-            issubclass(t.__class__, typing._BaseGenericAlias)
-            or type(t) is types.GenericAlias
+            issubclass(t.__class__, typing._BaseGenericAlias)  # type: ignore
+            or type(t) is types.GenericAlias  # type: ignore
         ):
             return True
         else:  # for PEP 585 generics without args
             try:
                 return (
                     hasattr(t, "__class_getitem__")
-                    and type(t[str]) is types.GenericAlias
+                    and type(t[str]) is types.GenericAlias  # type: ignore
                 )
             except (TypeError, AttributeError):
                 return False
@@ -269,23 +242,11 @@ def is_annotated(t) -> bool:
         with suppress(AttributeError):
             if type(t) is getattr(module, "_AnnotatedAlias"):
                 return True
-        with suppress(AttributeError):
-            if type(t) is getattr(module, "AnnotatedMeta"):
-                # Annotated from typing-extensions on Python 3.6
-                return True
     return False
 
 
 def is_literal(t) -> bool:
-    if PY_36:
-        with suppress(AttributeError):
-            # noinspection PyProtectedMember
-            # noinspection PyUnresolvedReferences
-            return (
-                isinstance(t, typing_extensions._Literal)  # type: ignore
-                and len(get_literal_values(t)) > 0
-            )
-    elif PY_37 or PY_38:
+    if PY_37 or PY_38:
         with suppress(AttributeError):
             return is_generic(t) and get_generic_name(t, True) == "Literal"
     elif PY_39_MIN:
@@ -323,18 +284,11 @@ def is_type_var_any(t) -> bool:
 
 
 def is_class_var(t) -> bool:
-    if PY_36:
-        return (
-            is_special_typing_primitive(t) and type(t).__name__ == "_ClassVar"
-        )
-    elif PY_37_MIN:
-        return get_type_origin(t) is typing.ClassVar
-    else:
-        raise NotImplementedError
+    return get_type_origin(t) is typing.ClassVar
 
 
 def is_init_var(t) -> bool:
-    if PY_36 or PY_37:
+    if PY_37:
         return get_type_origin(t) is dataclasses.InitVar
     elif PY_38_MIN:
         return isinstance(t, dataclasses.InitVar)
@@ -372,31 +326,17 @@ def is_dataclass_dict_mixin_subclass(t) -> bool:
     return False
 
 
-def get_orig_bases(cls, is_created=True):
-    if PY_36 and not is_created:
-        # on py3.6 __orig_bases__ is correct only after the class is created
-        for record in inspect.stack():
-            if (
-                record.filename.endswith("typing.py")
-                and record.function == "__new__"
-                and record.frame.f_locals.get("cls") is typing.GenericMeta
-                and record.frame.f_locals.get("initial_bases")
-                and record.frame.f_locals.get("namespace", {}).get(
-                    "__qualname__"
-                )
-                == cls.__qualname__
-            ):
-                return record.frame.f_locals.get("initial_bases")
+def get_orig_bases(cls):
     return getattr(cls, "__orig_bases__", ())
 
 
-def resolve_type_vars(cls, arg_types=(), is_cls_created=False):
+def resolve_type_vars(cls, arg_types=()):
     arg_types = iter(arg_types)
     type_vars = {}
     result = {cls: type_vars}
     orig_bases = {
         get_type_origin(orig_base): orig_base
-        for orig_base in get_orig_bases(cls, is_cls_created)
+        for orig_base in get_orig_bases(cls)
     }
     for base in getattr(cls, "__bases__", ()):
         orig_base = orig_bases.get(get_type_origin(base))
@@ -412,7 +352,7 @@ def resolve_type_vars(cls, arg_types=(), is_cls_created=False):
         base_arg_types = (
             type_vars.get(base_arg, base_arg) for base_arg in base_args
         )
-        result.update(resolve_type_vars(base, base_arg_types, True))
+        result.update(resolve_type_vars(base, base_arg_types))
     return result
 
 

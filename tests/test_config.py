@@ -6,7 +6,6 @@ from typing_extensions import Literal
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
-from mashumaro.core.const import PY_37_MIN
 from mashumaro.types import SerializationStrategy
 
 from .entities import (
@@ -15,11 +14,9 @@ from .entities import (
     MyNamedTuple,
     MyNamedTupleWithDefaults,
     MyUntypedNamedTuple,
+    MyUntypedNamedTupleWithDefaults,
     TypedDictRequiredKeys,
 )
-
-if PY_37_MIN:
-    from .entities import MyUntypedNamedTupleWithDefaults
 
 
 def test_debug_true_option(mocker):
@@ -184,7 +181,6 @@ def test_named_tuple_as_dict():
     assert DataClass.from_dict(obj_dict) == obj
 
 
-@pytest.mark.skipif(not PY_37_MIN, reason="requires python>=3.7")
 def test_untyped_named_tuple_with_defaults_as_dict():
     @dataclass
     class DataClass(DataClassDictMixin):

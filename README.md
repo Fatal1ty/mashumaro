@@ -70,6 +70,9 @@ Table of contents
 Installation
 --------------------------------------------------------------------------------
 
+`mashumaro` supports Python versions 3.7 - 3.11.
+The latest version of `mashumaro` that can be installed on Python 3.6 is 3.1.
+
 Use pip to install:
 ```shell
 $ pip install mashumaro
@@ -343,7 +346,7 @@ python benchmark/run.py
 Serialization mixins
 --------------------------------------------------------------------------------
 
-Mashumaro provides mixins for each serialization format.
+`mashumaro` provides mixins for each serialization format.
 
 #### [`DataClassDictMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#11)
 
@@ -379,7 +382,7 @@ a third-party [`orjson`](https://pypi.org/project/orjson/) library.
 It adds methods `from_json`, `to_jsonb`, `to_json`.
 
 In order to use this mixin, the [`orjson`](https://pypi.org/project/orjson/) package must be installed.
-You can install it manually or using an extra option for mashumaro:
+You can install it manually or using an extra option for `mashumaro`:
 
 ```shell
 pip install mashumaro[orjson]
@@ -403,7 +406,7 @@ This mixins adds MessagePack serialization functionality to a dataclass.
 It adds methods `from_msgpack` and `to_msgpack`.
 
 In order to use this mixin, the [`msgpack`](https://pypi.org/project/msgpack/) package must be installed.
-You can install it manually or using an extra option for mashumaro:
+You can install it manually or using an extra option for `mashumaro`:
 
 ```shell
 pip install mashumaro[msgpack]
@@ -425,7 +428,7 @@ This mixins adds YAML serialization functionality to a dataclass.
 It adds methods `from_yaml` and `to_yaml`.
 
 In order to use this mixin, the [`pyyaml`](https://pypi.org/project/PyYAML/) package must be installed.
-You can install it manually or using an extra option for mashumaro:
+You can install it manually or using an extra option for `mashumaro`:
 
 ```shell
 pip install mashumaro[yaml]
@@ -446,7 +449,7 @@ In order to use this mixin, the [`tomli`](https://pypi.org/project/tomli/) and
 In Python 3.11+, `tomli` is included as
 [`tomlib`](https://docs.python.org/3/library/tomllib.html) standard library
 module and can be used my this mixin.
-You can install the missing packages manually or using an extra option for mashumaro:
+You can install the missing packages manually or using an extra option for `mashumaro`:
 
 ```shell
 pip install mashumaro[toml]
@@ -467,7 +470,7 @@ Customization
 ### SerializableType interface
 
 If you already have a separate custom class, and you want to serialize
-instances of it with *mashumaro*, you can achieve this by implementing
+instances of it with `mashumaro`, you can achieve this by implementing
 `SerializableType` interface:
 
 ```python

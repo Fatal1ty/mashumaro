@@ -6,11 +6,7 @@ import pytest
 from typing_extensions import TypedDict
 
 from mashumaro import DataClassDictMixin
-from mashumaro.config import (
-    ADD_DIALECT_SUPPORT,
-    TO_DICT_ADD_OMIT_NONE_FLAG,
-    BaseConfig,
-)
+from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
 from mashumaro.dialect import Dialect
 from mashumaro.exceptions import BadDialect
 from mashumaro.mixins.msgpack import DataClassMessagePackMixin
