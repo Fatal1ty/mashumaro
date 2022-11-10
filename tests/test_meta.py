@@ -11,7 +11,6 @@ from mashumaro import DataClassDictMixin
 from mashumaro.core.const import (
     PEP_585_COMPATIBLE,
     PY_37,
-    PY_37_MIN,
     PY_38,
     PY_38_MIN,
     PY_310_MIN,
@@ -25,7 +24,6 @@ from mashumaro.core.meta.helpers import (
     get_literal_values,
     get_type_origin,
     is_annotated,
-    is_class_var,
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
     is_dialect_subclass,
@@ -67,7 +65,6 @@ TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 
 
 def test_is_generic_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_37", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_38", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_39_MIN", False)
@@ -75,15 +72,7 @@ def test_is_generic_unsupported_python(mocker):
         is_generic(int)
 
 
-def test_is_class_var_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
-    mocker.patch("mashumaro.core.meta.helpers.PY_37_MIN", False)
-    with pytest.raises(NotImplementedError):
-        is_class_var(int)
-
-
 def test_is_init_var_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_37", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_38_MIN", False)
     with pytest.raises(NotImplementedError):
@@ -91,18 +80,10 @@ def test_is_init_var_unsupported_python(mocker):
 
 
 def test_is_literal_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_37", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_38", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_39_MIN", False)
     assert not is_literal(typing_extensions.Literal[1])
-
-
-def test_get_literal_values_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_36", False)
-    mocker.patch("mashumaro.core.meta.helpers.PY_37_MIN", False)
-    with pytest.raises(NotImplementedError):
-        get_literal_values(typing_extensions.Literal[1])
 
 
 def test_no_code_builder(mocker):
@@ -212,16 +193,10 @@ def test_type_name():
         type_name(typing.Union[int, typing.Any])
         == "typing.Union[int, typing.Any]"
     )
-    if PY_37_MIN:
-        assert (
-            type_name(typing_extensions.OrderedDict[int, int])
-            == "typing.OrderedDict[int, int]"
-        )
-    else:
-        assert (
-            type_name(typing_extensions.OrderedDict[int, int])
-            == "typing_extensions.OrderedDict[int, int]"
-        )
+    assert (
+        type_name(typing_extensions.OrderedDict[int, int])
+        == "typing.OrderedDict[int, int]"
+    )
     assert type_name(typing.Optional[int]) == "typing.Optional[int]"
     assert type_name(typing.Union[None, int]) == "typing.Optional[int]"
     assert type_name(typing.Union[int, None]) == "typing.Optional[int]"
@@ -393,6 +368,7 @@ def test_get_type_origin():
         get_type_origin(typing_extensions.Annotated[datetime, None])
         == datetime
     )
+    assert get_type_origin(typing_extensions.Required[int])
 
 
 def test_resolve_type_vars():

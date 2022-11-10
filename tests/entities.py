@@ -26,7 +26,6 @@ from typing_extensions import TypedDict
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
-from mashumaro.core.const import PY_37_MIN
 from mashumaro.types import GenericSerializableType, SerializableType
 
 T = TypeVar("T")
@@ -259,12 +258,11 @@ class MyNamedTupleWithOptional(NamedTuple):
 MyUntypedNamedTuple = namedtuple("MyUntypedNamedTuple", ("i", "f"))
 
 
-if PY_37_MIN:
-    MyUntypedNamedTupleWithDefaults = namedtuple(
-        "MyUntypedNamedTupleWithDefaults",
-        ("i", "f"),
-        defaults=(1, 2.0),
-    )
+MyUntypedNamedTupleWithDefaults = namedtuple(
+    "MyUntypedNamedTupleWithDefaults",
+    ("i", "f"),
+    defaults=(1, 2.0),
+)
 
 
 MyDatetimeNewType = NewType("MyDatetimeNewType", datetime)
