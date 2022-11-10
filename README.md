@@ -70,13 +70,13 @@ Table of contents
 Installation
 --------------------------------------------------------------------------------
 
-`mashumaro` supports Python versions 3.7 - 3.11.
-The latest version of `mashumaro` that can be installed on Python 3.6 is 3.1.
-
 Use pip to install:
 ```shell
 $ pip install mashumaro
 ```
+
+The current version of `mashumaro` supports Python versions 3.7 - 3.11.
+The latest version of `mashumaro` that can be installed on Python 3.6 is 3.1.
 
 Changelog
 --------------------------------------------------------------------------------
