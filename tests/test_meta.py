@@ -39,7 +39,13 @@ from mashumaro.core.meta.helpers import (
     resolve_type_vars,
     type_name,
 )
+from mashumaro.core.meta.types.common import (
+    FieldContext,
+    ValueSpec,
+    ensure_generic_collection,
+)
 from mashumaro.dialect import Dialect
+from mashumaro.exceptions import UnserializableField
 from mashumaro.mixins.json import DataClassJSONMixin
 
 from .entities import (
@@ -589,3 +595,22 @@ def test_code_builder_get_unpack_method_name():
 def test_is_self():
     assert is_self(typing_extensions.Self)
     assert not is_self(object)
+
+
+@pytest.mark.skipif(PEP_585_COMPATIBLE, reason="requires python <3.9")
+def test_ensure_generic_collection():
+    for t in (
+        tuple,
+        list,
+        set,
+        frozenset,
+        dict,
+        collections.deque,
+        collections.ChainMap,
+        collections.OrderedDict,
+        collections.Counter,
+    ):
+        with pytest.raises(UnserializableField):
+            ensure_generic_collection(
+                ValueSpec(t, "", CodeBuilder(None), FieldContext("", {}))
+            )

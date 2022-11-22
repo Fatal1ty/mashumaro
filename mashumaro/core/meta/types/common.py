@@ -91,8 +91,6 @@ class Registry:
 
 
 def ensure_generic_collection(spec: ValueSpec) -> bool:
-    if not is_generic(spec.type):
-        return False
     if not PEP_585_COMPATIBLE:
         proper_type = PROPER_COLLECTION_TYPES.get(spec.type)
         if proper_type:
@@ -102,6 +100,8 @@ def ensure_generic_collection(spec: ValueSpec) -> bool:
                 holder_class=spec.builder.cls,
                 msg=f"Use {proper_type} instead",
             )
+    if not is_generic(spec.type):
+        return False
     return True
 
 
