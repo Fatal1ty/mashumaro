@@ -44,6 +44,7 @@ from mashumaro.core.meta.types.common import (
     NoneType,
     Registry,
     ValueSpec,
+    ensure_generic_collection,
     ensure_generic_collection_subclass,
     ensure_generic_mapping,
 )
@@ -650,10 +651,10 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
             f"collections.deque([{inner_expr()} "
             f"for value in {spec.expression}])"
         )
-    elif ensure_generic_collection_subclass(spec, Tuple):
+    elif issubclass(spec.origin_type, Tuple):
         if is_named_tuple(spec.type):
             return unpack_named_tuple(spec)
-        else:
+        elif ensure_generic_collection(spec):
             return unpack_tuple(spec, args)
     elif ensure_generic_collection_subclass(spec, typing.FrozenSet):
         return f"frozenset([{inner_expr()} for value in {spec.expression}])"

@@ -39,6 +39,7 @@ from mashumaro.core.meta.types.common import (
     NoneType,
     Registry,
     ValueSpec,
+    ensure_generic_collection,
     ensure_generic_collection_subclass,
     ensure_generic_mapping,
 )
@@ -522,10 +523,10 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
         return f"encodebytes({spec.expression}).decode()"
     elif issubclass(spec.origin_type, str):
         return spec.expression
-    elif ensure_generic_collection_subclass(spec, Tuple):
+    elif issubclass(spec.origin_type, Tuple):
         if is_named_tuple(spec.type):
             return pack_named_tuple(spec)
-        else:
+        elif ensure_generic_collection(spec):
             return pack_tuple(spec, args)
     elif ensure_generic_collection_subclass(
         spec, typing.List, typing.Deque, typing.AbstractSet
