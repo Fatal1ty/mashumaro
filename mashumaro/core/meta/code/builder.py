@@ -50,9 +50,6 @@ from mashumaro.exceptions import (  # noqa
     UnsupportedSerializationEngine,
 )
 
-NoneType = type(None)
-
-
 __PRE_SERIALIZE__ = "__pre_serialize__"
 __PRE_DESERIALIZE__ = "__pre_deserialize__"
 __POST_SERIALIZE__ = "__post_serialize__"

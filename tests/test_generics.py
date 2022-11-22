@@ -53,7 +53,7 @@ def test_two_generics():
 
     obj = B(
         x=[datetime(2021, 8, 15), datetime(2021, 8, 16)],
-        y={datetime(2021, 8, 17): date(2021, 8, 18)}
+        y={datetime(2021, 8, 17): date(2021, 8, 18)},
     )
     dump = {
         "x": ["2021-08-15T00:00:00", "2021-08-16T00:00:00"],
@@ -90,10 +90,16 @@ def test_partially_concrete_generic_with_bound():
     assert B.from_dict({"x": {"2022-11-21": {"1": "2", "3": "4"}}}) == obj1
     assert obj1.to_dict() == {"x": {"2022-11-21": {1: 2, 3: 4}}}
     obj2 = B(x={date(2022, 11, 21): [1.1, 3.3]})
-    assert B.from_dict({"x": {"2022-11-21": {"1.1": "2.2", "3.3": "4.4"}}}) == obj2
+    assert (
+        B.from_dict({"x": {"2022-11-21": {"1.1": "2.2", "3.3": "4.4"}}})
+        == obj2
+    )
     assert obj2.to_dict() == {"x": {"2022-11-21": [1.1, 3.3]}}
     obj3 = B(x={date(2022, 11, 21): [1.1, 2.2, 3.3, 4.4]})
-    assert B.from_dict({"x": {"2022-11-21": ["1.1", "2.2", "3.3", "4.4"]}}) == obj3
+    assert (
+        B.from_dict({"x": {"2022-11-21": ["1.1", "2.2", "3.3", "4.4"]}})
+        == obj3
+    )
     assert obj3.to_dict() == {"x": {"2022-11-21": [1.1, 2.2, 3.3, 4.4]}}
 
 
