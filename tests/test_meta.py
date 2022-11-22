@@ -598,7 +598,7 @@ def test_is_self():
 
 
 @pytest.mark.skipif(PEP_585_COMPATIBLE, reason="requires python <3.9")
-def test_ensure_generic_collection():
+def test_ensure_generic_collection_not_pep_585():
     for t in (
         tuple,
         list,
@@ -614,3 +614,9 @@ def test_ensure_generic_collection():
             ensure_generic_collection(
                 ValueSpec(t, "", CodeBuilder(None), FieldContext("", {}))
             )
+
+
+def test_ensure_generic_collection_not_generic():
+    assert not ensure_generic_collection(
+        ValueSpec(int, "", CodeBuilder(None), FieldContext("", {}))
+    )
