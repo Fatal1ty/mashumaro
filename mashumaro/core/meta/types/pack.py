@@ -523,7 +523,7 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
         return f"encodebytes({spec.expression}).decode()"
     elif issubclass(spec.origin_type, str):
         return spec.expression
-    elif issubclass(spec.origin_type, Tuple):
+    elif issubclass(spec.origin_type, Tuple):  # type: ignore
         if is_named_tuple(spec.type):
             return pack_named_tuple(spec)
         elif ensure_generic_collection(spec):

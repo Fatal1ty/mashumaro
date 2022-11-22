@@ -651,7 +651,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
             f"collections.deque([{inner_expr()} "
             f"for value in {spec.expression}])"
         )
-    elif issubclass(spec.origin_type, Tuple):
+    elif issubclass(spec.origin_type, Tuple):  # type: ignore
         if is_named_tuple(spec.type):
             return unpack_named_tuple(spec)
         elif ensure_generic_collection(spec):
