@@ -18,7 +18,7 @@ from mashumaro.core.const import PEP_585_COMPATIBLE
 from mashumaro.core.meta.helpers import get_type_origin, is_generic, type_name
 from mashumaro.exceptions import UnserializableDataError, UnserializableField
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma no cover
     from mashumaro.core.meta.code.builder import CodeBuilder
 else:
     CodeBuilder = Any
