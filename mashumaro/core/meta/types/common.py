@@ -14,6 +14,7 @@ from typing import (
 
 from typing_extensions import TypeAlias
 
+from mashumaro.core.const import PEP_585_COMPATIBLE
 from mashumaro.core.meta.helpers import get_type_origin, is_generic, type_name
 from mashumaro.exceptions import UnserializableDataError, UnserializableField
 
@@ -90,17 +91,18 @@ class Registry:
 
 
 def ensure_generic_collection(spec: ValueSpec) -> bool:
-    if is_generic(spec.type):
-        return True
-    proper_type = PROPER_COLLECTION_TYPES.get(spec.type)
-    if proper_type:
-        raise UnserializableField(
-            field_name=spec.field_ctx.name,
-            field_type=spec.type,
-            holder_class=spec.builder.cls,
-            msg=f"Use {proper_type} instead",
-        )
-    return False
+    if not is_generic(spec.type):
+        return False
+    if not PEP_585_COMPATIBLE:
+        proper_type = PROPER_COLLECTION_TYPES.get(spec.type)
+        if proper_type:
+            raise UnserializableField(
+                field_name=spec.field_ctx.name,
+                field_type=spec.type,
+                holder_class=spec.builder.cls,
+                msg=f"Use {proper_type} instead",
+            )
+    return True
 
 
 def ensure_collection_arg_types_supported(
