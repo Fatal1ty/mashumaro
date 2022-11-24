@@ -47,6 +47,7 @@ from mashumaro.core.meta.types.common import (
     ensure_generic_collection,
     ensure_generic_collection_subclass,
     ensure_generic_mapping,
+    expr_or_maybe_none,
 )
 from mashumaro.exceptions import (
     ThirdPartyModuleNotFoundError,
@@ -209,13 +210,6 @@ def unpack_union(
         filter(None, (spec.expression, spec.builder.get_unpack_method_flags()))
     )
     return f"cls.{method_name}({method_args})"
-
-
-def expr_or_maybe_none(spec: ValueSpec, new_expr: Expression) -> Expression:
-    if spec.could_be_none:
-        return f"{new_expr} if {spec.expression} is not None else None"
-    else:
-        return new_expr
 
 
 def unpack_literal(spec: ValueSpec) -> Expression:

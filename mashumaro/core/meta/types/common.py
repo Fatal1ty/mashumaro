@@ -57,7 +57,7 @@ class ValueSpec:
     expression: Expression
     builder: CodeBuilder
     field_ctx: FieldContext
-    could_be_none: bool = False
+    could_be_none: bool = True
 
     def __setattr__(self, key, value):
         if key == "type":
@@ -129,3 +129,10 @@ def ensure_generic_mapping(spec: ValueSpec, args, checked_type) -> bool:
     return ensure_generic_collection_subclass(
         spec, checked_type
     ) and ensure_collection_arg_types_supported(spec.origin_type, args)
+
+
+def expr_or_maybe_none(spec: ValueSpec, new_expr: Expression) -> Expression:
+    if spec.could_be_none:
+        return f"{new_expr} if {spec.expression} is not None else None"
+    else:
+        return new_expr
