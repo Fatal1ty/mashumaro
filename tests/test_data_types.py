@@ -1373,7 +1373,7 @@ def test_dataclass_with_non_optional_none_value():
 
     with pytest.raises(InvalidFieldValue) as e:
         DataClass.from_dict({"x": None})
-    assert e.value.field_name == 'x'
+    assert e.value.field_name == "x"
 
     obj = DataClass(x=42)
     assert DataClass.from_dict({"x": 42}) == obj
