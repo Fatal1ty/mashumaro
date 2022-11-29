@@ -123,7 +123,16 @@ def pack_dataclass_dict_mixin_subclass(
         method_name = spec.builder.get_pack_method_name(
             arg_types, spec.builder.format_name
         )
-        if not hasattr(spec.origin_type, method_name):
+        if get_class_that_defines_method(
+            method_name, spec.origin_type
+        ) != spec.origin_type and (
+            spec.origin_type != spec.builder.cls
+            or spec.builder.get_pack_method_name(
+                format_name=spec.builder.format_name,
+                encoder=spec.builder.encoder,
+            )
+            != method_name
+        ):
             builder = spec.builder.__class__(
                 spec.origin_type,
                 arg_types,
