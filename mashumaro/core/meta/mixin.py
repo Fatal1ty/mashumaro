@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional, Tuple, Type
 
-from mashumaro.core.meta.builder import CodeBuilder
+from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.dialect import Dialect
 from mashumaro.exceptions import UnresolvedTypeReferenceError
 

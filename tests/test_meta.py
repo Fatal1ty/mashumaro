@@ -15,7 +15,7 @@ from mashumaro.core.const import (
     PY_38_MIN,
     PY_310_MIN,
 )
-from mashumaro.core.meta.builder import CodeBuilder
+from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import (
     get_args,
     get_class_that_defines_field,
@@ -39,7 +39,13 @@ from mashumaro.core.meta.helpers import (
     resolve_type_vars,
     type_name,
 )
+from mashumaro.core.meta.types.common import (
+    FieldContext,
+    ValueSpec,
+    ensure_generic_collection,
+)
 from mashumaro.dialect import Dialect
+from mashumaro.exceptions import UnserializableField
 from mashumaro.mixins.json import DataClassJSONMixin
 
 from .entities import (
@@ -589,3 +595,28 @@ def test_code_builder_get_unpack_method_name():
 def test_is_self():
     assert is_self(typing_extensions.Self)
     assert not is_self(object)
+
+
+@pytest.mark.skipif(PEP_585_COMPATIBLE, reason="requires python <3.9")
+def test_ensure_generic_collection_not_pep_585():
+    for t in (
+        tuple,
+        list,
+        set,
+        frozenset,
+        dict,
+        collections.deque,
+        collections.ChainMap,
+        collections.OrderedDict,
+        collections.Counter,
+    ):
+        with pytest.raises(UnserializableField):
+            ensure_generic_collection(
+                ValueSpec(t, "", CodeBuilder(None), FieldContext("", {}))
+            )
+
+
+def test_ensure_generic_collection_not_generic():
+    assert not ensure_generic_collection(
+        ValueSpec(int, "", CodeBuilder(None), FieldContext("", {}))
+    )

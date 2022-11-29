@@ -19,8 +19,9 @@ def test_one_generic():
     class B(A[datetime], DataClassDictMixin):
         pass
 
-    obj = B.from_dict({"x": "2021-08-15 00:00:00"})
-    assert obj.x == datetime(2021, 8, 15)
+    obj = B(datetime(2021, 8, 15))
+    assert B.from_dict({"x": "2021-08-15T00:00:00"}) == obj
+    assert obj.to_dict() == {"x": "2021-08-15T00:00:00"}
 
 
 def test_one_generic_list():
@@ -32,8 +33,9 @@ def test_one_generic_list():
     class B(A[datetime], DataClassDictMixin):
         pass
 
-    obj = B.from_dict({"x": ["2021-08-15 00:00:00"]})
-    assert obj.x == [datetime(2021, 8, 15)]
+    obj = B(x=[datetime(2021, 8, 15)])
+    assert B.from_dict({"x": ["2021-08-15T00:00:00"]}) == obj
+    assert obj.to_dict() == {"x": ["2021-08-15T00:00:00"]}
 
 
 def test_two_generics():
@@ -46,11 +48,19 @@ def test_two_generics():
         y: Mapping[T, S]
 
     @dataclass
-    class B(A1[int], A2[int, float], DataClassDictMixin):
+    class B(A1[datetime], A2[datetime, date], DataClassDictMixin):
         pass
 
-    obj = B.from_dict({"x": ["1", "2", "3"], "y": {"1": "3.14"}})
-    assert obj == B(x=[1, 2, 3], y={1: 3.14})
+    obj = B(
+        x=[datetime(2021, 8, 15), datetime(2021, 8, 16)],
+        y={datetime(2021, 8, 17): date(2021, 8, 18)},
+    )
+    dump = {
+        "x": ["2021-08-15T00:00:00", "2021-08-16T00:00:00"],
+        "y": {"2021-08-17T00:00:00": "2021-08-18"},
+    }
+    assert B.from_dict(dump) == obj
+    assert obj.to_dict() == dump
 
 
 def test_partially_concrete_generic():
@@ -59,11 +69,12 @@ def test_partially_concrete_generic():
         x: Mapping[T, S]
 
     @dataclass
-    class B(A[int, S], DataClassDictMixin):
+    class B(A[datetime, S], DataClassDictMixin):
         pass
 
-    obj = B.from_dict({"x": {"1": "3.14"}})
-    assert obj == B(x={1: "3.14"})
+    obj = B(x={datetime(2022, 11, 21): "3.14"})
+    assert B.from_dict({"x": {"2022-11-21T00:00:00": "3.14"}}) == obj
+    assert obj.to_dict() == {"x": {"2022-11-21T00:00:00": "3.14"}}
 
 
 def test_partially_concrete_generic_with_bound():
@@ -72,15 +83,24 @@ def test_partially_concrete_generic_with_bound():
         x: Mapping[T, P]
 
     @dataclass
-    class B(A[int, P], DataClassDictMixin):
+    class B(A[date, P], DataClassDictMixin):
         pass
 
-    obj = B.from_dict({"x": {"1": {"1": "2", "3": "4"}}})
-    assert obj == B(x={1: {1: 2, 3: 4}})
-    obj = B.from_dict({"x": {"1": {"1.1": "2.2", "3.3": "4.4"}}})
-    assert obj == B(x={1: [1.1, 3.3]})
-    obj = B.from_dict({"x": {"1": ["1.1", "2.2", "3.3", "4.4"]}})
-    assert obj == B(x={1: [1.1, 2.2, 3.3, 4.4]})
+    obj1 = B(x={date(2022, 11, 21): {1: 2, 3: 4}})
+    assert B.from_dict({"x": {"2022-11-21": {"1": "2", "3": "4"}}}) == obj1
+    assert obj1.to_dict() == {"x": {"2022-11-21": {1: 2, 3: 4}}}
+    obj2 = B(x={date(2022, 11, 21): [1.1, 3.3]})
+    assert (
+        B.from_dict({"x": {"2022-11-21": {"1.1": "2.2", "3.3": "4.4"}}})
+        == obj2
+    )
+    assert obj2.to_dict() == {"x": {"2022-11-21": [1.1, 3.3]}}
+    obj3 = B(x={date(2022, 11, 21): [1.1, 2.2, 3.3, 4.4]})
+    assert (
+        B.from_dict({"x": {"2022-11-21": ["1.1", "2.2", "3.3", "4.4"]}})
+        == obj3
+    )
+    assert obj3.to_dict() == {"x": {"2022-11-21": [1.1, 2.2, 3.3, 4.4]}}
 
 
 def test_concrete_generic_with_different_type_var():

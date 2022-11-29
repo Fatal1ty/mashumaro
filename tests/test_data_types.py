@@ -1362,3 +1362,32 @@ def test_dataclass_with_init_false_field():
     assert obj.to_dict() == {"x": 42}
     assert DataClass.from_dict({"x": 42}) == obj
     assert DataClass.from_dict({}) == obj
+
+
+def test_dataclass_with_non_optional_none_value():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int
+        y: int = None
+        z: int = 42
+
+    with pytest.raises(InvalidFieldValue) as e:
+        DataClass.from_dict({"x": None})
+    assert e.value.field_name == "x"
+
+    obj = DataClass(x=42)
+    assert DataClass.from_dict({"x": 42}) == obj
+    assert obj.to_dict() == {"x": 42, "y": None, "z": 42}
+
+    with pytest.raises(TypeError):
+        DataClass(x=42, z=None).to_dict()
+
+
+def test_dataclass_with_optional_list_with_optional_ints():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Optional[List[Optional[int]]]
+
+    obj = DataClass(x=[42, None])
+    assert DataClass.from_dict({"x": [42, None]}) == obj
+    assert obj.to_dict() == {"x": [42, None]}

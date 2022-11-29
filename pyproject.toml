@@ -9,6 +9,13 @@ module = [
 ]
 disable_error_code = 'empty-body'
 
+[[tool.mypy.overrides]]
+module = [
+    'mashumaro.core.meta.types.pack',
+    'mashumaro.core.meta.types.unpack',
+]
+disable_error_code = 'return'
+
 [flake8]
 max-line-length = 79
 
