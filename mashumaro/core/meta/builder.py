@@ -967,7 +967,16 @@ class CodeBuilder:
             method_name = self.get_pack_method_name(
                 arg_types, self.format_name
             )
-            if not hasattr(origin_type, method_name):
+            if get_class_that_defines_method(
+                method_name, origin_type
+            ) != origin_type and (
+                origin_type != self.cls
+                or self.get_pack_method_name(
+                    format_name=self.format_name,
+                    encoder=self.encoder,
+                )
+                != method_name
+            ):
                 builder = CodeBuilder(
                     origin_type,
                     arg_types,
@@ -1304,7 +1313,16 @@ class CodeBuilder:
             method_name = self.get_unpack_method_name(
                 arg_types, self.format_name
             )
-            if not hasattr(origin_type, method_name):
+            if get_class_that_defines_method(
+                method_name, origin_type
+            ) != origin_type and (
+                origin_type != self.cls
+                or self.get_unpack_method_name(
+                    format_name=self.format_name,
+                    decoder=self.decoder,
+                )
+                != method_name
+            ):
                 builder = CodeBuilder(
                     origin_type,
                     arg_types,
