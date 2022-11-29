@@ -10,23 +10,49 @@ from mashumaro.mixins.yaml import DataClassYAMLMixin
 
 
 @dataclass
-class Entity1(DataClassDictMixin):
+class EntityA1(DataClassDictMixin):
     x: int
 
 
 @dataclass
-class Entity2(Entity1):
+class EntityA2(EntityA1):
     y: int
 
 
 @dataclass
-class Entity1Wrapper(DataClassMessagePackMixin):
-    entity: Entity1
+class EntityA1Wrapper(DataClassMessagePackMixin):
+    entity: EntityA1
 
 
 @dataclass
-class Entity2Wrapper(DataClassMessagePackMixin):
-    entity: Entity2
+class EntityA2Wrapper(DataClassMessagePackMixin):
+    entity: EntityA2
+
+
+@dataclass
+class EntityB1(DataClassDictMixin):
+    x: int
+
+
+@dataclass
+class EntityB2(EntityB1):
+    y: int
+
+
+@dataclass
+class EntityB1WrapperDict(DataClassDictMixin):
+    entity: EntityB1
+
+
+@dataclass
+class EntityB2WrapperMessagePack(DataClassMessagePackMixin):
+    entity: EntityB2
+
+
+@dataclass
+class EntityBWrapperMessagePack(DataClassMessagePackMixin):
+    entity1wrapper: EntityB1WrapperDict
+    entity2wrapper: EntityB2WrapperMessagePack
 
 
 def test_slots():
@@ -79,9 +105,24 @@ def test_data_class_dict_mixin_to_dict():
     assert DataClassDictMixin().to_dict() is None
 
 
-def test_compiled_mixin_with_inheritance():
-    entity = Entity2(x=1, y=2)
-    wrapper = Entity2Wrapper(entity)
+def test_compiled_mixin_with_inheritance_1():
+    entity = EntityA2(x=1, y=2)
+    wrapper = EntityA2Wrapper(entity)
     data = msgpack.packb({"entity": {"x": 1, "y": 2}}, use_bin_type=True)
     assert wrapper.to_msgpack() == data
-    assert Entity2Wrapper.from_msgpack(data) == wrapper
+    assert EntityA2Wrapper.from_msgpack(data) == wrapper
+
+
+def test_compiled_mixin_with_inheritance_2():
+    entity1w = EntityB1WrapperDict(EntityB1(x=1))
+    entity2w = EntityB2WrapperMessagePack(EntityB2(x=1, y=2))
+    wrapper = EntityBWrapperMessagePack(entity1w, entity2w)
+    data = msgpack.packb(
+        {
+            "entity1wrapper": {"entity": {"x": 1}},
+            "entity2wrapper": {"entity": {"x": 1, "y": 2}},
+        },
+        use_bin_type=True,
+    )
+    assert wrapper.to_msgpack() == data
+    assert EntityBWrapperMessagePack.from_msgpack(data) == wrapper
