@@ -99,6 +99,8 @@ following formats:
 Plain dict can be useful when you need to pass a dict object to a
 third-party library, such as a client for MongoDB.
 
+You can find the documentation for the specific serialization format [below](#serialization-mixins).
+
 Supported field types
 --------------------------------------------------------------------------------
 
@@ -348,7 +350,7 @@ Serialization mixins
 
 `mashumaro` provides mixins for each serialization format.
 
-#### [`DataClassDictMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#11)
+#### [`DataClassDictMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L11)
 
 Can be imported in two ways:
 ```python
@@ -434,7 +436,7 @@ You can install it manually or using an extra option for `mashumaro`:
 pip install mashumaro[yaml]
 ```
 
-#### [`DataClassTOMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L31)
+#### [`DataClassTOMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L32)
 
 Can be imported as:
 ```python
