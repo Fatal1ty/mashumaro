@@ -218,8 +218,7 @@ def pack_literal(spec: ValueSpec) -> Expression:
                     ),
                 )
                 lines.append(
-                    f"if {spec.expression} == {enum_type_name}."
-                    f"{literal_value.name}:"
+                    f"if value == {enum_type_name}.{literal_value.name}:"
                 )
                 with lines.indent():
                     lines.append(f"return {packer}")
@@ -227,7 +226,7 @@ def pack_literal(spec: ValueSpec) -> Expression:
                 literal_value,
                 (int, str, bytes, bool, NoneType),  # type: ignore
             ):
-                lines.append(f"if {spec.expression} == {literal_value!r}:")
+                lines.append(f"if value == {literal_value!r}:")
                 with lines.indent():
                     lines.append(f"return {packer}")
         field_type = type_name(
@@ -462,15 +461,13 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
             packer = PackerRegistry.get(
                 spec.copy(
                     type=annotations[key],
-                    expression=f"{spec.expression}['{key}']",
+                    expression=f"value['{key}']",
                     could_be_none=True,
                 )
             )
             lines.append(f"d['{key}'] = {packer}")
         for key in sorted(optional_keys, key=all_keys.index):
-            lines.append(
-                f"key_value = {spec.expression}.get('{key}', MISSING)"
-            )
+            lines.append(f"key_value = value.get('{key}', MISSING)")
             lines.append("if key_value is not MISSING:")
             with lines.indent():
                 packer = PackerRegistry.get(

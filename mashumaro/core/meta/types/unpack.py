@@ -239,15 +239,16 @@ def unpack_literal(spec: ValueSpec) -> Expression:
             if isinstance(literal_value, enum.Enum):
                 enum_type_name = type_name(type(literal_value))
                 lines.append(
-                    f"if {spec.expression} == {enum_type_name}."
-                    f"{literal_value.name}.value:"
+                    f"if value == {enum_type_name}.{literal_value.name}.value:"
                 )
                 with lines.indent():
                     lines.append(
                         f"return {enum_type_name}.{literal_value.name}"
                     )
             elif isinstance(literal_value, bytes):
-                unpacker = UnpackerRegistry.get(spec.copy(type=bytes))
+                unpacker = UnpackerRegistry.get(
+                    spec.copy(type=bytes, expression="value")
+                )
                 lines.append("try:")
                 with lines.indent():
                     lines.append(f"if {unpacker} == {literal_value!r}:")
@@ -260,7 +261,7 @@ def unpack_literal(spec: ValueSpec) -> Expression:
                 literal_value,
                 (int, str, bool, NoneType),  # type: ignore
             ):
-                lines.append(f"if {spec.expression} == {literal_value!r}:")
+                lines.append(f"if value == {literal_value!r}:")
                 with lines.indent():
                     lines.append(f"return {literal_value!r}")
         lines.append(f"raise ValueError({spec.expression})")
@@ -397,18 +398,20 @@ def unpack_date_objects(spec: ValueSpec) -> Optional[Expression]:
             elif spec.origin_type is datetime.time:
                 suffix = ".time()"
             return f"{datetime_parser}({spec.expression}){suffix}"
-        spec.builder.ensure_module_imported(datetime)
-        return (
-            f"datetime.{spec.origin_type.__name__}"
-            f".fromisoformat({spec.expression})"
+        method = f"__datetime_{spec.origin_type.__name__}_fromisoformat"
+        spec.builder.ensure_object_imported(
+            getattr(datetime, spec.origin_type.__name__).fromisoformat,
+            method,
         )
+        return f"{method}({spec.expression})"
 
 
 @register
 def unpack_timedelta(spec: ValueSpec) -> Optional[Expression]:
     if spec.origin_type is datetime.timedelta:
-        spec.builder.ensure_module_imported(collections)
-        return f"datetime.timedelta(seconds={spec.expression})"
+        method = "__datetime_timedelta"
+        spec.builder.ensure_object_imported(datetime.timedelta, method)
+        return f"{method}(seconds={spec.expression})"
 
 
 @register
@@ -421,15 +424,17 @@ def unpack_timezone(spec: ValueSpec) -> Optional[Expression]:
 @register
 def unpack_zone_info(spec: ValueSpec) -> Optional[Expression]:
     if PY_39_MIN and spec.origin_type is zoneinfo.ZoneInfo:
-        spec.builder.ensure_module_imported(zoneinfo)
-        return f"zoneinfo.ZoneInfo({spec.expression})"
+        method = "__zoneinfo_ZoneInfo"
+        spec.builder.ensure_object_imported(zoneinfo.ZoneInfo, method)
+        return f"{method}({spec.expression})"
 
 
 @register
 def unpack_uuid(spec: ValueSpec) -> Optional[Expression]:
     if spec.origin_type is uuid.UUID:
-        spec.builder.ensure_module_imported(uuid)
-        return f"uuid.UUID({spec.expression})"
+        method = "__uuid_UUID"
+        spec.builder.ensure_object_imported(uuid.UUID, method)
+        return f"{method}({spec.expression})"
 
 
 @register
@@ -442,7 +447,9 @@ def unpack_ipaddress(spec: ValueSpec) -> Optional[Expression]:
         ipaddress.IPv4Interface,
         ipaddress.IPv6Interface,
     ):
-        return f"{type_name(spec.origin_type)}({spec.expression})"
+        method = f"__ipaddress_{spec.origin_type.__name__}"
+        spec.builder.ensure_object_imported(spec.origin_type, method)
+        return f"{method}({spec.expression})"
 
 
 @register
@@ -511,11 +518,15 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
         field_indices = zip((f"'{name}'" for name in fields), fields)
     else:
         field_indices = enumerate(fields)
+    if not defaults:
+        packed_value = spec.expression
+    else:
+        packed_value = "value"
     for idx, field in field_indices:
         unpacker = UnpackerRegistry.get(
             spec.copy(
                 type=annotations.get(field, Any),
-                expression=f"{spec.expression}[{idx}]",
+                expression=f"{packed_value}[{idx}]",
                 could_be_none=True,
             )
         )
@@ -578,15 +589,13 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
             unpacker = UnpackerRegistry.get(
                 spec.copy(
                     type=annotations[key],
-                    expression=f"{spec.expression}['{key}']",
+                    expression=f"value['{key}']",
                     could_be_none=True,
                 )
             )
             lines.append(f"d['{key}'] = {unpacker}")
         for key in sorted(optional_keys, key=all_keys.index):
-            lines.append(
-                f"key_value = {spec.expression}.get('{key}', MISSING)"
-            )
+            lines.append(f"key_value = value.get('{key}', MISSING)")
             lines.append("if key_value is not MISSING:")
             with lines.indent():
                 unpacker = UnpackerRegistry.get(

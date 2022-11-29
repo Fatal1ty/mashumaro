@@ -30,6 +30,7 @@ from mashumaro.core.meta.helpers import (
     is_dialect_subclass,
     is_init_var,
     is_literal,
+    is_named_tuple,
     is_optional,
     is_type_var_any,
     resolve_type_vars,
@@ -209,8 +210,12 @@ class CodeBuilder:
         package = module.__name__.split(".")[0]
         self.globals.setdefault(package, importlib.import_module(package))
 
-    def ensure_object_imported(self, obj: typing.Any) -> None:
-        self.globals.setdefault(obj.__name__, obj)
+    def ensure_object_imported(
+        self,
+        obj: typing.Any,
+        name: typing.Optional[str] = None,
+    ) -> None:
+        self.globals.setdefault(name or obj.__name__, obj)
 
     def add_line(self, line: str) -> None:
         self.lines.append(line)
@@ -296,7 +301,7 @@ class CodeBuilder:
                         self._unpack_method_set_value(
                             fname, ftype, metadata, alias
                         )
-                self.add_line("except AttributeError:")
+                self.add_line("except TypeError:")
                 with self.indent():
                     self.add_line("if not isinstance(d, dict):")
                     with self.indent():
@@ -397,68 +402,56 @@ class CodeBuilder:
     def _unpack_method_set_value(
         self, fname, ftype, metadata, alias=None
     ) -> None:
-        unpacked_value = UnpackerRegistry.get(
-            ValueSpec(
-                type=ftype,
-                expression="value",
-                builder=self,
-                field_ctx=FieldContext(
-                    name=fname,
-                    metadata=metadata,
-                ),
+        self.add_line("try:")
+        with self.indent():
+            if is_named_tuple(ftype):
+                self.add_line(f"value = d['{alias or fname}']")
+                packed_value = "value"
+            else:
+                packed_value = f"d['{alias or fname}']"
+            unpacked_value = UnpackerRegistry.get(
+                ValueSpec(
+                    type=ftype,
+                    expression=packed_value,
+                    builder=self,
+                    field_ctx=FieldContext(
+                        name=fname,
+                        metadata=metadata,
+                    ),
+                )
             )
-        )
-        self.add_line(f"value = d.get('{alias or fname}', MISSING)")
-        if self.get_field_default(fname) is MISSING:
-            self.add_line("if value is MISSING:")
-            with self.indent():
-                field_type = type_name(
-                    ftype, type_vars=self.get_field_type_vars(fname)
-                )
-                self.add_line(
-                    f"raise MissingField('{fname}'," f"{field_type},cls)"
-                )
-            self.add_line("else:")
-            with self.indent():
-                if unpacked_value in (
-                    "value",
-                    "value if value is not None else None",
-                ):
-                    self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
-                else:
-                    self.add_line("try:")
-                    with self.indent():
-                        self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
-                    self.add_line("except Exception as e:")
-                    with self.indent():
-                        field_type = type_name(
-                            ftype, type_vars=self.get_field_type_vars(fname)
-                        )
-                        self.add_line(
-                            f"raise InvalidFieldValue('{fname}',"
-                            f"{field_type},value,cls)"
-                        )
-        else:
-            self.add_line("if value is not MISSING:")
-            with self.indent():
-                if unpacked_value in (
-                    "value",
-                    "value if value is not None else None",
-                ):
-                    self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
-                else:
-                    self.add_line("try:")
-                    with self.indent():
-                        self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
-                    self.add_line("except Exception as e:")
-                    with self.indent():
-                        field_type = type_name(
-                            ftype, type_vars=self.get_field_type_vars(fname)
-                        )
-                        self.add_line(
-                            f"raise InvalidFieldValue('{fname}',"
-                            f"{field_type},value,cls)"
-                        )
+            self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+        self.add_line("except KeyError as e:")
+        with self.indent():
+            field_type = type_name(
+                ftype, type_vars=self.get_field_type_vars(fname)
+            )
+            if self.get_field_default(fname) is MISSING:
+                self.add_line("if e.__traceback__.tb_next is None:")
+                with self.indent():
+                    self.add_line(
+                        f"raise MissingField('{fname}',{field_type},cls) "
+                        f"from None"
+                    )
+                self.add_line("else:")
+                with self.indent():
+                    self.add_line(
+                        f"raise InvalidFieldValue("
+                        f"'{fname}',{field_type},{packed_value},cls)"
+                    )
+            else:
+                self.add_line("if e.__traceback__.tb_next is not None:")
+                with self.indent():
+                    self.add_line(
+                        f"raise InvalidFieldValue("
+                        f"'{fname}',{field_type},{packed_value},cls)"
+                    )
+        self.add_line("except Exception:")
+        with self.indent():
+            self.add_line(
+                f"raise InvalidFieldValue("
+                f"'{fname}',{field_type},{packed_value},cls)"
+            )
 
     @lru_cache()
     def get_config(self, cls=None) -> typing.Type[BaseConfig]:
