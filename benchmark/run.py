@@ -1,8 +1,12 @@
+import os
+import sys
 import timeit
 
 import matplotlib.pyplot as plt
 import termtables as tt
 from pytablewriter import HtmlTableWriter
+
+sys.path.append(os.getcwd())
 
 REPETITIONS = 1000
 

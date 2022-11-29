@@ -24,10 +24,10 @@ pendulum>=2.1.2
 termtables>=0.2.3
 pytablewriter[html]>=0.58.0
 matplotlib>=3.3.4
-cattrs==1.8.0
-pydantic==1.8.2
+cattrs==22.2.0
+pydantic==1.10.2
 dacite==1.6.0
-marshmallow==3.13.0
+marshmallow<3.16.0
 marshmallow_enum==1.5.1
 
 # library stubs
