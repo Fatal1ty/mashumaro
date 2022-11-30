@@ -14,7 +14,8 @@ sample_1 = {
             "float": 3.14,
             "str": "foo bar",
             "bool": True,
-        } for _ in range(N)
+        }
+        for _ in range(N)
     ],
     "list_enum": [
         {
@@ -23,7 +24,8 @@ sample_1 = {
             "int_enum": 1,
             "flag": 2,
             "int_flag": 1,
-        } for _ in range(N)
+        }
+        for _ in range(N)
     ],
     "tuple_datetime": [
         {
@@ -31,13 +33,15 @@ sample_1 = {
             "date": "2017-01-06",
             "time": "11:16:21.753790",
             "timedelta": 34234.324234,
-        } for _ in range(N)
+        }
+        for _ in range(N)
     ],
     "dict_complex": {
         i: {
             str(j): {
-                str(uuid.uuid4()) : [str(random.random()) for _ in range(N)]
-            } for j in range(N)
+                str(uuid.uuid4()): [str(random.random()) for _ in range(N)]
+            }
+            for j in range(N)
         }
         for i in range(N)
     },
@@ -51,7 +55,8 @@ sample_2 = {
             "float": 3.14,
             "str": "foo bar",
             "bool": True,
-        } for _ in range(N)
+        }
+        for _ in range(N)
     ],
     "list_enum": [
         {
@@ -60,7 +65,8 @@ sample_2 = {
             "int_enum": MyIntEnum.a,
             "flag": MyFlag.b,
             "int_flag": MyIntFlag.a,
-        } for _ in range(N)
+        }
+        for _ in range(N)
     ],
     "tuple_datetime": (
         {
@@ -70,13 +76,15 @@ sample_2 = {
             "timedelta": datetime.timedelta(
                 seconds=34234, microseconds=324234
             ),
-        } for _ in range(N)
+        }
+        for _ in range(N)
     ),
     "dict_complex": {
         i: {
             str(j): {
-                uuid.uuid4() : [Decimal(random.random()) for _ in range(N)]
-            } for j in range(N)
+                uuid.uuid4(): [Decimal(random.random()) for _ in range(N)]
+            }
+            for j in range(N)
         }
         for i in range(N)
     },
