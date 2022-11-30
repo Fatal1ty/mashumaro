@@ -8,9 +8,13 @@ from pytablewriter import HtmlTableWriter
 
 sys.path.append(os.getcwd())
 
-REPETITIONS = 1000
+REPETITIONS = 5
+NUMBER = 100
+SHOW_PLOT = False
+SHOW_HTML_TABLE = False
+SAVE_PLOT = False
 
-
+print("Run mashumaro_from_dict")
 mashumaro_from_dict = min(
     timeit.repeat(
         "MASHUMAROClass.from_dict(sample)",
@@ -18,9 +22,11 @@ mashumaro_from_dict = min(
             "from benchmark.sample import sample_1 as sample;"
             "from benchmark.mashumaro_setup import MASHUMAROClass;"
         ),
-        number=REPETITIONS,
+        repeat=REPETITIONS,
+        number=NUMBER,
     )
 )
+print("Run mashumaro_to_dict")
 mashumaro_to_dict = min(
     timeit.repeat(
         "obj.to_dict()",
@@ -29,9 +35,11 @@ mashumaro_to_dict = min(
             "from benchmark.mashumaro_setup import MASHUMAROClass;"
             "obj = MASHUMAROClass.from_dict(sample);"
         ),
-        number=REPETITIONS,
+        repeat=REPETITIONS,
+        number=NUMBER,
     )
 )
+print("Run cattrs_from_dict")
 cattrs_from_dict = min(
     timeit.repeat(
         "converter.structure(sample, CATTRClass)",
@@ -39,9 +47,11 @@ cattrs_from_dict = min(
             "from benchmark.sample import sample_1 as sample;"
             "from benchmark.cattr_setup import CATTRClass, converter;"
         ),
-        number=REPETITIONS,
+        repeat=REPETITIONS,
+        number=NUMBER,
     )
 )
+print("Run cattrs_to_dict")
 cattrs_to_dict = min(
     timeit.repeat(
         "converter.unstructure(obj)",
@@ -50,9 +60,11 @@ cattrs_to_dict = min(
             "from benchmark.cattr_setup import CATTRClass, converter;"
             "obj = converter.structure(sample, CATTRClass);"
         ),
-        number=REPETITIONS,
+        repeat=REPETITIONS,
+        number=NUMBER,
     )
 )
+print("Run pydantic_from_dict")
 pydantic_from_dict = min(
     timeit.repeat(
         "PYDANTICClass(**sample)",
@@ -60,9 +72,11 @@ pydantic_from_dict = min(
             "from benchmark.sample import sample_1 as sample;"
             "from benchmark.pydantic_setup import PYDANTICClass;"
         ),
-        number=REPETITIONS,
+        repeat=REPETITIONS,
+        number=NUMBER,
     )
 )
+print("Run pydantic_to_dict")
 pydantic_to_dict = min(
     timeit.repeat(
         "obj.dict()",
@@ -71,20 +85,25 @@ pydantic_to_dict = min(
             "from benchmark.pydantic_setup import PYDANTICClass;"
             "obj = PYDANTICClass(**sample);"
         ),
-        number=REPETITIONS,
+        repeat=REPETITIONS,
+        number=NUMBER,
     )
 )
+print("Run dacite_from_dict")
 dacite_from_dict = min(
     timeit.repeat(
-        "from_dict(DACITEClass, sample, Config(check_types=False))",
+        "from_dict(DACITEClass, sample, config)",
         setup=(
             "from benchmark.sample import sample_2 as sample;"
             "from benchmark.dacite_setup import DACITEClass;"
-            "from dacite import from_dict, Config"
+            "from dacite import from_dict, Config;"
+            "config = Config(check_types=False);"
         ),
-        number=REPETITIONS,
+        repeat=REPETITIONS,
+        number=NUMBER,
     )
 )
+print("Run dataclasses_to_dict")
 dataclasses_to_dict = min(
     timeit.repeat(
         "asdict(obj)",
@@ -94,9 +113,11 @@ dataclasses_to_dict = min(
             "obj = MASHUMAROClass.from_dict(sample);"
             "from dataclasses import asdict"
         ),
-        number=REPETITIONS,
+        repeat=REPETITIONS,
+        number=NUMBER,
     )
 )
+print("Run marshmallow_from_dict")
 marshmallow_from_dict = min(
     timeit.repeat(
         "schema.load(sample, unknown='EXCLUDE')",
@@ -105,9 +126,11 @@ marshmallow_from_dict = min(
             "from benchmark.marshmallow_setup import MARSHMALLOWClass;"
             "schema = MARSHMALLOWClass();"
         ),
-        number=REPETITIONS,
+        repeat=REPETITIONS,
+        number=NUMBER,
     )
 )
+print("Run marshmallow_to_dict")
 marshmallow_to_dict = min(
     timeit.repeat(
         "schema.dump(obj)",
@@ -117,7 +140,8 @@ marshmallow_to_dict = min(
             "schema = MARSHMALLOWClass();"
             "obj = schema.load(sample, unknown='EXCLUDE');"
         ),
-        number=REPETITIONS,
+        repeat=REPETITIONS,
+        number=NUMBER,
     )
 )
 
@@ -228,13 +252,14 @@ writer = HtmlTableWriter(
         ],
     ],
 )
-writer.write_table()
+if SHOW_HTML_TABLE:
+    writer.write_table()
 
 # Deserialization plot
 
 fig, ax = plt.subplots()
 ax.set_title("Load from dict")
-ax.set_ylabel(f"Elapsed time for {REPETITIONS} repetitions in seconds")
+ax.set_ylabel(f"Elapsed time for {NUMBER} repetitions in seconds")
 
 y = [
     mashumaro_from_dict,
@@ -248,14 +273,16 @@ labels = ["mashumaro", "cattrs", "pydantic", "dacite", "marshmallow"]
 
 bar = plt.bar(x, height=y, tick_label=labels, label="a")
 plt.title = "Load time"
-plt.show()
-# fig.savefig("charts/load.png")
+if SHOW_PLOT:
+    plt.show()
+if SAVE_PLOT:
+    fig.savefig("./load.png")
 
 # Serialization plot
 
 fig, ax = plt.subplots()
 ax.set_title("Dump to dict")
-ax.set_ylabel(f"Elapsed time for {REPETITIONS} repetitions in seconds")
+ax.set_ylabel(f"Elapsed time for {NUMBER} repetitions in seconds")
 
 y = [
     mashumaro_to_dict,
@@ -269,5 +296,7 @@ labels = ["mashumaro", "cattrs", "pydantic", "dataclasses", "marshmallow"]
 
 bar = plt.bar(x, height=y, tick_label=labels, label="a")
 plt.title = "Dump time"
-plt.show()
-# fig.savefig("charts/dump.png")
+if SHOW_PLOT:
+    plt.show()
+if SAVE_PLOT:
+    fig.savefig("./dump.png")
