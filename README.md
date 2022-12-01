@@ -266,12 +266,12 @@ runtime in some cases) and are set as attributes to your dataclasses.
 Benchmark
 --------------------------------------------------------------------------------
 
-* macOS 11.5.2 Big Sur
+* macOS 13.0.1 Ventura
 * Apple M1
-* 16GB RAM
-* Python 3.9.1
+* 8GB RAM
+* Python 3.11.0
 
-Load and dump [sample data](https://github.com/Fatal1ty/mashumaro/blob/master/benchmark/sample.py) 1.000 times in 5 runs.
+Load and dump [sample data](https://github.com/Fatal1ty/mashumaro/blob/master/benchmark/sample.py) 100 times in 5 runs.
 The following figures show the best overall time in each case.
 
 <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load.png" width="400"><img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump.png" width="400">
@@ -293,43 +293,43 @@ The following figures show the best overall time in each case.
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/Fatal1ty/mashumaro">mashumaro</a></th>
-    <td align="right">0.04096</td>
+    <td align="right">0.14964</td>
     <td align="left">1x</td>
-    <td align="right">0.02741</td>
+    <td align="right">0.10403</td>
     <td align="left">1x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/Tinche/cattrs">cattrs</a></th>
-    <td align="right">0.07307</td>
-    <td align="left">1.78x</td>
-    <td align="right">0.05062</td>
-    <td align="left">1.85x</td>
+    <td align="right">0.18967</td>
+    <td align="left">1.27x</td>
+    <td align="right">0.13749</td>
+    <td align="left">1.32x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/samuelcolvin/pydantic/">pydantic</a></th>
-    <td align="right">0.24847</td>
-    <td align="left">6.07x</td>
-    <td align="right">0.12292</td>
-    <td align="left">4.48x</td>
+    <td align="right">1.01513</td>
+    <td align="left">6.78x</td>
+    <td align="right">0.83710</td>
+    <td align="left">8.05x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/marshmallow-code/marshmallow">marshmallow</a></th>
-    <td align="right">0.29205</td>
-    <td align="left">7.13x</td>
-    <td align="right">0.09310</td>
-    <td align="left">3.4x</td>
+    <td align="right">1.35346</td>
+    <td align="left">9.04x</td>
+    <td align="right">0.45191</td>
+    <td align="left">4.34x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.asdict">dataclasses</a></th>
     <td align="left">—</td>
     <td align="left">—</td>
-    <td align="right">0.22583</td>
-    <td align="left">8.24x</td>
+    <td align="right">0.68466</td>
+    <td align="left">6.58x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/konradhalas/dacite">dacite</a></th>
-    <td align="right">0.91553</td>
-    <td align="left">22.35x</td>
+    <td align="right">2.40621</td>
+    <td align="left">16.08x</td>
     <td align="left">—</td>
     <td align="left">—</td>
 </tr>
