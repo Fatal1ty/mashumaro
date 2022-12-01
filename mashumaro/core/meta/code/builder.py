@@ -651,10 +651,66 @@ class CodeBuilder:
             pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
             if pre_serialize:
                 self.add_line(f"self = self.{__PRE_SERIALIZE__}()")
-            self.add_line("kwargs = {}")
+            by_alias_feature = self.is_code_generation_option_enabled(
+                TO_DICT_ADD_BY_ALIAS_FLAG
+            )
+            omit_none_feature = self.is_code_generation_option_enabled(
+                TO_DICT_ADD_OMIT_NONE_FLAG
+            )
+            serialize_by_alias = self.get_config().serialize_by_alias
+            omit_none = self._get_dialect_or_config_option("omit_none", False)
+            packers = {}
+            aliases = {}
+            fields_could_be_none = set()
             for fname, ftype in field_types.items():
-                metadata = self.metadatas.get(fname, {})
-                self._pack_method_set_value(fname, ftype, metadata)
+                packer, alias, could_be_none = self._get_field_packer(
+                    fname, ftype, config
+                )
+                packers[fname] = packer
+                if alias:
+                    aliases[fname] = alias
+                if could_be_none:
+                    fields_could_be_none.add(fname)
+            if fields_could_be_none or by_alias_feature and aliases:
+                kwargs = "kwargs"
+                self.add_line("kwargs = {}")
+                for fname, packer in packers.items():
+                    alias = aliases.get(fname)
+                    if fname in fields_could_be_none:
+                        self.add_line(f"value = self.{fname}")
+                        self.add_line("if value is not None:")
+                        with self.indent():
+                            self._pack_method_set_value(
+                                fname, alias, by_alias_feature, packer
+                            )
+                        if omit_none and not omit_none_feature:
+                            continue
+                        self.add_line("else:")
+                        with self.indent():
+                            if omit_none_feature:
+                                self.add_line("if not omit_none:")
+                                with self.indent():
+                                    self._pack_method_set_value(
+                                        fname, alias, by_alias_feature, "None"
+                                    )
+                            else:
+                                self._pack_method_set_value(
+                                    fname, alias, by_alias_feature, "None"
+                                )
+                    else:
+                        self._pack_method_set_value(
+                            fname, alias, by_alias_feature, packer
+                        )
+            else:
+                kwargs_parts = []
+                for fname, packer in packers.items():
+                    if serialize_by_alias:
+                        fname_or_alias = aliases.get(fname, fname)
+                    else:
+                        fname_or_alias = fname
+                    kwargs_parts.append((fname_or_alias, packer))
+                kwargs = ", ".join(f"'{k}': {v}" for k, v in kwargs_parts)
+                kwargs = f"{{{kwargs}}}"
             post_serialize = self.get_declared_hook(__POST_SERIALIZE__)
             if self.encoder is not None:
                 if self.encoder_kwargs:
@@ -671,11 +727,33 @@ class CodeBuilder:
             if post_serialize:
                 self.add_line(
                     return_statement.format(
-                        f"self.{__POST_SERIALIZE__}(kwargs)"
+                        f"self.{__POST_SERIALIZE__}({kwargs})"
                     )
                 )
             else:
-                self.add_line(return_statement.format("kwargs"))
+                self.add_line(return_statement.format(kwargs))
+
+    def _pack_method_set_value(
+        self,
+        fname: str,
+        alias: typing.Optional[str],
+        by_alias_feature: bool,
+        packed_value: str,
+    ) -> None:
+        if by_alias_feature and alias is not None:
+            self.add_line("if by_alias:")
+            with self.indent():
+                self.add_line(f"kwargs['{alias}'] = {packed_value}")
+            self.add_line("else:")
+            with self.indent():
+                self.add_line(f"kwargs['{fname}'] = {packed_value}")
+        else:
+            serialize_by_alias = self.get_config().serialize_by_alias
+            if serialize_by_alias and alias is not None:
+                fname_or_alias = alias
+            else:
+                fname_or_alias = fname
+            self.add_line(f"kwargs['{fname_or_alias}'] = {packed_value}")
 
     def _add_pack_method_with_dialect_lines(self, method_name: str) -> None:
         packer_args = ", ".join(
@@ -760,82 +838,36 @@ class CodeBuilder:
             self.add_line(f"cls.{cache_name}[dialect] = {method_name}")
         self.compile()
 
-    def _pack_method_set_value(self, fname, ftype, metadata) -> None:
-        omit_none_feature = self.is_code_generation_option_enabled(
-            TO_DICT_ADD_OMIT_NONE_FLAG
-        )
-        omit_none = self._get_dialect_or_config_option("omit_none", False)
-
+    def _get_field_packer(
+        self,
+        fname,
+        ftype,
+        config,
+    ) -> typing.Tuple[str, typing.Optional[str], bool]:
+        metadata = self.metadatas.get(fname, {})
+        alias = metadata.get("alias")
+        if alias is None:
+            alias = config.aliases.get(fname)
         could_be_none = (
             ftype in (typing.Any, type(None), None)
             or is_type_var_any(ftype)
             or is_optional(ftype, self.get_field_type_vars(fname))
             or self.get_field_default(fname) is None
         )
-        if could_be_none:
-            packed_value = PackerRegistry.get(
-                ValueSpec(
-                    type=ftype,
-                    expression="value",
-                    builder=self,
-                    field_ctx=FieldContext(
-                        name=fname,
-                        metadata=metadata,
-                    ),
-                    could_be_none=False,
-                )
+        value = "value" if could_be_none else f"self.{fname}"
+        packer = PackerRegistry.get(
+            ValueSpec(
+                type=ftype,
+                expression=value,
+                builder=self,
+                field_ctx=FieldContext(
+                    name=fname,
+                    metadata=metadata,
+                ),
+                could_be_none=False,
             )
-            self.add_line(f"value = self.{fname}")
-            self.add_line("if value is not None:")
-            with self.indent():
-                self.__pack_method_set_value(fname, metadata, packed_value)
-            if omit_none and not omit_none_feature:
-                return
-            self.add_line("else:")
-            with self.indent():
-                if omit_none_feature:
-                    self.add_line("if not omit_none:")
-                    with self.indent():
-                        self.__pack_method_set_value(fname, metadata, "None")
-                else:
-                    self.__pack_method_set_value(fname, metadata, "None")
-        else:
-            packed_value = PackerRegistry.get(
-                ValueSpec(
-                    type=ftype,
-                    expression=f"self.{fname}",
-                    builder=self,
-                    field_ctx=FieldContext(
-                        name=fname,
-                        metadata=metadata,
-                    ),
-                )
-            )
-            self.__pack_method_set_value(fname, metadata, packed_value)
-
-    def __pack_method_set_value(self, fname, metadata, packed_value) -> None:
-        by_alias_feature = self.is_code_generation_option_enabled(
-            TO_DICT_ADD_BY_ALIAS_FLAG
         )
-        config = self.get_config()
-        alias = metadata.get("alias")
-        if alias is None:
-            alias = config.aliases.get(fname)
-        serialize_by_alias = self.get_config().serialize_by_alias
-        if serialize_by_alias and alias is not None:
-            fname_or_alias = alias
-        else:
-            fname_or_alias = fname
-
-        if by_alias_feature and alias is not None:
-            self.add_line("if by_alias:")
-            with self.indent():
-                self.add_line(f"kwargs['{alias}'] = {packed_value}")
-            self.add_line("else:")
-            with self.indent():
-                self.add_line(f"kwargs['{fname}'] = {packed_value}")
-        else:
-            self.add_line(f"kwargs['{fname_or_alias}'] = {packed_value}")
+        return packer, alias, could_be_none
 
     def iter_serialization_strategies(self, metadata, ftype):
         yield metadata.get("serialization_strategy")
