@@ -1,15 +1,15 @@
 from datetime import date, datetime, time, timedelta
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import *
 from uuid import UUID
 
-import attr
 import cattr
 
 from benchmark.enums import *
 
 
-@attr.s(auto_attribs=True)
+@dataclass
 class CATTRSimpleClass:
     int: int
     float: float
@@ -17,7 +17,7 @@ class CATTRSimpleClass:
     bool: bool
 
 
-@attr.s(auto_attribs=True)
+@dataclass
 class CATTREnumClass:
     enum: MyEnum
     str_enum: MyStrEnum
@@ -26,7 +26,7 @@ class CATTREnumClass:
     int_flag: MyIntFlag
 
 
-@attr.s(auto_attribs=True)
+@dataclass
 class CATTRDateTimeClass:
     datetime: datetime
     date: date
@@ -34,7 +34,7 @@ class CATTRDateTimeClass:
     timedelta: timedelta
 
 
-@attr.s(auto_attribs=True)
+@dataclass
 class CATTRClass:
     list_simple: List[CATTRSimpleClass]
     list_enum: List[CATTREnumClass]
