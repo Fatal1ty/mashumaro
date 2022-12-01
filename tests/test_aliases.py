@@ -164,3 +164,15 @@ def test_by_alias_with_serialize_by_alias():
     assert DataClass.from_dict({"alias_a": 123}) == instance
     assert instance.to_dict() == {"alias_a": 123}
     assert instance.to_dict(by_alias=False) == {"a": 123}
+
+
+def test_no_serialize_by_alias_with_serialize_by_alias_and_optional():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Optional[int] = field(metadata={"alias": "alias"})
+
+        class Config(BaseConfig):
+            serialize_by_alias = True
+
+    assert DataClass(x=123).to_dict() == {"alias": 123}
+    assert DataClass(x=None).to_dict() == {"alias": None}
