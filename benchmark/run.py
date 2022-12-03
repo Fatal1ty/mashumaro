@@ -120,7 +120,7 @@ dataclasses_to_dict = min(
 print("Run marshmallow_from_dict")
 marshmallow_from_dict = min(
     timeit.repeat(
-        "schema.load(sample, unknown='EXCLUDE')",
+        "schema.load(sample)",
         setup=(
             "from benchmark.sample import sample_1 as sample;"
             "from benchmark.marshmallow_setup import MARSHMALLOWClass;"
@@ -138,7 +138,7 @@ marshmallow_to_dict = min(
             "from benchmark.sample import sample_1 as sample;"
             "from benchmark.marshmallow_setup import MARSHMALLOWClass;"
             "schema = MARSHMALLOWClass();"
-            "obj = schema.load(sample, unknown='EXCLUDE');"
+            "obj = schema.load(sample);"
         ),
         repeat=REPETITIONS,
         number=NUMBER,

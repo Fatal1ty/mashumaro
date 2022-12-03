@@ -1,6 +1,4 @@
 from marshmallow import Schema, fields
-from marshmallow_enum import EnumField
-
 from benchmark.enums import *
 
 
@@ -12,11 +10,11 @@ class MARSHMALLOWSimpleClass(Schema):
 
 
 class MARSHMALLOWEnumClass(Schema):
-    enum = EnumField(MyEnum)
-    str_enum = EnumField(MyStrEnum)
-    int_enum = EnumField(MyIntEnum)
-    flag = EnumField(MyFlag)
-    int_flag = EnumField(MyIntFlag)
+    enum = fields.Enum(MyEnum, by_value=True)
+    str_enum = fields.Enum(MyStrEnum, by_value=True)
+    int_enum = fields.Enum(MyIntEnum, by_value=True)
+    flag = fields.Enum(MyFlag, by_value=True)
+    int_flag = fields.Enum(MyIntFlag, by_value=True)
 
 
 class MARSHMALLOWDateTimeClass(Schema):
@@ -28,7 +26,7 @@ class MARSHMALLOWDateTimeClass(Schema):
 
 class MARSHMALLOWClass(Schema):
     list_simple = fields.List(fields.Nested(MARSHMALLOWSimpleClass()))
-    # list_enum = fields.List(fields.Nested(MARSHMALLOWEnumClass()))
+    list_enum = fields.List(fields.Nested(MARSHMALLOWEnumClass()))
     tuple_datetime = fields.List(fields.Nested(MARSHMALLOWDateTimeClass()))
     dict_complex = fields.Dict(
         keys=fields.Int(),

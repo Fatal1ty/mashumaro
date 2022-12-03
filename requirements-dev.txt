@@ -27,8 +27,7 @@ matplotlib>=3.3.4
 cattrs==22.2.0
 pydantic==1.10.2
 dacite==1.6.0
-marshmallow<3.16.0
-marshmallow_enum==1.5.1
+marshmallow==3.19.0
 
 # library stubs
 types-backports

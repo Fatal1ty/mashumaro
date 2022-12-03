@@ -293,43 +293,43 @@ The following figures show the best overall time in each case.
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/Fatal1ty/mashumaro">mashumaro</a></th>
-    <td align="right">0.14834</td>
+    <td align="right">0.14791</td>
     <td align="left">1x</td>
-    <td align="right">0.10295</td>
+    <td align="right">0.10294</td>
     <td align="left">1x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/Tinche/cattrs">cattrs</a></th>
-    <td align="right">0.18971</td>
+    <td align="right">0.18913</td>
     <td align="left">1.28x</td>
-    <td align="right">0.13793</td>
-    <td align="left">1.34x</td>
+    <td align="right">0.13879</td>
+    <td align="left">1.35x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/samuelcolvin/pydantic/">pydantic</a></th>
-    <td align="right">0.92374</td>
-    <td align="left">6.23x</td>
-    <td align="right">0.80111</td>
-    <td align="left">7.78x</td>
+    <td align="right">0.92652</td>
+    <td align="left">6.26x</td>
+    <td align="right">0.81281</td>
+    <td align="left">7.9x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/marshmallow-code/marshmallow">marshmallow</a></th>
-    <td align="right">1.36620</td>
-    <td align="left">9.21x</td>
-    <td align="right">0.44991</td>
-    <td align="left">4.37x</td>
+    <td align="right">1.38964</td>
+    <td align="left">9.39x</td>
+    <td align="right">0.45987</td>
+    <td align="left">4.47x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.asdict">dataclasses</a></th>
     <td align="left">—</td>
     <td align="left">—</td>
-    <td align="right">0.68515</td>
-    <td align="left">6.65x</td>
+    <td align="right">0.68592</td>
+    <td align="left">6.66x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/konradhalas/dacite">dacite</a></th>
-    <td align="right">2.40733</td>
-    <td align="left">16.23x</td>
+    <td align="right">2.40445</td>
+    <td align="left">16.26x</td>
     <td align="left">—</td>
     <td align="left">—</td>
 </tr>
