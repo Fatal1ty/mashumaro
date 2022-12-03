@@ -1,4 +1,5 @@
 from marshmallow import Schema, fields
+
 from benchmark.enums import *
 
 

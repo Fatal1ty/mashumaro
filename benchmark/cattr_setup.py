@@ -1,5 +1,5 @@
-from datetime import date, datetime, time, timedelta
 from dataclasses import dataclass
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from typing import *
 from uuid import UUID
