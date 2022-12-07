@@ -399,7 +399,7 @@ def get_function_return_annotation(
 ) -> typing.Type:
     annotation = inspect.signature(function).return_annotation
     if annotation is inspect.Signature.empty:
-        raise ValueError(f"Function doesn't have return annotation")
+        raise ValueError("Function doesn't have return annotation")
     return annotation
 
 

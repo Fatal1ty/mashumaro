@@ -129,7 +129,7 @@ def _unpack_annotated_serializable_type(
             field_name=spec.field_ctx.name,
             field_type=spec.type,
             holder_class=spec.builder.cls,
-            msg=f'Method _deserialize must have annotated "value" argument',
+            msg='Method _deserialize must have annotated "value" argument',
         ) from None
     args = get_args(value_type)
     resolved = resolve_type_vars(spec.origin_type, get_args(spec.type))[

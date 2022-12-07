@@ -19,7 +19,6 @@ from mashumaro.core.meta.helpers import (
     get_class_that_defines_method,
     get_function_return_annotation,
     get_literal_values,
-    get_type_origin,
     is_dataclass_dict_mixin_subclass,
     is_literal,
     is_named_tuple,
