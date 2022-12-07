@@ -58,7 +58,7 @@ class MyAnnotatedSerializableTypeWithoutAnnotationsInSerialize(
     def __init__(self, value):  # pragma no cover
         self.value = value
 
-    def _serialize(self):
+    def _serialize(self):  # pragma no cover
         return self.value
 
     @classmethod
