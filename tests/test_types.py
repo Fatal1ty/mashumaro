@@ -8,7 +8,7 @@ from mashumaro import DataClassDictMixin
 from mashumaro.core.const import PEP_585_COMPATIBLE
 from mashumaro.exceptions import UnserializableField
 from mashumaro.types import SerializableType
-from tests.entities import GenericSerializableList
+from tests.entities import GenericSerializableList, GenericSerializableWrapper
 
 XT = TypeVar("XT")
 YT = TypeVar("YT")
@@ -155,6 +155,16 @@ def test_generic_serializable_list_str():
     obj = DataClass(x=GenericSerializableList(["a", "b", "c"]))
     assert DataClass.from_dict({"x": ["_a", "_b", "_c"]}) == obj
     assert obj.to_dict() == {"x": ["_a", "_b", "_c"]}
+
+
+def test_generic_serializable_wrapper_with_type_from_another_module():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: GenericSerializableWrapper[date]
+
+    obj = DataClass(x=GenericSerializableWrapper(date(2022, 12, 8)))
+    assert DataClass.from_dict({"x": "2022-12-08"}) == obj
+    assert obj.to_dict() == {"x": "2022-12-08"}
 
 
 def test_simple_serializable_type():

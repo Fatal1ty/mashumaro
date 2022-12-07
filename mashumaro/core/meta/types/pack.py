@@ -151,9 +151,9 @@ def pack_serializable_type(spec: ValueSpec) -> Optional[Expression]:
 def pack_generic_serializable_type(spec: ValueSpec) -> Optional[Expression]:
     with suppress(TypeError):
         if issubclass(spec.origin_type, GenericSerializableType):
-            arg_type_names = ", ".join(
-                list(map(type_name, get_args(spec.type)))
-            )
+            arg_types = get_args(spec.type)
+            spec.builder.add_type_modules(*arg_types)
+            arg_type_names = ", ".join(list(map(type_name, arg_types)))
             return f"{spec.expression}._serialize([{arg_type_names}])"
 
 
