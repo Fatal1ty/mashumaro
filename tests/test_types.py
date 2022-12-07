@@ -41,28 +41,28 @@ class MyAnnotatedSerializableType(SerializableType, use_annotations=True):
 class MyAnnotatedSerializableTypeWithoutAnnotationsInDeserialize(
     SerializableType, use_annotations=True
 ):
-    def __init__(self, value):
+    def __init__(self, value):  # pragma no cover
         self.value = value
 
-    def _serialize(self) -> date:
+    def _serialize(self) -> date:  # pragma no cover
         return self.value
 
     @classmethod
-    def _deserialize(cls, value):
+    def _deserialize(cls, value):  # pragma no cover
         return cls(value)
 
 
 class MyAnnotatedSerializableTypeWithoutAnnotationsInSerialize(
     SerializableType, use_annotations=True
 ):
-    def __init__(self, value):
+    def __init__(self, value):  # pragma no cover
         self.value = value
 
     def _serialize(self):
         return self.value
 
     @classmethod
-    def _deserialize(cls, value: date):
+    def _deserialize(cls, value: date):  # pragma no cover
         return cls(value)
 
 
@@ -110,13 +110,13 @@ class MyMapping(Mapping[XT, YT], SerializableType, use_annotations=True):
     def __getitem__(self, __k: XT) -> YT:
         return self.value[__k]
 
-    def __len__(self) -> int:
+    def __len__(self) -> int:  # pragma no cover
         return len(self.value)
 
     def __iter__(self) -> Iterator[XT]:
         return iter(self.value)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma no cover
         return f"<MyMapping: {repr(self.value)}>"
 
 
@@ -133,7 +133,7 @@ class MyAnnotatedUserGenericSerializableType(
     def _deserialize(cls, value: MyMapping[XT, YT]):
         return cls(value)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma no cover
         return f"<MyAnnotatedUserGenericSerializableType: {repr(self.value)}>"
 
 
