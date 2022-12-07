@@ -626,7 +626,7 @@ def test_ensure_generic_collection_not_generic():
 
 def test_get_function_arg_annotation():
     def foo(x: int, y: Dialect) -> None:
-        pass
+        pass  # pragma no cover
 
     assert get_function_arg_annotation(foo, "x") == int
     assert get_function_arg_annotation(foo, "y") == Dialect
@@ -634,6 +634,6 @@ def test_get_function_arg_annotation():
 
 def test_get_function_return_annotation():
     def foo(x: int, y: Dialect) -> Dialect:
-        pass
+        pass  # pragma no cover
 
     assert get_function_return_annotation(foo) == Dialect
