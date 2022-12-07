@@ -1,5 +1,6 @@
 import dataclasses
 import enum
+import inspect
 import re
 import types
 import typing
@@ -120,10 +121,10 @@ def type_name(
         return f"{_typing_name('Union', short)}[{args_str}]"
     elif is_annotated(t):
         return type_name(get_args(t)[0], short, type_vars)
-    elif is_literal(t):
+    elif not is_type_origin and is_literal(t):
         args_str = _get_literal_values_str(t, short)
         return f"{_typing_name('Literal', short, t.__module__)}[{args_str}]"
-    elif is_generic(t) and not is_type_origin:
+    elif not is_type_origin and is_generic(t):
         args_str = _get_args_str(t, short, type_vars)
         if not args_str:
             return get_generic_name(t, short)
@@ -383,6 +384,25 @@ def is_not_required(t) -> bool:
     return get_type_origin(t) is typing_extensions.NotRequired  # noqa
 
 
+def get_function_arg_annotation(
+    function: typing.Callable[[typing.Any], typing.Any], arg_name: str
+) -> typing.Type:
+    parameter = inspect.signature(function).parameters[arg_name]
+    annotation = parameter.annotation
+    if annotation is inspect.Signature.empty:
+        raise ValueError(f"Argument {arg_name} doesn't have annotation")
+    return annotation
+
+
+def get_function_return_annotation(
+    function: typing.Callable[[typing.Any], typing.Any]
+) -> typing.Type:
+    annotation = inspect.signature(function).return_annotation
+    if annotation is inspect.Signature.empty:
+        raise ValueError(f"Function doesn't have return annotation")
+    return annotation
+
+
 __all__ = [
     "get_type_origin",
     "get_args",
@@ -413,4 +433,6 @@ __all__ = [
     "is_self",
     "is_required",
     "is_not_required",
+    "get_function_arg_annotation",
+    "get_function_return_annotation",
 ]

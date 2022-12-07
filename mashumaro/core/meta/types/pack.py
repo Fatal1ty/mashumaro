@@ -17,7 +17,9 @@ from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
     get_args,
     get_class_that_defines_method,
+    get_function_return_annotation,
     get_literal_values,
+    get_type_origin,
     is_dataclass_dict_mixin_subclass,
     is_literal,
     is_named_tuple,
@@ -32,6 +34,7 @@ from mashumaro.core.meta.helpers import (
     is_typed_dict,
     is_union,
     not_none_type_arg,
+    resolve_type_vars,
     type_name,
 )
 from mashumaro.core.meta.types.common import (
@@ -46,6 +49,7 @@ from mashumaro.core.meta.types.common import (
 )
 from mashumaro.exceptions import (
     UnserializableDataError,
+    UnserializableField,
     UnsupportedSerializationEngine,
 )
 from mashumaro.helper import pass_through
@@ -97,11 +101,51 @@ def pack_type_with_overridden_serialization(
         return f"self.{overridden_fn}({spec.expression})"
 
 
+def _pack_annotated_serializable_type(
+    spec: ValueSpec,
+) -> Optional[Expression]:
+    try:
+        # noinspection PyProtectedMember
+        # noinspection PyUnresolvedReferences
+        value_type = get_function_return_annotation(
+            spec.origin_type._serialize
+        )
+    except (KeyError, ValueError):
+        raise UnserializableField(
+            field_name=spec.field_ctx.name,
+            field_type=spec.type,
+            holder_class=spec.builder.cls,
+            msg="Method _serialize must have return annotation",
+        ) from None
+    args = get_args(value_type)
+    resolved = resolve_type_vars(spec.origin_type, get_args(spec.type))[
+        spec.origin_type
+    ]
+    new_args = []
+    for arg in args:
+        new_args.append(resolved.get(arg, arg))
+    with suppress(TypeError):
+        # noinspection PyUnresolvedReferences
+        value_type = value_type[tuple(new_args)]
+    return PackerRegistry.get(
+        spec.copy(
+            type=value_type,
+            expression=f"{spec.expression}._serialize()",
+        )
+    )
+
+
 @register
 def pack_serializable_type(spec: ValueSpec) -> Optional[Expression]:
-    with suppress(TypeError):
-        if issubclass(spec.origin_type, SerializableType):
-            return f"{spec.expression}._serialize()"
+    try:
+        if not issubclass(spec.origin_type, SerializableType):
+            return None
+    except TypeError:
+        return None
+    if spec.origin_type.__use_annotations__:
+        return _pack_annotated_serializable_type(spec)
+    else:
+        return f"{spec.expression}._serialize()"
 
 
 @register

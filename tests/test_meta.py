@@ -20,6 +20,8 @@ from mashumaro.core.meta.helpers import (
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
+    get_function_arg_annotation,
+    get_function_return_annotation,
     get_generic_name,
     get_literal_values,
     get_type_origin,
@@ -620,3 +622,18 @@ def test_ensure_generic_collection_not_generic():
     assert not ensure_generic_collection(
         ValueSpec(int, "", CodeBuilder(None), FieldContext("", {}))
     )
+
+
+def test_get_function_arg_annotation():
+    def foo(x: int, y: Dialect) -> None:
+        pass
+
+    assert get_function_arg_annotation(foo, "x") == int
+    assert get_function_arg_annotation(foo, "y") == Dialect
+
+
+def test_get_function_return_annotation():
+    def foo(x: int, y: Dialect) -> Dialect:
+        pass
+
+    assert get_function_return_annotation(foo) == Dialect
