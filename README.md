@@ -62,6 +62,7 @@ Table of contents
     * [Generic dataclasses](#generic-dataclasses)
       * [Generic dataclass inheritance](#generic-dataclass-inheritance)
       * [Generic dataclass in a field type](#generic-dataclass-in-a-field-type)
+    * [`GenericSerializableType` interface](#genericserializabletype-interface)
     * [Serialization hooks](#serialization-hooks)
         * [Before deserialization](#before-deserialization)
         * [After deserialization](#after-deserialization)
@@ -1469,7 +1470,7 @@ dictionary = {'date': {'x': '2021-01-01'}, 'str': {'x': '2021-01-01'}}
 assert DataClass.from_dict(dictionary) == instance
 ```
 
-#### GenericSerializableType interface
+### GenericSerializableType interface
 
 There is a generic alternative to [`SerializableType`](#serializabletype-interface)
 called `GenericSerializableType`. It makes it possible to decide yourself how
