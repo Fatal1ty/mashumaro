@@ -32,6 +32,8 @@ Table of contents
   * [`DataClassTOMLMixin`](#dataclasstomlmixin)
 * [Customization](#customization)
     * [`SerializableType` interface](#serializabletype-interface)
+      * [User-defined types](#user-defined-types)
+      * [User-defined generic types](#user-defined-generic-types)
     * [Field options](#field-options)
         * [`serialize` option](#serialize-option)
         * [`deserialize` option](#deserialize-option)
@@ -57,10 +59,9 @@ Table of contents
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
         * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
         * [Add `dialect` keyword argument](#add-dialect-keyword-argument)
-    * [User-defined generic types](#user-defined-generic-types)
-      * [User-defined generic dataclasses](#user-defined-generic-dataclasses)
-      * [Generic dataclasses as field types](#generic-dataclasses-as-field-types)
-      * [`GenericSerializableType` interface](#genericserializabletype-interface)
+    * [Generic dataclasses](#generic-dataclasses)
+      * [Generic dataclass inheritance](#generic-dataclass-inheritance)
+      * [Generic dataclass in a field type](#generic-dataclass-in-a-field-type)
     * [Serialization hooks](#serialization-hooks)
         * [Before deserialization](#before-deserialization)
         * [After deserialization](#after-deserialization)
@@ -478,53 +479,163 @@ Customization
 
 ### SerializableType interface
 
-If you already have a separate custom class, and you want to serialize
-instances of it with `mashumaro`, you can achieve this by implementing
-`SerializableType` interface:
+If you have a custom class or hierarchy of classes whose instances you want
+to serialize with `mashumaro`, the first option is to implement
+`SerializableType` interface.
+
+#### User-defined types
+
+Let's look at this not very practicable example:
 
 ```python
-from typing import Dict
-from datetime import datetime
 from dataclasses import dataclass
 from mashumaro import DataClassDictMixin
 from mashumaro.types import SerializableType
 
-class DateTime(datetime, SerializableType):
-    def _serialize(self) -> Dict[str, int]:
-        return {
-            "year": self.year,
-            "month": self.month,
-            "day": self.day,
-            "hour": self.hour,
-            "minute": self.minute,
-            "second": self.second,
-        }
+class Airport(SerializableType):
+    def __init__(self, code, city):
+        self.code, self.city = code, city
+
+    def _serialize(self):
+        return [self.code, self.city]
 
     @classmethod
-    def _deserialize(cls, value: Dict[str, int]) -> 'DateTime':
-        return DateTime(
-            year=value['year'],
-            month=value['month'],
-            day=value['day'],
-            hour=value['hour'],
-            minute=value['minute'],
-            second=value['second'],
-        )
-
+    def _deserialize(cls, value):
+        return cls(*value)
 
 @dataclass
-class Holiday(DataClassDictMixin):
-    when: DateTime = DateTime.now()
+class Flight(DataClassDictMixin):
+    origin: Airport
+    destination: Airport
 
+JFK = Airport("JFK", "New York City")
+LAX = Airport("LAX", "Los Angeles")
 
-new_year = Holiday(when=DateTime(2019, 1, 1, 12))
-dictionary = new_year.to_dict()
-# {'x': {'year': 2019, 'month': 1, 'day': 1, 'hour': 0, 'minute': 0, 'second': 0}}
-assert Holiday.from_dict(dictionary) == new_year
+input_data = {
+    "origin": ["JFK", "New York City"],
+    "destination": ["LAX", "Los Angeles"]
+}
+my_flight = Flight.from_dict(input_data)
+assert my_flight == Flight(JFK, LAX)
+assert my_flight.to_dict() == input_data
 ```
 
-If you have a custom [generic type](https://docs.python.org/3/library/typing.html#user-defined-generic-types)
-and are looking for a generic version of such an interface, read [this](#genericserializabletype-interface).
+You can see how `Airport` instances are seamlessly created from lists of two
+strings and serialized into them.
+
+By default `_deserialize` method will get raw input data without any 
+transformations before. This should be enough in many cases, especially when
+you need to perform non-standard transformations yourself, but let's extend
+our example:
+
+```python
+class Itinerary(SerializableType):
+    def __init__(self, flights):
+        self.flights = flights
+
+    def _serialize(self):
+        return self.flights
+
+    @classmethod
+    def _deserialize(cls, flights):
+        return cls(flights)
+
+@dataclass
+class TravelPlan(DataClassDictMixin):
+    budget: float
+    itinerary: Itinerary
+
+input_data = {
+    "budget": 10_000,
+    "itinerary": [
+        {
+            "origin": ["JFK", "New York City"],
+            "destination": ["LAX", "Los Angeles"]
+        },
+        {
+            "origin": ["LAX", "Los Angeles"],
+            "destination": ["SFO", "San Fransisco"]
+        }
+    ]
+}
+```
+
+If we pass the flight list as is into `Itinerary._deserialize`, our itinerary
+will have something that we may not expect — `list[dict]` instead of
+`list[Flight]`. The solution is quite simple. Instead of calling
+`Flight._deserialize` yourself, just use annotations:
+
+```python
+class Itinerary(SerializableType, use_annotations=True):
+    def __init__(self, flights):
+        self.flights = flights
+
+    def _serialize(self) -> list[Flight]:
+        return self.flights
+
+    @classmethod
+    def _deserialize(cls, flights: list[Flight]):
+        return cls(flights)
+
+my_plan = TravelPlan.from_dict(input_data)
+assert isinstance(my_plan.itinerary.flights[0], Flight)
+assert isinstance(my_plan.itinerary.flights[1], Flight)
+assert my_plan.to_dict() == input_data
+```
+
+Here we add annotations to the only argument of `_deserialize` method and
+to the return value of `_serialize` method as well. The latter is needed for
+correct serialization.
+
+The importance of explicit passing `use_annotations=True` when defining a class
+is that otherwise implicit using annotations might break compatibility with old
+code that wasn't aware of this feature. It will be enabled by default in the
+future major release.
+
+#### User-defined generic types
+
+The great thing to note about using annotations in `SerializableType` is that
+they work seamlessly with [generic types](https://docs.python.org/3/library/typing.html#user-defined-generic-types).
+Let's see how this can be useful:
+
+```python
+from datetime import date
+from typing import TypeVar
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.types import SerializableType
+
+KT = TypeVar("KT")
+VT = TypeVar("VT")
+
+class DictWrapper(dict[KT, VT], SerializableType, use_annotations=True):
+    def _serialize(self) -> dict[KT, VT]:
+        return dict(self)
+
+    @classmethod
+    def _deserialize(cls, value: dict[KT, VT]) -> 'DictWrapper[KT, VT]':
+        return cls(value)
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    x: DictWrapper[date, str]
+    y: DictWrapper[str, date]
+
+input_data = {
+    "x": {"2022-12-07": "2022-12-07"},
+    "y": {"2022-12-07": "2022-12-07"}
+}
+obj = DataClass.from_dict(input_data)
+assert obj == DataClass(
+    x=DictWrapper({date(2022, 12, 7): "2022-12-07"}),
+    y=DictWrapper({"2022-12-07": date(2022, 12, 7)})
+)
+assert obj.to_dict() == input_data
+```
+
+You can see that formatted date is deserialized to `date` object before passing
+to `DictWrapper._deserialize` in a key or value according to the generic
+parameters.
 
 ### Field options
 
@@ -1292,18 +1403,16 @@ class Entity(DataClassDictMixin):
         code_generation_options = [ADD_DIALECT_SUPPORT]
 ```
 
-### User-defined generic types
+### Generic dataclasses
 
-There is support for [user-defined generic types](https://docs.python.org/3/library/typing.html#user-defined-generic-types).
-You can inherit generic dataclasses along with overwriting types in them, use generic
-dataclasses as field types, or create your own generic types with serialization
-under your control.
+Along with user-defined generic types implementing `SerializableType` interface,
+generic dataclasses can also be used. There are two applicable scenarios for
+them.
 
-#### User-defined generic dataclasses
+#### Generic dataclass inheritance
 
-If you have a generic version of a dataclass and want to serialize and
-deserialize its instances depending on the concrete types, you can achieve
-this using inheritance:
+If you have a generic dataclass and want to serialize and deserialize its
+instances depending on the concrete types, you can use inheritance for that:
 
 ```python
 from dataclasses import dataclass
@@ -1330,7 +1439,7 @@ You can override `TypeVar` field with a concrete type or another `TypeVar`.
 Partial specification of concrete types is also allowed. If a generic dataclass
 is inherited without type overriding the types of its fields remain untouched.
 
-#### Generic dataclasses as field types
+#### Generic dataclass in a field type
 
 Another approach is to specify concrete types in the field type hints. This can
 help to have different versions of the same generic dataclass:
@@ -1363,49 +1472,56 @@ assert DataClass.from_dict(dictionary) == instance
 #### GenericSerializableType interface
 
 There is a generic alternative to [`SerializableType`](#serializabletype-interface)
-called `GenericSerializableType`. It makes it possible to serialize and deserialize
-instances of generic types depending on the types provided:
+called `GenericSerializableType`. It makes it possible to decide yourself how
+to serialize and deserialize input data depending on the types provided:
 
 ```python
-from typing import Dict, TypeVar
 from dataclasses import dataclass
+from datetime import date
+from typing import Dict, TypeVar
 from mashumaro import DataClassDictMixin
 from mashumaro.types import GenericSerializableType
 
-KT = TypeVar("KT", int, str)
-VT = TypeVar("VT", int, str)
+KT = TypeVar("KT")
+VT = TypeVar("VT")
 
-class GenericDict(Dict[KT, VT], GenericSerializableType):
+class DictWrapper(Dict[KT, VT], GenericSerializableType):
+    __packers__ = {date: lambda x: x.isoformat(), str: str}
+    __unpackers__ = {date: date.fromisoformat, str: str}
+
     def _serialize(self, types) -> Dict[KT, VT]:
         k_type, v_type = types
-        if k_type not in (int, str) or v_type not in (int, str):
-            raise TypeError
-        return {k_type(k): v_type(v) for k, v in self.items()}
+        k_conv = self.__packers__[k_type]
+        v_conv = self.__packers__[v_type]
+        return {k_conv(k): v_conv(v) for k, v in self.items()}
 
     @classmethod
-    def _deserialize(cls, value, types) -> 'GenericDict[KT, VT]':
+    def _deserialize(cls, value, types) -> "DictWrapper[KT, VT]":
         k_type, v_type = types
-        if k_type not in (int, str) or v_type not in (int, str):
-            raise TypeError
-        return cls({k_type(k): v_type(v) for k, v in value.items()})
+        k_conv = cls.__unpackers__[k_type]
+        v_conv = cls.__unpackers__[v_type]
+        return cls({k_conv(k): v_conv(v) for k, v in value.items()})
 
 @dataclass
 class DataClass(DataClassDictMixin):
-    x: GenericDict[int, str]
-    y: GenericDict[str, int]
+    x: DictWrapper[date, str]
+    y: DictWrapper[str, date]
 
-instance = DataClass(GenericDict({1: 'a'}), GenericDict({'b': 2}))
-dictionary = instance.to_dict()  # {'x': {1: 'a'}, 'y': {'b': 2}}
-assert DataClass.from_dict(dictionary) == instance
+input_data = {
+    "x": {"2022-12-07": "2022-12-07"},
+    "y": {"2022-12-07": "2022-12-07"},
+}
+obj = DataClass.from_dict(input_data)
+assert obj == DataClass(
+    x=DictWrapper({date(2022, 12, 7): "2022-12-07"}),
+    y=DictWrapper({"2022-12-07": date(2022, 12, 7)}),
+)
+assert obj.to_dict() == input_data
 ```
 
-The difference between [`SerializableType`](#serializabletype-interface) and
-[`GenericSerializableType`](#genericserializabletype-interface) is that
-the methods of [`GenericSerializableType`](#genericserializabletype-interface)
-have a parameter `types`, to which the concrete types will be passed.
-If you don't need this information you can still use
-[`SerializableType`](#serializabletype-interface) interface even with generic
-types.
+As you can see, the code turns out to be massive compared to the
+[alternative](#user-defined-generic-types) but in rare cases such flexibility
+can be useful. You should think twice about whether it's really worth using it.
 
 ### Serialization hooks
 
