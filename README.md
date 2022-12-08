@@ -1406,8 +1406,8 @@ class Entity(DataClassDictMixin):
 
 ### Generic dataclasses
 
-Along with user-defined generic types implementing `SerializableType` interface,
-generic dataclasses can also be used. There are two applicable scenarios for
+Along with [user-defined generic types](#user-defined-generic-types)
+implementing `SerializableType` interface, generic dataclasses can also be used. There are two applicable scenarios for
 them.
 
 #### Generic dataclass inheritance
