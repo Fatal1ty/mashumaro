@@ -206,7 +206,7 @@ for backported types from [`typing-extensions`](https://github.com/python/typing
 * [`Self`](https://docs.python.org/3/library/typing.html#typing.Self)
 
 for arbitrary types:
-* [user-defined classes](#serializabletype-interface)
+* [user-defined types](#user-defined-types)
 * [user-defined generic types](#user-defined-generic-types)
 
 Usage example
