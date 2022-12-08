@@ -504,6 +504,9 @@ class Airport(SerializableType):
     def _deserialize(cls, value):
         return cls(*value)
 
+    def __eq__(self, other):
+        return self.code, self.city == other.code, other.city
+
 @dataclass
 class Flight(DataClassDictMixin):
     origin: Airport

@@ -122,7 +122,7 @@ def _unpack_annotated_serializable_type(
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
         value_type = get_function_arg_annotation(
-            spec.origin_type._deserialize, "value"
+            spec.origin_type._deserialize, arg_pos=0,
         )
     except (KeyError, ValueError):
         raise UnserializableField(

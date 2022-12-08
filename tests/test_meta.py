@@ -630,6 +630,12 @@ def test_get_function_arg_annotation():
 
     assert get_function_arg_annotation(foo, "x") == int
     assert get_function_arg_annotation(foo, "y") == Dialect
+    assert get_function_arg_annotation(foo, arg_name="x") == int
+    assert get_function_arg_annotation(foo, arg_name="y") == Dialect
+    assert get_function_arg_annotation(foo, arg_pos=0) == int
+    assert get_function_arg_annotation(foo, arg_pos=1) == Dialect
+    with pytest.raises(ValueError):
+        get_function_arg_annotation(foo)
 
 
 def test_get_function_return_annotation():

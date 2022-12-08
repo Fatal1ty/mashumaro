@@ -385,9 +385,18 @@ def is_not_required(t) -> bool:
 
 
 def get_function_arg_annotation(
-    function: typing.Callable[[typing.Any], typing.Any], arg_name: str
+    function: typing.Callable[[typing.Any], typing.Any],
+    arg_name: typing.Optional[str] = None,
+    arg_pos: typing.Optional[int] = None,
 ) -> typing.Type:
-    parameter = inspect.signature(function).parameters[arg_name]
+    parameters = inspect.signature(function).parameters
+    if arg_name is not None:
+        parameter = parameters[arg_name]
+    elif arg_pos is not None:
+        parameters.keys()
+        parameter = parameters[list(parameters.keys())[arg_pos]]
+    else:
+        raise ValueError("arg_name or arg_pos must be passed")
     annotation = parameter.annotation
     if annotation is inspect.Signature.empty:
         raise ValueError(f"Argument {arg_name} doesn't have annotation")
