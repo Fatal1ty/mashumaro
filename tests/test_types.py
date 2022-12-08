@@ -104,8 +104,8 @@ class MyMapping(Mapping[XT, YT], SerializableType, use_annotations=True):
         return self.value
 
     @classmethod
-    def _deserialize(cls, value: Mapping[XT, YT]):
-        return cls(value)
+    def _deserialize(cls, mapping: Mapping[XT, YT]):
+        return cls(mapping)
 
     def __getitem__(self, __k: XT) -> YT:
         return self.value[__k]
