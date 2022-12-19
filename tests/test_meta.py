@@ -667,4 +667,4 @@ def test_collect_type_params():
     class MyGeneric(typing.Generic[T, S], typing.Mapping[T, S]):
         pass
 
-    assert _collect_type_params(MyGeneric[T, T]) == [T, S]
+    assert _collect_type_params(MyGeneric[T, T]) == [T]
