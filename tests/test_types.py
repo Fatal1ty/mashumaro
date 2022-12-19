@@ -139,7 +139,7 @@ class MyAnnotatedUserGenericSerializableType(
 
 
 class MySelfSerializableType(SerializableType, use_annotations=True):
-    def _serialize(self: Self) -> Any:
+    def _serialize(self) -> Self:
         return self
 
     @classmethod
