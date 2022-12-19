@@ -16,7 +16,10 @@ from mashumaro.core.const import (
     PY_310_MIN,
 )
 from mashumaro.core.meta.code.builder import CodeBuilder
+
+# noinspection PyProtectedMember
 from mashumaro.core.meta.helpers import (
+    _collect_type_params,
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
@@ -484,6 +487,7 @@ def test_not_non_type_arg():
     assert not_none_type_arg((NoneType, int)) == int
     assert not_none_type_arg((str, NoneType)) == str
     assert not_none_type_arg((T, int), {T: NoneType}) == int
+    assert not_none_type_arg((None,)) is None
 
 
 def test_is_new_type():
@@ -654,3 +658,13 @@ def test_get_function_return_annotation():
         pass  # pragma no cover
 
     assert get_function_return_annotation(foo) == Dialect
+
+
+def test_collect_type_params():
+    T = typing.TypeVar("T")
+    S = typing.TypeVar("S")
+
+    class MyGeneric(typing.Generic[T, S], typing.Mapping[T, S]):
+        pass
+
+    assert _collect_type_params(MyGeneric[T, T]) == [T, S]

@@ -7,14 +7,22 @@ import pytest
 from typing_extensions import TypeVarTuple, Unpack
 
 from mashumaro import DataClassDictMixin
-from mashumaro.core.const import PY_311_MIN
+from mashumaro.core.const import PEP_585_COMPATIBLE, PY_311_MIN
 
 # noinspection PyProtectedMember
 from mashumaro.core.meta.helpers import (
     _check_generic,
+    _flatten_type_args,
     resolve_type_params,
     type_name,
 )
+from mashumaro.core.meta.types.common import FieldContext, ValueSpec
+
+# noinspection PyProtectedMember
+from mashumaro.core.meta.types.pack import pack_tuple
+
+# noinspection PyProtectedMember
+from mashumaro.core.meta.types.unpack import unpack_tuple
 from mashumaro.exceptions import MissingField
 
 K = TypeVar("K")
@@ -560,3 +568,24 @@ def test_dataclass_with_tuple_int_and_empty():
     assert ConcreteDataClass.from_dict({"x": [1, 2, 3]}) == obj
     with pytest.raises(MissingField):
         ConcreteDataClass.from_dict({})
+
+
+def test_unpack_tuple_with_multiple_unpacks():
+    spec = ValueSpec(
+        type=Tuple,
+        expression="value",
+        builder=object,
+        field_ctx=FieldContext("x", {}),
+    )
+    with pytest.raises(TypeError):
+        unpack_tuple(spec, (Unpack[Tuple[int]], Unpack[Tuple[float]]))
+    with pytest.raises(TypeError):
+        pack_tuple(spec, (Unpack[Tuple[int]], Unpack[Tuple[float]]))
+
+
+def test_flatten_type_args_with_empty_tuple():
+    assert _flatten_type_args([Unpack[Tuple[()]]]) == [()]
+    assert _flatten_type_args([int, Unpack[Tuple[()]]]) == [int]
+    if PEP_585_COMPATIBLE:
+        assert _flatten_type_args([Unpack[tuple[()]]]) == [()]
+        assert _flatten_type_args([int, Unpack[tuple[()]]]) == [int]

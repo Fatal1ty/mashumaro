@@ -469,7 +469,8 @@ def _flatten_type_args(
                 PEP_585_COMPATIBLE
                 and unpacked_type == tuple[()]  # type: ignore
             ):
-                result.append(type_arg)
+                if len(type_args) == 1:
+                    result.append(())
             else:
                 result.extend(_flatten_type_args(get_args(unpacked_type)))
         else:
@@ -522,8 +523,9 @@ def resolve_type_params(
             unpack_param_idx = param_idx
             param_idx = -1
             arg_idx = -1
-            unpacked_param_args = get_args(type_param)[0]
-            for y in reversed(get_args(unpacked_param_args)):
+            unpacked_param = get_args(type_param)[0]
+            for y in reversed(get_args(unpacked_param)):  # pragma: no cover
+                # We turn Tuple[x,y] to x, y, but leave this here just in case
                 type_params.insert(param_idx, y)
         else:
             if not type_args and is_type_var_tuple(get_args(type_param)[0]):
