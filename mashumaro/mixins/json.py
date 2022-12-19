@@ -17,7 +17,7 @@ class DataClassJSONMixin(DataClassDictMixin):
     def to_json(
         self: T,
         encoder: Encoder = json.dumps,
-        **to_dict_kwargs,
+        **to_dict_kwargs: Any,
     ) -> EncodedData:
         return encoder(self.to_dict(**to_dict_kwargs))
 
@@ -26,6 +26,6 @@ class DataClassJSONMixin(DataClassDictMixin):
         cls: Type[T],
         data: EncodedData,
         decoder: Decoder = json.loads,
-        **from_dict_kwargs,
+        **from_dict_kwargs: Any,
     ) -> T:
         return cls.from_dict(decoder(data), **from_dict_kwargs)

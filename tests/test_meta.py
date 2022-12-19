@@ -16,10 +16,15 @@ from mashumaro.core.const import (
     PY_310_MIN,
 )
 from mashumaro.core.meta.code.builder import CodeBuilder
+
+# noinspection PyProtectedMember
 from mashumaro.core.meta.helpers import (
+    _collect_type_params,
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
+    get_function_arg_annotation,
+    get_function_return_annotation,
     get_generic_name,
     get_literal_values,
     get_type_origin,
@@ -36,7 +41,7 @@ from mashumaro.core.meta.helpers import (
     is_type_var_any,
     is_union,
     not_none_type_arg,
-    resolve_type_vars,
+    resolve_type_params,
     type_name,
 )
 from mashumaro.core.meta.types.common import (
@@ -182,6 +187,8 @@ def test_type_name():
     assert type_name(TIntStr) == "typing.Union[int, str]"
     assert type_name(typing.List[TInt]) == "typing.List[int]"
     assert type_name(typing.Tuple[int]) == "typing.Tuple[int]"
+    assert type_name(typing.Tuple[int, ...]) == "typing.Tuple[int, ...]"
+    assert type_name(typing.Tuple[()]) == "typing.Tuple[()]"
     assert type_name(typing.Set[int]) == "typing.Set[int]"
     assert type_name(typing.FrozenSet[int]) == "typing.FrozenSet[int]"
     assert type_name(typing.Deque[int]) == "typing.Deque[int]"
@@ -237,6 +244,8 @@ def test_type_name_pep_585():
     assert type_name(list[str]) == "list[str]"
     assert type_name(collections.deque[str]) == "collections.deque[str]"
     assert type_name(tuple[str]) == "tuple[str]"
+    assert type_name(tuple[str, ...]) == "tuple[str, ...]"
+    assert type_name(tuple[()]) == "tuple[()]"
     assert type_name(set[str]) == "set[str]"
     assert type_name(frozenset[str]) == "frozenset[str]"
     assert type_name(collections.abc.Set[str]) == "collections.abc.Set[str]"
@@ -275,6 +284,8 @@ def test_type_name_short():
     assert type_name(TIntStr, short=True) == "Union[int, str]"
     assert type_name(typing.List[TInt], short=True) == "List[int]"
     assert type_name(typing.Tuple[int], short=True) == "Tuple[int]"
+    assert type_name(typing.Tuple[int, ...], short=True) == "Tuple[int, ...]"
+    assert type_name(typing.Tuple[()], short=True) == "Tuple[()]"
     assert type_name(typing.Set[int], short=True) == "Set[int]"
     assert type_name(typing.FrozenSet[int], short=True) == "FrozenSet[int]"
     assert type_name(typing.Deque[int], short=True) == "Deque[int]"
@@ -335,6 +346,8 @@ def test_type_name_pep_585_short():
     assert type_name(list[str], short=True) == "list[str]"
     assert type_name(collections.deque[str], short=True) == "deque[str]"
     assert type_name(tuple[str], short=True) == "tuple[str]"
+    assert type_name(tuple[str, ...], short=True) == "tuple[str, ...]"
+    assert type_name(tuple[()], short=True) == "tuple[()]"
     assert type_name(set[str], short=True) == "set[str]"
     assert type_name(frozenset[str], short=True) == "frozenset[str]"
     assert type_name(collections.abc.Set[str], short=True) == "Set[str]"
@@ -374,10 +387,13 @@ def test_get_type_origin():
         get_type_origin(typing_extensions.Annotated[datetime, None])
         == datetime
     )
-    assert get_type_origin(typing_extensions.Required[int])
+    assert (
+        get_type_origin(typing_extensions.Required[int])
+        == typing_extensions.Required
+    )
 
 
-def test_resolve_type_vars():
+def test_resolve_type_params():
     @dataclass
     class A(typing.Generic[T]):
         x: T
@@ -386,7 +402,7 @@ def test_resolve_type_vars():
     class B(A[int]):
         pass
 
-    resolved = resolve_type_vars(B)
+    resolved = resolve_type_params(B)
     assert resolved[A] == {T: int}
     assert resolved[B] == {}
 
@@ -471,6 +487,7 @@ def test_not_non_type_arg():
     assert not_none_type_arg((NoneType, int)) == int
     assert not_none_type_arg((str, NoneType)) == str
     assert not_none_type_arg((T, int), {T: NoneType}) == int
+    assert not_none_type_arg((NoneType,)) is None
 
 
 def test_is_new_type():
@@ -530,16 +547,16 @@ def test_type_name_literal():
 
 def test_code_builder_get_pack_method_name():
     builder = CodeBuilder(object)
-    arg_types = (int,)
-    arg_types_hash = builder._hash_arg_types((int,))
+    type_args = (int,)
+    type_args_hash = builder._hash_type_args((int,))
     assert builder.get_pack_method_name() == "to_dict"
     assert (
-        builder.get_pack_method_name(arg_types=arg_types)
-        == f"to_dict_{arg_types_hash}"
+        builder.get_pack_method_name(type_args=type_args)
+        == f"to_dict_{type_args_hash}"
     )
     assert (
-        builder.get_pack_method_name(arg_types=arg_types, format_name="yaml")
-        == f"to_dict_yaml_{arg_types_hash}"
+        builder.get_pack_method_name(type_args=type_args, format_name="yaml")
+        == f"to_dict_yaml_{type_args_hash}"
     )
     assert builder.get_pack_method_name(format_name="yaml") == "to_dict_yaml"
     assert (
@@ -547,13 +564,13 @@ def test_code_builder_get_pack_method_name():
         == "to_yaml"
     )
     assert (
-        builder.get_pack_method_name(arg_types=arg_types, encoder=object)
-        == f"to_dict_{arg_types_hash}"
+        builder.get_pack_method_name(type_args=type_args, encoder=object)
+        == f"to_dict_{type_args_hash}"
     )
     assert builder.get_pack_method_name(encoder=object) == "to_dict"
     assert (
         builder.get_pack_method_name(
-            arg_types=arg_types, format_name="yaml", encoder=object
+            type_args=type_args, format_name="yaml", encoder=object
         )
         == f"to_yaml"
     )
@@ -561,16 +578,16 @@ def test_code_builder_get_pack_method_name():
 
 def test_code_builder_get_unpack_method_name():
     builder = CodeBuilder(object)
-    arg_types = (int,)
-    arg_types_hash = builder._hash_arg_types((int,))
+    type_args = (int,)
+    type_args_hash = builder._hash_type_args((int,))
     assert builder.get_unpack_method_name() == "from_dict"
     assert (
-        builder.get_unpack_method_name(arg_types=arg_types)
-        == f"from_dict_{arg_types_hash}"
+        builder.get_unpack_method_name(type_args=type_args)
+        == f"from_dict_{type_args_hash}"
     )
     assert (
-        builder.get_unpack_method_name(arg_types=arg_types, format_name="yaml")
-        == f"from_dict_yaml_{arg_types_hash}"
+        builder.get_unpack_method_name(type_args=type_args, format_name="yaml")
+        == f"from_dict_yaml_{type_args_hash}"
     )
     assert (
         builder.get_unpack_method_name(format_name="yaml") == "from_dict_yaml"
@@ -580,13 +597,13 @@ def test_code_builder_get_unpack_method_name():
         == "from_yaml"
     )
     assert (
-        builder.get_unpack_method_name(arg_types=arg_types, decoder=object)
-        == f"from_dict_{arg_types_hash}"
+        builder.get_unpack_method_name(type_args=type_args, decoder=object)
+        == f"from_dict_{type_args_hash}"
     )
     assert builder.get_unpack_method_name(decoder=object) == "from_dict"
     assert (
         builder.get_unpack_method_name(
-            arg_types=arg_types, format_name="yaml", decoder=object
+            type_args=type_args, format_name="yaml", decoder=object
         )
         == f"from_yaml"
     )
@@ -620,3 +637,34 @@ def test_ensure_generic_collection_not_generic():
     assert not ensure_generic_collection(
         ValueSpec(int, "", CodeBuilder(None), FieldContext("", {}))
     )
+
+
+def test_get_function_arg_annotation():
+    def foo(x: int, y: Dialect) -> None:
+        pass  # pragma no cover
+
+    assert get_function_arg_annotation(foo, "x") == int
+    assert get_function_arg_annotation(foo, "y") == Dialect
+    assert get_function_arg_annotation(foo, arg_name="x") == int
+    assert get_function_arg_annotation(foo, arg_name="y") == Dialect
+    assert get_function_arg_annotation(foo, arg_pos=0) == int
+    assert get_function_arg_annotation(foo, arg_pos=1) == Dialect
+    with pytest.raises(ValueError):
+        get_function_arg_annotation(foo)
+
+
+def test_get_function_return_annotation():
+    def foo(x: int, y: Dialect) -> Dialect:
+        pass  # pragma no cover
+
+    assert get_function_return_annotation(foo) == Dialect
+
+
+def test_collect_type_params():
+    T = typing.TypeVar("T")
+    S = typing.TypeVar("S")
+
+    class MyGeneric(typing.Generic[T, S], typing.Mapping[T, S]):
+        pass
+
+    assert _collect_type_params(MyGeneric[T, T]) == [T]

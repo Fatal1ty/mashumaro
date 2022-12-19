@@ -24,7 +24,7 @@ class MessagePackDialect(Dialect):
     }
 
 
-def default_encoder(data) -> EncodedData:
+def default_encoder(data: Any) -> EncodedData:
     return msgpack.packb(data, use_bin_type=True)
 
 
@@ -51,7 +51,7 @@ class DataClassMessagePackMixin(DataClassDictMixin):
     def to_msgpack(
         self: T,
         encoder: Encoder = default_encoder,
-        **to_dict_kwargs,
+        **to_dict_kwargs: Any,
     ) -> EncodedData:
         ...
 
@@ -60,6 +60,6 @@ class DataClassMessagePackMixin(DataClassDictMixin):
         cls: Type[T],
         data: EncodedData,
         decoder: Decoder = default_decoder,
-        **from_dict_kwargs,
+        **from_dict_kwargs: Any,
     ) -> T:
         ...

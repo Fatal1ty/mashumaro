@@ -8,7 +8,7 @@ from base64 import encodebytes
 from contextlib import suppress
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, Callable, Optional, Tuple, Type, Union
+from typing import Any, Callable, List, Optional, Tuple, Type, Union
 
 import typing_extensions
 
@@ -17,6 +17,7 @@ from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
     get_args,
     get_class_that_defines_method,
+    get_function_return_annotation,
     get_literal_values,
     is_dataclass_dict_mixin_subclass,
     is_literal,
@@ -29,9 +30,12 @@ from mashumaro.core.meta.helpers import (
     is_special_typing_primitive,
     is_type_var,
     is_type_var_any,
+    is_type_var_tuple,
     is_typed_dict,
     is_union,
+    is_unpack,
     not_none_type_arg,
+    resolve_type_params,
     type_name,
 )
 from mashumaro.core.meta.types.common import (
@@ -46,6 +50,7 @@ from mashumaro.core.meta.types.common import (
 )
 from mashumaro.exceptions import (
     UnserializableDataError,
+    UnserializableField,
     UnsupportedSerializationEngine,
 )
 from mashumaro.helper import pass_through
@@ -97,21 +102,63 @@ def pack_type_with_overridden_serialization(
         return f"self.{overridden_fn}({spec.expression})"
 
 
+def _pack_annotated_serializable_type(
+    spec: ValueSpec,
+) -> Optional[Expression]:
+    try:
+        # noinspection PyProtectedMember
+        # noinspection PyUnresolvedReferences
+        value_type = get_function_return_annotation(
+            spec.origin_type._serialize
+        )
+    except (KeyError, ValueError):
+        raise UnserializableField(
+            field_name=spec.field_ctx.name,
+            field_type=spec.type,
+            holder_class=spec.builder.cls,
+            msg="Method _serialize must have return annotation",
+        ) from None
+    if is_self(value_type):
+        return f"{spec.expression}._serialize()"
+    args = get_args(value_type)
+    resolved = resolve_type_params(spec.origin_type, get_args(spec.type))[
+        spec.origin_type
+    ]
+    new_args = []
+    for arg in args:
+        new_args.append(resolved.get(arg, arg))
+    with suppress(TypeError):
+        # noinspection PyUnresolvedReferences
+        value_type = value_type[tuple(new_args)]
+    return PackerRegistry.get(
+        spec.copy(
+            type=value_type,
+            expression=f"{spec.expression}._serialize()",
+        )
+    )
+
+
 @register
 def pack_serializable_type(spec: ValueSpec) -> Optional[Expression]:
-    with suppress(TypeError):
-        if issubclass(spec.origin_type, SerializableType):
-            return f"{spec.expression}._serialize()"
+    try:
+        if not issubclass(spec.origin_type, SerializableType):
+            return None
+    except TypeError:
+        return None
+    if spec.origin_type.__use_annotations__:
+        return _pack_annotated_serializable_type(spec)
+    else:
+        return f"{spec.expression}._serialize()"
 
 
 @register
 def pack_generic_serializable_type(spec: ValueSpec) -> Optional[Expression]:
     with suppress(TypeError):
         if issubclass(spec.origin_type, GenericSerializableType):
-            arg_type_names = ", ".join(
-                list(map(type_name, get_args(spec.type)))
-            )
-            return f"{spec.expression}._serialize([{arg_type_names}])"
+            type_args = get_args(spec.type)
+            spec.builder.add_type_modules(*type_args)
+            type_arg_names = ", ".join(list(map(type_name, type_args)))
+            return f"{spec.expression}._serialize([{type_arg_names}])"
 
 
 @register
@@ -119,9 +166,9 @@ def pack_dataclass_dict_mixin_subclass(
     spec: ValueSpec,
 ) -> Optional[Expression]:
     if is_dataclass_dict_mixin_subclass(spec.origin_type):
-        arg_types = get_args(spec.type)
+        type_args = get_args(spec.type)
         method_name = spec.builder.get_pack_method_name(
-            arg_types, spec.builder.format_name
+            type_args, spec.builder.format_name
         )
         if get_class_that_defines_method(
             method_name, spec.origin_type
@@ -135,7 +182,7 @@ def pack_dataclass_dict_mixin_subclass(
         ):
             builder = spec.builder.__class__(
                 spec.origin_type,
-                arg_types,
+                type_args,
                 dialect=spec.builder.dialect,
                 format_name=spec.builder.format_name,
                 default_dialect=spec.builder.default_dialect,
@@ -166,8 +213,8 @@ def pack_union(
         lines.append(f"def {method_name}(self, value):")
     with lines.indent():
         for packer in (
-            PackerRegistry.get(spec.copy(type=arg_type, expression="value"))
-            for arg_type in args
+            PackerRegistry.get(spec.copy(type=type_arg, expression="value"))
+            for type_arg in args
         ):
             lines.append("try:")
             with lines.indent():
@@ -177,7 +224,9 @@ def pack_union(
                 lines.append("pass")
         field_type = type_name(
             spec.type,
-            type_vars=spec.builder.get_field_type_vars(spec.field_ctx.name),
+            resolved_type_params=spec.builder.get_field_resolved_type_params(
+                spec.field_ctx.name
+            ),
         )
         lines.append(
             f"raise InvalidFieldValue('{spec.field_ctx.name}',{field_type},"
@@ -206,16 +255,17 @@ def pack_literal(spec: ValueSpec) -> Expression:
         lines.append(f"def {method_name}(self, value, {default_kwargs}):")
     else:
         lines.append(f"def {method_name}(self, value):")
+    resolved_type_params = spec.builder.get_field_resolved_type_params(
+        spec.field_ctx.name
+    )
     with lines.indent():
         for literal_value in get_literal_values(spec.type):
             value_type = type(literal_value)
             packer = PackerRegistry.get(spec.copy(type=value_type))
             if isinstance(literal_value, enum.Enum):
                 enum_type_name = type_name(
-                    value_type,
-                    type_vars=spec.builder.get_field_type_vars(
-                        spec.field_ctx.name
-                    ),
+                    typ=value_type,
+                    resolved_type_params=resolved_type_params,
                 )
                 lines.append(
                     f"if value == {enum_type_name}.{literal_value.name}:"
@@ -230,8 +280,8 @@ def pack_literal(spec: ValueSpec) -> Expression:
                 with lines.indent():
                     lines.append(f"return {packer}")
         field_type = type_name(
-            spec.type,
-            type_vars=spec.builder.get_field_type_vars(spec.field_ctx.name),
+            typ=spec.type,
+            resolved_type_params=resolved_type_params,
         )
         lines.append(
             f"raise InvalidFieldValue('{spec.field_ctx.name}',"
@@ -252,11 +302,13 @@ def pack_literal(spec: ValueSpec) -> Expression:
 def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
     if is_special_typing_primitive(spec.origin_type):
         if is_union(spec.type):
-            field_type_vars = spec.builder.get_field_type_vars(
+            resolved_type_params = spec.builder.get_field_resolved_type_params(
                 spec.field_ctx.name
             )
-            if is_optional(spec.type, field_type_vars):
-                arg = not_none_type_arg(get_args(spec.type), field_type_vars)
+            if is_optional(spec.type, resolved_type_params):
+                arg = not_none_type_arg(
+                    get_args(spec.type), resolved_type_params
+                )
                 pv = PackerRegistry.get(spec.copy(type=arg))
                 return expr_or_maybe_none(spec, pv)
             else:
@@ -305,6 +357,11 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             return f"{spec.expression}.{method_name}({flags})"
         elif is_required(spec.type) or is_not_required(spec.type):
             return PackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
+        elif is_unpack(spec.type):
+            packer = PackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
+            return f"*{packer}"
+        elif is_type_var_tuple(spec.type):
+            return PackerRegistry.get(spec.copy(type=Tuple[Any, ...]))
         else:
             raise UnserializableDataError(
                 f"{spec.type} as a field type is not supported by mashumaro"
@@ -378,14 +435,14 @@ def pack_fraction(spec: ValueSpec) -> Optional[Expression]:
         return f"str({spec.expression})"
 
 
-def pack_tuple(spec: ValueSpec, args: Tuple[Any, ...]) -> Expression:
+def pack_tuple(spec: ValueSpec, args: Tuple[Type, ...]) -> Expression:
     if not args:
-        args = [Any, ...]  # type: ignore
-    elif len(args) == 1 and args[0] == ():
-        if PY_311_MIN:  # pragma no cover
-            # https://github.com/python/cpython/pull/31836
-            args = [Any, ...]  # type: ignore
+        if spec.type in (Tuple, tuple):
+            args = [typing.Any, ...]  # type: ignore
         else:
+            return "[]"
+    elif len(args) == 1 and args[0] == ():
+        if not PY_311_MIN:
             return "[]"
     if len(args) == 2 and args[1] is Ellipsis:
         packer = PackerRegistry.get(
@@ -393,16 +450,42 @@ def pack_tuple(spec: ValueSpec, args: Tuple[Any, ...]) -> Expression:
         )
         return f"[{packer} for value in {spec.expression}]"
     else:
-        packers = [
-            PackerRegistry.get(
+        arg_indexes: List[Union[int, Tuple[int, Union[int, None]]]] = []
+        unpack_idx: Optional[int] = None
+        for arg_idx, type_arg in enumerate(args):
+            if is_unpack(type_arg):
+                if unpack_idx is not None:
+                    raise TypeError(
+                        "Multiple unpacks are disallowed within a single type "
+                        f"parameter list for {type_name(spec.type)}"
+                    )
+                unpack_idx = arg_idx
+                if len(args) == 1:
+                    arg_indexes.append((arg_idx, None))
+                elif arg_idx < len(args) - 1:
+                    arg_indexes.append((arg_idx, arg_idx + 1 - len(args)))
+                else:
+                    arg_indexes.append((arg_idx, None))
+            else:
+                if unpack_idx is None:
+                    arg_indexes.append(arg_idx)
+                else:
+                    arg_indexes.append(arg_idx - len(args))
+        packers: List[Expression] = []
+        for _idx, _arg_idx in enumerate(arg_indexes):
+            if isinstance(_arg_idx, tuple):
+                p_expr = f"{spec.expression}[{_arg_idx[0]}:{_arg_idx[1]}]"
+            else:
+                p_expr = f"{spec.expression}[{_arg_idx}]"
+            packer = PackerRegistry.get(
                 spec.copy(
-                    type=arg_type,
-                    expression=f"{spec.expression}[{arg_idx}]",
+                    type=args[_idx],
+                    expression=p_expr,
                     could_be_none=True,
                 )
             )
-            for arg_idx, arg_type in enumerate(args)
-        ]
+            if packer != "*[]":
+                packers.append(packer)
         return f"[{', '.join(packers)}]"
 
 
@@ -499,19 +582,21 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
 
     args = get_args(spec.type)
 
-    def inner_expr(arg_num=0, v_name="value", v_type=None):
+    def inner_expr(
+        arg_num: int = 0, v_name: str = "value", v_type: Optional[Type] = None
+    ) -> Expression:
         if v_type:
             return PackerRegistry.get(
                 spec.copy(type=v_type, expression=v_name)
             )
         else:
             if args and len(args) > arg_num:
-                arg_type = args[arg_num]
+                type_arg: Any = args[arg_num]
             else:
-                arg_type = Any
+                type_arg = Any
             return PackerRegistry.get(
                 spec.copy(
-                    type=arg_type,
+                    type=type_arg,
                     expression=v_name,
                     could_be_none=True,
                     field_ctx=spec.field_ctx.copy(metadata={}),

@@ -1,6 +1,6 @@
 from collections import namedtuple
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
 from typing import (
@@ -109,6 +109,23 @@ class GenericSerializableList(Generic[T], GenericSerializableType):
             return GenericSerializableList([int(v) - 2 for v in value])
         elif types[0] == str:
             return GenericSerializableList([v[1:] for v in value])
+
+    def __eq__(self, other):
+        return self.value == other.value
+
+
+class GenericSerializableWrapper(Generic[T], GenericSerializableType):
+    def __init__(self, value: T):
+        self.value = value
+
+    def _serialize(self, types):
+        if types[0] == date:
+            return self.value.isoformat()
+
+    @classmethod
+    def _deserialize(cls, value, types):
+        if types[0] == date:
+            return GenericSerializableWrapper(date.fromisoformat(value))
 
     def __eq__(self, other):
         return self.value == other.value

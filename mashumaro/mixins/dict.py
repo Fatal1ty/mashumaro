@@ -13,7 +13,7 @@ class DataClassDictMixin:
 
     __mashumaro_builder_params = {"packer": {}, "unpacker": {}}  # type: ignore
 
-    def __init_subclass__(cls: Type[T], **kwargs):
+    def __init_subclass__(cls: Type[T], **kwargs: Any):
         for ancestor in cls.__mro__[-1:0:-1]:
             builder_params_ = f"_{ancestor.__name__}__mashumaro_builder_params"
             builder_params = getattr(ancestor, builder_params_, None)
@@ -28,7 +28,7 @@ class DataClassDictMixin:
         # omit_none: bool = False
         # by_alias: bool = False
         # dialect: Type[Dialect] = None
-        **kwargs,
+        **kwargs: Any,
     ) -> Dict[Any, Any]:
         ...
 
@@ -39,7 +39,7 @@ class DataClassDictMixin:
         # *
         # keyword-only arguments that exist with the code generation options:
         # dialect: Type[Dialect] = None
-        **kwargs,
+        **kwargs: Any,
     ) -> T:
         ...
 
