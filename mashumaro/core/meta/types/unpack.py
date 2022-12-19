@@ -12,7 +12,7 @@ from base64 import decodebytes
 from contextlib import suppress
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, Callable, Iterable, Optional, Tuple, Type, Union
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, Union
 
 import typing_extensions
 
@@ -35,10 +35,12 @@ from mashumaro.core.meta.helpers import (
     is_special_typing_primitive,
     is_type_var,
     is_type_var_any,
+    is_type_var_tuple,
     is_typed_dict,
     is_union,
+    is_unpack,
     not_none_type_arg,
-    resolve_type_vars,
+    resolve_type_params,
     type_name,
 )
 from mashumaro.core.meta.types.common import (
@@ -132,16 +134,16 @@ def _unpack_annotated_serializable_type(
             holder_class=spec.builder.cls,
             msg='Method _deserialize must have annotated "value" argument',
         ) from None
-    args = get_args(value_type)
-    resolved = resolve_type_vars(spec.origin_type, get_args(spec.type))[
+    type_args = get_args(value_type)
+    resolved = resolve_type_params(spec.origin_type, get_args(spec.type))[
         spec.origin_type
     ]
-    new_args = []
-    for arg in args:
-        new_args.append(resolved.get(arg, arg))
+    new_type_args = []
+    for type_arg in type_args:
+        new_type_args.append(resolved.get(type_arg, type_arg))
     with suppress(TypeError):
         # noinspection PyUnresolvedReferences
-        value_type = value_type[tuple(new_args)]
+        value_type = value_type[tuple(new_type_args)]
     unpacker = UnpackerRegistry.get(spec.copy(type=value_type))
     return f"{type_name(spec.type)}._deserialize({unpacker})"
 
@@ -163,12 +165,12 @@ def unpack_serializable_type(spec: ValueSpec) -> Optional[Expression]:
 def unpack_generic_serializable_type(spec: ValueSpec) -> Optional[Expression]:
     with suppress(TypeError):
         if issubclass(spec.origin_type, GenericSerializableType):
-            arg_type_names = ", ".join(
+            type_arg_names = ", ".join(
                 list(map(type_name, get_args(spec.type)))
             )
             return (
                 f"{type_name(spec.type)}._deserialize({spec.expression}, "
-                f"[{arg_type_names}])"
+                f"[{type_arg_names}])"
             )
 
 
@@ -177,9 +179,9 @@ def unpack_dataclass_dict_mixin_subclass(
     spec: ValueSpec,
 ) -> Optional[Expression]:
     if is_dataclass_dict_mixin_subclass(spec.origin_type):
-        arg_types = get_args(spec.type)
+        type_args = get_args(spec.type)
         method_name = spec.builder.get_unpack_method_name(
-            arg_types, spec.builder.format_name
+            type_args, spec.builder.format_name
         )
         if get_class_that_defines_method(
             method_name, spec.origin_type
@@ -193,7 +195,7 @@ def unpack_dataclass_dict_mixin_subclass(
         ):
             builder = spec.builder.__class__(
                 spec.origin_type,
-                arg_types,
+                type_args,
                 dialect=spec.builder.dialect,
                 format_name=spec.builder.format_name,
                 default_dialect=spec.builder.default_dialect,
@@ -233,8 +235,8 @@ def unpack_union(
         lines.append(f"def {method_name}(cls, value):")
     with lines.indent():
         for unpacker in (
-            UnpackerRegistry.get(spec.copy(type=arg_type, expression="value"))
-            for arg_type in args
+            UnpackerRegistry.get(spec.copy(type=type_arg, expression="value"))
+            for type_arg in args
         ):
             lines.append("try:")
             with lines.indent():
@@ -244,7 +246,9 @@ def unpack_union(
                 lines.append("pass")
         field_type = type_name(
             spec.type,
-            type_vars=spec.builder.get_field_type_vars(spec.field_ctx.name),
+            resolved_type_params=spec.builder.get_field_resolved_type_params(
+                spec.field_ctx.name
+            ),
         )
         lines.append(
             f"raise InvalidFieldValue('{spec.field_ctx.name}',{field_type},"
@@ -320,11 +324,13 @@ def unpack_literal(spec: ValueSpec) -> Expression:
 def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
     if is_special_typing_primitive(spec.origin_type):
         if is_union(spec.type):
-            field_type_vars = spec.builder.get_field_type_vars(
+            resolved_type_params = spec.builder.get_field_resolved_type_params(
                 spec.field_ctx.name
             )
-            if is_optional(spec.type, field_type_vars):
-                arg = not_none_type_arg(get_args(spec.type), field_type_vars)
+            if is_optional(spec.type, resolved_type_params):
+                arg = not_none_type_arg(
+                    get_args(spec.type), resolved_type_params
+                )
                 uv = UnpackerRegistry.get(spec.copy(type=arg))
                 return expr_or_maybe_none(spec, uv)
             else:
@@ -386,6 +392,13 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             )
         elif is_required(spec.type) or is_not_required(spec.type):
             return UnpackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
+        elif is_unpack(spec.type):
+            unpacker = UnpackerRegistry.get(
+                spec.copy(type=get_args(spec.type)[0])
+            )
+            return f"*{unpacker}"
+        elif is_type_var_tuple(spec.type):
+            return UnpackerRegistry.get(spec.copy(type=Tuple[Any, ...]))
         else:
             raise UnserializableDataError(
                 f"{spec.type} as a field type is not supported by mashumaro"
@@ -506,14 +519,14 @@ def unpack_fraction(spec: ValueSpec) -> Optional[Expression]:
         return f"Fraction({spec.expression})"
 
 
-def unpack_tuple(spec: ValueSpec, args: Tuple[Any, ...]) -> Expression:
+def unpack_tuple(spec: ValueSpec, args: Tuple[Type, ...]) -> Expression:
     if not args:
-        args = [typing.Any, ...]  # type: ignore
-    elif len(args) == 1 and args[0] == ():
-        if PY_311_MIN:  # pragma no cover
-            # https://github.com/python/cpython/pull/31836
+        if spec.type in (Tuple, tuple):
             args = [typing.Any, ...]  # type: ignore
         else:
+            return "()"
+    elif len(args) == 1 and args[0] == ():
+        if not PY_311_MIN:
             return "()"
     if len(args) == 2 and args[1] is Ellipsis:
         unpacker = UnpackerRegistry.get(
@@ -521,16 +534,42 @@ def unpack_tuple(spec: ValueSpec, args: Tuple[Any, ...]) -> Expression:
         )
         return f"tuple([{unpacker} for value in {spec.expression}])"
     else:
-        unpackers = [
-            UnpackerRegistry.get(
+        arg_indexes: List[Union[int, Tuple[int, Union[int, None]]]] = []
+        unpack_idx: Optional[int] = None
+        for arg_idx, type_arg in enumerate(args):
+            if is_unpack(type_arg):
+                if unpack_idx is not None:
+                    raise TypeError(
+                        "Multiple unpacks are disallowed within a single type "
+                        f"parameter list for {type_name(spec.type)}"
+                    )
+                unpack_idx = arg_idx
+                if len(args) == 1:
+                    arg_indexes.append((arg_idx, None))
+                elif arg_idx < len(args) - 1:
+                    arg_indexes.append((arg_idx, arg_idx + 1 - len(args)))
+                else:
+                    arg_indexes.append((arg_idx, None))
+            else:
+                if unpack_idx is None:
+                    arg_indexes.append(arg_idx)
+                else:
+                    arg_indexes.append(arg_idx - len(args))
+        unpackers: List[Expression] = []
+        for _idx, _arg_idx in enumerate(arg_indexes):
+            if isinstance(_arg_idx, tuple):
+                u_expr = f"{spec.expression}[{_arg_idx[0]}:{_arg_idx[1]}]"
+            else:
+                u_expr = f"{spec.expression}[{_arg_idx}]"
+            unpacker = UnpackerRegistry.get(
                 spec.copy(
-                    type=arg_type,
-                    expression=f"{spec.expression}[{arg_idx}]",
+                    type=args[_idx],
+                    expression=u_expr,
                     could_be_none=True,
                 )
             )
-            for arg_idx, arg_type in enumerate(args)
-        ]
+            if unpacker != "*()":  # workaround for empty tuples
+                unpackers.append(unpacker)
         return f"tuple([{', '.join(unpackers)}])"
 
 
@@ -667,19 +706,21 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
 
     args = get_args(spec.type)
 
-    def inner_expr(arg_num=0, v_name="value", v_type=None):
+    def inner_expr(
+        arg_num: int = 0, v_name: str = "value", v_type: Optional[Type] = None
+    ) -> Expression:
         if v_type:
             return UnpackerRegistry.get(
                 spec.copy(type=v_type, expression=v_name)
             )
         else:
             if args and len(args) > arg_num:
-                arg_type = args[arg_num]
+                type_arg: Any = args[arg_num]
             else:
-                arg_type = Any
+                type_arg = Any
             return UnpackerRegistry.get(
                 spec.copy(
-                    type=arg_type,
+                    type=type_arg,
                     expression=v_name,
                     could_be_none=True,
                     field_ctx=spec.field_ctx.copy(metadata={}),
@@ -695,7 +736,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
             return f"bytearray(decodebytes({spec.expression}.encode()))"
     elif issubclass(spec.origin_type, str):
         return spec.expression
-    elif ensure_generic_collection_subclass(spec, typing.List):
+    elif ensure_generic_collection_subclass(spec, List):
         return f"[{inner_expr()} for value in {spec.expression}]"
     elif ensure_generic_collection_subclass(spec, typing.Deque):
         spec.builder.ensure_module_imported(collections)

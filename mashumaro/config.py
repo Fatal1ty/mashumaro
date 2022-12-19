@@ -45,4 +45,5 @@ __all__ = [
     "TO_DICT_ADD_BY_ALIAS_FLAG",
     "TO_DICT_ADD_OMIT_NONE_FLAG",
     "ADD_DIALECT_SUPPORT",
+    "SerializationStrategyValueType",
 ]

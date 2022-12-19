@@ -15,6 +15,7 @@ from mashumaro.config import (
     TO_DICT_ADD_BY_ALIAS_FLAG,
     TO_DICT_ADD_OMIT_NONE_FLAG,
     BaseConfig,
+    SerializationStrategyValueType,
 )
 from mashumaro.core.const import Sentinel
 from mashumaro.core.helpers import ConfigValue
@@ -33,7 +34,7 @@ from mashumaro.core.meta.helpers import (
     is_named_tuple,
     is_optional,
     is_type_var_any,
-    resolve_type_vars,
+    resolve_type_params,
     type_name,
 )
 from mashumaro.core.meta.types.common import FieldContext, ValueSpec
@@ -62,8 +63,8 @@ __POST_DESERIALIZE__ = "__post_deserialize__"
 class CodeBuilder:
     def __init__(
         self,
-        cls,
-        arg_types: typing.Tuple = (),
+        cls: typing.Type,
+        type_args: typing.Tuple[typing.Type, ...] = (),
         dialect: typing.Optional[typing.Type[Dialect]] = None,
         first_method: str = "from_dict",
         allow_postponed_evaluation: bool = True,
@@ -76,9 +77,11 @@ class CodeBuilder:
         self.cls = cls
         self.lines: CodeLines = CodeLines()
         self.globals: typing.Dict[str, typing.Any] = {}
-        self.type_vars: typing.Dict = {}
+        self.resolved_type_params: typing.Dict[
+            typing.Type, typing.Dict[typing.Type, typing.Type]
+        ] = {}
         self.field_classes: typing.Dict = {}
-        self.initial_arg_types = arg_types
+        self.initial_type_args = type_args
         if dialect is not None and not is_dialect_subclass(dialect):
             raise BadDialect(
                 f'Keyword argument "dialect" must be a subclass of Dialect '
@@ -95,11 +98,13 @@ class CodeBuilder:
     def reset(self) -> None:
         self.lines.reset()
         self.globals = globals().copy()
-        self.type_vars = resolve_type_vars(self.cls, self.initial_arg_types)
+        self.resolved_type_params = resolve_type_params(
+            self.cls, self.initial_type_args
+        )
         self.field_classes = {}
 
     @property
-    def namespace(self) -> typing.Dict[typing.Any, typing.Any]:
+    def namespace(self) -> typing.Mapping[typing.Any, typing.Any]:
         return self.cls.__dict__
 
     @property
@@ -107,14 +112,14 @@ class CodeBuilder:
         return self.namespace.get("__annotations__", {})
 
     def __get_field_types(
-        self, recursive=True
+        self, recursive: bool = True
     ) -> typing.Dict[str, typing.Any]:
         fields = {}
         globalns = sys.modules[self.cls.__module__].__dict__.copy()
         globalns[self.cls.__name__] = self.cls
         try:
             field_type_hints = typing.get_type_hints(
-                self.cls, globalns, self.cls.__dict__
+                self.cls, globalns, self.cls.__dict__  # type: ignore
             )
         except NameError as e:
             name = get_name_error_name(e)
@@ -126,7 +131,7 @@ class CodeBuilder:
                 fields[fname] = ftype
         return fields
 
-    def _get_field_class(self, field_name) -> typing.Any:
+    def _get_field_class(self, field_name: str) -> typing.Any:
         try:
             cls = self.field_classes[field_name]
         except KeyError:
@@ -134,13 +139,17 @@ class CodeBuilder:
             self.field_classes[field_name] = cls
         return cls
 
-    def _get_real_type(self, field_name, field_type) -> typing.Any:
+    def _get_real_type(
+        self, field_name: str, field_type: typing.Type
+    ) -> typing.Type:
         cls = self._get_field_class(field_name)
-        return self.type_vars[cls].get(field_type, field_type)
+        return self.resolved_type_params[cls].get(field_type, field_type)
 
-    def get_field_type_vars(self, field_name) -> typing.Dict[str, typing.Any]:
+    def get_field_resolved_type_params(
+        self, field_name: str
+    ) -> typing.Dict[typing.Type, typing.Type]:
         cls = self._get_field_class(field_name)
-        return self.type_vars[cls]
+        return self.resolved_type_params[cls]
 
     @property
     def field_types(self) -> typing.Dict[str, typing.Any]:
@@ -185,15 +194,15 @@ class CodeBuilder:
         else:
             return self.namespace.get(name, MISSING)
 
-    def add_type_modules(self, *types_) -> None:
+    def add_type_modules(self, *types_: typing.Type) -> None:
         for t in types_:
             module = inspect.getmodule(t)
             if not module:
                 continue
             self.ensure_module_imported(module)
             if is_literal(t):
-                args = get_literal_values(t)
-                self.add_type_modules(*args)
+                literal_args = get_literal_values(t)
+                self.add_type_modules(*literal_args)
             else:
                 args = get_args(t)
                 if args:
@@ -236,10 +245,8 @@ class CodeBuilder:
         exec(code, self.globals, self.__dict__)
 
     def get_declared_hook(self, method_name: str) -> typing.Any:
-        if not hasattr(self.cls, method_name):
-            return
         cls = get_class_that_defines_method(method_name, self.cls)
-        if not is_dataclass_dict_mixin(cls):
+        if cls is not None and not is_dataclass_dict_mixin(cls):
             return cls.__dict__[method_name]
 
     def _add_unpack_method_lines(self, method_name: str) -> None:
@@ -252,14 +259,15 @@ class CodeBuilder:
                 or not config.allow_postponed_evaluation
             ):
                 raise
-            self.add_type_modules(self.default_dialect)
+            if self.default_dialect is not None:
+                self.add_type_modules(self.default_dialect)
             self.add_line(
                 f"CodeBuilder("
                 f"cls,"
                 f"first_method='{method_name}',"
                 f"allow_postponed_evaluation=False,"
                 f"format_name='{self.format_name}',"
-                f"decoder={type_name(self.decoder)},"
+                f"decoder={type_name(self.decoder)},"  # type: ignore
                 f"default_dialect={type_name(self.default_dialect)}"
                 f").add_unpack_method()"
             )
@@ -356,7 +364,7 @@ class CodeBuilder:
     def add_unpack_method(self) -> None:
         self.reset()
         method_name = self.get_unpack_method_name(
-            arg_types=self.initial_arg_types,
+            type_args=self.initial_type_args,
             format_name=self.format_name,
             decoder=self.decoder,
         )
@@ -390,7 +398,7 @@ class CodeBuilder:
             self.add_line(f"cls.{cache_name}[dialect] = {method_name}")
         self.compile()
 
-    def _add_unpack_method_definition(self, method_name: str):
+    def _add_unpack_method_definition(self, method_name: str) -> None:
         kwargs = ""
         default_kwargs = self.get_unpack_method_default_flag_values(
             pass_decoder=True
@@ -400,7 +408,11 @@ class CodeBuilder:
         self.add_line(f"def {method_name}(cls, d{kwargs}):")
 
     def _unpack_method_set_value(
-        self, fname, ftype, metadata, alias=None
+        self,
+        fname: str,
+        ftype: typing.Type,
+        metadata: typing.Mapping,
+        alias: typing.Optional[str] = None,
     ) -> None:
         self.add_line("try:")
         with self.indent():
@@ -424,7 +436,10 @@ class CodeBuilder:
         self.add_line("except KeyError as e:")
         with self.indent():
             field_type = type_name(
-                ftype, type_vars=self.get_field_type_vars(fname)
+                ftype,
+                resolved_type_params=self.get_field_resolved_type_params(
+                    fname
+                ),
             )
             if self.get_field_default(fname) is MISSING:
                 self.add_line("if e.__traceback__.tb_next is None:")
@@ -454,7 +469,10 @@ class CodeBuilder:
             )
 
     @lru_cache()
-    def get_config(self, cls=None) -> typing.Type[BaseConfig]:
+    @typing.no_type_check
+    def get_config(
+        self, cls: typing.Optional[typing.Type] = None
+    ) -> typing.Type[BaseConfig]:
         if cls is None:
             cls = self.cls
         config_cls = getattr(cls, "Config", BaseConfig)
@@ -468,7 +486,7 @@ class CodeBuilder:
 
     def get_pack_method_flags(
         self,
-        cls=None,
+        cls: typing.Optional[typing.Type] = None,
         pass_encoder: bool = False,
     ) -> str:
         pluggable_flags = []
@@ -489,7 +507,7 @@ class CodeBuilder:
 
     def get_unpack_method_flags(
         self,
-        cls=None,
+        cls: typing.Optional[typing.Type] = None,
         pass_decoder: bool = False,
     ) -> str:
         pluggable_flags = []
@@ -503,7 +521,7 @@ class CodeBuilder:
 
     def get_pack_method_default_flag_values(
         self,
-        cls=None,
+        cls: typing.Optional[typing.Type] = None,
         pass_encoder: bool = False,
     ) -> str:
         pos_param_names = []
@@ -554,7 +572,7 @@ class CodeBuilder:
 
     def get_unpack_method_default_flag_values(
         self,
-        cls=None,
+        cls: typing.Optional[typing.Type] = None,
         pass_decoder: bool = False,
     ) -> str:
         pos_param_names = []
@@ -584,7 +602,9 @@ class CodeBuilder:
             )
         return pluggable_flags_str
 
-    def is_code_generation_option_enabled(self, option: str, cls=None) -> bool:
+    def is_code_generation_option_enabled(
+        self, option: str, cls: typing.Optional[typing.Type] = None
+    ) -> bool:
         if cls is None:
             cls = self.cls
         return option in self.get_config(cls).code_generation_options
@@ -592,7 +612,7 @@ class CodeBuilder:
     @classmethod
     def get_unpack_method_name(
         cls,
-        arg_types: typing.Tuple = (),
+        type_args: typing.Iterable = (),
         format_name: str = "dict",
         decoder: typing.Optional[typing.Any] = None,
     ) -> str:
@@ -602,14 +622,14 @@ class CodeBuilder:
             method_name = "from_dict"
             if format_name != "dict":
                 method_name += f"_{format_name}"
-            if arg_types:
-                method_name += f"_{cls._hash_arg_types(arg_types)}"
+            if type_args:
+                method_name += f"_{cls._hash_type_args(type_args)}"
             return method_name
 
     @classmethod
     def get_pack_method_name(
         cls,
-        arg_types: typing.Tuple = (),
+        type_args: typing.Tuple[typing.Type, ...] = (),
         format_name: str = "dict",
         encoder: typing.Optional[typing.Any] = None,
     ) -> str:
@@ -619,8 +639,8 @@ class CodeBuilder:
             method_name = "to_dict"
             if format_name != "dict":
                 method_name += f"_{format_name}"
-            if arg_types:
-                method_name += f"_{cls._hash_arg_types(arg_types)}"
+            if type_args:
+                method_name += f"_{cls._hash_type_args(type_args)}"
             return method_name
 
     def _add_pack_method_lines(self, method_name: str) -> None:
@@ -633,7 +653,8 @@ class CodeBuilder:
                 or not config.allow_postponed_evaluation
             ):
                 raise
-            self.add_type_modules(self.default_dialect)
+            if self.default_dialect is not None:
+                self.add_type_modules(self.default_dialect)
             self.add_line(
                 f"CodeBuilder("
                 f"self.__class__,"
@@ -784,7 +805,9 @@ class CodeBuilder:
             )
         )
 
-    def _get_encoder_kwargs(self, cls=None) -> typing.Dict[str, typing.Any]:
+    def _get_encoder_kwargs(
+        self, cls: typing.Optional[typing.Type] = None
+    ) -> typing.Dict[str, typing.Any]:
         result = {}
         for encoder_param, value in self.encoder_kwargs.items():
             packer_param = value[0]
@@ -794,7 +817,7 @@ class CodeBuilder:
             result[encoder_param] = (packer_param, packer_value)
         return result
 
-    def _add_pack_method_definition(self, method_name: str):
+    def _add_pack_method_definition(self, method_name: str) -> None:
         kwargs = ""
         default_kwargs = self.get_pack_method_default_flag_values(
             pass_encoder=True
@@ -806,7 +829,7 @@ class CodeBuilder:
     def add_pack_method(self) -> None:
         self.reset()
         method_name = self.get_pack_method_name(
-            arg_types=self.initial_arg_types,
+            type_args=self.initial_type_args,
             format_name=self.format_name,
             encoder=self.encoder,
         )
@@ -840,9 +863,9 @@ class CodeBuilder:
 
     def _get_field_packer(
         self,
-        fname,
-        ftype,
-        config,
+        fname: str,
+        ftype: typing.Type,
+        config: typing.Type[BaseConfig],
     ) -> typing.Tuple[str, typing.Optional[str], bool]:
         metadata = self.metadatas.get(fname, {})
         alias = metadata.get("alias")
@@ -851,7 +874,7 @@ class CodeBuilder:
         could_be_none = (
             ftype in (typing.Any, type(None), None)
             or is_type_var_any(ftype)
-            or is_optional(ftype, self.get_field_type_vars(fname))
+            or is_optional(ftype, self.get_field_resolved_type_params(fname))
             or self.get_field_default(fname) is None
         )
         value = "value" if could_be_none else f"self.{fname}"
@@ -869,12 +892,18 @@ class CodeBuilder:
         )
         return packer, alias, could_be_none
 
-    def iter_serialization_strategies(self, metadata, ftype):
+    @typing.no_type_check
+    def iter_serialization_strategies(
+        self, metadata: typing.Mapping, ftype: typing.Type
+    ) -> typing.Iterator[SerializationStrategyValueType]:
         yield metadata.get("serialization_strategy")
         yield from self.__iter_serialization_strategies(ftype)
 
     @lru_cache()
-    def __iter_serialization_strategies(self, ftype):
+    @typing.no_type_check
+    def __iter_serialization_strategies(
+        self, ftype: typing.Type
+    ) -> typing.Iterator[SerializationStrategyValueType]:
         if self.dialect is not None:
             yield self.dialect.serialization_strategy.get(ftype)
         default_dialect = self.get_config().dialect
@@ -893,7 +922,7 @@ class CodeBuilder:
         self,
         option: str,
         default: typing.Any,
-        cls=None,
+        cls: typing.Optional[typing.Type] = None,
     ) -> typing.Any:
         for ns in (
             self.dialect,
@@ -907,5 +936,5 @@ class CodeBuilder:
         return default
 
     @classmethod
-    def _hash_arg_types(cls, arg_types) -> str:
-        return md5(",".join(map(type_name, arg_types)).encode()).hexdigest()
+    def _hash_type_args(cls, type_args: typing.Iterable[typing.Type]) -> str:
+        return md5(",".join(map(type_name, type_args)).encode()).hexdigest()

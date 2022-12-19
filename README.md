@@ -19,7 +19,7 @@ Table of contents
 * [Installation](#installation)
 * [Changelog](#changelog)
 * [Supported serialization formats](#supported-serialization-formats)
-* [Supported field types](#supported-field-types)
+* [Supported data types](#supported-data-types)
 * [Usage example](#usage-example)
 * [How does it work?](#how-does-it-work)
 * [Benchmark](#benchmark)
@@ -103,7 +103,7 @@ third-party library, such as a client for MongoDB.
 
 You can find the documentation for the specific serialization format [below](#serialization-mixins).
 
-Supported field types
+Supported data types
 --------------------------------------------------------------------------------
 
 There is support for generic types from the standard [`typing`](https://docs.python.org/3/library/typing.html) module:
@@ -145,10 +145,12 @@ for special primitives from the [`typing`](https://docs.python.org/3/library/typ
 * [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)
 * [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)
 * [`TypeVar`](https://docs.python.org/3/library/typing.html#typing.TypeVar)
+* [`TypeVarTuple`](https://docs.python.org/3/library/typing.html#typing.TypeVarTuple)
 * [`NewType`](https://docs.python.org/3/library/typing.html#newtype)
 * [`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated)
 * [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)
 * [`Self`](https://docs.python.org/3/library/typing.html#typing.Self)
+* [`Unpack`](https://docs.python.org/3/library/typing.html#typing.Unpack)
 
 for standard interpreter types from [`types`](https://docs.python.org/3/library/types.html#standard-interpreter-types) module:
 * [`NoneType`](https://docs.python.org/3/library/types.html#types.NoneType)
@@ -186,7 +188,6 @@ for pathlike types:
 * [`WindowsPath`](https://docs.python.org/3/library/pathlib.html#pathlib.WindowsPath)
 * [`os.PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)
 
-
 for other less popular built-in types:
 * [`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)
 * [`decimal.Decimal`](https://docs.python.org/3/library/decimal.html#decimal.Decimal)
@@ -204,6 +205,8 @@ for backported types from [`typing-extensions`](https://github.com/python/typing
 * [`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated)
 * [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)
 * [`Self`](https://docs.python.org/3/library/typing.html#typing.Self)
+* [`TypeVarTuple`](https://docs.python.org/3/library/typing.html#typing.TypeVarTuple)
+* [`Unpack`](https://docs.python.org/3/library/typing.html#typing.Unpack)
 
 for arbitrary types:
 * [user-defined types](#user-defined-types)
@@ -599,7 +602,8 @@ future major release.
 #### User-defined generic types
 
 The great thing to note about using annotations in `SerializableType` is that
-they work seamlessly with [generic types](https://docs.python.org/3/library/typing.html#user-defined-generic-types).
+they work seamlessly with [generic](https://docs.python.org/3/library/typing.html#user-defined-generic-types)
+and [variadic generic](https://peps.python.org/pep-0646/) types.
 Let's see how this can be useful:
 
 ```python
@@ -1410,8 +1414,9 @@ class Entity(DataClassDictMixin):
 ### Generic dataclasses
 
 Along with [user-defined generic types](#user-defined-generic-types)
-implementing `SerializableType` interface, generic dataclasses can also be used. There are two applicable scenarios for
-them.
+implementing `SerializableType` interface, generic and variadic
+generic dataclasses can also be used. There are two applicable scenarios
+for them.
 
 #### Generic dataclass inheritance
 
@@ -1421,22 +1426,27 @@ instances depending on the concrete types, you can use inheritance for that:
 ```python
 from dataclasses import dataclass
 from datetime import date
-from typing import Generic, Mapping, TypeVar
+from typing import Generic, Mapping, TypeVar, TypeVarTuple
 from mashumaro import DataClassDictMixin
 
 KT = TypeVar("KT")
 VT = TypeVar("VT", date, str)
+Ts = TypeVarTuple("Ts")
 
 @dataclass
-class GenericDataClass(Generic[KT, VT]):
+class GenericDataClass(Generic[KT, VT, *Ts]):
     x: Mapping[KT, VT]
+    y: Tuple[*Ts, KT]
 
 @dataclass
-class ConcreteDataClass(GenericDataClass[str, date], DataClassDictMixin):
+class ConcreteDataClass(
+    GenericDataClass[str, date, *Tuple[float, ...]],
+    DataClassDictMixin,
+):
     pass
 
-ConcreteDataClass.from_dict({"x": {"a": "2021-01-01"}})          # ok
-ConcreteDataClass.from_dict({"x": {"a": "not a date but str"}})  # error
+ConcreteDataClass.from_dict({"x": {"a": "2021-01-01"}, "y": [1, 2, "a"]})
+# ConcreteDataClass(x={'a': datetime.date(2021, 1, 1)}, y=(1.0, 2.0, 'a'))
 ```
 
 You can override `TypeVar` field with a concrete type or another `TypeVar`.
@@ -1610,9 +1620,3 @@ obj = DataClass(user="name", password="secret")
 print(obj.to_dict())  # {"user": "name"}
 print(obj.to_json())  # '{"user": "name"}'
 ```
-
-TODO
---------------------------------------------------------------------------------
-
-* add optional validation
-* write custom useful types such as URL, Email etc

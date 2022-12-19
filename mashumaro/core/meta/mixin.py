@@ -6,12 +6,12 @@ from mashumaro.exceptions import UnresolvedTypeReferenceError
 
 
 def compile_mixin_packer(
-    cls,
+    cls: Type,
     format_name: str = "dict",
     dialect: Optional[Type[Dialect]] = None,
     encoder: Any = None,
     encoder_kwargs: Optional[Dict[str, Dict[str, Tuple[str, Any]]]] = None,
-):
+) -> None:
     builder = CodeBuilder(
         cls=cls,
         format_name=format_name,
@@ -28,11 +28,11 @@ def compile_mixin_packer(
 
 
 def compile_mixin_unpacker(
-    cls,
+    cls: Type,
     format_name: str = "dict",
     dialect: Optional[Type[Dialect]] = None,
     decoder: Any = None,
-):
+) -> None:
     builder = CodeBuilder(
         cls=cls,
         format_name=format_name,

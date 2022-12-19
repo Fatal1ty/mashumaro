@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Dict, Optional, TypeVar, Union
 
 from typing_extensions import Literal
 
@@ -14,6 +14,9 @@ NamedTupleSerializationEngine = Literal["as_dict", "as_list"]
 AnySerializationEngine = NamedTupleSerializationEngine
 
 
+T = TypeVar("T")
+
+
 def field_options(
     serialize: Optional[
         Union[AnySerializationEngine, Callable[[Any], Any]]
@@ -23,7 +26,7 @@ def field_options(
     ] = None,
     serialization_strategy: Optional[SerializationStrategy] = None,
     alias: Optional[str] = None,
-):
+) -> Dict[str, Any]:
     return {
         "serialize": serialize,
         "deserialize": deserialize,
@@ -33,13 +36,13 @@ def field_options(
 
 
 class _PassThrough(SerializationStrategy):
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError
 
-    def serialize(self, value):
+    def serialize(self, value: T) -> T:
         return value
 
-    def deserialize(self, value):
+    def deserialize(self, value: T) -> T:
         return value
 
 

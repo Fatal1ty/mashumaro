@@ -1,21 +1,23 @@
+from typing import Any, Optional, Type
+
 from mashumaro.core.meta.helpers import type_name
 
 
 class MissingField(LookupError):
-    def __init__(self, field_name, field_type, holder_class):
+    def __init__(self, field_name: str, field_type: Type, holder_class: Type):
         self.field_name = field_name
         self.field_type = field_type
         self.holder_class = holder_class
 
     @property
-    def field_type_name(self):
+    def field_type_name(self) -> str:
         return type_name(self.field_type, short=True)
 
     @property
-    def holder_class_name(self):
+    def holder_class_name(self) -> str:
         return type_name(self.holder_class, short=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f'Field "{self.field_name}" of type {self.field_type_name}'
             f" is missing in {self.holder_class_name} instance"
@@ -27,21 +29,27 @@ class UnserializableDataError(TypeError):
 
 
 class UnserializableField(UnserializableDataError):
-    def __init__(self, field_name, field_type, holder_class, msg=None):
+    def __init__(
+        self,
+        field_name: str,
+        field_type: Type,
+        holder_class: Type,
+        msg: Optional[str] = None,
+    ):
         self.field_name = field_name
         self.field_type = field_type
         self.holder_class = holder_class
         self.msg = msg
 
     @property
-    def field_type_name(self):
+    def field_type_name(self) -> str:
         return type_name(self.field_type, short=True)
 
     @property
-    def holder_class_name(self):
+    def holder_class_name(self) -> str:
         return type_name(self.holder_class, short=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = (
             f'Field "{self.field_name}" of type {self.field_type_name} '
             f"in {self.holder_class_name} is not serializable"
@@ -52,7 +60,13 @@ class UnserializableField(UnserializableDataError):
 
 
 class UnsupportedSerializationEngine(UnserializableField):
-    def __init__(self, field_name, field_type, holder_class, engine):
+    def __init__(
+        self,
+        field_name: str,
+        field_type: Type,
+        holder_class: Type,
+        engine: Any,
+    ):
         super(UnsupportedSerializationEngine, self).__init__(
             field_name,
             field_type,
@@ -62,7 +76,13 @@ class UnsupportedSerializationEngine(UnserializableField):
 
 
 class UnsupportedDeserializationEngine(UnserializableField):
-    def __init__(self, field_name, field_type, holder_class, engine):
+    def __init__(
+        self,
+        field_name: str,
+        field_type: Type,
+        holder_class: Type,
+        engine: Any,
+    ):
         super(UnsupportedDeserializationEngine, self).__init__(
             field_name,
             field_type,
@@ -73,7 +93,12 @@ class UnsupportedDeserializationEngine(UnserializableField):
 
 class InvalidFieldValue(ValueError):
     def __init__(
-        self, field_name, field_type, field_value, holder_class, msg=None
+        self,
+        field_name: str,
+        field_type: Type,
+        field_value: Any,
+        holder_class: Type,
+        msg: Optional[str] = None,
     ):
         self.field_name = field_name
         self.field_type = field_type
@@ -82,14 +107,14 @@ class InvalidFieldValue(ValueError):
         self.msg = msg
 
     @property
-    def field_type_name(self):
+    def field_type_name(self) -> str:
         return type_name(self.field_type, short=True)
 
     @property
-    def holder_class_name(self):
+    def holder_class_name(self) -> str:
         return type_name(self.holder_class, short=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = (
             f'Field "{self.field_name}" of type {self.field_type_name} '
             f"in {self.holder_class_name} has invalid value "
@@ -105,16 +130,16 @@ class BadHookSignature(TypeError):
 
 
 class ThirdPartyModuleNotFoundError(ModuleNotFoundError):
-    def __init__(self, module_name, field_name, holder_class):
+    def __init__(self, module_name: str, field_name: str, holder_class: Type):
         self.module_name = module_name
         self.field_name = field_name
         self.holder_class = holder_class
 
     @property
-    def holder_class_name(self):
+    def holder_class_name(self) -> str:
         return type_name(self.holder_class, short=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = (
             f'Install "{self.module_name}" to use it as the serialization '
             f'method for the field "{self.field_name}" '
@@ -124,15 +149,15 @@ class ThirdPartyModuleNotFoundError(ModuleNotFoundError):
 
 
 class UnresolvedTypeReferenceError(NameError):
-    def __init__(self, holder_class, unresolved_type_name):
+    def __init__(self, holder_class: Type, unresolved_type_name: str):
         self.holder_class = holder_class
         self.name = unresolved_type_name
 
     @property
-    def holder_class_name(self):
+    def holder_class_name(self) -> str:
         return type_name(self.holder_class, short=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"Class {self.holder_class_name} has unresolved type reference "
             f"{self.name} in some of its fields"

@@ -8,7 +8,7 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Tuple,
+    Sequence,
     Type,
 )
 
@@ -46,7 +46,7 @@ class FieldContext:
     name: str
     metadata: Mapping
 
-    def copy(self, **changes) -> "FieldContext":
+    def copy(self, **changes: Any) -> "FieldContext":
         return replace(self, **changes)
 
 
@@ -59,12 +59,12 @@ class ValueSpec:
     field_ctx: FieldContext
     could_be_none: bool = True
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key: str, value: Any) -> None:
         if key == "type":
             self.origin_type = get_type_origin(value)
         super().__setattr__(key, value)
 
-    def copy(self, **changes) -> "ValueSpec":
+    def copy(self, **changes: Any) -> "ValueSpec":
         return replace(self, **changes)
 
 
@@ -81,6 +81,7 @@ class Registry:
 
     def get(self, spec: ValueSpec) -> Expression:
         spec.type = spec.builder._get_real_type(spec.field_ctx.name, spec.type)
+        spec.builder.add_type_modules(spec.type)
         for packer in self._registry:
             expr = packer(spec)
             if expr is not None:
@@ -105,11 +106,11 @@ def ensure_generic_collection(spec: ValueSpec) -> bool:
     return True
 
 
-def ensure_collection_arg_types_supported(
+def ensure_collection_type_args_supported(
     collection_type: Type,
-    arg_types: Tuple[Type, ...],
+    type_args: Sequence[Type],
 ) -> bool:
-    if arg_types and is_dataclass(arg_types[0]):
+    if type_args and is_dataclass(type_args[0]):
         raise UnserializableDataError(
             f"{type_name(collection_type, short=True)} "
             f"with dataclasses as keys is not supported by mashumaro"
@@ -118,17 +119,19 @@ def ensure_collection_arg_types_supported(
 
 
 def ensure_generic_collection_subclass(
-    spec: ValueSpec, *checked_types
+    spec: ValueSpec, *checked_types: Type
 ) -> bool:
     return issubclass(
         spec.origin_type, checked_types
     ) and ensure_generic_collection(spec)
 
 
-def ensure_generic_mapping(spec: ValueSpec, args, checked_type) -> bool:
+def ensure_generic_mapping(
+    spec: ValueSpec, args: Sequence[Type], checked_type: Type
+) -> bool:
     return ensure_generic_collection_subclass(
         spec, checked_type
-    ) and ensure_collection_arg_types_supported(spec.origin_type, args)
+    ) and ensure_collection_type_args_supported(spec.origin_type, args)
 
 
 def expr_or_maybe_none(spec: ValueSpec, new_expr: Expression) -> Expression:
