@@ -421,6 +421,30 @@ def _collect_type_params(typ: Type) -> Sequence[Type]:
     return type_params
 
 
+def _check_generic(
+    typ: Type, type_params: Sequence[Type], type_args: Sequence[Type]
+) -> None:
+    # https://github.com/python/cpython/issues/99382
+    unpacks = len(list(filter(is_unpack, type_params)))
+    if unpacks > 1:
+        raise TypeError(
+            "Multiple unpacks are disallowed within a single type parameter "
+            f"list for {type_name(typ)}"
+        )
+    elif unpacks == 1:
+        expected_count = len(type_params) - 1
+        expected_msg = f"at least {len(type_params) - 1}"
+    else:
+        expected_count = len(type_params)
+        expected_msg = f"{expected_count}"
+    args_len = len(type_args)
+    if 0 < args_len < expected_count:
+        raise TypeError(
+            f"Too few arguments for {type_name(typ)}; "
+            f"actual {args_len}, expected {expected_msg}"
+        )
+
+
 def _flatten_type_args(
     type_args: Sequence[Type],
     allow_ellipsis_if_many_args: bool = False,
@@ -467,6 +491,8 @@ def resolve_type_params(
         for type_param in base_type_params:
             if type_param not in type_params:
                 type_params.append(type_param)
+
+    _check_generic(typ, type_params, type_args)
 
     type_args = _flatten_type_args(type_args, allow_ellipsis_if_many_args=True)
     param_idx = 0
