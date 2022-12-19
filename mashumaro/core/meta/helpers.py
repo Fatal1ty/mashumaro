@@ -527,7 +527,7 @@ def resolve_type_params(
                 type_params.insert(param_idx, y)
         else:
             if not type_args and is_type_var_tuple(get_args(type_param)[0]):
-                resolved_type_params[type_param] = Unpack[
+                resolved_type_params[type_param] = Unpack[  # type: ignore
                     Tuple[Any, ...]  # type: ignore
                 ]
                 break
