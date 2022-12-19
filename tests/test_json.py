@@ -90,7 +90,6 @@ def test_json_bytes():
 
 
 def test_json_datetime():
-
     dt = datetime(2018, 10, 29, 12, 46, 55, 308495)
 
     @dataclass
