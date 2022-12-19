@@ -285,7 +285,7 @@ def is_new_type(typ: Type) -> bool:
 
 def is_union(typ: Type) -> bool:
     try:
-        if PY_310_MIN and isinstance(typ, types.UnionType):
+        if PY_310_MIN and isinstance(typ, types.UnionType):  # type: ignore
             return True
         return typ.__origin__ is Union
     except AttributeError:
