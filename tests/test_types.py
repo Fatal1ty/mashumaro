@@ -3,6 +3,7 @@ from datetime import date
 from typing import Any, Generic, Iterator, Mapping, Tuple, TypeVar
 
 import pytest
+from typing_extensions import Self
 
 from mashumaro import DataClassDictMixin
 from mashumaro.core.const import PEP_585_COMPATIBLE
@@ -135,6 +136,15 @@ class MyAnnotatedUserGenericSerializableType(
 
     def __repr__(self):  # pragma no cover
         return f"<MyAnnotatedUserGenericSerializableType: {repr(self.value)}>"
+
+
+class MySelfSerializableType(SerializableType, use_annotations=True):
+    def _serialize(self: Self) -> Any:
+        return self
+
+    @classmethod
+    def _deserialize(cls, value: Self) -> Self:
+        return value
 
 
 def test_generic_serializable_list_int():
@@ -307,3 +317,13 @@ def test_serializable_type_inheritance():
         pass
 
     assert not MySerializableType4.__use_annotations__
+
+
+def test_serializable_type_with_self():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MySelfSerializableType
+
+    obj = DataClass(MySelfSerializableType())
+    assert obj.to_dict() == {"x": obj.x}
+    assert DataClass.from_dict({"x": obj.x}) == obj

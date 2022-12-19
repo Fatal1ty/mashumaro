@@ -134,6 +134,8 @@ def _unpack_annotated_serializable_type(
             holder_class=spec.builder.cls,
             msg='Method _deserialize must have annotated "value" argument',
         ) from None
+    if is_self(value_type):
+        return f"{type_name(spec.type)}._deserialize({spec.expression})"
     type_args = get_args(value_type)
     resolved = resolve_type_params(spec.origin_type, get_args(spec.type))[
         spec.origin_type
