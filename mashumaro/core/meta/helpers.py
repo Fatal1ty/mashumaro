@@ -470,7 +470,7 @@ def _flatten_type_args(
                 and unpacked_type == tuple[()]  # type: ignore
             ):
                 if len(type_args) == 1:
-                    result.append(())
+                    result.append(())  # type: ignore
             else:
                 result.extend(_flatten_type_args(get_args(unpacked_type)))
         else:
