@@ -1,6 +1,5 @@
 import importlib
 import inspect
-import sys
 import types
 import typing
 from contextlib import contextmanager
