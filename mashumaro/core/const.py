@@ -1,6 +1,22 @@
 import enum
 import sys
 
+__all__ = [
+    "PY_37",
+    "PY_38",
+    "PY_39",
+    "PY_310",
+    "PY_37_MIN",
+    "PY_38_MIN",
+    "PY_39_MIN",
+    "PY_310_MIN",
+    "PY_311_MIN",
+    "PEP_585_COMPATIBLE",
+    "PEP_586_COMPATIBLE",
+    "Sentinel",
+]
+
+
 PY_37 = sys.version_info.major == 3 and sys.version_info.minor == 7
 PY_38 = sys.version_info.major == 3 and sys.version_info.minor == 8
 PY_39 = sys.version_info.major == 3 and sys.version_info.minor == 9
@@ -20,19 +36,3 @@ PEP_586_COMPATIBLE = PY_38_MIN  # Literal Types
 
 class Sentinel(enum.Enum):
     MISSING = enum.auto()
-
-
-__all__ = [
-    "PY_37",
-    "PY_38",
-    "PY_39",
-    "PY_310",
-    "PY_37_MIN",
-    "PY_38_MIN",
-    "PY_39_MIN",
-    "PY_310_MIN",
-    "PY_311_MIN",
-    "PEP_585_COMPATIBLE",
-    "PEP_586_COMPATIBLE",
-    "Sentinel",
-]

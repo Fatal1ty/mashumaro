@@ -64,6 +64,9 @@ if PY_39_MIN:
     import zoneinfo
 
 
+__all__ = ["PackerRegistry"]
+
+
 PackerRegistry = Registry()
 register = PackerRegistry.register
 
@@ -654,6 +657,3 @@ def pack_pathlike(spec: ValueSpec) -> Optional[Expression]:
 def pack_enum(spec: ValueSpec) -> Optional[Expression]:
     if issubclass(spec.origin_type, enum.Enum):
         return f"{spec.expression}.value"
-
-
-__all__ = ["PackerRegistry"]

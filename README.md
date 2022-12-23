@@ -355,7 +355,7 @@ Serialization mixins
 
 `mashumaro` provides mixins for each serialization format.
 
-#### [`DataClassDictMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L11)
+#### [`DataClassDictMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L14)
 
 Can be imported in two ways:
 ```python
@@ -365,8 +365,8 @@ from mashumaro.mixins.dict import DataClassDictMixin
 
 The core mixin that adds serialization functionality to a dataclass.
 This mixin is a base class for all other serialization format mixins.
-It adds methods [`from_dict`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L35-L44)
-and [`to_dict`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L24-L33).
+It adds methods [`from_dict`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L38-L47)
+and [`to_dict`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L27-L36).
 
 #### [`DataClassJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L14)
 

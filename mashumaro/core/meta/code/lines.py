@@ -1,6 +1,8 @@
 from contextlib import contextmanager
 from typing import Generator, List
 
+__all__ = ["CodeLines"]
+
 
 class CodeLines:
     def __init__(self) -> None:
@@ -24,6 +26,3 @@ class CodeLines:
     def reset(self) -> None:
         self._lines = []
         self._current_indent = ""
-
-
-__all__ = ["CodeLines"]

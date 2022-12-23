@@ -1,6 +1,11 @@
 import datetime
 import re
 
+__all__ = [
+    "parse_timezone",
+    "ConfigValue",
+]
+
 
 def parse_timezone(s: str) -> datetime.timezone:
     regexp = re.compile(r"^UTC(([+-][0-2][0-9]):([0-5][0-9]))?$")
@@ -24,9 +29,3 @@ def parse_timezone(s: str) -> datetime.timezone:
 class ConfigValue:
     def __init__(self, name: str):
         self.name = name
-
-
-__all__ = [
-    "parse_timezone",
-    "ConfigValue",
-]

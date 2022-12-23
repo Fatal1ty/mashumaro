@@ -79,6 +79,9 @@ except ImportError:  # pragma no cover
     pendulum: Optional[types.ModuleType] = None  # type: ignore
 
 
+__all__ = ["UnpackerRegistry"]
+
+
 UnpackerRegistry = Registry()
 register = UnpackerRegistry.register
 
@@ -798,6 +801,3 @@ def unpack_pathlike(spec: ValueSpec) -> Optional[Expression]:
 def unpack_enum(spec: ValueSpec) -> Optional[Expression]:
     if issubclass(spec.origin_type, enum.Enum):
         return f"{type_name(spec.origin_type)}({spec.expression})"
-
-
-__all__ = ["UnpackerRegistry"]

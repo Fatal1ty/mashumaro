@@ -34,6 +34,43 @@ from mashumaro.core.const import (
 )
 from mashumaro.dialect import Dialect
 
+__all__ = [
+    "get_type_origin",
+    "get_args",
+    "type_name",
+    "is_special_typing_primitive",
+    "is_generic",
+    "is_typed_dict",
+    "is_named_tuple",
+    "is_optional",
+    "is_union",
+    "not_none_type_arg",
+    "is_type_var",
+    "is_type_var_any",
+    "is_class_var",
+    "is_init_var",
+    "get_class_that_defines_method",
+    "get_class_that_defines_field",
+    "is_dataclass_dict_mixin",
+    "is_dataclass_dict_mixin_subclass",
+    "resolve_type_params",
+    "get_generic_name",
+    "get_name_error_name",
+    "is_dialect_subclass",
+    "is_new_type",
+    "is_annotated",
+    "is_literal",
+    "get_literal_values",
+    "is_self",
+    "is_required",
+    "is_not_required",
+    "get_function_arg_annotation",
+    "get_function_return_annotation",
+    "is_unpack",
+    "is_type_var_tuple",
+]
+
+
 NoneType = type(None)
 DataClassDictMixinPath = (
     f"{__name__.rsplit('.', 3)[:-3][0]}" f".mixins.dict.DataClassDictMixin"
@@ -633,40 +670,3 @@ def is_type_var_tuple(typ: Type) -> bool:
 def is_variable_length_tuple(typ: Type) -> bool:
     type_args = get_args(typ)
     return len(type_args) == 2 and type_args[1] is Ellipsis
-
-
-__all__ = [
-    "get_type_origin",
-    "get_args",
-    "type_name",
-    "is_special_typing_primitive",
-    "is_generic",
-    "is_typed_dict",
-    "is_named_tuple",
-    "is_optional",
-    "is_union",
-    "not_none_type_arg",
-    "is_type_var",
-    "is_type_var_any",
-    "is_class_var",
-    "is_init_var",
-    "get_class_that_defines_method",
-    "get_class_that_defines_field",
-    "is_dataclass_dict_mixin",
-    "is_dataclass_dict_mixin_subclass",
-    "resolve_type_params",
-    "get_generic_name",
-    "get_name_error_name",
-    "is_dialect_subclass",
-    "is_new_type",
-    "is_annotated",
-    "is_literal",
-    "get_literal_values",
-    "is_self",
-    "is_required",
-    "is_not_required",
-    "get_function_arg_annotation",
-    "get_function_return_annotation",
-    "is_unpack",
-    "is_type_var_tuple",
-]

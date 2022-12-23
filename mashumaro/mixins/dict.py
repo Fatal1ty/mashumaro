@@ -5,6 +5,9 @@ from mashumaro.core.meta.mixin import (
     compile_mixin_unpacker,
 )
 
+__all__ = ["DataClassDictMixin"]
+
+
 T = TypeVar("T", bound="DataClassDictMixin")
 
 
@@ -56,6 +59,3 @@ class DataClassDictMixin:
 
     def __post_serialize__(self: T, d: Dict[Any, Any]) -> Dict[Any, Any]:
         ...
-
-
-__all__ = ["DataClassDictMixin"]

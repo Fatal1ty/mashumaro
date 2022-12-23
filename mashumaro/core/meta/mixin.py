@@ -4,6 +4,11 @@ from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.dialect import Dialect
 from mashumaro.exceptions import UnresolvedTypeReferenceError
 
+__all__ = [
+    "compile_mixin_packer",
+    "compile_mixin_unpacker",
+]
+
 
 def compile_mixin_packer(
     cls: Type,
@@ -45,6 +50,3 @@ def compile_mixin_unpacker(
     except UnresolvedTypeReferenceError:
         if not config.allow_postponed_evaluation:
             raise
-
-
-__all__ = ["compile_mixin_packer", "compile_mixin_unpacker"]
