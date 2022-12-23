@@ -115,12 +115,8 @@ class CodeBuilder:
         self, recursive: bool = True
     ) -> typing.Dict[str, typing.Any]:
         fields = {}
-        globalns = sys.modules[self.cls.__module__].__dict__.copy()
-        globalns[self.cls.__name__] = self.cls
         try:
-            field_type_hints = typing.get_type_hints(
-                self.cls, globalns, self.cls.__dict__  # type: ignore
-            )
+            field_type_hints = typing.get_type_hints(self.cls)
         except NameError as e:
             name = get_name_error_name(e)
             raise UnresolvedTypeReferenceError(self.cls, name) from None
