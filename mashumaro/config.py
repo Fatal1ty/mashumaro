@@ -10,6 +10,15 @@ else:
     from typing_extensions import Literal  # type: ignore
 
 
+__all__ = [
+    "BaseConfig",
+    "TO_DICT_ADD_BY_ALIAS_FLAG",
+    "TO_DICT_ADD_OMIT_NONE_FLAG",
+    "ADD_DIALECT_SUPPORT",
+    "SerializationStrategyValueType",
+]
+
+
 TO_DICT_ADD_BY_ALIAS_FLAG = "TO_DICT_ADD_BY_ALIAS_FLAG"
 TO_DICT_ADD_OMIT_NONE_FLAG = "TO_DICT_ADD_OMIT_NONE_FLAG"
 ADD_DIALECT_SUPPORT = "ADD_DIALECT_SUPPORT"
@@ -38,12 +47,3 @@ class BaseConfig:
     dialect: Optional[Type[Dialect]] = None
     omit_none: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
     orjson_options: Optional[int] = 0
-
-
-__all__ = [
-    "BaseConfig",
-    "TO_DICT_ADD_BY_ALIAS_FLAG",
-    "TO_DICT_ADD_OMIT_NONE_FLAG",
-    "ADD_DIALECT_SUPPORT",
-    "SerializationStrategyValueType",
-]

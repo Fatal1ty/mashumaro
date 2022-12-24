@@ -5,6 +5,13 @@ from typing_extensions import Literal
 
 from mashumaro.core.const import Sentinel
 
+__all__ = [
+    "SerializableType",
+    "GenericSerializableType",
+    "SerializationStrategy",
+    "RoundedDecimal",
+]
+
 
 class SerializableType:
     __use_annotations__ = False
@@ -65,11 +72,3 @@ class RoundedDecimal(SerializationStrategy):
 
     def deserialize(self, value: str) -> decimal.Decimal:
         return decimal.Decimal(str(value))
-
-
-__all__ = [
-    "SerializableType",
-    "GenericSerializableType",
-    "SerializationStrategy",
-    "RoundedDecimal",
-]

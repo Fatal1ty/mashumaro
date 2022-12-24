@@ -4,6 +4,12 @@ from typing_extensions import Literal
 
 from mashumaro.types import SerializationStrategy
 
+__all__ = [
+    "field_options",
+    "pass_through",
+]
+
+
 NamedTupleDeserializationEngine = Literal["as_dict", "as_list"]
 DateTimeDeserializationEngine = Literal["ciso8601", "pendulum"]
 AnyDeserializationEngine = Literal[
@@ -47,6 +53,3 @@ class _PassThrough(SerializationStrategy):
 
 
 pass_through = _PassThrough()
-
-
-__all__ = ["field_options", "pass_through"]
