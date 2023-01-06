@@ -899,7 +899,6 @@ class CodeBuilder:
         yield metadata.get("serialization_strategy")
         yield from self.__iter_serialization_strategies(ftype)
 
-    @lru_cache()
     @typing.no_type_check
     def __iter_serialization_strategies(
         self, ftype: typing.Type
