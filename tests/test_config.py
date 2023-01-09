@@ -153,9 +153,9 @@ def test_serialization_strategy():
                 },
             }
 
-    instance = DataClass(a=123, b="abc", c=123)
-    assert DataClass.from_dict({"a": [123], "b": ["abc"], "c": [123]}) == instance
-    assert instance.to_dict() == {"a": [123], "b": ["abc"], "c": [123]}
+    obj = DataClass(a=123, b="abc", c=123)
+    assert DataClass.from_dict({"a": [123], "b": ["abc"], "c": [123]}) == obj
+    assert obj.to_dict() == {"a": [123], "b": ["abc"], "c": [123]}
 
 
 def test_named_tuple_as_dict():
