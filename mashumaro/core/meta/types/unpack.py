@@ -193,6 +193,7 @@ def unpack_dataclass_dict_mixin_subclass(
         ) != spec.origin_type and (
             spec.origin_type != spec.builder.cls
             or spec.builder.get_unpack_method_name(
+                type_args=type_args,
                 format_name=spec.builder.format_name,
                 decoder=spec.builder.decoder,
             )
