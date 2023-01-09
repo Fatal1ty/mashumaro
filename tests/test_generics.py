@@ -1,13 +1,25 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Generic, List, Mapping, TypeVar
+from typing import Any, Generic, List, Mapping, Optional, TypeVar
 
 from mashumaro import DataClassDictMixin
+from mashumaro.mixins.json import DataClassJSONMixin
 from tests.entities import MyGenericDataClass, SerializableTypeGenericList
 
 T = TypeVar("T")
 S = TypeVar("S")
 P = TypeVar("P", Mapping[int, int], List[float])
+
+
+@dataclass
+class Foo(Generic[T], DataClassJSONMixin):
+    x: T
+    y: "Optional[Foo[Any]]"
+
+
+@dataclass
+class Bar(Foo):
+    ...
 
 
 def test_one_generic():
@@ -218,3 +230,11 @@ def test_serializable_type_generic_class():
     obj = DataClass(SerializableTypeGenericList(["a", "b", "c"]))
     assert DataClass.from_dict({"x": ["a", "b", "c"]}) == obj
     assert obj.to_dict() == {"x": ["a", "b", "c"]}
+
+
+def test_self_referenced_generic_no_max_recursion_error():
+    obj = Bar(42, Foo(33, None))
+    assert obj.to_dict() == {"x": 42, "y": {"x": 33, "y": None}}
+    assert Bar.from_dict({"x": 42, "y": {"x": 33, "y": None}}) == obj
+    assert obj.to_json() == '{"x": 42, "y": {"x": 33, "y": null}}'
+    assert Bar.from_json('{"x": 42, "y": {"x": 33, "y": null}}') == obj
