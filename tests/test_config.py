@@ -142,6 +142,7 @@ def test_serialization_strategy():
     class DataClass(DataClassDictMixin):
         a: int
         b: str
+        c: int
 
         class Config(BaseConfig):
             serialization_strategy = {
@@ -152,9 +153,9 @@ def test_serialization_strategy():
                 },
             }
 
-    instance = DataClass(a=123, b="abc")
-    assert DataClass.from_dict({"a": [123], "b": ["abc"]}) == instance
-    assert instance.to_dict() == {"a": [123], "b": ["abc"]}
+    instance = DataClass(a=123, b="abc", c=123)
+    assert DataClass.from_dict({"a": [123], "b": ["abc"], "c": [123]}) == instance
+    assert instance.to_dict() == {"a": [123], "b": ["abc"], "c": [123]}
 
 
 def test_named_tuple_as_dict():
