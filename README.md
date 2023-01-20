@@ -665,11 +665,11 @@ object like a function, a class method, a class instance method, an instance
 of a callable class or even a lambda function to be called for serialization.
 
 A value of type `str` sets a specific engine for serialization. Keep in mind
-that all possible engines depend on the field type that this option is used
+that all possible engines depend on the data type that this option is used
 with. At this moment there are next serialization engines to choose from:
 
-| Applicable field types     | Supported engines        | Description                                                                                                                                                                                                  |
-|:-------------------------- |:-------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Applicable data types      | Supported engines        | Description                                                                                                                                                                                                  |
+|:---------------------------|:-------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict`     | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine. |
 
 In addition, you can pass a field value as is without changes using
@@ -708,10 +708,10 @@ object like a function, a class method, a class instance method, an instance
 of a callable class or even a lambda function to be called for deserialization.
 
 A value of type `str` sets a specific engine for deserialization. Keep in mind
-that all possible engines depend on the field type that this option is used
+that all possible engines depend on the data type that this option is used
 with. At this moment there are next deserialization engines to choose from:
 
-| Applicable field types     | Supported engines                                                                                                                   | Description                                                                                                                                                                                                                                                                                             |
+| Applicable data types      | Supported engines                                                                                                                   | Description                                                                                                                                                                                                                                                                                             |
 |:---------------------------|:------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict`                                                                                                                | How to unpack named tuples. By default `as_list` engine is used that means your named tuple class instance will be created from a list of its values. You can unpack it from a dictionary using `as_dict` engine.                                                                                       |
@@ -945,8 +945,8 @@ class FormattedDateTime(SerializationStrategy):
 @dataclass
 class DataClass(DataClassDictMixin):
 
-    datetime: datetime
-    date: date
+    x: datetime
+    y: date
 
     class Config(BaseConfig):
         serialization_strategy = {
@@ -958,10 +958,10 @@ class DataClass(DataClassDictMixin):
             },
         }
 
-instance = DataClass.from_dict({"datetime": "2021", "date": "2021"})
-# DataClass(datetime=datetime.datetime(2021, 1, 1, 0, 0), date=Date(2021, 1, 1))
+instance = DataClass.from_dict({"x": "2021", "y": "2021"})
+# DataClass(x=datetime.datetime(2021, 1, 1, 0, 0), y=Date(2021, 1, 1))
 dictionary = instance.to_dict()
-# {'datetime': '2021', 'date': '2021-01-01'}
+# {'x': '2021', 'y': '2021-01-01'}
 ```
 
 #### `aliases` config option
