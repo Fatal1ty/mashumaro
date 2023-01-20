@@ -32,6 +32,8 @@ jobs:
         run: mypy mashumaro
       - name: Run black
         run: black --check .
+      - name: Run codespell
+        run: codespell mashumaro tests README.md
   test-posix:
     name: Tests on Posix
     needs:
