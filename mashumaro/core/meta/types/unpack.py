@@ -771,6 +771,14 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
             f'collections.OrderedDict({{{inner_expr(0, "key")}: '
             f"{inner_expr(1)} for key, value in {spec.expression}.items()}})"
         )
+    elif ensure_generic_mapping(spec, args, typing.DefaultDict):
+        spec.builder.ensure_module_imported(collections)
+        default_type = type_name(args[1] if args else None)
+        return (
+            f"collections.defaultdict({default_type}, "
+            f'{{{inner_expr(0, "key")}: '
+            f"{inner_expr(1)} for key, value in {spec.expression}.items()}})"
+        )
     elif ensure_generic_mapping(spec, args, typing.Counter):
         spec.builder.ensure_module_imported(collections)
         return (

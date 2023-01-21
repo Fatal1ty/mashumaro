@@ -22,6 +22,7 @@ from typing import (
     ChainMap,
     ClassVar,
     Counter,
+    DefaultDict,
     Deque,
     Dict,
     FrozenSet,
@@ -116,6 +117,8 @@ class Fixture:
     MAPS_LIST = [{"a": 1, "b": 2}, {"c": 3, "d": 4}]
     DICT = {"a": 1, "b": 2}
     ORDERED_DICT = collections.OrderedDict(a=1, b=2)
+    DEFAULT_DICT = collections.defaultdict(int, a=1, b=2)
+    DEFAULT_NONE_DICT = collections.defaultdict(None, a=1, b=2)
     COUNTER: Counter[str] = collections.Counter(a=1, b=2)
     BYTES = b"123"
     BYTES_BASE64 = "MTIz\n"
@@ -193,6 +196,8 @@ inner_values = [
     (Mapping, Fixture.DICT, Fixture.DICT),
     (OrderedDict[str, int], Fixture.ORDERED_DICT, Fixture.DICT),
     (OrderedDict, Fixture.ORDERED_DICT, Fixture.DICT),
+    (DefaultDict[str, int], Fixture.DEFAULT_DICT, Fixture.DICT),
+    (DefaultDict, Fixture.DEFAULT_NONE_DICT, Fixture.DICT),
     (Counter[str], Fixture.COUNTER, Fixture.DICT),
     (Counter, Fixture.COUNTER, Fixture.DICT),
     (MutableMapping[str, int], Fixture.DICT, Fixture.DICT),

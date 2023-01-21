@@ -115,6 +115,7 @@ There is support for generic types from the standard [`typing`](https://docs.pyt
 * [`Deque`](https://docs.python.org/3/library/typing.html#typing.Deque)
 * [`Dict`](https://docs.python.org/3/library/typing.html#typing.Dict)
 * [`OrderedDict`](https://docs.python.org/3/library/typing.html#typing.OrderedDict)
+* [`DefaultDict`](https://docs.python.org/3/library/typing.html#typing.DefaultDict)
 * [`TypedDict`](https://docs.python.org/3/library/typing.html#typing.TypedDict)
 * [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)
 * [`MutableMapping`](https://docs.python.org/3/library/typing.html#typing.MutableMapping)
