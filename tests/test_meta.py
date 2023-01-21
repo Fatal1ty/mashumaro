@@ -210,6 +210,10 @@ def test_type_name():
         type_name(typing_extensions.OrderedDict[int, int])
         == "typing.OrderedDict[int, int]"
     )
+    assert (
+        type_name(typing.DefaultDict[int, int])
+        == "typing.DefaultDict[int, int]"
+    )
     assert type_name(typing.Optional[int]) == "typing.Optional[int]"
     assert type_name(typing.Union[None, int]) == "typing.Optional[int]"
     assert type_name(typing.Union[int, None]) == "typing.Optional[int]"
@@ -275,6 +279,10 @@ def test_type_name_pep_585():
         type_name(collections.OrderedDict[str, str])
         == "collections.OrderedDict[str, str]"
     )
+    assert (
+        type_name(collections.defaultdict[str, str])
+        == "collections.defaultdict[str, str]"
+    )
 
 
 def test_type_name_short():
@@ -311,6 +319,10 @@ def test_type_name_short():
     assert (
         type_name(typing_extensions.OrderedDict[int, int], short=True)
         == "OrderedDict[int, int]"
+    )
+    assert (
+        type_name(typing.DefaultDict[int, int], short=True)
+        == "DefaultDict[int, int]"
     )
     assert type_name(typing.Optional[int], short=True) == "Optional[int]"
     assert type_name(typing.Union[None, int], short=True) == "Optional[int]"
@@ -375,6 +387,10 @@ def test_type_name_pep_585_short():
     assert (
         type_name(collections.OrderedDict[str, str], short=True)
         == "OrderedDict[str, str]"
+    )
+    assert (
+        type_name(collections.defaultdict[str, str], short=True)
+        == "defaultdict[str, str]"
     )
 
 
@@ -625,6 +641,7 @@ def test_ensure_generic_collection_not_pep_585():
         collections.deque,
         collections.ChainMap,
         collections.OrderedDict,
+        collections.defaultdict,
         collections.Counter,
     ):
         with pytest.raises(UnserializableField):

@@ -134,6 +134,7 @@ for standard generic types on [PEP 585](https://www.python.org/dev/peps/pep-0585
 * [`collections.deque`](https://docs.python.org/3/library/collections.html#collections.deque)
 * [`dict`](https://docs.python.org/3/library/stdtypes.html#dict)
 * [`collections.OrderedDict`](https://docs.python.org/3/library/collections.html#collections.OrderedDict)
+* [`collections.defaultdict`](https://docs.python.org/3/library/collections.html#collections.defaultdict)
 * [`collections.abc.Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)
 * [`collections.abc.MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)
 * [`collections.Counter`](https://docs.python.org/3/library/collections.html#collections.Counter)

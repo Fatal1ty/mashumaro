@@ -37,6 +37,7 @@ PROPER_COLLECTION_TYPES: Dict[Type, str] = {
     collections.deque: "typing.Deque[T]",
     collections.ChainMap: "typing.ChainMap[KT,VT]",
     collections.OrderedDict: "typing.OrderedDict[KT,VT]",
+    collections.defaultdict: "typing.DefaultDict[KT, VT]",
     collections.Counter: "typing.Counter[KT]",
 }
 

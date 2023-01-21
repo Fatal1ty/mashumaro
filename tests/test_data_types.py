@@ -305,6 +305,12 @@ if PEP_585_COMPATIBLE:
                 Fixture.DICT,
             ),
             (collections.OrderedDict, Fixture.ORDERED_DICT, Fixture.DICT),
+            (
+                collections.defaultdict[str, int],
+                Fixture.DEFAULT_DICT,
+                Fixture.DICT,
+            ),
+            (collections.defaultdict, Fixture.DEFAULT_NONE_DICT, Fixture.DICT),
             (collections.Counter[str], Fixture.COUNTER, Fixture.DICT),
             (collections.Counter, Fixture.COUNTER, Fixture.DICT),
             (
@@ -332,7 +338,13 @@ hashable_inner_values = [
 
 
 generic_sequence_types = [List, Deque, Tuple, Set, FrozenSet]
-generic_mapping_types = [Dict, Mapping, OrderedDict, MutableMapping]
+generic_mapping_types = [
+    Dict,
+    Mapping,
+    OrderedDict,
+    DefaultDict,
+    MutableMapping,
+]
 if PEP_585_COMPATIBLE:
     generic_sequence_types.extend(
         [
@@ -354,6 +366,7 @@ if PEP_585_COMPATIBLE:
             dict,
             collections.abc.Mapping,
             collections.OrderedDict,
+            collections.defaultdict,
             collections.abc.MutableMapping,
         ]
     )
@@ -371,6 +384,7 @@ if not PEP_585_COMPATIBLE:
             collections.ChainMap,
             dict,
             collections.OrderedDict,
+            collections.defaultdict,
             collections.Counter,
         ]
     )
@@ -390,6 +404,7 @@ x_factory_mapping = {
     Mapping: lambda items: {k: v for k, v in items},
     MutableMapping: lambda items: {k: v for k, v in items},
     OrderedDict: lambda items: {k: v for k, v in items},
+    DefaultDict: lambda items: {k: v for k, v in items},
     Counter: lambda items: collections.Counter({k: v for k, v in items}),
     ChainMap: lambda items: collections.ChainMap(*({k: v} for k, v in items)),
 }
@@ -408,6 +423,7 @@ if PEP_585_COMPATIBLE:
                 k: v for k, v in items
             },
             collections.OrderedDict: lambda items: {k: v for k, v in items},
+            collections.defaultdict: lambda items: {k: v for k, v in items},
             collections.Counter: lambda items: collections.Counter(
                 {k: v for k, v in items}
             ),
