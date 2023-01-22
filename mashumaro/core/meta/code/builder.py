@@ -441,7 +441,7 @@ class CodeBuilder:
                 )
             )
             if could_be_none:
-                self.add_line(f"if value is not None:")
+                self.add_line("if value is not None:")
                 with self.indent():
                     self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
                 self.add_line("else:")
