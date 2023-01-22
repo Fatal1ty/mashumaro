@@ -64,6 +64,7 @@ from .entities import (
     DataClassWithoutMixin,
     GenericSerializableList,
     GenericSerializableTypeDataClass,
+    GenericTypedDict,
     MutableString,
     MyDataClass,
     MyDataClassWithUnion,
@@ -1344,6 +1345,26 @@ def test_typed_dict_optional_keys_with_optional():
     obj = DataClass({"x": 33, "y": 42})
     assert DataClass.from_dict({"x": {"x": 33, "y": 42}}) == obj
     assert obj.to_dict()
+
+
+def test_unbound_generic_typed_dict():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: GenericTypedDict
+
+    obj = DataClass({"x": "2023-01-22", "y": 42})
+    assert DataClass.from_dict({"x": {"x": "2023-01-22", "y": "42"}}) == obj
+    assert obj.to_dict() == {"x": {"x": "2023-01-22", "y": 42}}
+
+
+def test_bound_generic_typed_dict():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: GenericTypedDict[date]
+
+    obj = DataClass({"x": date(2023, 1, 22), "y": 42})
+    assert DataClass.from_dict({"x": {"x": "2023-01-22", "y": "42"}}) == obj
+    assert obj.to_dict() == {"x": {"x": "2023-01-22", "y": 42}}
 
 
 def test_dataclass_with_init_false_field():

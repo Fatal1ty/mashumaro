@@ -257,6 +257,11 @@ class TypedDictOptionalKeysWithOptional(TypedDict, total=False):
     y: float
 
 
+class GenericTypedDict(TypedDict, Generic[T]):
+    x: T
+    y: int
+
+
 class MyNamedTuple(NamedTuple):
     i: int
     f: float

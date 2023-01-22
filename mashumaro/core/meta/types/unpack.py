@@ -653,7 +653,13 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
 
 
 def unpack_typed_dict(spec: ValueSpec) -> Expression:
-    annotations = spec.type.__annotations__
+    resolved = resolve_type_params(spec.origin_type, get_args(spec.type))[
+        spec.origin_type
+    ]
+    annotations = {
+        k: resolved.get(v, v)
+        for k, v in spec.origin_type.__annotations__.items()
+    }
     all_keys = list(annotations.keys())
     required_keys = getattr(spec.type, "__required_keys__", all_keys)
     optional_keys = getattr(spec.type, "__optional_keys__", [])
@@ -786,7 +792,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
             f"{inner_expr(1, v_type=int)} "
             f"for key, value in {spec.expression}.items()}})"
         )
-    elif is_typed_dict(spec.type):
+    elif is_typed_dict(spec.origin_type):
         return unpack_typed_dict(spec)
     elif ensure_generic_mapping(spec, args, typing.Mapping):
         return (
