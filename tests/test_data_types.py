@@ -62,6 +62,7 @@ from .conftest import add_unpack_method
 from .entities import (
     CustomPath,
     DataClassWithoutMixin,
+    GenericNamedTuple,
     GenericSerializableList,
     GenericSerializableTypeDataClass,
     GenericTypedDict,
@@ -1317,6 +1318,26 @@ def test_named_tuple_with_optional():
         MyNamedTupleWithOptional(None, 7)
     )
     assert DataClass().to_dict() == {"x": [None, 7]}
+
+
+def test_unbound_generic_named_tuple():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: GenericNamedTuple
+
+    obj = DataClass(GenericNamedTuple("2023-01-22", 42))
+    assert DataClass.from_dict({"x": ["2023-01-22", "42"]}) == obj
+    assert obj.to_dict() == {"x": ["2023-01-22", 42]}
+
+
+def test_bound_generic_named_tuple():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: GenericNamedTuple[date]
+
+    obj = DataClass(GenericNamedTuple(date(2023, 1, 22), 42))
+    assert DataClass.from_dict({"x": ["2023-01-22", "42"]}) == obj
+    assert obj.to_dict() == {"x": ["2023-01-22", 42]}
 
 
 def test_typed_dict_required_keys_with_optional():

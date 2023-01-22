@@ -494,7 +494,13 @@ def pack_tuple(spec: ValueSpec, args: Tuple[Type, ...]) -> Expression:
 
 
 def pack_named_tuple(spec: ValueSpec) -> Expression:
-    annotations = getattr(spec.type, "__annotations__", {})
+    resolved = resolve_type_params(spec.origin_type, get_args(spec.type))[
+        spec.origin_type
+    ]
+    annotations = {
+        k: resolved.get(v, v)
+        for k, v in getattr(spec.origin_type, "__annotations__", {}).items()
+    }
     fields = getattr(spec.type, "_fields", ())
     packers = []
     as_dict = spec.builder.get_config().namedtuple_as_dict
@@ -619,7 +625,7 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
     elif issubclass(spec.origin_type, str):
         return spec.expression
     elif issubclass(spec.origin_type, Tuple):  # type: ignore
-        if is_named_tuple(spec.type):
+        if is_named_tuple(spec.origin_type):
             return pack_named_tuple(spec)
         elif ensure_generic_collection(spec):
             return pack_tuple(spec, args)

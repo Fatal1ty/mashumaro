@@ -3,16 +3,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
-from typing import (
-    Any,
-    Generic,
-    List,
-    NamedTuple,
-    NewType,
-    Optional,
-    TypeVar,
-    Union,
-)
+from typing import Any, Generic, List, NewType, Optional, TypeVar, Union
 
 try:
     from enum import StrEnum
@@ -22,7 +13,7 @@ except ImportError:  # pragma no cover
         pass
 
 
-from typing_extensions import TypedDict
+from typing_extensions import NamedTuple, TypedDict
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
@@ -285,6 +276,11 @@ MyUntypedNamedTupleWithDefaults = namedtuple(
     ("i", "f"),
     defaults=(1, 2.0),
 )
+
+
+class GenericNamedTuple(NamedTuple, Generic[T]):
+    x: T
+    y: int
 
 
 MyDatetimeNewType = NewType("MyDatetimeNewType", datetime)

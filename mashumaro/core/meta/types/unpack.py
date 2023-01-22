@@ -580,7 +580,13 @@ def unpack_tuple(spec: ValueSpec, args: Tuple[Type, ...]) -> Expression:
 
 
 def unpack_named_tuple(spec: ValueSpec) -> Expression:
-    annotations = getattr(spec.type, "__annotations__", {})
+    resolved = resolve_type_params(spec.origin_type, get_args(spec.type))[
+        spec.origin_type
+    ]
+    annotations = {
+        k: resolved.get(v, v)
+        for k, v in getattr(spec.origin_type, "__annotations__", {}).items()
+    }
     fields = getattr(spec.type, "_fields", ())
     defaults = getattr(spec.type, "_field_defaults", {})
     unpackers = []
@@ -757,7 +763,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
             f"for value in {spec.expression}])"
         )
     elif issubclass(spec.origin_type, Tuple):  # type: ignore
-        if is_named_tuple(spec.type):
+        if is_named_tuple(spec.origin_type):
             return unpack_named_tuple(spec)
         elif ensure_generic_collection(spec):
             return unpack_tuple(spec, args)
