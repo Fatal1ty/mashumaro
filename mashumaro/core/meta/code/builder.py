@@ -411,11 +411,23 @@ class CodeBuilder:
     ) -> None:
         self.add_line("try:")
         with self.indent():
+            could_be_none = False
             if is_named_tuple(ftype):
                 self.add_line(f"value = d['{alias or fname}']")
                 packed_value = "value"
             else:
                 packed_value = f"d['{alias or fname}']"
+                could_be_none = (
+                    ftype in (typing.Any, type(None), None)
+                    or is_type_var_any(self._get_real_type(fname, ftype))
+                    or is_optional(
+                        ftype, self.get_field_resolved_type_params(fname)
+                    )
+                    or self.get_field_default(fname) is None
+                )
+                if could_be_none:
+                    self.add_line(f"value = {packed_value}")
+                    packed_value = "value"
             unpacked_value = UnpackerRegistry.get(
                 ValueSpec(
                     type=ftype,
@@ -425,9 +437,18 @@ class CodeBuilder:
                         name=fname,
                         metadata=metadata,
                     ),
+                    could_be_none=False if could_be_none else True,
                 )
             )
-            self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+            if could_be_none:
+                self.add_line(f"if value is not None:")
+                with self.indent():
+                    self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+                self.add_line("else:")
+                with self.indent():
+                    self.add_line(f"kwargs['{fname}'] = None")
+            else:
+                self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
         self.add_line("except KeyError as e:")
         with self.indent():
             field_type = type_name(
@@ -868,7 +889,7 @@ class CodeBuilder:
             alias = config.aliases.get(fname)
         could_be_none = (
             ftype in (typing.Any, type(None), None)
-            or is_type_var_any(ftype)
+            or is_type_var_any(self._get_real_type(fname, ftype))
             or is_optional(ftype, self.get_field_resolved_type_params(fname))
             or self.get_field_default(fname) is None
         )
