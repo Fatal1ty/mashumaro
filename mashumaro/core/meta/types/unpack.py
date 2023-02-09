@@ -314,7 +314,7 @@ def unpack_literal(spec: ValueSpec) -> Expression:
                 lines.append(f"if value == {literal_value!r}:")
                 with lines.indent():
                     lines.append(f"return {literal_value!r}")
-        lines.append(f"raise ValueError(value)")
+        lines.append("raise ValueError(value)")
     lines.append(f"setattr(cls, '{method_name}', {method_name})")
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
