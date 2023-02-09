@@ -265,7 +265,9 @@ def pack_literal(spec: ValueSpec) -> Expression:
     with lines.indent():
         for literal_value in get_literal_values(spec.type):
             value_type = type(literal_value)
-            packer = PackerRegistry.get(spec.copy(type=value_type))
+            packer = PackerRegistry.get(
+                spec.copy(type=value_type, expression="value")
+            )
             if isinstance(literal_value, enum.Enum):
                 enum_type_name = type_name(
                     typ=value_type,
@@ -289,7 +291,7 @@ def pack_literal(spec: ValueSpec) -> Expression:
         )
         lines.append(
             f"raise InvalidFieldValue('{spec.field_ctx.name}',"
-            f"{field_type},{spec.expression},type(self))"
+            f"{field_type},value,type(self))"
         )
     lines.append(f"setattr(cls, '{method_name}', {method_name})")
     if spec.builder.get_config().debug:
