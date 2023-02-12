@@ -717,6 +717,44 @@ dictionary = formats.to_dict()
 assert DateTimeFormats.from_dict(dictionary) == formats
 ```
 
+Similarly to `SerializableType`, `SerializationStrategy` could also take advantage of annotations.
+
+
+```python
+from dataclasses import dataclass
+from datetime import datetime
+from mashumaro import DataClassDictMixin
+from mashumaro.types import SerializationStrategy
+
+class TsSerializationStrategy(SerializationStrategy, use_annotations=True):
+    def serialize(self, value: datetime) -> float:
+        return value.timestamp()
+
+    def deserialize(self, value: float) -> datetime:
+        # value will be converted to float before being passed to this method
+        return datetime.fromtimestamp(value)
+
+@dataclass
+class Example(DataClassDictMixin):
+    dt: datetime
+
+    class Config:
+        serialization_strategy = {
+            datetime: TsSerializationStrategy(),
+        }
+
+example = Example.from_dict({"dt": "1672531200"})
+print(example)
+# Example(dt=datetime.datetime(2023, 1, 1, 3, 0))
+print(example.to_dict())
+# {'dt': 1672531200.0}
+```
+
+Here the passed string value `"1672531200"` will be converted to `float` before being passed to `deserialize` method
+thanks to the `float` annotation.
+
+As well as for `SerializableType`, the value of `use_annotatons` will be `True` by default in the future major release.
+
 #### Third-party generic types
 
 To create a generic version of a serialization strategy you need to follow these steps:
@@ -726,6 +764,9 @@ of the target generic type
 * Write generic annotations for `serialize` method's return type and for `deserialize` method's argument type
 * Use the origin type of the target generic type in the [`serialization_strategy`](#serializationstrategy-config-option) config section
 ([`typing.get_origin`](https://docs.python.org/3/library/typing.html#typing.get_origin) might be helpful)
+
+There is no need to add `use_annotations=True` because it will be enabled implicitly
+for generic serialization strategies.
 
 For example, there is a third-party [multidict](https://pypi.org/project/multidict/) package that has a generic `MultiDict` type.
 A generic serialization strategy for it might look like this:
