@@ -720,10 +720,11 @@ assert DateTimeFormats.from_dict(dictionary) == formats
 #### Third-party generic types
 
 To create a generic version of a serialization strategy you need to follow these steps:
-* inherit `Generic[...]` type with the number of parameters matching the number of parameters
+* inherit [`Generic[...]`](https://docs.python.org/3/library/typing.html#typing.Generic) type
+with the number of parameters matching the number of parameters
 of the target generic type
 * Write generic annotations for `serialize` method's return type and for `deserialize` method's argument type
-* Use the origin type of the target generic type in the `serialization_strategy` config section
+* Use the origin type of the target generic type in the [`serialization_strategy`](#serializationstrategy-config-option) config section
 ([`typing.get_origin`](https://docs.python.org/3/library/typing.html#typing.get_origin) might be helpful)
 
 For example, there is a third-party [multidict](https://pypi.org/project/multidict/) package that has a generic `MultiDict` type.
