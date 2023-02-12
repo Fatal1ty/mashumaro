@@ -7,7 +7,6 @@ from contextlib import contextmanager
 # noinspection PyProtectedMember
 from dataclasses import _FIELDS, MISSING, Field, is_dataclass  # type: ignore
 from functools import lru_cache
-from hashlib import md5
 
 from mashumaro.config import (
     ADD_DIALECT_SUPPORT,
@@ -25,6 +24,7 @@ from mashumaro.core.meta.helpers import (
     get_class_that_defines_method,
     get_literal_values,
     get_name_error_name,
+    hash_type_args,
     is_class_var,
     is_dataclass_dict_mixin,
     is_dialect_subclass,
@@ -639,7 +639,7 @@ class CodeBuilder:
             if format_name != "dict":
                 method_name += f"_{format_name}"
             if type_args:
-                method_name += f"_{cls._hash_type_args(type_args)}"
+                method_name += f"_{hash_type_args(type_args)}"
             return method_name
 
     @classmethod
@@ -656,7 +656,7 @@ class CodeBuilder:
             if format_name != "dict":
                 method_name += f"_{format_name}"
             if type_args:
-                method_name += f"_{cls._hash_type_args(type_args)}"
+                method_name += f"_{hash_type_args(type_args)}"
             return method_name
 
     def _add_pack_method_lines(self, method_name: str) -> None:
@@ -949,7 +949,3 @@ class CodeBuilder:
             if value is not Sentinel.MISSING:
                 return value
         return default
-
-    @classmethod
-    def _hash_type_args(cls, type_args: typing.Iterable[typing.Type]) -> str:
-        return md5(",".join(map(type_name, type_args)).encode()).hexdigest()

@@ -8,6 +8,7 @@ from contextlib import suppress
 
 # noinspection PyProtectedMember
 from dataclasses import _FIELDS  # type: ignore
+from hashlib import md5
 from typing import (
     Any,
     ClassVar,
@@ -68,6 +69,7 @@ __all__ = [
     "get_function_return_annotation",
     "is_unpack",
     "is_type_var_tuple",
+    "hash_type_args",
 ]
 
 
@@ -670,3 +672,7 @@ def is_type_var_tuple(typ: Type) -> bool:
 def is_variable_length_tuple(typ: Type) -> bool:
     type_args = get_args(typ)
     return len(type_args) == 2 and type_args[1] is Ellipsis
+
+
+def hash_type_args(type_args: typing.Iterable[typing.Type]) -> str:
+    return md5(",".join(map(type_name, type_args)).encode()).hexdigest()

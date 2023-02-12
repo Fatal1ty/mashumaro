@@ -28,6 +28,7 @@ from mashumaro.core.meta.helpers import (
     get_generic_name,
     get_literal_values,
     get_type_origin,
+    hash_type_args,
     is_annotated,
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
@@ -564,7 +565,7 @@ def test_type_name_literal():
 def test_code_builder_get_pack_method_name():
     builder = CodeBuilder(object)
     type_args = (int,)
-    type_args_hash = builder._hash_type_args((int,))
+    type_args_hash = hash_type_args((int,))
     assert builder.get_pack_method_name() == "to_dict"
     assert (
         builder.get_pack_method_name(type_args=type_args)
@@ -595,7 +596,7 @@ def test_code_builder_get_pack_method_name():
 def test_code_builder_get_unpack_method_name():
     builder = CodeBuilder(object)
     type_args = (int,)
-    type_args_hash = builder._hash_type_args((int,))
+    type_args_hash = hash_type_args((int,))
     assert builder.get_unpack_method_name() == "from_dict"
     assert (
         builder.get_unpack_method_name(type_args=type_args)
