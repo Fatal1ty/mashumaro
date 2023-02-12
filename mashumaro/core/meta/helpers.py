@@ -293,14 +293,14 @@ def is_generic(typ: Type) -> bool:
             or type(typ) is types.GenericAlias  # type: ignore
         ):
             return True
-        else:  # for PEP 585 generics without args
-            try:
-                return (
-                    hasattr(typ, "__class_getitem__")
-                    and type(typ[str]) is types.GenericAlias  # type: ignore
-                )
-            except (TypeError, AttributeError):
-                return False
+        # else:  # for PEP 585 generics without args
+        #     try:
+        #         return (
+        #             hasattr(typ, "__class_getitem__")
+        #             and type(typ[str]) is types.GenericAlias  # type: ignore
+        #         )
+        #     except (TypeError, AttributeError):
+        #         return False
     else:
         raise NotImplementedError
 
