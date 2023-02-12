@@ -37,7 +37,7 @@ class TruncatedDateListSerializationStrategy(SerializationStrategy):
 
 
 class TruncatedUnannotatedListSerializationStrategy(
-    SerializationStrategy, use_annotations=False
+    SerializationStrategy, use_annotations=True
 ):
     def serialize(self, value):
         return value[:-1]
