@@ -36,6 +36,16 @@ class TruncatedDateListSerializationStrategy(SerializationStrategy):
         return value[:-1]
 
 
+class TruncatedUnannotatedListSerializationStrategy(
+    SerializationStrategy, use_annotations=False
+):
+    def serialize(self, value):
+        return value[:-1]
+
+    def deserialize(self, value):
+        return value[:-1]
+
+
 def test_generic_list_serialization_strategy():
     @dataclass
     class MyDataClass(DataClassDictMixin):
@@ -89,6 +99,38 @@ def test_date_list_serialization_strategy_without_use_annotations():
         class Config:
             serialization_strategy = {
                 list: TruncatedDateListSerializationStrategy()
+            }
+
+    obj = MyDataClass(
+        [
+            date(2023, 2, 12),
+            date(2023, 2, 12),
+            date(2023, 2, 12),
+            date(2023, 2, 12),
+            date(2023, 2, 12),
+        ]
+    )
+    assert obj.to_dict() == {
+        "x": [
+            date(2023, 2, 12),
+            date(2023, 2, 12),
+            date(2023, 2, 12),
+            date(2023, 2, 12),
+        ]
+    }
+    assert MyDataClass.from_dict(
+        {"x": ["2023-02-12", "2023-02-12", "2023-02-12", "2023-02-12"]}
+    ) == MyDataClass(["2023-02-12", "2023-02-12", "2023-02-12"])
+
+
+def test_date_list_serialization_strategy_use_annotations_without_annotations():
+    @dataclass
+    class MyDataClass(DataClassDictMixin):
+        x: List[date]
+
+        class Config:
+            serialization_strategy = {
+                list: TruncatedUnannotatedListSerializationStrategy()
             }
 
     obj = MyDataClass(
