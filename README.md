@@ -764,7 +764,7 @@ of the target generic type
 * Use the origin type of the target generic type in the [`serialization_strategy`](#serializationstrategy-config-option) config section
 ([`typing.get_origin`](https://docs.python.org/3/library/typing.html#typing.get_origin) might be helpful)
 
-There is no need to add `use_annotations=True` because it will be enabled implicitly
+There is no need to add `use_annotations=True` here because it's enabled implicitly
 for generic serialization strategies.
 
 For example, there is a third-party [multidict](https://pypi.org/project/multidict/) package that has a generic `MultiDict` type.
