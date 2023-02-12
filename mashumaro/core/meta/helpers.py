@@ -293,6 +293,8 @@ def is_generic(typ: Type) -> bool:
             or type(typ) is types.GenericAlias  # type: ignore
         ):
             return True
+        else:
+            return False
         # else:  # for PEP 585 generics without args
         #     try:
         #         return (
