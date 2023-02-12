@@ -19,7 +19,7 @@ from mashumaro.core.meta.code.builder import CodeBuilder
 
 # noinspection PyProtectedMember
 from mashumaro.core.meta.helpers import (
-    _collect_type_params,
+    collect_type_params,
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
@@ -685,4 +685,13 @@ def test_collect_type_params():
     class MyGeneric(typing.Generic[T, S], typing.Mapping[T, S]):
         pass
 
-    assert _collect_type_params(MyGeneric[T, T]) == [T]
+    assert collect_type_params(MyGeneric[T, T]) == [T]
+
+
+def test_is_generic_like_with_class_getitem():
+    class MyClass:
+        def __class_getitem__(cls, item):
+            return cls
+
+    assert is_generic(MyClass)
+    assert is_generic(MyClass[int])

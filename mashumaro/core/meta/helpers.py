@@ -54,6 +54,7 @@ __all__ = [
     "get_class_that_defines_field",
     "is_dataclass_dict_mixin",
     "is_dataclass_dict_mixin_subclass",
+    "collect_type_params",
     "resolve_type_params",
     "get_generic_name",
     "get_name_error_name",
@@ -277,6 +278,9 @@ def is_special_typing_primitive(typ: Any) -> bool:
 
 
 def is_generic(typ: Type) -> bool:
+    with suppress(Exception):
+        if hasattr(typ, "__class_getitem__"):
+            return True
     if PY_37 or PY_38:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
@@ -444,7 +448,7 @@ def get_orig_bases(typ: Type) -> Tuple[Type, ...]:
     return getattr(typ, "__orig_bases__", ())
 
 
-def _collect_type_params(typ: Type) -> Sequence[Type]:
+def collect_type_params(typ: Type) -> Sequence[Type]:
     type_params = []
     for type_arg in get_args(typ):
         if type_arg in type_params:
@@ -454,7 +458,7 @@ def _collect_type_params(typ: Type) -> Sequence[Type]:
         elif is_unpack(type_arg) and is_type_var_tuple(get_args(type_arg)[0]):
             type_params.append(type_arg)
         else:
-            for _type_param in _collect_type_params(type_arg):
+            for _type_param in collect_type_params(type_arg):
                 if _type_param not in type_params:
                     type_params.append(_type_param)
     return type_params
@@ -527,7 +531,7 @@ def resolve_type_params(
     type_params = []
 
     for base in get_orig_bases(typ):
-        base_type_params = _collect_type_params(base)
+        base_type_params = collect_type_params(base)
         for type_param in base_type_params:
             if type_param not in type_params:
                 type_params.append(type_param)
