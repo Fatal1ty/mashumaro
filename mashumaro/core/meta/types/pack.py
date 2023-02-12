@@ -15,11 +15,13 @@ import typing_extensions
 from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
+    collect_type_params,
     get_args,
     get_class_that_defines_method,
     get_function_return_annotation,
     get_literal_values,
     is_dataclass_dict_mixin_subclass,
+    is_generic,
     is_literal,
     is_named_tuple,
     is_new_type,
@@ -40,6 +42,7 @@ from mashumaro.core.meta.helpers import (
 )
 from mashumaro.core.meta.types.common import (
     Expression,
+    ExpressionWrapper,
     NoneType,
     Registry,
     ValueSpec,
@@ -71,23 +74,61 @@ PackerRegistry = Registry()
 register = PackerRegistry.register
 
 
+def _pack_with_generic_serialization_strategy(
+    spec: ValueSpec,
+    strategy: SerializationStrategy,
+) -> Expression:
+    strategy_type = type(strategy)
+    try:
+        value_type: Union[Type, Any] = get_function_return_annotation(
+            strategy.serialize
+        )
+    except (KeyError, ValueError):
+        value_type = Any
+    resolved = resolve_type_params(strategy_type, get_args(spec.type))[
+        strategy_type
+    ]
+    new_type_args = []
+    for type_param in collect_type_params(value_type):
+        new_type_args.append(resolved.get(type_param, type_param))
+    with suppress(TypeError):
+        value_type = value_type[tuple(new_type_args)]
+    overridden_fn = f"__{spec.field_ctx.name}_serialize_{uuid.uuid4().hex}"
+    setattr(spec.builder.cls, overridden_fn, strategy.serialize)
+    return PackerRegistry.get(
+        spec.copy(
+            type=value_type,
+            expression=f"self.{overridden_fn}({spec.expression})",
+        )
+    )
+
+
 def get_overridden_serialization_method(
     spec: ValueSpec,
-) -> Optional[Union[Callable, str]]:
+) -> Optional[Union[Callable, str, ExpressionWrapper]]:
     serialize_option = spec.field_ctx.metadata.get("serialize")
     if serialize_option is not None:
         return serialize_option
-    for strategy in spec.builder.iter_serialization_strategies(
-        spec.field_ctx.metadata, spec.type
-    ):
-        if strategy is pass_through:
-            return pass_through
-        elif isinstance(strategy, dict):
-            serialize_option = strategy.get("serialize")
-        elif isinstance(strategy, SerializationStrategy):
-            serialize_option = strategy.serialize
-        if serialize_option is not None:
-            return serialize_option
+    for typ in (spec.type, spec.origin_type):
+        for strategy in spec.builder.iter_serialization_strategies(
+            spec.field_ctx.metadata, typ
+        ):
+            if strategy is pass_through:
+                return pass_through
+            elif isinstance(strategy, dict):
+                serialize_option = strategy.get("serialize")
+            elif isinstance(strategy, SerializationStrategy):
+                if strategy.__use_annotations__ or is_generic(type(strategy)):
+                    return ExpressionWrapper(
+                        _pack_with_generic_serialization_strategy(
+                            spec=spec,
+                            strategy=strategy,
+                        )
+                    )
+                else:
+                    serialize_option = strategy.serialize
+            if serialize_option is not None:
+                return serialize_option
 
 
 @register
@@ -97,6 +138,8 @@ def pack_type_with_overridden_serialization(
     serialization_method = get_overridden_serialization_method(spec)
     if serialization_method is pass_through:
         return spec.expression
+    elif isinstance(serialization_method, ExpressionWrapper):
+        return serialization_method.expression
     elif callable(serialization_method):
         overridden_fn = f"__{spec.field_ctx.name}_serialize_{uuid.uuid4().hex}"
         setattr(

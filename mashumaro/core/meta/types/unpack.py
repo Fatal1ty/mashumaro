@@ -20,11 +20,13 @@ from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.helpers import parse_timezone
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
+    collect_type_params,
     get_args,
     get_class_that_defines_method,
     get_function_arg_annotation,
     get_literal_values,
     is_dataclass_dict_mixin_subclass,
+    is_generic,
     is_literal,
     is_named_tuple,
     is_new_type,
@@ -45,6 +47,7 @@ from mashumaro.core.meta.helpers import (
 )
 from mashumaro.core.meta.types.common import (
     Expression,
+    ExpressionWrapper,
     NoneType,
     Registry,
     ValueSpec,
@@ -86,23 +89,57 @@ UnpackerRegistry = Registry()
 register = UnpackerRegistry.register
 
 
+def _unpack_with_generic_serialization_strategy(
+    spec: ValueSpec,
+    strategy: SerializationStrategy,
+) -> Expression:
+    strategy_type = type(strategy)
+    try:
+        value_type: Union[Type, Any] = get_function_arg_annotation(
+            strategy.deserialize,
+            arg_pos=0,
+        )
+    except (KeyError, ValueError):
+        value_type = Any
+    resolved = resolve_type_params(strategy_type, get_args(spec.type))[
+        strategy_type
+    ]
+    new_type_args = []
+    for type_param in collect_type_params(value_type):
+        new_type_args.append(resolved.get(type_param, type_param))
+    with suppress(TypeError):
+        value_type = value_type[tuple(new_type_args)]
+    overridden_fn = f"__{spec.field_ctx.name}_deserialize_{uuid.uuid4().hex}"
+    setattr(spec.builder.cls, overridden_fn, strategy.deserialize)
+    unpacker = UnpackerRegistry.get(spec.copy(type=value_type))
+    return f"cls.{overridden_fn}({unpacker})"
+
+
 def get_overridden_deserialization_method(
     spec: ValueSpec,
-) -> Optional[Union[Callable, str]]:
+) -> Optional[Union[Callable, str, ExpressionWrapper]]:
     deserialize_option = spec.field_ctx.metadata.get("deserialize")
     if deserialize_option is not None:
         return deserialize_option
-    for strategy in spec.builder.iter_serialization_strategies(
-        spec.field_ctx.metadata, spec.type
-    ):
-        if strategy is pass_through:
-            return pass_through
-        elif isinstance(strategy, dict):
-            deserialize_option = strategy.get("deserialize")
-        elif isinstance(strategy, SerializationStrategy):
-            deserialize_option = strategy.deserialize
-        if deserialize_option is not None:
-            return deserialize_option
+    for typ in (spec.type, spec.origin_type):
+        for strategy in spec.builder.iter_serialization_strategies(
+            spec.field_ctx.metadata, typ
+        ):
+            if strategy is pass_through:
+                return pass_through
+            elif isinstance(strategy, dict):
+                deserialize_option = strategy.get("deserialize")
+            elif isinstance(strategy, SerializationStrategy):
+                if strategy.__use_annotations__ or is_generic(type(strategy)):
+                    return ExpressionWrapper(
+                        _unpack_with_generic_serialization_strategy(
+                            spec=spec,
+                            strategy=strategy,
+                        )
+                    )
+                deserialize_option = strategy.deserialize
+            if deserialize_option is not None:
+                return deserialize_option
 
 
 @register
@@ -112,6 +149,8 @@ def unpack_type_with_overridden_deserialization(
     deserialization_method = get_overridden_deserialization_method(spec)
     if deserialization_method is pass_through:
         return spec.expression
+    elif isinstance(deserialization_method, ExpressionWrapper):
+        return deserialization_method.expression
     elif callable(deserialization_method):
         overridden_fn = (
             f"__{spec.field_ctx.name}_deserialize_{uuid.uuid4().hex}"

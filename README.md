@@ -34,6 +34,9 @@ Table of contents
     * [`SerializableType` interface](#serializabletype-interface)
       * [User-defined types](#user-defined-types)
       * [User-defined generic types](#user-defined-generic-types)
+    * [`SerializationStrategy`](#serializationstrategy)
+      * [Third-party types](#third-party-types)
+      * [Third-party generic types](#third-party-generic-types)
     * [Field options](#field-options)
         * [`serialize` option](#serialize-option)
         * [`deserialize` option](#deserialize-option)
@@ -483,6 +486,18 @@ Fields with value `None` will be omitted on serialization because TOML doesn't s
 Customization
 --------------------------------------------------------------------------------
 
+Customization options of `mashumaro` are extensive and will most likely cover your needs.
+When it comes to non-standard data types and non-standard serialization support, you can do the following:
+* Turn an existing regular or generic class into a serializable one
+by inheriting the [`SerializableType`](#serializabletype-interface) class
+* Write different serialization strategies for an existing regular or generic type that is not under your control
+using [`SerializationStrategy`](#serializationstrategy) class
+* Define serialization / deserialization methods:
+  * for a specific dataclass field by using [field options](#field-options)
+  * for a specific data type used in the dataclass by using [`Config`](#config-options) class
+* Separate serialization scheme from a dataclass in a reusable manner using [dialects](#dialects)
+* Choose from predefined serialization engines for the specific data types, e.g. `datetime` and `NamedTuple`
+
 ### SerializableType interface
 
 If you have a custom class or hierarchy of classes whose instances you want
@@ -647,6 +662,158 @@ You can see that formatted date is deserialized to `date` object before passing
 to `DictWrapper._deserialize` in a key or value according to the generic
 parameters.
 
+If you have generic dataclass types, you can use `SerializableType` for them as well, but it's not necessary since
+they're [supported](#generic-dataclasses) out of the box.
+
+### SerializationStrategy
+
+If you want to add support for a custom third-party type that is not under your control,
+you can write serialization and deserialization logic inside `SerializationStrategy` class,
+which will be reusable and so well suited in case that third-party type is widely used.
+`SerializationStrategy` is also good if you want to create strategies that are slightly different from each other,
+because you can add the strategy differentiator in the `__init__` method.
+
+#### Third-party types
+
+To demonstrate how `SerializationStrategy` works let's write a simple strategy for datetime serialization
+in different formats. In this example we will use the same strategy class for two dataclass fields,
+but a string representing the date and time will be different.
+
+```python
+from dataclasses import dataclass, field
+from datetime import datetime
+from mashumaro import DataClassDictMixin, field_options
+from mashumaro.types import SerializationStrategy
+
+class FormattedDateTime(SerializationStrategy):
+    def __init__(self, fmt):
+        self.fmt = fmt
+
+    def serialize(self, value: datetime) -> str:
+        return value.strftime(self.fmt)
+
+    def deserialize(self, value: str) -> datetime:
+        return datetime.strptime(value, self.fmt)
+
+@dataclass
+class DateTimeFormats(DataClassDictMixin):
+    short: datetime = field(
+        metadata=field_options(
+            serialization_strategy=FormattedDateTime("%d%m%Y%H%M%S")
+        )
+    )
+    verbose: datetime = field(
+        metadata=field_options(
+            serialization_strategy=FormattedDateTime("%A %B %d, %Y, %H:%M:%S")
+        )
+    )
+
+formats = DateTimeFormats(
+    short=datetime(2019, 1, 1, 12),
+    verbose=datetime(2019, 1, 1, 12),
+)
+dictionary = formats.to_dict()
+# {'short': '01012019120000', 'verbose': 'Tuesday January 01, 2019, 12:00:00'}
+assert DateTimeFormats.from_dict(dictionary) == formats
+```
+
+Similarly to `SerializableType`, `SerializationStrategy` could also take advantage of annotations:
+
+```python
+from dataclasses import dataclass
+from datetime import datetime
+from mashumaro import DataClassDictMixin
+from mashumaro.types import SerializationStrategy
+
+class TsSerializationStrategy(SerializationStrategy, use_annotations=True):
+    def serialize(self, value: datetime) -> float:
+        return value.timestamp()
+
+    def deserialize(self, value: float) -> datetime:
+        # value will be converted to float before being passed to this method
+        return datetime.fromtimestamp(value)
+
+@dataclass
+class Example(DataClassDictMixin):
+    dt: datetime
+
+    class Config:
+        serialization_strategy = {
+            datetime: TsSerializationStrategy(),
+        }
+
+example = Example.from_dict({"dt": "1672531200"})
+print(example)
+# Example(dt=datetime.datetime(2023, 1, 1, 3, 0))
+print(example.to_dict())
+# {'dt': 1672531200.0}
+```
+
+Here the passed string value `"1672531200"` will be converted to `float` before being passed to `deserialize` method
+thanks to the `float` annotation.
+
+As well as for `SerializableType`, the value of `use_annotatons` will be `True` by default in the future major release.
+
+#### Third-party generic types
+
+To create a generic version of a serialization strategy you need to follow these steps:
+* inherit [`Generic[...]`](https://docs.python.org/3/library/typing.html#typing.Generic) type
+with the number of parameters matching the number of parameters
+of the target generic type
+* Write generic annotations for `serialize` method's return type and for `deserialize` method's argument type
+* Use the origin type of the target generic type in the [`serialization_strategy`](#serializationstrategy-config-option) config section
+([`typing.get_origin`](https://docs.python.org/3/library/typing.html#typing.get_origin) might be helpful)
+
+There is no need to add `use_annotations=True` here because it's enabled implicitly
+for generic serialization strategies.
+
+For example, there is a third-party [multidict](https://pypi.org/project/multidict/) package that has a generic `MultiDict` type.
+A generic serialization strategy for it might look like this:
+
+```python
+from dataclasses import dataclass
+from datetime import date
+from pprint import pprint
+from typing import Generic, List, Tuple, TypeVar
+from mashumaro import DataClassDictMixin
+from mashumaro.types import SerializationStrategy
+
+from multidict import MultiDict
+
+T = TypeVar("T")
+
+class MultiDictSerializationStrategy(SerializationStrategy, Generic[T]):
+    def serialize(self, value: MultiDict[T]) -> List[Tuple[str, T]]:
+        return [(k, v) for k, v in value.items()]
+
+    def deserialize(self, value: List[Tuple[str, T]]) -> MultiDict[T]:
+        return MultiDict(value)
+
+
+@dataclass
+class Example(DataClassDictMixin):
+    floats: MultiDict[float]
+    date_lists: MultiDict[List[date]]
+
+    class Config:
+        serialization_strategy = {
+            MultiDict: MultiDictSerializationStrategy()
+        }
+
+example = Example(
+    floats=MultiDict([("x", 1.1), ("x", 2.2)]),
+    date_lists=MultiDict(
+        [("x", [date(2023, 1, 1), date(2023, 1, 2)]),
+         ("x", [date(2023, 2, 1), date(2023, 2, 2)])]
+    ),
+)
+pprint(example.to_dict())
+# {'date_lists': [['x', ['2023-01-01', '2023-01-02']],
+#                 ['x', ['2023-02-01', '2023-02-02']]],
+#  'floats': [['x', 1.1], ['x', 2.2]]}
+assert Example.from_dict(example.to_dict()) == example
+```
+
 ### Field options
 
 In some cases creating a new class just for one little thing could be
@@ -761,52 +928,9 @@ class D(DataClassDictMixin):
 
 #### `serialization_strategy` option
 
-This option is useful when you want to change the serialization behaviour
-for a class depending on some defined parameters. For this case you can create
-the special class implementing `SerializationStrategy` interface:
-
-```python
-from dataclasses import dataclass, field
-from datetime import datetime
-from mashumaro import DataClassDictMixin
-from mashumaro.types import SerializationStrategy
-
-class FormattedDateTime(SerializationStrategy):
-    def __init__(self, fmt):
-        self.fmt = fmt
-
-    def serialize(self, value: datetime) -> str:
-        return value.strftime(self.fmt)
-
-    def deserialize(self, value: str) -> datetime:
-        return datetime.strptime(value, self.fmt)
-
-@dataclass
-class DateTimeFormats(DataClassDictMixin):
-    short: datetime = field(
-        metadata={
-            "serialization_strategy": FormattedDateTime(
-                fmt="%d%m%Y%H%M%S",
-            )
-        }
-    )
-    verbose: datetime = field(
-        metadata={
-            "serialization_strategy": FormattedDateTime(
-                fmt="%A %B %d, %Y, %H:%M:%S",
-            )
-        }
-    )
-
-formats = DateTimeFormats(
-    short=datetime(2019, 1, 1, 12),
-    verbose=datetime(2019, 1, 1, 12),
-)
-dictionary = formats.to_dict()
-# {'short': '01012019120000', 'verbose': 'Tuesday January 01, 2019, 12:00:00'}
-assert DateTimeFormats.from_dict(dictionary) == formats
-```
-
+This option is useful when you want to change the serialization logic
+for a dataclass field depending on some defined parameters using a reusable serialization scheme.
+You can find an example in the [`SerializationStrategy`](#serializationstrategy) chapter.
 In addition, you can pass a field value as is without changes using
 [`pass_through`](#passing-field-values-as-is).
 
@@ -920,10 +1044,10 @@ described below.
 
 #### `serialization_strategy` config option
 
-You can register custom `SerializationStrategy`, `serialize` and `deserialize`
+You can register custom [`SerializationStrategy`](#serializationstrategy), `serialize` and `deserialize`
 methods for specific types just in one place. It could be configured using
 a dictionary with types as keys. The value could be either a
-`SerializationStrategy` instance or a dictionary with `serialize` and
+[`SerializationStrategy`](#serializationstrategy) instance or a dictionary with `serialize` and
 `deserialize` values with the same meaning as in the
 [field options](#field-options).
 
@@ -1309,8 +1433,8 @@ Entity.from_dict({'dt': '2021年12月31日'}, dialect=JapaneseDialect)
 
 This dialect option has the same meaning as the
 [similar config option](#serialization_strategy-config-option)
-but for the dialect scope. You can register custom `SerializationStrategy`,
-`serialize` and `deserialize` methods for specific types.
+but for the dialect scope. You can register custom [`SerializationStrategy`](#serializationstrategy),
+`serialize` and `deserialize` methods for the specific types.
 
 #### `omit_none` dialect option
 
