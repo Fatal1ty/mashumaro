@@ -717,8 +717,7 @@ dictionary = formats.to_dict()
 assert DateTimeFormats.from_dict(dictionary) == formats
 ```
 
-Similarly to `SerializableType`, `SerializationStrategy` could also take advantage of annotations.
-
+Similarly to `SerializableType`, `SerializationStrategy` could also take advantage of annotations:
 
 ```python
 from dataclasses import dataclass
