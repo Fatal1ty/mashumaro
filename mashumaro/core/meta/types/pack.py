@@ -118,7 +118,7 @@ def get_overridden_serialization_method(
             elif isinstance(strategy, dict):
                 serialize_option = strategy.get("serialize")
             elif isinstance(strategy, SerializationStrategy):
-                if is_generic(type(strategy)):
+                if strategy.__use_annotations__ or is_generic(type(strategy)):
                     return ExpressionWrapper(
                         _pack_with_generic_serialization_strategy(
                             spec=spec,

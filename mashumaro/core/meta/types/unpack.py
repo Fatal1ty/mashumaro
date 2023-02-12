@@ -130,7 +130,7 @@ def get_overridden_deserialization_method(
             elif isinstance(strategy, dict):
                 deserialize_option = strategy.get("deserialize")
             elif isinstance(strategy, SerializationStrategy):
-                if is_generic(type(strategy)):
+                if strategy.__use_annotations__ or is_generic(type(strategy)):
                     return ExpressionWrapper(
                         _unpack_with_generic_serialization_strategy(
                             spec=spec,
