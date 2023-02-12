@@ -28,6 +28,11 @@ NoneType = type(None)
 Expression: TypeAlias = str
 
 
+class ExpressionWrapper:
+    def __init__(self, expression: str):
+        self.expression = expression
+
+
 PROPER_COLLECTION_TYPES: Dict[Type, str] = {
     tuple: "typing.Tuple[T]",
     list: "typing.List[T]",
