@@ -930,7 +930,7 @@ class D(DataClassDictMixin):
 
 This option is useful when you want to change the serialization logic
 for a dataclass field depending on some defined parameters using a reusable serialization scheme.
-You can find an example in the [`SerializationStrategy`](#third-party-types) chapter.
+You can find an example in the [`SerializationStrategy`](#serializationstrategy) chapter.
 In addition, you can pass a field value as is without changes using
 [`pass_through`](#passing-field-values-as-is).
 
