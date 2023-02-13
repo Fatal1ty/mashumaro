@@ -74,7 +74,7 @@ PackerRegistry = Registry()
 register = PackerRegistry.register
 
 
-def _pack_with_generic_serialization_strategy(
+def _pack_with_annotated_serialization_strategy(
     spec: ValueSpec,
     strategy: SerializationStrategy,
 ) -> Expression:
@@ -120,7 +120,7 @@ def get_overridden_serialization_method(
             elif isinstance(strategy, SerializationStrategy):
                 if strategy.__use_annotations__ or is_generic(type(strategy)):
                     return ExpressionWrapper(
-                        _pack_with_generic_serialization_strategy(
+                        _pack_with_annotated_serialization_strategy(
                             spec=spec,
                             strategy=strategy,
                         )
