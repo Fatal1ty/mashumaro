@@ -215,7 +215,9 @@ for backported types from [`typing-extensions`](https://github.com/python/typing
 
 for arbitrary types:
 * [user-defined types](#user-defined-types)
+* [third-party types](#third-party-types)
 * [user-defined generic types](#user-defined-generic-types)
+* [third-party generic types](#third-party-generic-types)
 
 Usage example
 --------------------------------------------------------------------------------
