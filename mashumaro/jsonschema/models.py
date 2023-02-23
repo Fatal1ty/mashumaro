@@ -15,7 +15,7 @@ try:
         DataClassORJSONMixin as DataClassJSONMixin,
     )
 except ImportError:
-    from mashumaro.mixins.json import DataClassJSONMixin
+    from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
 
 class JSONSchemaInstanceType(Enum):

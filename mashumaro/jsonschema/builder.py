@@ -13,7 +13,7 @@ try:
         DataClassORJSONMixin as DataClassJSONMixin,
     )
 except ImportError:
-    from mashumaro.mixins.json import DataClassJSONMixin
+    from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
 
 def build_json_schema(
@@ -34,7 +34,9 @@ def build_json_schema(
 class JSONSchemaDefinitions(DataClassJSONMixin):
     definitions: Dict[str, JSONSchema]
 
-    def __post_serialize__(self, d: Dict[Any, Any]) -> List[Dict[str, Any]]:
+    def __post_serialize__(  # type: ignore
+        self, d: Dict[Any, Any]
+    ) -> List[Dict[str, Any]]:
         return d["definitions"]
 
 

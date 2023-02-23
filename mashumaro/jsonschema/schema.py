@@ -67,7 +67,7 @@ try:
         DataClassORJSONMixin as DataClassJSONMixin,
     )
 except ImportError:
-    from mashumaro.mixins.json import DataClassJSONMixin
+    from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
 
 @dataclass
@@ -82,16 +82,21 @@ class Instance:
         return child
 
     @property
+    def _builder(self) -> CodeBuilder:
+        assert self.__builder
+        return self.__builder
+
+    @property
     def metadata(self) -> Mapping[str, Any]:
         if not self.name:
             return {}
-        return self.__builder.metadatas.get(self.name, {})
+        return self._builder.metadatas.get(self.name, {})
 
     @property
     def alias(self) -> Optional[str]:
         alias = self.metadata.get("alias")
         if alias is None:
-            alias = self.get_config().aliases.get(self.name)
+            alias = self.get_config().aliases.get(self.name)  # type: ignore
         if alias is None:
             alias = self.name
         return alias
@@ -105,9 +110,12 @@ class Instance:
     def copy(self, **changes: Any) -> "Instance":
         return replace(self, **changes)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.__builder:
-            self.type = self.__builder._get_real_type(self.name, self.type)
+            self.type = self.__builder._get_real_type(
+                field_name=self.name,  # type: ignore
+                field_type=self.type,
+            )
         self.origin_type = get_type_origin(self.type)
         if is_dataclass(self.origin_type):
             type_args = get_args(self.type)
@@ -115,13 +123,13 @@ class Instance:
             self.__builder.reset()
 
     def fields(self) -> Iterable[Tuple[str, Type, Any]]:
-        for f_name, f_type in self.__builder.field_types.items():
-            f = self.__builder.dataclass_fields.get(f_name)
+        for f_name, f_type in self._builder.field_types.items():
+            f = self._builder.dataclass_fields.get(f_name)  # type: ignore
             if f and not f.init:
                 continue
             f_default = f.default
             if f_default is MISSING:
-                f_default = self.__builder.namespace.get(f_name, MISSING)
+                f_default = self._builder.namespace.get(f_name, MISSING)
             if f_default is not MISSING:
                 f_default = _default(f_type, f_default)
             yield f_name, f_type, f_default
@@ -129,7 +137,7 @@ class Instance:
     def get_resolved_type_params(self) -> Dict[Type, Type]:
         if not self.name:
             return {}
-        return self.__builder.get_field_resolved_type_params(self.name)
+        return self._builder.get_field_resolved_type_params(self.name)
 
     def get_overridden_serialization_method(
         self,
@@ -150,6 +158,7 @@ class Instance:
                 serialize_option = strategy.serialize
             if serialize_option is not None:
                 return serialize_option
+        return None
 
     def get_config(self) -> Type[BaseConfig]:
         if self.__builder:
@@ -191,7 +200,7 @@ def get_schema(instance: Instance, ctx: Context) -> JSONSchema:
 def _default(f_type: Type, f_value: Any) -> Any:
     @dataclass
     class CC(DataClassJSONMixin):
-        x: f_type = f_value
+        x: f_type = f_value  # type: ignore
 
     return CC(f_value).to_dict()["x"]
 
@@ -205,7 +214,7 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     # TODO: Self references might not work
     if is_dataclass(instance.origin_type):
         schema = JSONObjectSchema(title=instance.origin_type.__name__)
-        properties = {}
+        properties: Dict[str, JSONSchema] = {}
         required = []
         for f_name, f_type, f_default in instance.fields():
             f_instance = instance.copy(type=f_type, name=f_name)
@@ -214,7 +223,8 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
                 f_schema.default = f_default
             else:
                 required.append(f_name)
-            properties[f_instance.alias] = f_schema
+            if f_instance.alias:
+                properties[f_instance.alias] = f_schema
         if properties:
             schema.properties = properties
         if required:
@@ -239,7 +249,7 @@ def on_literal(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     for value in get_literal_values(instance.type):
         if isinstance(value, Enum):
             enum_values.append(value.value)
-        elif isinstance(value, (int, str, bool, NoneType)):
+        elif isinstance(value, (int, str, bool, NoneType)):  # type: ignore
             enum_values.append(value)
         elif isinstance(value, bytes):
             enum_values.append(encodebytes(value).decode())
@@ -352,7 +362,7 @@ def on_ipaddress(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     ):
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
-            format=IPADDRESS_FORMATS[instance.origin_type],
+            format=IPADDRESS_FORMATS[instance.origin_type],  # type: ignore
         )
 
 
@@ -378,7 +388,7 @@ def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
     args = get_args(instance.type)
     if not args:
         if instance.type in (Tuple, tuple):
-            args = [typing.Any, ...]
+            args = [typing.Any, ...]  # type: ignore
         else:
             return JSONArraySchema(maxItems=0)
     elif len(args) == 1 and args[0] == ():
@@ -397,7 +407,7 @@ def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
         unpack_idx = 0
         for arg_idx, arg in enumerate(args, start=1):
             if not is_unpack(arg):
-                min_items += 1
+                min_items += 1  # type: ignore
                 if not unpack_schema:
                     prefix_items.append(
                         get_schema(instance.copy(type=arg), ctx)
@@ -407,8 +417,8 @@ def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
                 unpack_idx = arg_idx
         if unpack_schema:
             prefix_items.extend(unpack_schema.prefixItems or [])
-            min_items += unpack_schema.minItems or 0
-            max_items += unpack_schema.maxItems or 0
+            min_items += unpack_schema.minItems or 0  # type: ignore
+            max_items += unpack_schema.maxItems or 0  # type: ignore
             if unpack_idx == len(args):
                 items = unpack_schema.items
         else:
@@ -448,12 +458,12 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
         f_schema = get_schema(instance.copy(type=f_type), ctx)
         f_default = defaults.get(f_name, MISSING)
         if f_default is not MISSING:
-            f_schema.default = _default(f_type, f_default)
+            f_schema.default = _default(f_type, f_default)  # type: ignore
         properties[f_name] = f_schema
     if as_dict:
         return JSONObjectSchema(
             properties=properties or None,
-            required=fields,
+            required=list(fields),
         )
     else:
         return JSONArraySchema(
@@ -507,7 +517,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
             if args
             else None
         )
-    elif issubclass(instance.origin_type, Tuple):
+    elif issubclass(instance.origin_type, Tuple):  # type: ignore
         if is_named_tuple(instance.origin_type):
             return on_named_tuple(instance, ctx)
         elif is_generic(instance.type):
@@ -525,7 +535,9 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         instance.origin_type, typing.ChainMap
     ):
         return JSONArraySchema(
-            items=get_schema(instance.copy(type=Dict[Unpack[args[:2]]]), ctx)
+            items=get_schema(
+                instance.copy(type=Dict[Unpack[args[:2]]]), ctx  # type: ignore
+            )
         )
     elif is_generic(instance.type) and issubclass(
         instance.origin_type, typing.Counter
