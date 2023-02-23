@@ -17,10 +17,11 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    TypeAlias,
     Union,
 )
 from uuid import UUID
+
+from typing_extensions import TypeAlias, Unpack
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_311_MIN
@@ -524,7 +525,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         instance.origin_type, typing.ChainMap
     ):
         return JSONArraySchema(
-            items=get_schema(instance.copy(type=Dict[*args[:2]]), ctx)
+            items=get_schema(instance.copy(type=Dict[Unpack[args[:2]]]), ctx)
         )
     elif is_generic(instance.type) and issubclass(
         instance.origin_type, typing.Counter
