@@ -15,6 +15,7 @@ disable_error_code = 'empty-body'
 module = [
     'mashumaro.core.meta.types.pack',
     'mashumaro.core.meta.types.unpack',
+    'mashumaro.jsonschema.schema',
 ]
 disable_error_code = 'return'
 
