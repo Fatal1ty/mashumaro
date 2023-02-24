@@ -1,10 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Type
 
-from mashumaro.jsonschema.dialects import (
-    JSONSchemaDialect,
-    jsonschema_draft_2020_12,
-)
+from mashumaro.jsonschema.dialects import DRAFT_2020_12, JSONSchemaDialect
 from mashumaro.jsonschema.models import Context, JSONSchema
 from mashumaro.jsonschema.schema import Instance, get_schema
 
@@ -43,7 +40,7 @@ class JSONSchemaDefinitions(DataClassJSONMixin):
 class JSONSchemaBuilder:
     def __init__(
         self,
-        dialect: JSONSchemaDialect = jsonschema_draft_2020_12,
+        dialect: JSONSchemaDialect = DRAFT_2020_12,
     ):
         self.context = Context(dialect=dialect)
 

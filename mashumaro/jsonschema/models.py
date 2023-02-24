@@ -2,13 +2,13 @@ import datetime
 import ipaddress
 from dataclasses import MISSING, dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, NewType, Optional, Union
+
+from typing_extensions import TypeAlias
 
 from mashumaro.config import BaseConfig
-from mashumaro.jsonschema.dialects import (
-    JSONSchemaDialect,
-    jsonschema_draft_2020_12,
-)
+from mashumaro.helper import pass_through
+from mashumaro.jsonschema.dialects import DRAFT_2020_12, JSONSchemaDialect
 
 try:
     from mashumaro.mixins.orjson import (
@@ -16,6 +16,9 @@ try:
     )
 except ImportError:
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
+
+
+Numeric: TypeAlias = NewType("Numeric", Union[int, float])
 
 
 class JSONSchemaInstanceType(Enum):
@@ -86,6 +89,7 @@ IPADDRESS_FORMATS = {
 @dataclass
 class JSONSchema(DataClassJSONMixin):
     # common fields
+    dialect_uri: Optional[str] = None
     type: Optional[JSONSchemaInstanceType] = None
     enum: Optional[List[Any]] = None
     format: Optional[JSONSchemaInstanceFormat] = None
@@ -98,7 +102,7 @@ class JSONSchema(DataClassJSONMixin):
     # JSONObjectSchema fields
     properties: Optional[Dict[str, "JSONSchema"]] = None
     patternProperties: Optional[Dict[str, "JSONSchema"]] = None
-    additionalProperties: Optional["JSONSchema"] = None
+    additionalProperties: Union[bool, "JSONSchema", None] = None
     propertyNames: Optional["JSONSchema"] = None
     required: Optional[List[str]] = None
     # JSONArraySchema fields
@@ -107,13 +111,22 @@ class JSONSchema(DataClassJSONMixin):
     maxItems: Optional[int] = None
     minItems: Optional[int] = None
     uniqueItems: Optional[bool] = None
+    # Validation keywords for numeric instances
+    minimum: Optional[Numeric] = None
+    maximum: Optional[Numeric] = None
+    exclusiveMinimum: Optional[Numeric] = None
+    exclusiveMaximum: Optional[Numeric] = None
 
     class Config(BaseConfig):
         omit_none = True
         serialize_by_alias = True
         aliases = {
+            "dialect_uri": "$schema",
             "reference": "$ref",
             "definitions": "$defs",
+        }
+        serialization_strategy = {
+            Numeric: pass_through,
         }
 
     def __post_serialize__(self, d: Dict[Any, Any]) -> Dict[Any, Any]:
@@ -134,5 +147,5 @@ class JSONArraySchema(JSONSchema):
 
 @dataclass
 class Context:
-    dialect: JSONSchemaDialect = jsonschema_draft_2020_12
+    dialect: JSONSchemaDialect = DRAFT_2020_12
     definitions: Dict[str, JSONSchema] = field(default_factory=dict)

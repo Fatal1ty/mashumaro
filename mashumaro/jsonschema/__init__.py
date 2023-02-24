@@ -1,8 +1,8 @@
 from .builder import JSONSchemaBuilder
-from .dialects import jsonschema_draft_2020_12, openapi_3
+from .dialects import DRAFT_2020_12, OPEN_API_3_1
 
 __all__ = [
     "JSONSchemaBuilder",
-    "jsonschema_draft_2020_12",
-    "openapi_3",
+    "DRAFT_2020_12",
+    "OPEN_API_3_1",
 ]

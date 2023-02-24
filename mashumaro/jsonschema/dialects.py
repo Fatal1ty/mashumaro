@@ -3,26 +3,24 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class JSONSchemaDialect:
+    uri: str
     definitions_root_pointer: str
 
 
 @dataclass(frozen=True)
 class JSONSchemaDraft202012Dialect(JSONSchemaDialect):
+    uri: str = "https://json-schema.org/draft/2020-12/schema"
     definitions_root_pointer: str = "#/defs"
 
 
 @dataclass(frozen=True)
-class OpenAPI3Dialect(JSONSchemaDialect):
+class OpenAPISchema31Dialect(JSONSchemaDialect):
+    uri: str = "https://spec.openapis.org/oas/3.1/dialect/base"
     definitions_root_pointer: str = "#/components/schemas"
-    # TODO: There are more differences
 
 
-jsonschema_draft_2020_12 = JSONSchemaDraft202012Dialect()
-openapi_3 = OpenAPI3Dialect()
+DRAFT_2020_12 = JSONSchemaDraft202012Dialect()
+OPEN_API_3_1 = OpenAPISchema31Dialect()
 
 
-__all__ = [
-    "JSONSchemaDialect",
-    "jsonschema_draft_2020_12",
-    "openapi_3",
-]
+__all__ = ["JSONSchemaDialect", "DRAFT_2020_12", "OPEN_API_3_1"]

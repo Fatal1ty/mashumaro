@@ -30,6 +30,7 @@ from mashumaro.core.meta.helpers import (
     get_args,
     get_literal_values,
     get_type_origin,
+    is_annotated,
     is_generic,
     is_literal,
     is_named_tuple,
@@ -49,6 +50,13 @@ from mashumaro.core.meta.helpers import (
 )
 from mashumaro.core.meta.types.common import NoneType
 from mashumaro.helper import pass_through
+from mashumaro.jsonschema.annotations import (
+    Annotation,
+    ExclusiveMaximum,
+    ExclusiveMinimum,
+    Maximum,
+    Minimum,
+)
 from mashumaro.jsonschema.models import (
     DATETIME_FORMATS,
     IPADDRESS_FORMATS,
@@ -75,6 +83,7 @@ class Instance:
     type: Type
     name: Optional[str] = None
     origin_type: Type = field(init=False)
+    annotations: List[Annotation] = field(init=False, default_factory=list)
     __builder: Optional[CodeBuilder] = None
 
     def child(self, typ: Type) -> "Instance":
@@ -122,8 +131,14 @@ class Instance:
             self.__builder = CodeBuilder(self.origin_type, type_args)
             self.__builder.reset()
 
+        if is_annotated(self.type):
+            self.annotations = getattr(self.type, "__metadata__", ())
+            self.type = self.origin_type
+
     def fields(self) -> Iterable[Tuple[str, Type, Any]]:
-        for f_name, f_type in self._builder.field_types.items():
+        for f_name, f_type in self._builder.get_field_types(
+            include_extras=True
+        ).items():
             f = self._builder.dataclass_fields.get(f_name)  # type: ignore
             if f and not f.init:
                 continue
@@ -184,10 +199,14 @@ class InstanceSchemaCreatorRegistry:
         yield from self._registry
 
 
-def get_schema(instance: Instance, ctx: Context) -> JSONSchema:
+def get_schema(
+    instance: Instance, ctx: Context, add_dialect_uri: bool = False
+) -> JSONSchema:
     for schema_creator in Registry.iter():
         schema = schema_creator(instance, ctx)
         if schema is not None:
+            if add_dialect_uri:
+                schema.dialect_uri = ctx.dialect.uri
             return schema
     raise NotImplementedError(
         (
@@ -213,7 +232,11 @@ register = Registry.register
 def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     # TODO: Self references might not work
     if is_dataclass(instance.origin_type):
-        schema = JSONObjectSchema(title=instance.origin_type.__name__)
+        schema = JSONObjectSchema(
+            dialect_uri=ctx.dialect.uri,
+            title=instance.origin_type.__name__,
+            additionalProperties=False,
+        )
         properties: Dict[str, JSONSchema] = {}
         required = []
         for f_name, f_type, f_default in instance.fields():
@@ -299,11 +322,22 @@ def on_special_typing_primitive(
 
 @register
 def on_number(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
-    # TODO: validate with Validation Keywords for Numeric Instances
     if instance.origin_type is int:
-        return JSONSchema(type=JSONSchemaInstanceType.INTEGER)
+        schema = JSONSchema(type=JSONSchemaInstanceType.INTEGER)
     elif instance.origin_type is float:
-        return JSONSchema(type=JSONSchemaInstanceType.NUMBER)
+        schema = JSONSchema(type=JSONSchemaInstanceType.NUMBER)
+    else:
+        return None
+    for annotation in instance.annotations:
+        if isinstance(annotation, Minimum):
+            schema.minimum = annotation.value
+        elif isinstance(annotation, Maximum):
+            schema.maximum = annotation.value
+        elif isinstance(annotation, ExclusiveMinimum):
+            schema.exclusiveMinimum = annotation.value
+        elif isinstance(annotation, ExclusiveMaximum):
+            schema.exclusiveMaximum = annotation.value
+    return schema
 
 
 @register
@@ -464,6 +498,7 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
         return JSONObjectSchema(
             properties=properties or None,
             required=list(fields),
+            additionalProperties=False,
         )
     else:
         return JSONArraySchema(
@@ -489,6 +524,7 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
         }
         or None,
         required=sorted(required_keys) or None,
+        additionalProperties=False,
     )
 
 
