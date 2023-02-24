@@ -763,7 +763,7 @@ To create a generic version of a serialization strategy you need to follow these
 with the number of parameters matching the number of parameters
 of the target generic type
 * Write generic annotations for `serialize` method's return type and for `deserialize` method's argument type
-* Use the origin type of the target generic type in the [`serialization_strategy`](#serializationstrategy-config-option) config section
+* Use the origin type of the target generic type in the [`serialization_strategy`](#serialization_strategy-config-option) config section
 ([`typing.get_origin`](https://docs.python.org/3/library/typing.html#typing.get_origin) might be helpful)
 
 There is no need to add `use_annotations=True` here because it's enabled implicitly
