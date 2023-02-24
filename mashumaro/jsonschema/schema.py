@@ -132,7 +132,7 @@ class Instance:
             self.__builder.reset()
 
         if is_annotated(self.type):
-            self.annotations = getattr(self.type, "__metadata__", ())
+            self.annotations = getattr(self.type, "__metadata__", [])
             self.type = self.origin_type
 
     def fields(self) -> Iterable[Tuple[str, Type, Any]]:
@@ -199,14 +199,10 @@ class InstanceSchemaCreatorRegistry:
         yield from self._registry
 
 
-def get_schema(
-    instance: Instance, ctx: Context, add_dialect_uri: bool = False
-) -> JSONSchema:
+def get_schema(instance: Instance, ctx: Context) -> JSONSchema:
     for schema_creator in Registry.iter():
         schema = schema_creator(instance, ctx)
         if schema is not None:
-            if add_dialect_uri:
-                schema.dialect_uri = ctx.dialect.uri
             return schema
     raise NotImplementedError(
         (
@@ -233,7 +229,6 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     # TODO: Self references might not work
     if is_dataclass(instance.origin_type):
         schema = JSONObjectSchema(
-            dialect_uri=ctx.dialect.uri,
             title=instance.origin_type.__name__,
             additionalProperties=False,
         )
@@ -330,13 +325,13 @@ def on_number(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         return None
     for annotation in instance.annotations:
         if isinstance(annotation, Minimum):
-            schema.minimum = annotation.value
+            schema.minimum = annotation.value  # type: ignore
         elif isinstance(annotation, Maximum):
-            schema.maximum = annotation.value
+            schema.maximum = annotation.value  # type: ignore
         elif isinstance(annotation, ExclusiveMinimum):
-            schema.exclusiveMinimum = annotation.value
+            schema.exclusiveMinimum = annotation.value  # type: ignore
         elif isinstance(annotation, ExclusiveMaximum):
-            schema.exclusiveMaximum = annotation.value
+            schema.exclusiveMaximum = annotation.value  # type: ignore
     return schema
 
 

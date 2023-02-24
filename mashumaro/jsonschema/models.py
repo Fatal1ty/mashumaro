@@ -18,7 +18,7 @@ except ImportError:
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
 
-Numeric: TypeAlias = NewType("Numeric", Union[int, float])
+Numeric: TypeAlias = NewType("Numeric", Union[int, float])  # type: ignore
 
 
 class JSONSchemaInstanceType(Enum):
