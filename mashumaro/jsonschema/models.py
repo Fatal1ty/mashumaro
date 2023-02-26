@@ -2,9 +2,8 @@ import datetime
 import ipaddress
 from dataclasses import MISSING, dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, NewType, Optional, Union
-
-from typing_extensions import TypeAlias
+from numbers import Number
+from typing import Any, Dict, List, Optional, Union
 
 from mashumaro.config import BaseConfig
 from mashumaro.helper import pass_through
@@ -16,9 +15,6 @@ try:
     )
 except ImportError:
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
-
-
-Numeric: TypeAlias = NewType("Numeric", Union[int, float])  # type: ignore
 
 
 class JSONSchemaInstanceType(Enum):
@@ -112,10 +108,10 @@ class JSONSchema(DataClassJSONMixin):
     minItems: Optional[int] = None
     uniqueItems: Optional[bool] = None
     # Validation keywords for numeric instances
-    minimum: Optional[Numeric] = None
-    maximum: Optional[Numeric] = None
-    exclusiveMinimum: Optional[Numeric] = None
-    exclusiveMaximum: Optional[Numeric] = None
+    minimum: Optional[Number] = None
+    maximum: Optional[Number] = None
+    exclusiveMinimum: Optional[Number] = None
+    exclusiveMaximum: Optional[Number] = None
 
     class Config(BaseConfig):
         omit_none = True
@@ -126,7 +122,7 @@ class JSONSchema(DataClassJSONMixin):
             "definitions": "$defs",
         }
         serialization_strategy = {
-            Numeric: pass_through,
+            Number: pass_through,
         }
 
     def __post_serialize__(self, d: Dict[Any, Any]) -> Dict[Any, Any]:

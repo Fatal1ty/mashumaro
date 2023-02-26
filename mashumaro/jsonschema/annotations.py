@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from numbers import Number
 from typing import Union
 
 
@@ -12,19 +13,19 @@ class Constraint(Annotation):
 
 @dataclass(unsafe_hash=True)
 class Minimum(Constraint):
-    value: Union[int, float]
+    value: Number
 
 
 @dataclass(unsafe_hash=True)
 class ExclusiveMinimum(Constraint):
-    value: Union[int, float]
+    value: Number
 
 
 @dataclass(unsafe_hash=True)
 class Maximum(Constraint):
-    value: Union[int, float]
+    value: Number
 
 
 @dataclass(unsafe_hash=True)
 class ExclusiveMaximum(Constraint):
-    value: Union[int, float]
+    value: Number

@@ -325,13 +325,13 @@ def on_number(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         return None
     for annotation in instance.annotations:
         if isinstance(annotation, Minimum):
-            schema.minimum = annotation.value  # type: ignore
+            schema.minimum = annotation.value
         elif isinstance(annotation, Maximum):
-            schema.maximum = annotation.value  # type: ignore
+            schema.maximum = annotation.value
         elif isinstance(annotation, ExclusiveMinimum):
-            schema.exclusiveMinimum = annotation.value  # type: ignore
+            schema.exclusiveMinimum = annotation.value
         elif isinstance(annotation, ExclusiveMaximum):
-            schema.exclusiveMaximum = annotation.value  # type: ignore
+            schema.exclusiveMaximum = annotation.value
     return schema
 
 
