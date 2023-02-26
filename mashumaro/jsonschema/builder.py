@@ -17,9 +17,12 @@ def build_json_schema(
     instance_type: Type,
     context: Optional[Context] = None,
     with_definitions: bool = True,
+    all_refs: Optional[bool] = None,
 ) -> JSONSchema:
     if context is None:
         context = Context()
+    if all_refs is not None:
+        context.all_refs = all_refs
     instance = Instance(instance_type)
     schema = get_schema(instance, context)
     if with_definitions and context.definitions:
@@ -41,8 +44,11 @@ class JSONSchemaBuilder:
     def __init__(
         self,
         dialect: JSONSchemaDialect = DRAFT_2020_12,
+        all_refs: Optional[bool] = None,
     ):
-        self.context = Context(dialect=dialect)
+        if all_refs is None:
+            all_refs = dialect.all_refs
+        self.context = Context(dialect=dialect, all_refs=all_refs)
 
     def build(self, instance_type: Type) -> JSONSchema:
         return build_json_schema(

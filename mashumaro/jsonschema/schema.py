@@ -99,10 +99,6 @@ class Instance:
     annotations: List[Annotation] = field(init=False, default_factory=list)
     __builder: Optional[CodeBuilder] = None
 
-    def child(self, typ: Type) -> "Instance":
-        child = self.copy(type=typ)
-        return child
-
     @property
     def _builder(self) -> CodeBuilder:
         assert self.__builder
@@ -261,13 +257,16 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
             schema.properties = properties
         if required:
             schema.required = required
-        ctx.definitions[instance.origin_type.__name__] = schema
-        return JSONSchema(
-            reference=(
-                f"{ctx.dialect.definitions_root_pointer}/"
-                f"{instance.origin_type.__name__}"
+        if ctx.all_refs:
+            ctx.definitions[instance.origin_type.__name__] = schema
+            return JSONSchema(
+                reference=(
+                    f"{ctx.dialect.definitions_root_pointer}/"
+                    f"{instance.origin_type.__name__}"
+                )
             )
-        )
+        else:
+            return schema
 
 
 @register
@@ -443,9 +442,11 @@ def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
         if not PY_311_MIN:
             return JSONArraySchema(maxItems=0)
     if len(args) == 2 and args[1] is Ellipsis:
-        return JSONArraySchema(
-            items=get_schema(instance.copy(type=args[0]), ctx)
-        )
+        if args[0] is typing.Any:
+            items_schema = None
+        else:
+            items_schema = get_schema(instance.copy(type=args[0]), ctx)
+        return JSONArraySchema(items=items_schema)
     else:
         min_items: Optional[int] = 0
         max_items: Optional[int] = 0
@@ -470,10 +471,8 @@ def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
             if unpack_idx == len(args):
                 items = unpack_schema.items
         else:
-            min_items = None
+            min_items = len(args)
             max_items = len(args)
-        if min_items and min_items == len(prefix_items):
-            min_items = None
         return JSONArraySchema(
             prefixItems=prefix_items or None,
             items=items,
@@ -611,7 +610,6 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     elif is_generic(instance.type) and issubclass(
         instance.origin_type, (List, typing.Deque)
     ):
-        instance.child(args[0])
         return apply_array_constraints(
             instance,
             JSONArraySchema(

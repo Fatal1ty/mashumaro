@@ -85,10 +85,10 @@ IPADDRESS_FORMATS = {
 }
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class JSONSchema(DataClassJSONMixin):
     # Common keywords
-    dialect_uri: Optional[str] = None
+    schema: Optional[str] = None
     type: Optional[JSONSchemaInstanceType] = None
     enum: Optional[List[Any]] = None
     const: Optional[Any] = field(default_factory=lambda: MISSING)
@@ -134,7 +134,6 @@ class JSONSchema(DataClassJSONMixin):
         omit_none = True
         serialize_by_alias = True
         aliases = {
-            "dialect_uri": "$schema",
             "reference": "$ref",
             "definitions": "$defs",
         }
@@ -178,3 +177,4 @@ class JSONArraySchema(JSONSchema):
 class Context:
     dialect: JSONSchemaDialect = DRAFT_2020_12
     definitions: Dict[str, JSONSchema] = field(default_factory=dict)
+    all_refs: bool = False
