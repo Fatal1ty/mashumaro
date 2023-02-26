@@ -50,13 +50,7 @@ from mashumaro.core.meta.helpers import (
 )
 from mashumaro.core.meta.types.common import NoneType
 from mashumaro.helper import pass_through
-from mashumaro.jsonschema.annotations import (
-    Annotation,
-    ExclusiveMaximum,
-    ExclusiveMinimum,
-    Maximum,
-    Minimum,
-)
+from mashumaro.jsonschema.annotations import *
 from mashumaro.jsonschema.models import (
     DATETIME_FORMATS,
     IPADDRESS_FORMATS,
@@ -133,7 +127,8 @@ class Instance:
 
         if is_annotated(self.type):
             self.annotations = getattr(self.type, "__metadata__", [])
-            self.type = self.origin_type
+            self.type = get_args(self.type)[0]
+            self.origin_type = get_type_origin(self.type)
 
     def fields(self) -> Iterable[Tuple[str, Type, Any]]:
         for f_name, f_type in self._builder.get_field_types(
@@ -271,7 +266,10 @@ def on_literal(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
             enum_values.append(value)
         elif isinstance(value, bytes):
             enum_values.append(encodebytes(value).decode())
-    return JSONSchema(enum=enum_values)
+    if len(enum_values) == 1:
+        return JSONSchema(const=enum_values[0])
+    else:
+        return JSONSchema(enum=enum_values)
 
 
 @register
@@ -332,6 +330,8 @@ def on_number(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
             schema.exclusiveMinimum = annotation.value
         elif isinstance(annotation, ExclusiveMaximum):
             schema.exclusiveMaximum = annotation.value
+        elif isinstance(annotation, MultipleOf):
+            schema.multipleOf = annotation.value
     return schema
 
 
@@ -523,6 +523,48 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
     )
 
 
+def apply_array_constraints(
+    instance: Instance,
+    schema: JSONSchema,
+) -> JSONSchema:
+    has_contains = False
+    min_contains: Optional[int] = None
+    max_contains: Optional[int] = None
+    for annotation in instance.annotations:
+        if isinstance(annotation, MinItems):
+            schema.minItems = annotation.value
+        elif isinstance(annotation, MaxItems):
+            schema.maxItems = annotation.value
+        elif isinstance(annotation, UniqueItems):
+            schema.uniqueItems = annotation.value
+        elif isinstance(annotation, Contains):
+            schema.contains = annotation.value
+            has_contains = True
+        elif isinstance(annotation, MinContains):
+            min_contains = annotation.value
+        elif isinstance(annotation, MaxContains):
+            max_contains = annotation.value
+    if has_contains:
+        if min_contains is not None:
+            schema.minContains = min_contains
+        if max_contains is not None:
+            schema.maxContains = max_contains
+    return schema
+
+
+def apply_object_constraints(
+    instance: Instance, schema: JSONSchema
+) -> JSONSchema:
+    for annotation in instance.annotations:
+        if isinstance(annotation, MaxProperties):
+            schema.maxProperties = annotation.value
+        elif isinstance(annotation, MinProperties):
+            schema.minProperties = annotation.value
+        elif isinstance(annotation, DependentRequired):
+            schema.dependentRequired = annotation.value
+    return schema
+
+
 @register
 def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     if not issubclass(instance.origin_type, typing.Collection):
@@ -538,37 +580,59 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
             format=JSONSchemaInstanceFormatExtension.BASE64,
         )
     elif issubclass(instance.origin_type, str):
-        return JSONSchema(type=JSONSchemaInstanceType.STRING)
+        schema = JSONSchema(type=JSONSchemaInstanceType.STRING)
+        for annotation in instance.annotations:
+            if isinstance(annotation, MinLength):
+                schema.minLength = annotation.value
+            elif isinstance(annotation, MaxLength):
+                schema.maxLength = annotation.value
+            elif isinstance(annotation, Pattern):
+                schema.pattern = annotation.value
+        return schema
     elif is_generic(instance.type) and issubclass(
         instance.origin_type, (List, typing.Deque)
     ):
         instance.child(args[0])
-        return JSONArraySchema(
-            items=get_schema(instance.copy(type=args[0]), ctx)
-            if args
-            else None
+        return apply_array_constraints(
+            instance,
+            JSONArraySchema(
+                items=get_schema(instance.copy(type=args[0]), ctx)
+                if args
+                else None
+            ),
         )
     elif issubclass(instance.origin_type, Tuple):  # type: ignore
         if is_named_tuple(instance.origin_type):
-            return on_named_tuple(instance, ctx)
+            return apply_array_constraints(
+                instance, on_named_tuple(instance, ctx)
+            )
         elif is_generic(instance.type):
-            return on_tuple(instance, ctx)
+            return apply_array_constraints(instance, on_tuple(instance, ctx))
     elif is_generic(instance.type) and issubclass(
         instance.origin_type, (typing.FrozenSet, typing.AbstractSet)
     ):
-        return JSONArraySchema(
-            items=get_schema(instance.copy(type=args[0]), ctx)
-            if args
-            else None,
-            uniqueItems=True,
+        return apply_array_constraints(
+            instance,
+            JSONArraySchema(
+                items=get_schema(instance.copy(type=args[0]), ctx)
+                if args
+                else None,
+                uniqueItems=True,
+            ),
         )
     elif is_generic(instance.type) and issubclass(
         instance.origin_type, typing.ChainMap
     ):
-        return JSONArraySchema(
-            items=get_schema(
-                instance.copy(type=Dict[Unpack[args[:2]]]), ctx  # type: ignore
-            )
+        return apply_array_constraints(
+            instance,
+            JSONArraySchema(
+                items=get_schema(
+                    instance=instance.copy(
+                        type=Dict[Unpack[args[:2]]],  # type: ignore
+                    ),
+                    ctx=ctx,
+                )
+            ),
         )
     elif is_generic(instance.type) and issubclass(
         instance.origin_type, typing.Counter
@@ -578,7 +642,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         )
         if args and args[0] is not str:
             schema.propertyNames = get_schema(instance.copy(type=args[0]), ctx)
-        return schema
+        return apply_object_constraints(instance, schema)
     elif is_typed_dict(instance.origin_type):
         return on_typed_dict(instance, ctx)
     elif is_generic(instance.type) and issubclass(
@@ -589,24 +653,33 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         )
         if args[0] is not str:
             schema.propertyNames = get_schema(instance.copy(type=args[0]), ctx)
-        return schema
+        return apply_object_constraints(instance, schema)
     elif is_generic(instance.type) and issubclass(
         instance.origin_type, typing.Sequence
     ):
-        return JSONArraySchema(
-            items=get_schema(instance.copy(type=args[0]), ctx)
-            if args
-            else None
+        return apply_array_constraints(
+            instance,
+            JSONArraySchema(
+                items=get_schema(instance.copy(type=args[0]), ctx)
+                if args
+                else None
+            ),
         )
 
 
 @register
 def on_pathlike(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     if issubclass(instance.origin_type, os.PathLike):
-        return JSONSchema(
+        schema = JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.PATH,
         )
+        for annotation in instance.annotations:
+            if isinstance(annotation, MinLength):
+                schema.minLength = annotation.value
+            if isinstance(annotation, MaxLength):
+                schema.minLength = annotation.value
+        return schema
 
 
 @register

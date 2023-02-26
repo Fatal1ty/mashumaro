@@ -3,7 +3,7 @@ import ipaddress
 from dataclasses import MISSING, dataclass, field
 from enum import Enum
 from numbers import Number
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 from mashumaro.config import BaseConfig
 from mashumaro.helper import pass_through
@@ -15,6 +15,9 @@ try:
     )
 except ImportError:
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
+
+
+Null = object()
 
 
 class JSONSchemaInstanceType(Enum):
@@ -84,10 +87,11 @@ IPADDRESS_FORMATS = {
 
 @dataclass
 class JSONSchema(DataClassJSONMixin):
-    # common fields
+    # Common keywords
     dialect_uri: Optional[str] = None
     type: Optional[JSONSchemaInstanceType] = None
     enum: Optional[List[Any]] = None
+    const: Optional[Any] = field(default_factory=lambda: MISSING)
     format: Optional[JSONSchemaInstanceFormat] = None
     title: Optional[str] = None
     description: Optional[str] = None
@@ -95,23 +99,36 @@ class JSONSchema(DataClassJSONMixin):
     reference: Optional[str] = None
     definitions: Optional[Dict[str, "JSONSchema"]] = None
     default: Optional[Any] = field(default_factory=lambda: MISSING)
-    # JSONObjectSchema fields
+    # Keywords for Objects
     properties: Optional[Dict[str, "JSONSchema"]] = None
     patternProperties: Optional[Dict[str, "JSONSchema"]] = None
     additionalProperties: Union[bool, "JSONSchema", None] = None
     propertyNames: Optional["JSONSchema"] = None
-    required: Optional[List[str]] = None
-    # JSONArraySchema fields
+    # Keywords for Arrays
     prefixItems: Optional[List["JSONSchema"]] = None
     items: Optional["JSONSchema"] = None
+    contains: Optional["JSONSchema"] = None
+    # Validation keywords for numeric instances
+    multipleOf: Optional[Number] = None
+    maximum: Optional[Number] = None
+    exclusiveMaximum: Optional[Number] = None
+    minimum: Optional[Number] = None
+    exclusiveMinimum: Optional[Number] = None
+    # Validation keywords for Strings
+    maxLength: Optional[int] = None
+    minLength: Optional[int] = None
+    pattern: Optional[str] = None
+    # Validation keywords for Arrays
     maxItems: Optional[int] = None
     minItems: Optional[int] = None
     uniqueItems: Optional[bool] = None
-    # Validation keywords for numeric instances
-    minimum: Optional[Number] = None
-    maximum: Optional[Number] = None
-    exclusiveMinimum: Optional[Number] = None
-    exclusiveMaximum: Optional[Number] = None
+    maxContains: Optional[int] = None
+    minContains: Optional[int] = None
+    # Validation keywords for Objects
+    maxProperties: Optional[int] = None
+    minProperties: Optional[int] = None
+    required: Optional[List[str]] = None
+    dependentRequired: Optional[Dict[str, Set[str]]] = None
 
     class Config(BaseConfig):
         omit_none = True
@@ -123,11 +140,27 @@ class JSONSchema(DataClassJSONMixin):
         }
         serialization_strategy = {
             Number: pass_through,
+            Null: pass_through,
         }
 
+    def __pre_serialize__(self) -> "JSONSchema":
+        if self.const is None:
+            self.const = Null
+        if self.default is None:
+            self.default = Null
+        return self
+
     def __post_serialize__(self, d: Dict[Any, Any]) -> Dict[Any, Any]:
-        if d.get("default") is MISSING:
+        const = d.get("const")
+        if const is MISSING:
+            d.pop("const")
+        elif const is Null:
+            d["const"] = None
+        default = d.get("default")
+        if default is MISSING:
             d.pop("default")
+        elif default is Null:
+            d["default"] = None
         return d
 
 
