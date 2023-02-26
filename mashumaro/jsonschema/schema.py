@@ -50,7 +50,26 @@ from mashumaro.core.meta.helpers import (
 )
 from mashumaro.core.meta.types.common import NoneType
 from mashumaro.helper import pass_through
-from mashumaro.jsonschema.annotations import *
+from mashumaro.jsonschema.annotations import (
+    Annotation,
+    Contains,
+    DependentRequired,
+    ExclusiveMaximum,
+    ExclusiveMinimum,
+    MaxContains,
+    Maximum,
+    MaxItems,
+    MaxLength,
+    MaxProperties,
+    MinContains,
+    Minimum,
+    MinItems,
+    MinLength,
+    MinProperties,
+    MultipleOf,
+    Pattern,
+    UniqueItems,
+)
 from mashumaro.jsonschema.models import (
     DATETIME_FORMATS,
     IPADDRESS_FORMATS,
