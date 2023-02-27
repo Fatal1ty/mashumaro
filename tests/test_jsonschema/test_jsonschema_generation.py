@@ -1,6 +1,5 @@
 from typing import (
     AbstractSet,
-    Annotated,
     Any,
     ByteString,
     ChainMap,
@@ -14,6 +13,8 @@ from typing import (
     Sequence,
     Tuple,
 )
+
+from typing_extensions import Annotated
 
 from mashumaro.jsonschema.annotations import MaxLength, MinLength, Pattern
 from mashumaro.jsonschema.builder import build_json_schema
