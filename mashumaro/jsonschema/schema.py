@@ -21,7 +21,7 @@ from typing import (
 )
 from uuid import UUID
 
-from typing_extensions import TypeAlias, Unpack
+from typing_extensions import TypeAlias
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_311_MIN
@@ -209,6 +209,11 @@ class InstanceSchemaCreatorRegistry:
         yield from self._registry
 
 
+@dataclass
+class EmptyJSONSchema(JSONSchema):
+    pass
+
+
 def get_schema(instance: Instance, ctx: Context) -> JSONSchema:
     for schema_creator in Registry.iter():
         schema = schema_creator(instance, ctx)
@@ -220,6 +225,15 @@ def get_schema(instance: Instance, ctx: Context) -> JSONSchema:
             f"in {instance.holder_class} isn't supported"
         )
     )
+
+
+def _get_schema_or_none(
+    instance: Instance, ctx: Context
+) -> Optional[JSONSchema]:
+    schema = get_schema(instance, ctx)
+    if isinstance(schema, EmptyJSONSchema):
+        return None
+    return schema
 
 
 def _default(f_type: Type, f_value: Any) -> Any:
@@ -272,7 +286,7 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 @register
 def on_any(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     if instance.type is Any:
-        return JSONSchema()
+        return EmptyJSONSchema()
 
 
 def on_literal(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
@@ -304,7 +318,7 @@ def on_special_typing_primitive(
             anyOf=[get_schema(instance.copy(type=arg), ctx) for arg in args]
         )
     elif is_type_var_any(instance.type):
-        return JSONSchema()
+        return EmptyJSONSchema()
     elif is_type_var(instance.type):
         constraints = getattr(instance.type, "__constraints__")
         if constraints:
@@ -442,10 +456,7 @@ def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
         if not PY_311_MIN:
             return JSONArraySchema(maxItems=0)
     if len(args) == 2 and args[1] is Ellipsis:
-        if args[0] is typing.Any:
-            items_schema = None
-        else:
-            items_schema = get_schema(instance.copy(type=args[0]), ctx)
+        items_schema = _get_schema_or_none(instance.copy(type=args[0]), ctx)
         return JSONArraySchema(items=items_schema)
     else:
         min_items: Optional[int] = 0
@@ -505,6 +516,8 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
         f_schema = get_schema(instance.copy(type=f_type), ctx)
         f_default = defaults.get(f_name, MISSING)
         if f_default is not MISSING:
+            if isinstance(f_schema, EmptyJSONSchema):
+                f_schema = JSONSchema()
             f_schema.default = _default(f_type, f_default)  # type: ignore
         properties[f_name] = f_schema
     if as_dict:
@@ -517,6 +530,7 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
         return JSONArraySchema(
             prefixItems=list(properties.values()) or None,
             maxItems=len(properties) or None,
+            minItems=len(properties) or None,
         )
 
 
@@ -613,7 +627,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         return apply_array_constraints(
             instance,
             JSONArraySchema(
-                items=get_schema(instance.copy(type=args[0]), ctx)
+                items=_get_schema_or_none(instance.copy(type=args[0]), ctx)
                 if args
                 else None
             ),
@@ -631,7 +645,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         return apply_array_constraints(
             instance,
             JSONArraySchema(
-                items=get_schema(instance.copy(type=args[0]), ctx)
+                items=_get_schema_or_none(instance.copy(type=args[0]), ctx)
                 if args
                 else None,
                 uniqueItems=True,
@@ -645,7 +659,11 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
             JSONArraySchema(
                 items=get_schema(
                     instance=instance.copy(
-                        type=Dict[Unpack[args[:2]]],  # type: ignore
+                        type=(
+                            Dict[args[0], args[1]]  # type: ignore
+                            if args
+                            else Dict
+                        )
                     ),
                     ctx=ctx,
                 )
@@ -657,8 +675,10 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         schema = JSONObjectSchema(
             additionalProperties=get_schema(instance.copy(type=int), ctx),
         )
-        if args and args[0] is not str:
-            schema.propertyNames = get_schema(instance.copy(type=args[0]), ctx)
+        if args:
+            schema.propertyNames = _get_schema_or_none(
+                instance.copy(type=args[0]), ctx
+            )
         return apply_object_constraints(instance, schema)
     elif is_typed_dict(instance.origin_type):
         return on_typed_dict(instance, ctx)
@@ -666,10 +686,15 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         instance.origin_type, typing.Mapping
     ):
         schema = JSONObjectSchema(
-            additionalProperties=get_schema(instance.copy(type=args[1]), ctx)
+            additionalProperties=_get_schema_or_none(
+                instance.copy(type=args[1]), ctx
+            )
+            if args
+            else None,
+            propertyNames=_get_schema_or_none(instance.copy(type=args[0]), ctx)
+            if args
+            else None,
         )
-        if args[0] is not str:
-            schema.propertyNames = get_schema(instance.copy(type=args[0]), ctx)
         return apply_object_constraints(instance, schema)
     elif is_generic(instance.type) and issubclass(
         instance.origin_type, typing.Sequence
@@ -677,7 +702,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         return apply_array_constraints(
             instance,
             JSONArraySchema(
-                items=get_schema(instance.copy(type=args[0]), ctx)
+                items=_get_schema_or_none(instance.copy(type=args[0]), ctx)
                 if args
                 else None
             ),

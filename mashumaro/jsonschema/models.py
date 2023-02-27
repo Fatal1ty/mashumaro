@@ -102,7 +102,7 @@ class JSONSchema(DataClassJSONMixin):
     # Keywords for Objects
     properties: Optional[Dict[str, "JSONSchema"]] = None
     patternProperties: Optional[Dict[str, "JSONSchema"]] = None
-    additionalProperties: Union[bool, "JSONSchema", None] = None
+    additionalProperties: Union["JSONSchema", bool, None] = None
     propertyNames: Optional["JSONSchema"] = None
     # Keywords for Arrays
     prefixItems: Optional[List["JSONSchema"]] = None
