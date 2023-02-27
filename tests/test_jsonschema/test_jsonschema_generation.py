@@ -1,3 +1,4 @@
+import collections
 from typing import (
     AbstractSet,
     Any,
@@ -16,6 +17,7 @@ from typing import (
 
 from typing_extensions import Annotated
 
+from mashumaro.core.const import PEP_585_COMPATIBLE
 from mashumaro.jsonschema.annotations import MaxLength, MinLength, Pattern
 from mashumaro.jsonschema.builder import build_json_schema
 from mashumaro.jsonschema.models import (
@@ -64,6 +66,8 @@ def test_jsonschema_for_list():
     )
     assert build_json_schema(List) == JSONArraySchema()
     assert build_json_schema(List[Any]) == JSONArraySchema()
+    if PEP_585_COMPATIBLE:
+        assert build_json_schema(list) == JSONArraySchema()
 
 
 def test_jsonschema_for_deque():
@@ -72,6 +76,8 @@ def test_jsonschema_for_deque():
     )
     assert build_json_schema(Deque) == JSONArraySchema()
     assert build_json_schema(Deque[Any]) == JSONArraySchema()
+    if PEP_585_COMPATIBLE:
+        assert build_json_schema(collections.deque) == JSONArraySchema()
 
 
 def test_jsonschema_for_tuple():
@@ -89,6 +95,8 @@ def test_jsonschema_for_tuple():
     assert build_json_schema(Tuple[int, ...]) == JSONArraySchema(
         items=JSONSchema(type=JSONSchemaInstanceType.INTEGER)
     )
+    if PEP_585_COMPATIBLE:
+        assert build_json_schema(tuple) == JSONArraySchema()
 
 
 def test_jsonschema_for_named_tuple():
@@ -152,8 +160,6 @@ def test_jsonschema_for_named_tuple():
 
 
 def test_jsonschema_for_set():
-    assert build_json_schema(frozenset) == JSONArraySchema(uniqueItems=True)
-    assert build_json_schema(set) == JSONArraySchema(uniqueItems=True)
     for generic_type in (FrozenSet, AbstractSet):
         assert build_json_schema(generic_type[int]) == JSONArraySchema(
             items=JSONSchema(type=JSONSchemaInstanceType.INTEGER),
@@ -165,6 +171,11 @@ def test_jsonschema_for_set():
         assert build_json_schema(generic_type[Any]) == JSONArraySchema(
             uniqueItems=True
         )
+    if PEP_585_COMPATIBLE:
+        assert build_json_schema(frozenset) == JSONArraySchema(
+            uniqueItems=True
+        )
+        assert build_json_schema(set) == JSONArraySchema(uniqueItems=True)
 
 
 def test_jsonschema_for_chainmap():
@@ -207,6 +218,8 @@ def test_jsonschema_for_mapping():
         )
         assert build_json_schema(generic_type) == JSONObjectSchema()
         assert build_json_schema(generic_type[Any, Any]) == JSONObjectSchema()
+    if PEP_585_COMPATIBLE:
+        assert build_json_schema(dict) == JSONObjectSchema()
 
 
 def test_jsonschema_for_sequence():
