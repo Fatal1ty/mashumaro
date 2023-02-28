@@ -13,6 +13,8 @@ def test_instance():
         pass
 
     instance = Instance(type=int)
+    assert instance.metadata == {}
     assert instance.holder_class is None
     instance = Instance(type=DataClass)
     assert instance.holder_class is DataClass
+    assert instance.metadata == {}
