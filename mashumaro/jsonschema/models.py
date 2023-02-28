@@ -58,6 +58,7 @@ class JSONSchemaStringFormat(JSONSchemaInstanceFormat):
 
 class JSONSchemaInstanceFormatExtension(JSONSchemaInstanceFormat):
     TIMEDELTA = "time-delta"
+    TIME_ZONE = "time-zone"
     IPV4NETWORK = "ipv4network"
     IPV6NETWORK = "ipv6network"
     IPV4INTERFACE = "ipv4interface"

@@ -24,7 +24,8 @@ from uuid import UUID
 from typing_extensions import TypeAlias
 
 from mashumaro.config import BaseConfig
-from mashumaro.core.const import PY_311_MIN
+from mashumaro.core.const import PY_39_MIN, PY_311_MIN
+from mashumaro.core.helpers import UTC_OFFSET_PATTERN
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import (
     get_args,
@@ -82,6 +83,9 @@ from mashumaro.jsonschema.models import (
     JSONSchemaStringFormat,
 )
 from mashumaro.types import SerializationStrategy
+
+if PY_39_MIN:
+    from zoneinfo import ZoneInfo
 
 try:
     from mashumaro.mixins.orjson import (
@@ -398,6 +402,23 @@ def on_timedelta(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         return JSONSchema(
             type=JSONSchemaInstanceType.NUMBER,
             format=JSONSchemaInstanceFormatExtension.TIMEDELTA,
+        )
+
+
+@register
+def on_timezone(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+    if instance.origin_type is datetime.timezone:
+        return JSONSchema(
+            type=JSONSchemaInstanceType.STRING, pattern=UTC_OFFSET_PATTERN
+        )
+
+
+@register
+def on_zone_info(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+    if PY_39_MIN and instance.origin_type is ZoneInfo:
+        return JSONSchema(
+            type=JSONSchemaInstanceType.STRING,
+            format=JSONSchemaInstanceFormatExtension.TIME_ZONE,
         )
 
 

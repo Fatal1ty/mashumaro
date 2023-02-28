@@ -20,6 +20,7 @@ from typing import (
     ByteString,
     ChainMap,
     Counter,
+    DefaultDict,
     Deque,
     Dict,
     FrozenSet,
@@ -34,9 +35,10 @@ from typing import (
 from uuid import UUID
 
 import pytest
-from typing_extensions import Annotated, Literal
+from typing_extensions import Annotated, Literal, OrderedDict
 
-from mashumaro.core.const import PEP_585_COMPATIBLE
+from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
+from mashumaro.core.helpers import UTC_OFFSET_PATTERN
 from mashumaro.jsonschema.annotations import (
     Contains,
     DependentRequired,
@@ -97,6 +99,9 @@ from tests.test_pep_655 import (
     TypedDictCorrectRequired,
 )
 
+if PY_39_MIN:
+    from zoneinfo import ZoneInfo
+
 
 def test_jsonschema_for_dataclass():
     @dataclass
@@ -109,7 +114,7 @@ def test_jsonschema_for_dataclass():
         class Config:
             aliases = {"d": "dd"}
 
-    assert build_json_schema(DataClass) == JSONObjectSchema(
+    schema = JSONObjectSchema(
         title="DataClass",
         properties={
             "a": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
@@ -126,31 +131,9 @@ def test_jsonschema_for_dataclass():
         additionalProperties=False,
         required=["a"],
     )
+    assert build_json_schema(DataClass) == schema
     assert build_json_schema(DataClass, all_refs=True) == JSONSchema(
-        reference="#/defs/DataClass",
-        definitions={
-            "DataClass": JSONObjectSchema(
-                title="DataClass",
-                properties={
-                    "a": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
-                    "b": JSONSchema(
-                        type=JSONSchemaInstanceType.NUMBER, default=3.14
-                    ),
-                    "cc": JSONSchema(
-                        anyOf=[
-                            JSONSchema(type=JSONSchemaInstanceType.INTEGER),
-                            JSONSchema(type=JSONSchemaInstanceType.NULL),
-                        ],
-                        default=None,
-                    ),
-                    "dd": JSONSchema(
-                        type=JSONSchemaInstanceType.STRING, default=""
-                    ),
-                },
-                additionalProperties=False,
-                required=["a"],
-            )
-        },
+        reference="#/defs/DataClass", definitions={"DataClass": schema}
     )
 
 
@@ -261,6 +244,21 @@ def test_jsonschema_for_timedelta():
     assert build_json_schema(datetime.timedelta) == JSONSchema(
         type=JSONSchemaInstanceType.NUMBER,
         format=JSONSchemaInstanceFormatExtension.TIMEDELTA,
+    )
+
+
+def test_jsonschema_for_timezone():
+    assert build_json_schema(datetime.timezone) == JSONSchema(
+        type=JSONSchemaInstanceType.STRING,
+        pattern=UTC_OFFSET_PATTERN,
+    )
+
+
+@pytest.mark.skipif(not PY_39_MIN, reason="requires py39+")
+def test_jsonschema_for_zone_info():
+    assert build_json_schema(ZoneInfo) == JSONSchema(
+        type=JSONSchemaInstanceType.STRING,
+        format=JSONSchemaInstanceFormatExtension.TIME_ZONE,
     )
 
 
@@ -585,7 +583,13 @@ def test_jsonschema_for_typeddict():
 
 
 def test_jsonschema_for_mapping():
-    for generic_type in (Dict, Mapping, MutableMapping):
+    for generic_type in (
+        Dict,
+        Mapping,
+        MutableMapping,
+        OrderedDict,
+        DefaultDict,
+    ):
         assert build_json_schema(generic_type[str, int]) == JSONObjectSchema(
             additionalProperties=JSONSchema(
                 type=JSONSchemaInstanceType.INTEGER
@@ -606,6 +610,17 @@ def test_jsonschema_for_mapping():
             maxProperties=5,
             dependentRequired={"a": {"b"}, "b": {"c", "d"}},
         )
+    assert build_json_schema(
+        DefaultDict[int, Dict[str, int]]
+    ) == JSONObjectSchema(
+        additionalProperties=JSONObjectSchema(
+            additionalProperties=JSONSchema(
+                type=JSONSchemaInstanceType.INTEGER,
+            ),
+            propertyNames=JSONSchema(type=JSONSchemaInstanceType.STRING),
+        ),
+        propertyNames=JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+    )
     if PEP_585_COMPATIBLE:
         assert build_json_schema(dict) == JSONObjectSchema()
 
