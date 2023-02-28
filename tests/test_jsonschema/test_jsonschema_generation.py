@@ -24,7 +24,6 @@ from typing import (
     Dict,
     FrozenSet,
     List,
-    Literal,
     Mapping,
     MutableMapping,
     Optional,
@@ -35,7 +34,7 @@ from typing import (
 from uuid import UUID
 
 import pytest
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Literal
 
 from mashumaro.core.const import PEP_585_COMPATIBLE
 from mashumaro.jsonschema.annotations import (
