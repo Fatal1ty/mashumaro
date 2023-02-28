@@ -89,7 +89,7 @@ try:
     from mashumaro.mixins.orjson import (
         DataClassORJSONMixin as DataClassJSONMixin,
     )
-except ImportError:
+except ImportError:  # pragma no cover
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
 
@@ -164,11 +164,6 @@ class Instance:
                 f_default = _default(f_type, f_default)
             yield f_name, f_type, f_default
 
-    def get_resolved_type_params(self) -> Dict[Type, Type]:
-        if not self.name:
-            return {}
-        return self._builder.get_field_resolved_type_params(self.name)
-
     def get_overridden_serialization_method(
         self,
     ) -> Optional[Union[Callable, str]]:
@@ -227,7 +222,7 @@ def get_schema(instance: Instance, ctx: Context) -> JSONSchema:
     raise NotImplementedError(
         (
             f'Type {type_name(instance.type)} of field "{instance.name}" '
-            f"in {instance.holder_class} isn't supported"
+            f"in {type_name(instance.holder_class)} isn't supported"
         )
     )
 

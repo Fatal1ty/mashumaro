@@ -120,6 +120,7 @@ def test_jsonschema_for_dataclass():
         b: float = 3.14
         c: Optional[int] = field(default=None, metadata={"alias": "cc"})
         d: str = ""
+        e: int = field(init=False)
 
         class Config:
             aliases = {"d": "dd"}
@@ -458,6 +459,30 @@ def test_jsonschema_for_named_tuple_as_dict():
     assert build_json_schema(DataClassB).properties["x"] == schema
 
 
+def test_jsonschema_for_named_tuple_as_list():
+    @dataclass
+    class DataClassA:
+        x: MyNamedTuple = field(metadata={"serialize": "as_list"})
+
+    @dataclass
+    class DataClassB:
+        x: MyNamedTuple
+
+        class Config:
+            namedtuple_as_dict = False
+
+    schema = JSONArraySchema(
+        prefixItems=[
+            JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            JSONSchema(type=JSONSchemaInstanceType.NUMBER),
+        ],
+        maxItems=2,
+        minItems=2,
+    )
+    assert build_json_schema(DataClassA).properties["x"] == schema
+    assert build_json_schema(DataClassB).properties["x"] == schema
+
+
 def test_jsonschema_for_set():
     for generic_type in (FrozenSet, AbstractSet):
         assert build_json_schema(generic_type[int]) == JSONArraySchema(
@@ -752,6 +777,7 @@ def test_jsonschema_for_enum():
 
 
 def test_jsonschema_for_type_var_tuple():
+    assert build_json_schema(Ts) == JSONArraySchema()
     assert build_json_schema(
         Tuple[Unpack[Tuple[float, str]]]
     ) == JSONArraySchema(
@@ -798,3 +824,8 @@ def test_jsonschema_for_type_var_tuple():
         additionalProperties=False,
         required=["x"],
     )
+
+
+def test_jsonschema_for_unsupported_type():
+    with pytest.raises(NotImplementedError):
+        build_json_schema(object)
