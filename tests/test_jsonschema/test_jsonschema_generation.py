@@ -45,6 +45,7 @@ from typing_extensions import (
 )
 
 from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
+from mashumaro.helper import pass_through
 from mashumaro.jsonschema.annotations import (
     Contains,
     DependentRequired,
@@ -74,6 +75,7 @@ from mashumaro.jsonschema.models import (
     JSONSchemaStringFormat,
 )
 from mashumaro.jsonschema.schema import UTC_OFFSET_PATTERN, EmptyJSONSchema
+from mashumaro.types import SerializationStrategy
 from tests.entities import (
     CustomPath,
     GenericNamedTuple,
@@ -481,6 +483,48 @@ def test_jsonschema_for_named_tuple_as_list():
     )
     assert build_json_schema(DataClassA).properties["x"] == schema
     assert build_json_schema(DataClassB).properties["x"] == schema
+
+
+def test_jsonschema_for_named_tuple_with_overridden_serialization_method():
+    class MySerializationStrategy(SerializationStrategy):
+        def serialize(self, value: Any) -> Any:
+            pass
+
+        def deserialize(self, value: Any) -> Any:
+            pass
+
+    @dataclass
+    class DataClassA:
+        x: MyNamedTuple
+
+        class Config:
+            serialization_strategy = {MyNamedTuple: {"serialize": lambda x: x}}
+
+    @dataclass
+    class DataClassB:
+        x: MyNamedTuple
+
+        class Config:
+            serialization_strategy = {MyNamedTuple: MySerializationStrategy}
+
+    @dataclass
+    class DataClassC:
+        x: MyNamedTuple
+
+        class Config:
+            serialization_strategy = {MyNamedTuple: pass_through}
+
+    schema = JSONArraySchema(
+        prefixItems=[
+            JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            JSONSchema(type=JSONSchemaInstanceType.NUMBER),
+        ],
+        maxItems=2,
+        minItems=2,
+    )
+    assert build_json_schema(DataClassA).properties["x"] == schema
+    assert build_json_schema(DataClassB).properties["x"] == schema
+    assert build_json_schema(DataClassC).properties["x"] == schema
 
 
 def test_jsonschema_for_set():
