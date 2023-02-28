@@ -38,7 +38,6 @@ import pytest
 from typing_extensions import Annotated, Literal, OrderedDict
 
 from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
-from mashumaro.core.helpers import UTC_OFFSET_PATTERN
 from mashumaro.jsonschema.annotations import (
     Contains,
     DependentRequired,
@@ -66,7 +65,7 @@ from mashumaro.jsonschema.models import (
     JSONSchemaInstanceType,
     JSONSchemaStringFormat,
 )
-from mashumaro.jsonschema.schema import EmptyJSONSchema
+from mashumaro.jsonschema.schema import UTC_OFFSET_PATTERN, EmptyJSONSchema
 from tests.entities import (
     CustomPath,
     GenericNamedTuple,

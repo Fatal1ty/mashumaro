@@ -25,7 +25,6 @@ from typing_extensions import TypeAlias
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_39_MIN, PY_311_MIN
-from mashumaro.core.helpers import UTC_OFFSET_PATTERN
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import (
     get_args,
@@ -93,6 +92,9 @@ try:
     )
 except ImportError:
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
+
+
+UTC_OFFSET_PATTERN = r"^UTC([+-][0-2][0-9]:[0-5][0-9])?$"
 
 
 @dataclass
