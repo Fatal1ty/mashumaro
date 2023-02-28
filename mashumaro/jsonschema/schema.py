@@ -354,14 +354,14 @@ def on_number(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     else:
         return None
     for annotation in instance.annotations:
-        if isinstance(annotation, Minimum):
-            schema.minimum = annotation.value
-        elif isinstance(annotation, Maximum):
+        if isinstance(annotation, Maximum):
             schema.maximum = annotation.value
-        elif isinstance(annotation, ExclusiveMinimum):
-            schema.exclusiveMinimum = annotation.value
+        elif isinstance(annotation, Minimum):
+            schema.minimum = annotation.value
         elif isinstance(annotation, ExclusiveMaximum):
             schema.exclusiveMaximum = annotation.value
+        elif isinstance(annotation, ExclusiveMinimum):
+            schema.exclusiveMinimum = annotation.value
         elif isinstance(annotation, MultipleOf):
             schema.multipleOf = annotation.value
     return schema
@@ -395,11 +395,10 @@ def on_date_objects(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 @register
 def on_timedelta(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     if instance.origin_type is datetime.timedelta:
-        if instance.origin_type is datetime.datetime:
-            return JSONSchema(
-                type=JSONSchemaInstanceType.NUMBER,
-                format=JSONSchemaInstanceFormatExtension.TIMEDELTA,
-            )
+        return JSONSchema(
+            type=JSONSchemaInstanceType.NUMBER,
+            format=JSONSchemaInstanceFormatExtension.TIMEDELTA,
+        )
 
 
 @register
@@ -717,9 +716,9 @@ def on_pathlike(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
             format=JSONSchemaInstanceFormatExtension.PATH,
         )
         for annotation in instance.annotations:
-            if isinstance(annotation, MinLength):
-                schema.minLength = annotation.value
             if isinstance(annotation, MaxLength):
+                schema.maxLength = annotation.value
+            elif isinstance(annotation, MinLength):
                 schema.minLength = annotation.value
         return schema
 
