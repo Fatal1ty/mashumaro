@@ -37,7 +37,6 @@ from mashumaro.core.meta.helpers import (
     is_new_type,
     is_not_required,
     is_required,
-    is_self,
     is_special_typing_primitive,
     is_type_var,
     is_type_var_any,
@@ -341,8 +340,8 @@ def on_special_typing_primitive(
         return get_schema(instance.copy(type=instance.type.__supertype__), ctx)
     elif is_literal(instance.type):
         return on_literal(instance, ctx)
-    elif is_self(instance.type):
-        raise NotImplementedError
+    # elif is_self(instance.type):
+    #     raise NotImplementedError
     elif is_required(instance.type) or is_not_required(instance.type):
         return get_schema(instance.copy(type=args[0]), ctx)
     elif is_unpack(instance.type):

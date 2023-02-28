@@ -24,6 +24,7 @@ from typing import (
     Deque,
     Dict,
     FrozenSet,
+    Generic,
     List,
     Mapping,
     MutableMapping,
@@ -35,7 +36,13 @@ from typing import (
 from uuid import UUID
 
 import pytest
-from typing_extensions import Annotated, Literal, OrderedDict
+from typing_extensions import (
+    Annotated,
+    Literal,
+    OrderedDict,
+    TypeVarTuple,
+    Unpack,
+)
 
 from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
 from mashumaro.jsonschema.annotations import (
@@ -53,6 +60,7 @@ from mashumaro.jsonschema.annotations import (
     MinItems,
     MinLength,
     MinProperties,
+    MultipleOf,
     Pattern,
     UniqueItems,
 )
@@ -100,6 +108,9 @@ from tests.test_pep_655 import (
 
 if PY_39_MIN:
     from zoneinfo import ZoneInfo
+
+
+Ts = TypeVarTuple("Ts")
 
 
 def test_jsonschema_for_dataclass():
@@ -202,6 +213,7 @@ def test_jsonschema_for_number(number_type, instance_type):
             Maximum(2),
             ExclusiveMinimum(0),
             ExclusiveMaximum(3),
+            MultipleOf(2),
         ]
     ) == JSONSchema(
         type=instance_type,
@@ -209,6 +221,7 @@ def test_jsonschema_for_number(number_type, instance_type):
         maximum=2,
         exclusiveMinimum=0,
         exclusiveMaximum=3,
+        multipleOf=2,
     )
 
 
@@ -419,6 +432,30 @@ def test_jsonschema_for_named_tuple():
         maxItems=2,
         minItems=2,
     )
+
+
+def test_jsonschema_for_named_tuple_as_dict():
+    @dataclass
+    class DataClassA:
+        x: MyNamedTuple = field(metadata={"serialize": "as_dict"})
+
+    @dataclass
+    class DataClassB:
+        x: MyNamedTuple
+
+        class Config:
+            namedtuple_as_dict = True
+
+    schema = JSONObjectSchema(
+        properties={
+            "i": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            "f": JSONSchema(type=JSONSchemaInstanceType.NUMBER),
+        },
+        additionalProperties=False,
+        required=["i", "f"],
+    )
+    assert build_json_schema(DataClassA).properties["x"] == schema
+    assert build_json_schema(DataClassB).properties["x"] == schema
 
 
 def test_jsonschema_for_set():
@@ -712,3 +749,52 @@ def test_jsonschema_for_enum():
     assert build_json_schema(MyIntEnum) == JSONSchema(enum=[1, 2])
     assert build_json_schema(MyFlag) == JSONSchema(enum=[1, 2])
     assert build_json_schema(MyIntFlag) == JSONSchema(enum=[1, 2])
+
+
+def test_jsonschema_for_type_var_tuple():
+    assert build_json_schema(
+        Tuple[Unpack[Tuple[float, str]]]
+    ) == JSONArraySchema(
+        prefixItems=[
+            JSONSchema(type=JSONSchemaInstanceType.NUMBER),
+            JSONSchema(type=JSONSchemaInstanceType.STRING),
+        ],
+        maxItems=2,
+        minItems=2,
+    )
+    assert build_json_schema(
+        Tuple[Tuple[Unpack[Tuple[float, ...]], str], int]
+    ) == JSONArraySchema(
+        prefixItems=[
+            JSONArraySchema(minItems=1),
+            JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        ],
+        maxItems=2,
+        minItems=2,
+    )
+
+    @dataclass
+    class GenericDataClass(Generic[Unpack[Ts]]):
+        x: Tuple[Unpack[Ts]]
+
+    assert build_json_schema(
+        GenericDataClass[Unpack[Tuple[int, float]], datetime.time]
+    ) == JSONObjectSchema(
+        title="GenericDataClass",
+        properties={
+            "x": JSONArraySchema(
+                prefixItems=[
+                    JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+                    JSONSchema(type=JSONSchemaInstanceType.NUMBER),
+                    JSONSchema(
+                        type=JSONSchemaInstanceType.STRING,
+                        format=JSONSchemaStringFormat.TIME,
+                    ),
+                ],
+                maxItems=3,
+                minItems=3,
+            )
+        },
+        additionalProperties=False,
+        required=["x"],
+    )
