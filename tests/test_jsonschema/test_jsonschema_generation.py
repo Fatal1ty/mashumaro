@@ -486,7 +486,7 @@ def test_jsonschema_for_named_tuple_as_list():
 
 
 def test_jsonschema_for_named_tuple_with_overridden_serialization_method():
-    class MySerializationStrategy(SerializationStrategy):
+    class MySerializationStrategy(SerializationStrategy):  # pragma no cover
         def serialize(self, value: Any) -> Any:
             pass
 
@@ -505,7 +505,7 @@ def test_jsonschema_for_named_tuple_with_overridden_serialization_method():
         x: MyNamedTuple
 
         class Config:
-            serialization_strategy = {MyNamedTuple: MySerializationStrategy}
+            serialization_strategy = {MyNamedTuple: MySerializationStrategy()}
 
     @dataclass
     class DataClassC:
