@@ -497,8 +497,7 @@ using [`SerializationStrategy`](#serializationstrategy) class
 * Define serialization / deserialization methods:
   * for a specific dataclass field by using [field options](#field-options)
   * for a specific data type used in the dataclass by using [`Config`](#config-options) class
-* Alter your input and output data with preprocess and postprocess serialization / deserialization 
-[hooks](#serialization-hooks)
+* Alter input and output data with serialization / deserialization [hooks](#serialization-hooks)
 * Separate serialization scheme from a dataclass in a reusable manner using [dialects](#dialects)
 * Choose from predefined serialization engines for the specific data types, e.g. `datetime` and `NamedTuple`
 
