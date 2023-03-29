@@ -267,7 +267,7 @@ def override_field_instance_type_if_needed(
             warnings.warn(
                 f"Type Any will be used for "
                 f"{type_name(root_instance.type)}.{field_instance.name} with "
-                f"overriden serialization method: {e}"
+                f"overridden serialization method: {e}"
             )
             field_instance.update_type(Any)  # type: ignore[arg-type]
 
