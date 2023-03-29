@@ -93,7 +93,13 @@ class JSONSchema(DataClassJSONMixin):
     type: Optional[JSONSchemaInstanceType] = None
     enum: Optional[List[Any]] = None
     const: Optional[Any] = field(default_factory=lambda: MISSING)
-    format: Optional[JSONSchemaInstanceFormat] = None
+    format: Optional[
+        Union[
+            JSONSchemaInstanceFormat,
+            JSONSchemaStringFormat,
+            JSONSchemaInstanceFormatExtension,
+        ]
+    ] = None
     title: Optional[str] = None
     description: Optional[str] = None
     anyOf: Optional[List["JSONSchema"]] = None

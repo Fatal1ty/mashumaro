@@ -44,6 +44,7 @@ from typing_extensions import (
     Unpack,
 )
 
+from mashumaro.config import BaseConfig
 from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
 from mashumaro.helper import pass_through
 from mashumaro.jsonschema.annotations import (
@@ -487,6 +488,13 @@ def test_jsonschema_for_named_tuple_as_list():
 
 def test_jsonschema_for_named_tuple_with_overridden_serialization_method():
     class MySerializationStrategy(SerializationStrategy):  # pragma no cover
+        def serialize(self, value: Any) -> MyNamedTuple:
+            pass
+
+        def deserialize(self, value: Any) -> Any:
+            pass
+
+    class MyAnySerializationStrategy(SerializationStrategy):  # pragma no cover
         def serialize(self, value: Any) -> Any:
             pass
 
@@ -505,7 +513,9 @@ def test_jsonschema_for_named_tuple_with_overridden_serialization_method():
         x: MyNamedTuple
 
         class Config:
-            serialization_strategy = {MyNamedTuple: MySerializationStrategy()}
+            serialization_strategy = {
+                MyNamedTuple: MyAnySerializationStrategy()
+            }
 
     @dataclass
     class DataClassC:
@@ -513,6 +523,13 @@ def test_jsonschema_for_named_tuple_with_overridden_serialization_method():
 
         class Config:
             serialization_strategy = {MyNamedTuple: pass_through}
+
+    @dataclass
+    class DataClassD:
+        x: MyNamedTuple
+
+        class Config:
+            serialization_strategy = {MyNamedTuple: MySerializationStrategy()}
 
     schema = JSONArraySchema(
         prefixItems=[
@@ -522,9 +539,10 @@ def test_jsonschema_for_named_tuple_with_overridden_serialization_method():
         maxItems=2,
         minItems=2,
     )
-    assert build_json_schema(DataClassA).properties["x"] == schema
-    assert build_json_schema(DataClassB).properties["x"] == schema
+    assert build_json_schema(DataClassA).properties["x"] == EmptyJSONSchema()
+    assert build_json_schema(DataClassB).properties["x"] == EmptyJSONSchema()
     assert build_json_schema(DataClassC).properties["x"] == schema
+    assert build_json_schema(DataClassD).properties["x"] == schema
 
 
 def test_jsonschema_for_set():
@@ -873,3 +891,94 @@ def test_jsonschema_for_type_var_tuple():
 def test_jsonschema_for_unsupported_type():
     with pytest.raises(NotImplementedError):
         build_json_schema(object)
+
+
+def test_overriden_serialization_method_without_signature():
+    @dataclass
+    class DataClass:
+        x: datetime.datetime
+        y: datetime.datetime = field(
+            metadata={"serialize": datetime.datetime.timestamp}
+        )
+
+        class Config(BaseConfig):
+            serialization_strategy = {
+                datetime.datetime: {
+                    "serialize": datetime.datetime.timestamp,
+                }
+            }
+
+    assert build_json_schema(DataClass).properties["x"] == EmptyJSONSchema()
+    assert build_json_schema(DataClass).properties["y"] == EmptyJSONSchema()
+
+
+def test_overriden_serialization_method_without_return_annotation():
+    def as_timestamp(dt: datetime.datetime):  # pragma no cover
+        return dt.timestamp()
+
+    @dataclass
+    class DataClass:
+        x: datetime.datetime
+        y: datetime.datetime = field(metadata={"serialize": as_timestamp})
+
+        class Config(BaseConfig):
+            serialization_strategy = {
+                datetime.datetime: {"serialize": as_timestamp}
+            }
+
+    assert build_json_schema(DataClass).properties["x"] == EmptyJSONSchema()
+    assert build_json_schema(DataClass).properties["y"] == EmptyJSONSchema()
+
+
+def test_overriden_serialization_method_with_return_annotation():
+    def as_timestamp(dt: datetime.datetime) -> float:
+        return dt.timestamp()  # pragma no cover
+
+    @dataclass
+    class DataClass:
+        x: datetime.datetime
+        y: datetime.datetime = field(metadata={"serialize": as_timestamp})
+
+        class Config(BaseConfig):
+            serialization_strategy = {
+                datetime.datetime: {"serialize": as_timestamp}
+            }
+
+    assert build_json_schema(DataClass).properties["x"] == JSONSchema(
+        type=JSONSchemaInstanceType.NUMBER
+    )
+    assert build_json_schema(DataClass).properties["y"] == JSONSchema(
+        type=JSONSchemaInstanceType.NUMBER
+    )
+
+
+def test_jsonschema_with_override_for_properties():
+    @dataclass
+    class DataClass:
+        x: str
+        y: datetime.datetime
+
+        class Config(BaseConfig):
+            json_schema = {
+                "properties": {
+                    "x": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Description for x",
+                    },
+                    "y": {
+                        "type": "number",
+                        "description": "Description for y",
+                    },
+                }
+            }
+
+    assert build_json_schema(DataClass).properties["x"] == JSONSchema(
+        type=JSONSchemaInstanceType.STRING,
+        format=JSONSchemaStringFormat.DATETIME,
+        description="Description for x",
+    )
+    assert build_json_schema(DataClass).properties["y"] == JSONSchema(
+        type=JSONSchemaInstanceType.NUMBER,
+        description="Description for y",
+    )

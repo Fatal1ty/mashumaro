@@ -2,6 +2,7 @@ import datetime
 import ipaddress
 import os
 import typing
+import warnings
 from base64 import encodebytes
 from dataclasses import MISSING, dataclass, field, is_dataclass, replace
 from decimal import Decimal
@@ -28,6 +29,7 @@ from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import (
     get_args,
+    get_function_return_annotation,
     get_literal_values,
     get_type_origin,
     is_annotated,
@@ -134,21 +136,23 @@ class Instance:
         return replace(self, **changes)
 
     def __post_init__(self) -> None:
+        self.update_type(self.type)
+        if is_annotated(self.type):
+            self.annotations = getattr(self.type, "__metadata__", [])
+            self.type = get_args(self.type)[0]
+            self.origin_type = get_type_origin(self.type)
+
+    def update_type(self, new_type: Type) -> None:
         if self.__builder:
             self.type = self.__builder._get_real_type(
                 field_name=self.name,  # type: ignore
-                field_type=self.type,
+                field_type=new_type,
             )
         self.origin_type = get_type_origin(self.type)
         if is_dataclass(self.origin_type):
             type_args = get_args(self.type)
             self.__builder = CodeBuilder(self.origin_type, type_args)
             self.__builder.reset()
-
-        if is_annotated(self.type):
-            self.annotations = getattr(self.type, "__metadata__", [])
-            self.type = get_args(self.type)[0]
-            self.origin_type = get_type_origin(self.type)
 
     def fields(self) -> Iterable[Tuple[str, Type, Any]]:
         for f_name, f_type in self._builder.get_field_types(
@@ -248,6 +252,26 @@ Registry = InstanceSchemaCreatorRegistry()
 register = Registry.register
 
 
+def override_field_instance_type_if_needed(
+    root_instance: Instance, field_instance: Instance
+) -> None:
+    overridden_method = field_instance.get_overridden_serialization_method()
+    if overridden_method is pass_through:
+        return
+    elif callable(overridden_method):
+        try:
+            field_instance.update_type(
+                get_function_return_annotation(overridden_method)
+            )
+        except Exception as e:
+            warnings.warn(
+                f"Type Any will be used for "
+                f"{type_name(root_instance.type)}.{field_instance.name} with "
+                f"overriden serialization method: {e}"
+            )
+            field_instance.update_type(Any)
+
+
 @register
 def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     # TODO: Self references might not work
@@ -258,9 +282,17 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         )
         properties: Dict[str, JSONSchema] = {}
         required = []
+        field_schema_overrides = instance.get_config().json_schema.get(
+            "properties", {}
+        )
         for f_name, f_type, f_default in instance.fields():
+            override = field_schema_overrides.get(f_name)
             f_instance = instance.copy(type=f_type, name=f_name)
-            f_schema = get_schema(f_instance, ctx)
+            if override:
+                f_schema = JSONSchema.from_dict(override)
+            else:
+                override_field_instance_type_if_needed(instance, f_instance)
+                f_schema = get_schema(f_instance, ctx)
             if f_default is not MISSING:
                 f_schema.default = f_default
             else:

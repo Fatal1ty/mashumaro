@@ -47,3 +47,4 @@ class BaseConfig:
     dialect: Optional[Type[Dialect]] = None
     omit_none: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
     orjson_options: Optional[int] = 0
+    json_schema: Dict[str, str] = {}
