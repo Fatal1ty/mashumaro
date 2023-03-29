@@ -269,7 +269,7 @@ def override_field_instance_type_if_needed(
                 f"{type_name(root_instance.type)}.{field_instance.name} with "
                 f"overriden serialization method: {e}"
             )
-            field_instance.update_type(Any)
+            field_instance.update_type(Any)  # type: ignore[arg-type]
 
 
 @register
