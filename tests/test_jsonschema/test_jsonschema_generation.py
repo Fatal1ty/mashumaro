@@ -46,6 +46,7 @@ from typing_extensions import (
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
+from mashumaro.core.meta.helpers import type_name
 from mashumaro.helper import pass_through
 from mashumaro.jsonschema.annotations import (
     Contains,
@@ -908,8 +909,15 @@ def test_overriden_serialization_method_without_signature():
                 }
             }
 
-    assert build_json_schema(DataClass).properties["x"] == EmptyJSONSchema()
-    assert build_json_schema(DataClass).properties["y"] == EmptyJSONSchema()
+    with pytest.warns(
+        UserWarning, match=f"Type Any will be used for {type_name(DataClass)}"
+    ):
+        assert (
+            build_json_schema(DataClass).properties["x"] == EmptyJSONSchema()
+        )
+        assert (
+            build_json_schema(DataClass).properties["y"] == EmptyJSONSchema()
+        )
 
 
 def test_overriden_serialization_method_without_return_annotation():
