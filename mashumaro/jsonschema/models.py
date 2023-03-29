@@ -106,6 +106,8 @@ class JSONSchema(DataClassJSONMixin):
     reference: Optional[str] = None
     definitions: Optional[Dict[str, "JSONSchema"]] = None
     default: Optional[Any] = field(default_factory=lambda: MISSING)
+    deprecated: Optional[bool] = None
+    examples: Optional[List[Any]] = None
     # Keywords for Objects
     properties: Optional[Dict[str, "JSONSchema"]] = None
     patternProperties: Optional[Dict[str, "JSONSchema"]] = None
