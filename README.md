@@ -18,7 +18,7 @@ ways, but it also does it _super quick_.
 * 👶 Easy to use out of the box
 * ⚙️ Highly customizable
 * 🎉 Built-in support for JSON, YAML, MessagePack, TOML
-* 📦 Build-in support for almost all Python types including typing-extensions
+* 📦 Built-in support for almost all Python types including typing-extensions
 * 📝 JSON Schema generation
 
 Table of contents
