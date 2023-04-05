@@ -8,11 +8,18 @@
 [![Python Version](https://img.shields.io/pypi/pyversions/mashumaro.svg)](https://pypi.python.org/pypi/mashumaro)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+When using dataclasses, you often need to dump and load objects based on the
+schema you have. Mashumaro not only lets you save and load things in different
+ways, but it also does it _super quick_.
 
-When using dataclasses, you often need to dump and load objects according to
-the described scheme.
-This framework not only adds this ability to serialize in different formats,
-but also makes **serialization rapidly**.
+**Key features**
+* 🚀 One of the fastest libraries
+* ☝️ Mature and time-tested
+* 👶 Easy to use out of the box
+* ⚙️ Highly customizable
+* 🎉 Built-in support for JSON, YAML, MessagePack, TOML
+* 📦 Build-in support for almost all Python types including typing-extensions
+* 📝 JSON Schema generation
 
 Table of contents
 --------------------------------------------------------------------------------
