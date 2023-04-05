@@ -1870,7 +1870,11 @@ another one by setting `dialect` parameter:
 ```python
 from mashumaro.jsonschema import OPEN_API_3_1
 
-print(build_json_schema(str, dialect=OPEN_API_3_1, wi).to_json())
+print(
+    build_json_schema(
+        str, dialect=OPEN_API_3_1, with_dialect_uri=True
+    ).to_json()
+)
 ```
 
 <details>

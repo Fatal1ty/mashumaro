@@ -19,11 +19,22 @@ def build_json_schema(
     with_definitions: bool = True,
     all_refs: Optional[bool] = None,
     with_dialect_uri: bool = False,
+    dialect: Optional[JSONSchemaDialect] = None,
 ) -> JSONSchema:
     if context is None:
         context = Context()
+    else:
+        context = Context(
+            dialect=context.dialect,
+            definitions=context.definitions,
+            all_refs=context.all_refs,
+        )
+    if dialect is not None:
+        context.dialect = dialect
     if all_refs is not None:
         context.all_refs = all_refs
+    elif context.all_refs is None:
+        context.all_refs = context.dialect.all_refs
     instance = Instance(instance_type)
     schema = get_schema(instance, context, with_dialect_uri=with_dialect_uri)
     if with_definitions and context.definitions:

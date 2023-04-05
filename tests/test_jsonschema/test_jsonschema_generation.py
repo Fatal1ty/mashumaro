@@ -68,6 +68,7 @@ from mashumaro.jsonschema.annotations import (
     UniqueItems,
 )
 from mashumaro.jsonschema.builder import build_json_schema
+from mashumaro.jsonschema.dialects import DRAFT_2020_12, OPEN_API_3_1
 from mashumaro.jsonschema.models import (
     JSONArraySchema,
     JSONObjectSchema,
@@ -990,3 +991,14 @@ def test_jsonschema_with_override_for_properties():
         type=JSONSchemaInstanceType.NUMBER,
         description="Description for y",
     )
+
+
+def test_jsonschema_with_dialect_uri():
+    schema = build_json_schema(str, with_dialect_uri=True)
+    assert schema.schema == DRAFT_2020_12.uri
+    assert schema.to_dict()["$schema"] == DRAFT_2020_12.uri
+    schema = build_json_schema(
+        str, dialect=OPEN_API_3_1, with_dialect_uri=True
+    )
+    assert schema.schema == OPEN_API_3_1.uri
+    assert schema.to_dict()["$schema"] == OPEN_API_3_1.uri
