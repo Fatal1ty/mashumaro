@@ -71,6 +71,9 @@ Table of contents
         * [After deserialization](#after-deserialization)
         * [Before serialization](#before-serialization)
         * [After serialization](#after-serialization)
+* [JSON Schema](#json-schema)
+    * [Building JSON Schema](#building-json-schema)
+    * [JSON Schema constraints](#json-schema-constraints)
 
 Installation
 --------------------------------------------------------------------------------
@@ -1748,3 +1751,321 @@ obj = DataClass(user="name", password="secret")
 print(obj.to_dict())  # {"user": "name"}
 print(obj.to_json())  # '{"user": "name"}'
 ```
+
+JSON Schema
+--------------------------------------------------------------------------------
+
+You can build JSON Schema not only for dataclasses but also for any other
+[supported](#supported-data-types) data
+types. There is support for the following standards:
+* [Draft 2022-12](https://json-schema.org/specification.html)
+* [OpenAPI Specification 3.1.0](https://swagger.io/specification/)
+
+### Building JSON Schema
+
+For simple one-time cases it's recommended to start from using a configurable
+[`build_json_schema`](https://github.com/Fatal1ty/mashumaro/blob/jsonschema/mashumaro/jsonschema/builder.py#L16-L30)
+function. It returns `JSONSchema` object that can be serialized to json
+or to dict:
+
+```python
+from dataclasses import dataclass
+from typing import List
+from uuid import UUID
+
+from mashumaro.jsonschema import build_json_schema
+
+
+@dataclass
+class User:
+    id: UUID
+    name: str
+
+
+print(build_json_schema(List[User]).to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "array",
+    "items": {
+        "type": "object",
+        "title": "User",
+        "properties": {
+            "id": {
+                "type": "string",
+                "format": "uuid"
+            },
+            "name": {
+                "type": "string"
+            }
+        },
+        "additionalProperties": false,
+        "required": [
+            "id",
+            "name"
+        ]
+    }
+}
+```
+</details>
+
+Additional validation keywords ([see below](#json-schema-constraints))
+can be added using annotations:
+
+```python
+from typing import Annotated, List
+from mashumaro.jsonschema import build_json_schema
+from mashumaro.jsonschema.annotations import Maximum, MaxItems
+
+print(
+    build_json_schema(
+        Annotated[
+            List[Annotated[int, Maximum(42)]],
+            MaxItems(4)
+        ]
+    ).to_json()
+)
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "array",
+    "items": {
+        "type": "integer",
+        "maximum": 42
+    },
+    "maxItems": 4
+}
+```
+</details>
+
+The [`$schema`](https://json-schema.org/draft/2020-12/json-schema-core.html#name-the-schema-keyword)
+keyword can be added by setting `with_dialect_uri` to True:
+
+```python
+print(build_json_schema(str, with_dialect_uri=True).to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "string"
+}
+```
+</details>
+
+By default, Draft 2022-12 dialect is being used, but you can change it to
+another one by setting `dialect` parameter:
+
+```python
+from mashumaro.jsonschema import OPEN_API_3_1
+
+print(build_json_schema(str, dialect=OPEN_API_3_1, wi).to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "$schema": "https://spec.openapis.org/oas/3.1/dialect/base",
+    "type": "string"
+}
+```
+</details>
+
+All dataclass JSON Schemas can or can not be placed in the
+[definitions](https://json-schema.org/draft/2020-12/json-schema-core.html#name-schema-re-use-with-defs)
+section, depending on the `all_refs` parameter, which default value comes
+from a dialect used (`False` for Draft 2022-12, `True` for OpenAPI
+Specification 3.1.0):
+
+```python
+print(build_json_schema(List[User], all_refs=True).to_json())
+```
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "array",
+    "$defs": {
+        "User": {
+            "type": "object",
+            "title": "User",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "id",
+                "name"
+            ]
+        }
+    },
+    "items": {
+        "$ref": "#/defs/User"
+    }
+}
+```
+</details>
+
+The definitions section can be omitted from the final document by setting
+`with_definitions` parameter to `False`:
+
+```python
+print(
+    build_json_schema(
+        List[User], dialect=OPEN_API_3_1, with_definitions=False
+    ).to_json()
+)
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "array",
+    "items": {
+        "$ref": "#/components/schemas/User"
+    }
+}
+```
+</details>
+
+These omitted definitions could be found later in the `Context` object that
+you could have created and passed to the function, but it could be easier
+to use `JSONSchemaBuilder` for that. For example, you might found it handy
+to build OpenAPI Specification step by step passing your models to the builder
+and get all the registered definitions later. This builder has reasonable
+defaults but can be customized if necessary.
+
+```python
+from mashumaro.jsonschema import JSONSchemaBuilder, OPEN_API_3_1
+
+builder = JSONSchemaBuilder(OPEN_API_3_1)
+
+@dataclass
+class User:
+    id: UUID
+    name: str
+
+@dataclass
+class Device:
+    id: UUID
+    model: str
+
+print(builder.build(List[User]).to_json())
+print(builder.build(List[Device]).to_json())
+print(builder.get_definitions().to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "array",
+    "items": {
+        "$ref": "#/components/schemas/User"
+    }
+}
+```
+```json
+{
+    "type": "array",
+    "items": {
+        "$ref": "#/components/schemas/Device"
+    }
+}
+```
+```json
+{
+    "User": {
+        "type": "object",
+        "title": "User",
+        "properties": {
+            "id": {
+                "type": "string",
+                "format": "uuid"
+            },
+            "name": {
+                "type": "string"
+            }
+        },
+        "additionalProperties": false,
+        "required": [
+            "id",
+            "name"
+        ]
+    },
+    "Device": {
+        "type": "object",
+        "title": "Device",
+        "properties": {
+            "id": {
+                "type": "string",
+                "format": "uuid"
+            },
+            "model": {
+                "type": "string"
+            }
+        },
+        "additionalProperties": false,
+        "required": [
+            "id",
+            "model"
+        ]
+    }
+}
+```
+</details>
+
+### JSON Schema constraints
+
+Apart from required keywords, that are added automatically for certain data
+types, you're free to use additional validation keywords.
+They're presented by the corresponding classes in
+[`mashumaro.jsonschema.annotations`](https://github.com/Fatal1ty/mashumaro/blob/jsonschema/mashumaro/jsonschema/annotations.py):
+
+Number constraints:
+* [`Minimum`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-minimum)
+* [`Maximum`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-maximum)
+* [`ExclusiveMinimum`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-exclusiveminimum)
+* [`ExclusiveMaximum`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-exclusivemaximum)
+* [`MultipleOf`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-multipleof)
+
+String constraints:
+* [`MinLength`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-minlength)
+* [`MaxLength`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-maxlength)
+* [`Pattern`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-pattern)
+
+Array constraints:
+* [`MinItems`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-minitems)
+* [`MaxItems`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-maxitems)
+* [`UniqueItems`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-uniqueitems)
+* [`Contains`](https://json-schema.org/draft/2020-12/json-schema-core.html#name-contains)
+* [`MinContains`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-mincontains)
+* [`MaxContains`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-maxcontains)
+
+Object constraints:
+* [`MaxProperties`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-maxproperties)
+* [`MinProperties`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-minproperties)
+* [`DependentRequired`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-dependentrequired)

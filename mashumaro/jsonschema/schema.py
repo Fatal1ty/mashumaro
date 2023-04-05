@@ -218,10 +218,14 @@ class EmptyJSONSchema(JSONSchema):
     pass
 
 
-def get_schema(instance: Instance, ctx: Context) -> JSONSchema:
+def get_schema(
+    instance: Instance, ctx: Context, with_dialect_uri: bool = False
+) -> JSONSchema:
     for schema_creator in Registry.iter():
         schema = schema_creator(instance, ctx)
         if schema is not None:
+            if with_dialect_uri:
+                schema.schema = ctx.dialect.uri
             return schema
     raise NotImplementedError(
         (

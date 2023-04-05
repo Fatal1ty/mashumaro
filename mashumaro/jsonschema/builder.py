@@ -18,13 +18,14 @@ def build_json_schema(
     context: Optional[Context] = None,
     with_definitions: bool = True,
     all_refs: Optional[bool] = None,
+    with_dialect_uri: bool = False,
 ) -> JSONSchema:
     if context is None:
         context = Context()
     if all_refs is not None:
         context.all_refs = all_refs
     instance = Instance(instance_type)
-    schema = get_schema(instance, context)
+    schema = get_schema(instance, context, with_dialect_uri=with_dialect_uri)
     if with_definitions and context.definitions:
         schema.definitions = context.definitions
     return schema
@@ -61,4 +62,4 @@ class JSONSchemaBuilder:
         return JSONSchemaDefinitions(self.context.definitions)
 
 
-__all__ = ["JSONSchemaBuilder"]
+__all__ = ["JSONSchemaBuilder", "build_json_schema"]
