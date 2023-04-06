@@ -1,6 +1,6 @@
 # mashumaro (マシュマロ)
 
-> **mashumaro** is a fast and well tested serialization library on top of dataclasses
+###### Fast and well tested serialization library on top of dataclasses
 
 [![Build Status](https://github.com/Fatal1ty/mashumaro/workflows/tests/badge.svg)](https://github.com/Fatal1ty/mashumaro/actions)
 [![Coverage Status](https://coveralls.io/repos/github/Fatal1ty/mashumaro/badge.svg?branch=master)](https://coveralls.io/github/Fatal1ty/mashumaro?branch=master)
