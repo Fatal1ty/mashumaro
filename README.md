@@ -81,6 +81,8 @@ Table of contents
 * [JSON Schema](#json-schema)
     * [Building JSON Schema](#building-json-schema)
     * [JSON Schema constraints](#json-schema-constraints)
+    * [Extending JSON Schema](#extending-json-schema)
+    * [JSON Schema and custom serialization methods](#json-schema-and-custom-serialization-methods)
 
 Installation
 --------------------------------------------------------------------------------
@@ -2080,3 +2082,115 @@ Object constraints:
 * [`MaxProperties`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-maxproperties)
 * [`MinProperties`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-minproperties)
 * [`DependentRequired`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-dependentrequired)
+
+### Extending JSON Schema
+
+Using a `Config` class it is possible to override some parts of the schema.
+Currently, it works for dataclass fields via "properties" key:
+
+```python
+from dataclasses import dataclass
+from mashumaro.jsonschema import build_json_schema
+
+@dataclass
+class FooBar:
+    foo: str
+    bar: int
+
+    class Config:
+        json_schema = {
+            "properties": {
+                "foo": {
+                    "type": "string",
+                    "description": "bar"
+                }
+            }
+        }
+
+print(build_json_schema(FooBar).to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "object",
+    "title": "FooBar",
+    "properties": {
+        "foo": {
+            "type": "string",
+            "description": "bar"
+        },
+        "bar": {
+            "type": "integer"
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "foo",
+        "bar"
+    ]
+}
+```
+</details>
+
+### JSON Schema and custom serialization methods
+
+Mashumaro provides different ways to override default serialization methods for
+dataclass fields or specific data types. In order for these overrides to be
+reflected in the schema, you need to make sure that the methods have
+annotations of the return value type.
+
+```python
+from dataclasses import dataclass, field
+from mashumaro.config import BaseConfig
+from mashumaro.jsonschema import build_json_schema
+
+def str_as_list(s: str) -> list[str]:
+    return list(s)
+
+def int_as_str(i: int) -> str:
+    return str(i)
+
+@dataclass
+class FooBar:
+    foo: str = field(metadata={"serialize": str_as_list})
+    bar: int
+
+    class Config(BaseConfig):
+        serialization_strategy = {
+            int: {
+                "serialize": int_as_str
+            }
+        }
+
+print(build_json_schema(FooBar).to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "object",
+    "title": "FooBar",
+    "properties": {
+        "foo": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "bar": {
+            "type": "string"
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "foo",
+        "bar"
+    ]
+}
+```
+</details>
