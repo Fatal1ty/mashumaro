@@ -1,4 +1,4 @@
-# mashumaro (マシュマロ)
+# mashumaro
 
 ###### Fast and well tested serialization library on top of dataclasses
 
