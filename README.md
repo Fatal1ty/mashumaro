@@ -1,6 +1,6 @@
 # mashumaro (マシュマロ)
 
-> **mashumaro** is a fast and well tested serialization framework on top of dataclasses.
+> **mashumaro** is a fast and well tested serialization library on top of dataclasses
 
 [![Build Status](https://github.com/Fatal1ty/mashumaro/workflows/tests/badge.svg)](https://github.com/Fatal1ty/mashumaro/actions)
 [![Coverage Status](https://coveralls.io/repos/github/Fatal1ty/mashumaro/badge.svg?branch=master)](https://coveralls.io/github/Fatal1ty/mashumaro?branch=master)
@@ -102,7 +102,7 @@ Changelog is available on [GitHub Releases page](https://github.com/Fatal1ty/mas
 Supported serialization formats
 --------------------------------------------------------------------------------
 
-This framework adds methods for dumping to and loading from the
+This library adds methods for dumping to and loading from the
 following formats:
 
 * [plain dict](https://docs.python.org/3/library/stdtypes.html#mapping-types-dict)
@@ -276,7 +276,7 @@ Portfolio.from_json(json_string)  # same as my_portfolio
 How does it work?
 --------------------------------------------------------------------------------
 
-This framework works by taking the schema of the data and generating a
+This library works by taking the schema of the data and generating a
 specific parser and builder for exactly that schema, taking into account the
 specifics of the serialization format. This is much faster than inspection of
 field types on every call of parsing or building at runtime.
@@ -303,7 +303,7 @@ The following figures show the best overall time in each case.
   <colgroup span="2"></colgroup>
   <colgroup span="2"></colgroup>
   <tr>
-    <th rowspan="2">Framework</th>
+    <th rowspan="2">Library</th>
     <th colspan="2" scope="colgroup">From dict</th>
     <th colspan="2" scope="colgroup">To dict</th>
 </tr>
