@@ -8,6 +8,8 @@ from contextlib import contextmanager
 from dataclasses import _FIELDS, MISSING, Field, is_dataclass  # type: ignore
 from functools import lru_cache
 
+import typing_extensions
+
 from mashumaro.config import (
     ADD_DIALECT_SUPPORT,
     TO_DICT_ADD_BY_ALIAS_FLAG,
@@ -111,11 +113,13 @@ class CodeBuilder:
         return self.namespace.get("__annotations__", {})
 
     def __get_field_types(
-        self, recursive: bool = True
+        self, recursive: bool = True, include_extras: bool = False
     ) -> typing.Dict[str, typing.Any]:
         fields = {}
         try:
-            field_type_hints = typing.get_type_hints(self.cls)
+            field_type_hints = typing_extensions.get_type_hints(
+                self.cls, include_extras=include_extras
+            )
         except NameError as e:
             name = get_name_error_name(e)
             raise UnresolvedTypeReferenceError(self.cls, name) from None
@@ -149,6 +153,11 @@ class CodeBuilder:
     @property
     def field_types(self) -> typing.Dict[str, typing.Any]:
         return self.__get_field_types()
+
+    def get_field_types(
+        self, include_extras: bool = False
+    ) -> typing.Dict[str, typing.Any]:
+        return self.__get_field_types(include_extras=include_extras)
 
     @property  # type: ignore
     @lru_cache()

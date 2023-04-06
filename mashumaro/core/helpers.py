@@ -4,12 +4,16 @@ import re
 __all__ = [
     "parse_timezone",
     "ConfigValue",
+    "UTC_OFFSET_PATTERN",
 ]
 
 
+UTC_OFFSET_PATTERN = r"^UTC(([+-][0-2][0-9]):([0-5][0-9]))?$"
+UTC_OFFSET_RE = re.compile(UTC_OFFSET_PATTERN)
+
+
 def parse_timezone(s: str) -> datetime.timezone:
-    regexp = re.compile(r"^UTC(([+-][0-2][0-9]):([0-5][0-9]))?$")
-    match = regexp.match(s)
+    match = UTC_OFFSET_RE.match(s)
     if not match:
         raise ValueError(
             f"Time zone {s} must be either UTC " f"or in format UTC[+-]hh:mm"

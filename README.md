@@ -1,6 +1,6 @@
-# mashumaro (マシュマロ)
+# mashumaro
 
-> **mashumaro** is a fast and well tested serialization framework on top of dataclasses.
+###### Fast and well tested serialization library on top of dataclasses
 
 [![Build Status](https://github.com/Fatal1ty/mashumaro/workflows/tests/badge.svg)](https://github.com/Fatal1ty/mashumaro/actions)
 [![Coverage Status](https://coveralls.io/repos/github/Fatal1ty/mashumaro/badge.svg?branch=master)](https://coveralls.io/github/Fatal1ty/mashumaro?branch=master)
@@ -8,11 +8,18 @@
 [![Python Version](https://img.shields.io/pypi/pyversions/mashumaro.svg)](https://pypi.python.org/pypi/mashumaro)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+When using dataclasses, you often need to dump and load objects based on the
+schema you have. Mashumaro not only lets you save and load things in different
+ways, but it also does it _super quick_.
 
-When using dataclasses, you often need to dump and load objects according to
-the described scheme.
-This framework not only adds this ability to serialize in different formats,
-but also makes **serialization rapidly**.
+**Key features**
+* 🚀 One of the fastest libraries
+* ☝️ Mature and time-tested
+* 👶 Easy to use out of the box
+* ⚙️ Highly customizable
+* 🎉 Built-in support for JSON, YAML, MessagePack, TOML
+* 📦 Built-in support for almost all Python types including typing-extensions
+* 📝 JSON Schema generation
 
 Table of contents
 --------------------------------------------------------------------------------
@@ -71,6 +78,11 @@ Table of contents
         * [After deserialization](#after-deserialization)
         * [Before serialization](#before-serialization)
         * [After serialization](#after-serialization)
+* [JSON Schema](#json-schema)
+    * [Building JSON Schema](#building-json-schema)
+    * [JSON Schema constraints](#json-schema-constraints)
+    * [Extending JSON Schema](#extending-json-schema)
+    * [JSON Schema and custom serialization methods](#json-schema-and-custom-serialization-methods)
 
 Installation
 --------------------------------------------------------------------------------
@@ -92,7 +104,7 @@ Changelog is available on [GitHub Releases page](https://github.com/Fatal1ty/mas
 Supported serialization formats
 --------------------------------------------------------------------------------
 
-This framework adds methods for dumping to and loading from the
+This library adds methods for dumping to and loading from the
 following formats:
 
 * [plain dict](https://docs.python.org/3/library/stdtypes.html#mapping-types-dict)
@@ -266,7 +278,7 @@ Portfolio.from_json(json_string)  # same as my_portfolio
 How does it work?
 --------------------------------------------------------------------------------
 
-This framework works by taking the schema of the data and generating a
+This library works by taking the schema of the data and generating a
 specific parser and builder for exactly that schema, taking into account the
 specifics of the serialization format. This is much faster than inspection of
 field types on every call of parsing or building at runtime.
@@ -293,7 +305,7 @@ The following figures show the best overall time in each case.
   <colgroup span="2"></colgroup>
   <colgroup span="2"></colgroup>
   <tr>
-    <th rowspan="2">Framework</th>
+    <th rowspan="2">Library</th>
     <th colspan="2" scope="colgroup">From dict</th>
     <th colspan="2" scope="colgroup">To dict</th>
 </tr>
@@ -1749,3 +1761,437 @@ obj = DataClass(user="name", password="secret")
 print(obj.to_dict())  # {"user": "name"}
 print(obj.to_json())  # '{"user": "name"}'
 ```
+
+JSON Schema
+--------------------------------------------------------------------------------
+
+You can build JSON Schema not only for dataclasses but also for any other
+[supported](#supported-data-types) data
+types. There is support for the following standards:
+* [Draft 2022-12](https://json-schema.org/specification.html)
+* [OpenAPI Specification 3.1.0](https://swagger.io/specification/)
+
+### Building JSON Schema
+
+For simple one-time cases it's recommended to start from using a configurable
+[`build_json_schema`](https://github.com/Fatal1ty/mashumaro/blob/jsonschema/mashumaro/jsonschema/builder.py#L16-L30)
+function. It returns `JSONSchema` object that can be serialized to json
+or to dict:
+
+```python
+from dataclasses import dataclass
+from typing import List
+from uuid import UUID
+
+from mashumaro.jsonschema import build_json_schema
+
+
+@dataclass
+class User:
+    id: UUID
+    name: str
+
+
+print(build_json_schema(List[User]).to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "array",
+    "items": {
+        "type": "object",
+        "title": "User",
+        "properties": {
+            "id": {
+                "type": "string",
+                "format": "uuid"
+            },
+            "name": {
+                "type": "string"
+            }
+        },
+        "additionalProperties": false,
+        "required": [
+            "id",
+            "name"
+        ]
+    }
+}
+```
+</details>
+
+Additional validation keywords ([see below](#json-schema-constraints))
+can be added using annotations:
+
+```python
+from typing import Annotated, List
+from mashumaro.jsonschema import build_json_schema
+from mashumaro.jsonschema.annotations import Maximum, MaxItems
+
+print(
+    build_json_schema(
+        Annotated[
+            List[Annotated[int, Maximum(42)]],
+            MaxItems(4)
+        ]
+    ).to_json()
+)
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "array",
+    "items": {
+        "type": "integer",
+        "maximum": 42
+    },
+    "maxItems": 4
+}
+```
+</details>
+
+The [`$schema`](https://json-schema.org/draft/2020-12/json-schema-core.html#name-the-schema-keyword)
+keyword can be added by setting `with_dialect_uri` to True:
+
+```python
+print(build_json_schema(str, with_dialect_uri=True).to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "string"
+}
+```
+</details>
+
+By default, Draft 2022-12 dialect is being used, but you can change it to
+another one by setting `dialect` parameter:
+
+```python
+from mashumaro.jsonschema import OPEN_API_3_1
+
+print(
+    build_json_schema(
+        str, dialect=OPEN_API_3_1, with_dialect_uri=True
+    ).to_json()
+)
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "$schema": "https://spec.openapis.org/oas/3.1/dialect/base",
+    "type": "string"
+}
+```
+</details>
+
+All dataclass JSON Schemas can or can not be placed in the
+[definitions](https://json-schema.org/draft/2020-12/json-schema-core.html#name-schema-re-use-with-defs)
+section, depending on the `all_refs` parameter, which default value comes
+from a dialect used (`False` for Draft 2022-12, `True` for OpenAPI
+Specification 3.1.0):
+
+```python
+print(build_json_schema(List[User], all_refs=True).to_json())
+```
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "array",
+    "$defs": {
+        "User": {
+            "type": "object",
+            "title": "User",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "id",
+                "name"
+            ]
+        }
+    },
+    "items": {
+        "$ref": "#/defs/User"
+    }
+}
+```
+</details>
+
+The definitions section can be omitted from the final document by setting
+`with_definitions` parameter to `False`:
+
+```python
+print(
+    build_json_schema(
+        List[User], dialect=OPEN_API_3_1, with_definitions=False
+    ).to_json()
+)
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "array",
+    "items": {
+        "$ref": "#/components/schemas/User"
+    }
+}
+```
+</details>
+
+These omitted definitions could be found later in the `Context` object that
+you could have created and passed to the function, but it could be easier
+to use `JSONSchemaBuilder` for that. For example, you might found it handy
+to build OpenAPI Specification step by step passing your models to the builder
+and get all the registered definitions later. This builder has reasonable
+defaults but can be customized if necessary.
+
+```python
+from mashumaro.jsonschema import JSONSchemaBuilder, OPEN_API_3_1
+
+builder = JSONSchemaBuilder(OPEN_API_3_1)
+
+@dataclass
+class User:
+    id: UUID
+    name: str
+
+@dataclass
+class Device:
+    id: UUID
+    model: str
+
+print(builder.build(List[User]).to_json())
+print(builder.build(List[Device]).to_json())
+print(builder.get_definitions().to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "array",
+    "items": {
+        "$ref": "#/components/schemas/User"
+    }
+}
+```
+```json
+{
+    "type": "array",
+    "items": {
+        "$ref": "#/components/schemas/Device"
+    }
+}
+```
+```json
+{
+    "User": {
+        "type": "object",
+        "title": "User",
+        "properties": {
+            "id": {
+                "type": "string",
+                "format": "uuid"
+            },
+            "name": {
+                "type": "string"
+            }
+        },
+        "additionalProperties": false,
+        "required": [
+            "id",
+            "name"
+        ]
+    },
+    "Device": {
+        "type": "object",
+        "title": "Device",
+        "properties": {
+            "id": {
+                "type": "string",
+                "format": "uuid"
+            },
+            "model": {
+                "type": "string"
+            }
+        },
+        "additionalProperties": false,
+        "required": [
+            "id",
+            "model"
+        ]
+    }
+}
+```
+</details>
+
+### JSON Schema constraints
+
+Apart from required keywords, that are added automatically for certain data
+types, you're free to use additional validation keywords.
+They're presented by the corresponding classes in
+[`mashumaro.jsonschema.annotations`](https://github.com/Fatal1ty/mashumaro/blob/jsonschema/mashumaro/jsonschema/annotations.py):
+
+Number constraints:
+* [`Minimum`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-minimum)
+* [`Maximum`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-maximum)
+* [`ExclusiveMinimum`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-exclusiveminimum)
+* [`ExclusiveMaximum`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-exclusivemaximum)
+* [`MultipleOf`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-multipleof)
+
+String constraints:
+* [`MinLength`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-minlength)
+* [`MaxLength`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-maxlength)
+* [`Pattern`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-pattern)
+
+Array constraints:
+* [`MinItems`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-minitems)
+* [`MaxItems`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-maxitems)
+* [`UniqueItems`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-uniqueitems)
+* [`Contains`](https://json-schema.org/draft/2020-12/json-schema-core.html#name-contains)
+* [`MinContains`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-mincontains)
+* [`MaxContains`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-maxcontains)
+
+Object constraints:
+* [`MaxProperties`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-maxproperties)
+* [`MinProperties`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-minproperties)
+* [`DependentRequired`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-dependentrequired)
+
+### Extending JSON Schema
+
+Using a `Config` class it is possible to override some parts of the schema.
+Currently, it works for dataclass fields via "properties" key:
+
+```python
+from dataclasses import dataclass
+from mashumaro.jsonschema import build_json_schema
+
+@dataclass
+class FooBar:
+    foo: str
+    bar: int
+
+    class Config:
+        json_schema = {
+            "properties": {
+                "foo": {
+                    "type": "string",
+                    "description": "bar"
+                }
+            }
+        }
+
+print(build_json_schema(FooBar).to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "object",
+    "title": "FooBar",
+    "properties": {
+        "foo": {
+            "type": "string",
+            "description": "bar"
+        },
+        "bar": {
+            "type": "integer"
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "foo",
+        "bar"
+    ]
+}
+```
+</details>
+
+### JSON Schema and custom serialization methods
+
+Mashumaro provides different ways to override default serialization methods for
+dataclass fields or specific data types. In order for these overrides to be
+reflected in the schema, you need to make sure that the methods have
+annotations of the return value type.
+
+```python
+from dataclasses import dataclass, field
+from mashumaro.config import BaseConfig
+from mashumaro.jsonschema import build_json_schema
+
+def str_as_list(s: str) -> list[str]:
+    return list(s)
+
+def int_as_str(i: int) -> str:
+    return str(i)
+
+@dataclass
+class FooBar:
+    foo: str = field(metadata={"serialize": str_as_list})
+    bar: int
+
+    class Config(BaseConfig):
+        serialization_strategy = {
+            int: {
+                "serialize": int_as_str
+            }
+        }
+
+print(build_json_schema(FooBar).to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "object",
+    "title": "FooBar",
+    "properties": {
+        "foo": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "bar": {
+            "type": "string"
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "foo",
+        "bar"
+    ]
+}
+```
+</details>

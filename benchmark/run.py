@@ -169,7 +169,7 @@ slowdown = {
 }
 
 header = [
-    "Framework",
+    "Library",
     "From dict",
     "To dict",
     "Slowdown factor (from dict / to dict)",
@@ -207,7 +207,7 @@ tt.print(data, header=header)
 writer = HtmlTableWriter(
     table_name="Comp",
     headers=[
-        "Framework",
+        "Library",
         "From dict time",
         "Slowdown factor",
         "To dict time",
