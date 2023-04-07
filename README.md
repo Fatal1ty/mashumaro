@@ -1774,9 +1774,8 @@ types. There is support for the following standards:
 ### Building JSON Schema
 
 For simple one-time cases it's recommended to start from using a configurable
-[`build_json_schema`](https://github.com/Fatal1ty/mashumaro/blob/jsonschema/mashumaro/jsonschema/builder.py#L16-L30)
-function. It returns `JSONSchema` object that can be serialized to json
-or to dict:
+`build_json_schema` function. It returns `JSONSchema` object that can be
+serialized to json or to dict:
 
 ```python
 from dataclasses import dataclass
@@ -2057,7 +2056,7 @@ print(builder.get_definitions().to_json())
 Apart from required keywords, that are added automatically for certain data
 types, you're free to use additional validation keywords.
 They're presented by the corresponding classes in
-[`mashumaro.jsonschema.annotations`](https://github.com/Fatal1ty/mashumaro/blob/jsonschema/mashumaro/jsonschema/annotations.py):
+[`mashumaro.jsonschema.annotations`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/jsonschema/annotations.py):
 
 Number constraints:
 * [`Minimum`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-minimum)
