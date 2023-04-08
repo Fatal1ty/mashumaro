@@ -297,12 +297,13 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
             else:
                 override_field_instance_type_if_needed(instance, f_instance)
                 f_schema = get_schema(f_instance, ctx)
+            if f_instance.alias:
+                f_name = f_instance.alias
             if f_default is not MISSING:
                 f_schema.default = f_default
             else:
                 required.append(f_name)
-            if f_instance.alias:
-                properties[f_instance.alias] = f_schema
+            properties[f_name] = f_schema
         if properties:
             schema.properties = properties
         if required:

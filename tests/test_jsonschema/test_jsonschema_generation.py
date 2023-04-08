@@ -128,12 +128,12 @@ def test_jsonschema_for_dataclass():
         e: int = field(init=False)
 
         class Config:
-            aliases = {"d": "dd"}
+            aliases = {"a": "aa", "d": "dd"}
 
     schema = JSONObjectSchema(
         title="DataClass",
         properties={
-            "a": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            "aa": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
             "b": JSONSchema(type=JSONSchemaInstanceType.NUMBER, default=3.14),
             "cc": JSONSchema(
                 anyOf=[
@@ -145,7 +145,7 @@ def test_jsonschema_for_dataclass():
             "dd": JSONSchema(type=JSONSchemaInstanceType.STRING, default=""),
         },
         additionalProperties=False,
-        required=["a"],
+        required=["aa"],
     )
     assert build_json_schema(DataClass) == schema
     assert build_json_schema(DataClass, all_refs=True) == JSONSchema(
