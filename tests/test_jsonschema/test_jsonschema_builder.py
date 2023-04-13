@@ -4,11 +4,7 @@ from dataclasses import dataclass
 from typing_extensions import Literal, TypeVarTuple
 
 from mashumaro.jsonschema import DRAFT_2020_12, OPEN_API_3_1
-from mashumaro.jsonschema.builder import (
-    JSONSchemaBuilder,
-    JSONSchemaDefinitions,
-    build_json_schema,
-)
+from mashumaro.jsonschema.builder import JSONSchemaBuilder, build_json_schema
 from mashumaro.jsonschema.schema import Instance
 
 Ts = TypeVarTuple("Ts")

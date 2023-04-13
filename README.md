@@ -1963,7 +1963,33 @@ print(
 ```
 </details>
 
-These omitted definitions could be found later in the `Context` object that
+Reference prefix can be changed by using `ref_prefix` parameter:
+
+```python
+print(
+    build_json_schema(
+        List[User],
+        all_refs=True,
+        with_definitions=False,
+        ref_prefix="#/components/responses",
+    ).to_json()
+)
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "array",
+    "items": {
+        "$ref": "#/components/responses/User"
+    }
+}
+```
+</details>
+
+The omitted definitions could be found later in the `Context` object that
 you could have created and passed to the function, but it could be easier
 to use `JSONSchemaBuilder` for that. For example, you might found it handy
 to build OpenAPI Specification step by step passing your models to the builder
