@@ -310,11 +310,9 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
             schema.required = required
         if ctx.all_refs:
             ctx.definitions[instance.origin_type.__name__] = schema
+            ref_prefix = ctx.ref_prefix or ctx.dialect.definitions_root_pointer
             return JSONSchema(
-                reference=(
-                    f"{ctx.dialect.definitions_root_pointer}/"
-                    f"{instance.origin_type.__name__}"
-                )
+                reference=f"{ref_prefix}/{instance.origin_type.__name__}"
             )
         else:
             return schema

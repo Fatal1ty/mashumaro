@@ -20,6 +20,7 @@ def build_json_schema(
     all_refs: Optional[bool] = None,
     with_dialect_uri: bool = False,
     dialect: Optional[JSONSchemaDialect] = None,
+    ref_prefix: Optional[str] = None,
 ) -> JSONSchema:
     if context is None:
         context = Context()
@@ -28,6 +29,7 @@ def build_json_schema(
             dialect=context.dialect,
             definitions=context.definitions,
             all_refs=context.all_refs,
+            ref_prefix=context.ref_prefix,
         )
     if dialect is not None:
         context.dialect = dialect
@@ -35,6 +37,10 @@ def build_json_schema(
         context.all_refs = all_refs
     elif context.all_refs is None:
         context.all_refs = context.dialect.all_refs
+    if ref_prefix is not None:
+        context.ref_prefix = ref_prefix.rstrip("/")
+    elif context.ref_prefix is None:
+        context.ref_prefix = context.dialect.definitions_root_pointer
     instance = Instance(instance_type)
     schema = get_schema(instance, context, with_dialect_uri=with_dialect_uri)
     if with_definitions and context.definitions:
@@ -57,10 +63,17 @@ class JSONSchemaBuilder:
         self,
         dialect: JSONSchemaDialect = DRAFT_2020_12,
         all_refs: Optional[bool] = None,
+        ref_prefix: Optional[str] = None,
     ):
         if all_refs is None:
             all_refs = dialect.all_refs
-        self.context = Context(dialect=dialect, all_refs=all_refs)
+        if ref_prefix is None:
+            ref_prefix = dialect.definitions_root_pointer
+        self.context = Context(
+            dialect=dialect,
+            all_refs=all_refs,
+            ref_prefix=ref_prefix.rstrip("/"),
+        )
 
     def build(self, instance_type: Type) -> JSONSchema:
         return build_json_schema(

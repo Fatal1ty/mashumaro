@@ -67,7 +67,7 @@ from mashumaro.jsonschema.annotations import (
     Pattern,
     UniqueItems,
 )
-from mashumaro.jsonschema.builder import build_json_schema
+from mashumaro.jsonschema.builder import JSONSchemaBuilder, build_json_schema
 from mashumaro.jsonschema.dialects import DRAFT_2020_12, OPEN_API_3_1
 from mashumaro.jsonschema.models import (
     JSONArraySchema,
@@ -1002,3 +1002,48 @@ def test_jsonschema_with_dialect_uri():
     )
     assert schema.schema == OPEN_API_3_1.uri
     assert schema.to_dict()["$schema"] == OPEN_API_3_1.uri
+
+
+def test_jsonschema_with_ref_prefix():
+    @dataclass
+    class DataClass:
+        pass
+
+    schema = {"$ref": "#/components/responses/DataClass"}
+    assert (
+        build_json_schema(
+            List[DataClass], all_refs=True, ref_prefix="#/components/responses"
+        ).items.to_dict()
+        == schema
+    )
+    assert (
+        build_json_schema(
+            List[DataClass],
+            all_refs=True,
+            ref_prefix="#/components/responses/",
+        ).items.to_dict()
+        == schema
+    )
+    assert (
+        build_json_schema(
+            List[DataClass],
+            dialect=OPEN_API_3_1,
+            ref_prefix="#/components/responses/",
+        ).items.to_dict()
+        == schema
+    )
+
+    assert (
+        JSONSchemaBuilder(all_refs=True, ref_prefix="#/components/responses")
+        .build(List[DataClass])
+        .items.to_dict()
+        == schema
+    )
+    assert (
+        JSONSchemaBuilder(
+            dialect=OPEN_API_3_1, ref_prefix="#/components/responses"
+        )
+        .build(List[DataClass])
+        .items.to_dict()
+        == schema
+    )

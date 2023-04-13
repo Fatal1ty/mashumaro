@@ -188,3 +188,4 @@ class Context:
     dialect: JSONSchemaDialect = DRAFT_2020_12
     definitions: Dict[str, JSONSchema] = field(default_factory=dict)
     all_refs: Optional[bool] = None
+    ref_prefix: Optional[str] = None
