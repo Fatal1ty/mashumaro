@@ -17,7 +17,10 @@ AnyDeserializationEngine = Literal[
 ]
 
 NamedTupleSerializationEngine = Literal["as_dict", "as_list"]
-AnySerializationEngine = NamedTupleSerializationEngine
+OmitSerializationEngine = Literal["omit"]
+AnySerializationEngine = Union[
+    NamedTupleSerializationEngine, OmitSerializationEngine
+]
 
 
 T = TypeVar("T")

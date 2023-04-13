@@ -492,3 +492,13 @@ def test_unsupported_named_tuple_serialization_engine():
             x: MyUntypedNamedTupleWithDefaults = field(
                 metadata={"serialize": "unsupported"}
             )
+
+
+def test_field_metadata_omit_engine():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(metadata={"serialize": "omit"})
+
+    obj = DataClass(x=42)
+    assert obj.to_dict() == {}
+    assert DataClass.from_dict({"x": 42}) == obj

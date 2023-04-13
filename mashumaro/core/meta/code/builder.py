@@ -709,6 +709,8 @@ class CodeBuilder:
             aliases = {}
             fields_could_be_none = set()
             for fname, ftype in field_types.items():
+                if self.metadatas.get(fname, {}).get("serialize") == "omit":
+                    continue
                 packer, alias, could_be_none = self._get_field_packer(
                     fname, ftype, config
                 )

@@ -852,9 +852,10 @@ A value of type `str` sets a specific engine for serialization. Keep in mind
 that all possible engines depend on the data type that this option is used
 with. At this moment there are next serialization engines to choose from:
 
-| Applicable data types      | Supported engines        | Description                                                                                                                                                                                                  |
-|:---------------------------|:-------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `NamedTuple`, `namedtuple` | `as_list`, `as_dict`     | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine. |
+| Applicable data types      | Supported engines    | Description                                                                                                                                                                                                  |
+|:---------------------------|:---------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `NamedTuple`, `namedtuple` | `as_list`, `as_dict` | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine. |
+| `Any`                      | `omit`               | Skip the field during serialization                                                                                                                                                                          |
 
 In addition, you can pass a field value as is without changes using
 [`pass_through`](#passing-field-values-as-is).
