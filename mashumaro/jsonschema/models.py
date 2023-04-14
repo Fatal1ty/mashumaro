@@ -152,7 +152,8 @@ class JSONSchema(DataClassJSONMixin):
             "definitions": "$defs",
         }
         serialization_strategy = {
-            Number: pass_through,
+            int: pass_through,
+            float: pass_through,
             Null: pass_through,
         }
 
