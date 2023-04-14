@@ -2,7 +2,9 @@ import datetime
 import ipaddress
 from dataclasses import MISSING, dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, TypeAlias, Union
+from typing import Any, Dict, List, Optional, Set, Union
+
+from typing_extensions import TypeAlias
 
 from mashumaro.config import BaseConfig
 from mashumaro.helper import pass_through
