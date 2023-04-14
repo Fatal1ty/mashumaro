@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from numbers import Number
 from typing import Dict, Set
 
-from mashumaro.jsonschema.models import JSONSchema
+from mashumaro.jsonschema.models import JSONSchema, Number
 
 
 class Annotation:

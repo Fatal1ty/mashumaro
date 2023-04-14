@@ -2,8 +2,7 @@ import datetime
 import ipaddress
 from dataclasses import MISSING, dataclass, field
 from enum import Enum
-from numbers import Number
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, TypeAlias, Union
 
 from mashumaro.config import BaseConfig
 from mashumaro.helper import pass_through
@@ -16,6 +15,9 @@ try:
 except ImportError:  # pragma no cover
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
+
+# https://github.com/python/mypy/issues/3186
+Number: TypeAlias = Union[int, float]
 
 Null = object()
 
