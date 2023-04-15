@@ -298,7 +298,18 @@ Benchmark
 Load and dump [sample data](https://github.com/Fatal1ty/mashumaro/blob/master/benchmark/sample.py) 100 times in 5 runs.
 The following figures show the best overall time in each case.
 
-<img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load.png" width="400"><img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump.png" width="400">
+[//]: # (<img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.png" width="400"><img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_light.png" width="400">)
+
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_dark.png">
+  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.png" width="400">
+</picture>
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_dark.png">
+  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_light.png" width="400">
+</picture>
 
 <table>
   <col>
@@ -317,43 +328,43 @@ The following figures show the best overall time in each case.
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/Fatal1ty/mashumaro">mashumaro</a></th>
-    <td align="right">0.14791</td>
+    <td align="right">0.14724</td>
     <td align="left">1x</td>
-    <td align="right">0.10294</td>
+    <td align="right">0.10128</td>
     <td align="left">1x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/Tinche/cattrs">cattrs</a></th>
-    <td align="right">0.18913</td>
+    <td align="right">0.18906</td>
     <td align="left">1.28x</td>
-    <td align="right">0.13879</td>
-    <td align="left">1.35x</td>
+    <td align="right">0.14072</td>
+    <td align="left">1.39x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/samuelcolvin/pydantic/">pydantic</a></th>
-    <td align="right">0.92652</td>
-    <td align="left">6.26x</td>
-    <td align="right">0.81281</td>
-    <td align="left">7.9x</td>
+    <td align="right">1.02666</td>
+    <td align="left">6.97x</td>
+    <td align="right">0.81932</td>
+    <td align="left">8.09x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/marshmallow-code/marshmallow">marshmallow</a></th>
-    <td align="right">1.38964</td>
-    <td align="left">9.39x</td>
-    <td align="right">0.45987</td>
-    <td align="left">4.47x</td>
+    <td align="right">1.38348</td>
+    <td align="left">9.4x</td>
+    <td align="right">0.45695</td>
+    <td align="left">4.51x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.asdict">dataclasses</a></th>
     <td align="left">—</td>
     <td align="left">—</td>
-    <td align="right">0.68592</td>
-    <td align="left">6.66x</td>
+    <td align="right">0.68057</td>
+    <td align="left">6.72x</td>
 </tr>
 <tr>
     <th scope="row"><a href="https://github.com/konradhalas/dacite">dacite</a></th>
-    <td align="right">2.40445</td>
-    <td align="left">16.26x</td>
+    <td align="right">2.37315</td>
+    <td align="left">16.12x</td>
     <td align="left">—</td>
     <td align="left">—</td>
 </tr>

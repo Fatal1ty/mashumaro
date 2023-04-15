@@ -257,46 +257,69 @@ if SHOW_HTML_TABLE:
 
 # Deserialization plot
 
-fig, ax = plt.subplots()
-ax.set_title("Load from dict")
-ax.set_ylabel(f"Elapsed time for {NUMBER} repetitions in seconds")
+if SHOW_PLOT or SAVE_PLOT:
+    for theme_name, style_name in (
+        ("light", "default"),
+        ("dark", "dark_background"),
+    ):
+        with plt.style.context(style_name):
+            fig, ax = plt.subplots()
+            ax.set_title("Load from dict")
+            ax.set_ylabel(f"Elapsed time for {NUMBER} repetitions in seconds")
+            y = [
+                mashumaro_from_dict,
+                cattrs_from_dict,
+                pydantic_from_dict,
+                dacite_from_dict,
+                marshmallow_from_dict,
+            ]
+            x = list(range(1, len(y) + 1))
+            labels = [
+                "mashumaro",
+                "cattrs",
+                "pydantic",
+                "dacite",
+                "marshmallow",
+            ]
 
-y = [
-    mashumaro_from_dict,
-    cattrs_from_dict,
-    pydantic_from_dict,
-    dacite_from_dict,
-    marshmallow_from_dict,
-]
-x = list(range(1, len(y) + 1))
-labels = ["mashumaro", "cattrs", "pydantic", "dacite", "marshmallow"]
-
-bar = plt.bar(x, height=y, tick_label=labels, label="a")
-plt.title = "Load time"
-if SHOW_PLOT:
-    plt.show()
-if SAVE_PLOT:
-    fig.savefig("./load.png")
+            bar = plt.bar(x, height=y, tick_label=labels, label="a")
+            plt.title = "Load time"
+            if SHOW_PLOT:
+                plt.show()
+            if SAVE_PLOT:
+                fig.savefig(f"./load_{theme_name}.svg", transparent=True)
 
 # Serialization plot
 
-fig, ax = plt.subplots()
-ax.set_title("Dump to dict")
-ax.set_ylabel(f"Elapsed time for {NUMBER} repetitions in seconds")
+if SHOW_PLOT or SAVE_PLOT:
+    for theme_name, style_name in (
+        ("light", "default"),
+        ("dark", "dark_background"),
+    ):
+        with plt.style.context(style_name):
+            fig, ax = plt.subplots()
+            ax.set_title("Dump to dict")
+            ax.set_ylabel(f"Elapsed time for {NUMBER} repetitions in seconds")
 
-y = [
-    mashumaro_to_dict,
-    cattrs_to_dict,
-    pydantic_to_dict,
-    dataclasses_to_dict,
-    marshmallow_to_dict,
-]
-x = list(range(1, len(y) + 1))
-labels = ["mashumaro", "cattrs", "pydantic", "dataclasses", "marshmallow"]
+            y = [
+                mashumaro_to_dict,
+                cattrs_to_dict,
+                pydantic_to_dict,
+                dataclasses_to_dict,
+                marshmallow_to_dict,
+            ]
+            x = list(range(1, len(y) + 1))
+            labels = [
+                "mashumaro",
+                "cattrs",
+                "pydantic",
+                "dataclasses",
+                "marshmallow",
+            ]
 
-bar = plt.bar(x, height=y, tick_label=labels, label="a")
-plt.title = "Dump time"
-if SHOW_PLOT:
-    plt.show()
-if SAVE_PLOT:
-    fig.savefig("./dump.png")
+            bar = plt.bar(x, height=y, tick_label=labels, label="a")
+            plt.title = "Dump time"
+            if SHOW_PLOT:
+                plt.show()
+            if SAVE_PLOT:
+                fig.savefig(f"./dump_{theme_name}.svg", transparent=True)
