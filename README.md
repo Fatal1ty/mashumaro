@@ -301,14 +301,14 @@ The following figures show the best overall time in each case.
 [//]: # (<img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.png" width="400"><img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_light.png" width="400">)
 
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.png">
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_dark.png">
-  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.png" width="400">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_dark.svg">
+  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.svg" width="400">
 </picture>
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_light.png">
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_dark.png">
-  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_light.png" width="400">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_dark.svg">
+  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_light.svg" width="400">
 </picture>
 
 <table>
