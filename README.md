@@ -1,4 +1,6 @@
-# mashumaro
+<div align="center">
+
+<img alt="logo" width="200" src="https://github.com/Fatal1ty/mashumaro/blob/master/img/logo.png">
 
 ###### Fast and well tested serialization library on top of dataclasses
 
@@ -7,6 +9,7 @@
 [![Latest Version](https://img.shields.io/pypi/v/mashumaro.svg)](https://pypi.python.org/pypi/mashumaro)
 [![Python Version](https://img.shields.io/pypi/pyversions/mashumaro.svg)](https://pypi.python.org/pypi/mashumaro)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+</div>
 
 When using dataclasses, you often need to dump and load objects based on the
 schema you have. Mashumaro not only lets you save and load things in different
@@ -573,7 +576,7 @@ assert my_flight.to_dict() == input_data
 You can see how `Airport` instances are seamlessly created from lists of two
 strings and serialized into them.
 
-By default `_deserialize` method will get raw input data without any 
+By default `_deserialize` method will get raw input data without any
 transformations before. This should be enough in many cases, especially when
 you need to perform non-standard transformations yourself, but let's extend
 our example:
