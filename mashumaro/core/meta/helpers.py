@@ -29,6 +29,7 @@ from mashumaro.core.const import (
     PY_37,
     PY_38,
     PY_38_MIN,
+    PY_39,
     PY_39_MIN,
     PY_310_MIN,
     PY_311_MIN,
@@ -362,10 +363,10 @@ def is_annotated(typ: Type) -> bool:
 
 
 def is_literal(typ: Type) -> bool:
-    if PY_37 or PY_38:
+    if PY_37 or PY_38 or PY_39:
         with suppress(AttributeError):
             return is_generic(typ) and get_generic_name(typ, True) == "Literal"
-    elif PY_39_MIN:
+    elif PY_310_MIN:
         with suppress(AttributeError):
             # noinspection PyProtectedMember
             # noinspection PyUnresolvedReferences
