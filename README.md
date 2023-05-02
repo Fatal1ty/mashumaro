@@ -1,6 +1,6 @@
 <div align="center">
 
-<img alt="logo" width="200" src="https://github.com/Fatal1ty/mashumaro/blob/master/img/logo.svg">
+<img alt="logo" width="175" src="https://github.com/Fatal1ty/mashumaro/blob/master/img/logo.svg">
 
 ###### Fast and well tested serialization library on top of dataclasses
 
