@@ -20,7 +20,6 @@ from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.helpers import parse_timezone
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
-    collect_type_params,
     get_args,
     get_class_that_defines_method,
     get_function_arg_annotation,
@@ -56,6 +55,7 @@ from mashumaro.core.meta.types.common import (
     ensure_generic_collection_subclass,
     ensure_generic_mapping,
     expr_or_maybe_none,
+    random_hex,
 )
 from mashumaro.exceptions import (
     ThirdPartyModuleNotFoundError,
@@ -149,9 +149,7 @@ def unpack_type_with_overridden_deserialization(
     elif isinstance(deserialization_method, ExpressionWrapper):
         return deserialization_method.expression
     elif callable(deserialization_method):
-        overridden_fn = (
-            f"__{spec.field_ctx.name}_deserialize_{uuid.uuid4().hex}"
-        )
+        overridden_fn = f"__{spec.field_ctx.name}_deserialize_{random_hex()}"
         setattr(spec.builder.cls, overridden_fn, deserialization_method)
         return f"cls.{overridden_fn}({spec.expression})"
 
@@ -661,7 +659,7 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
     lines = CodeLines()
     method_name = (
         f"__unpack_named_tuple_{spec.builder.cls.__name__}_"
-        f"{spec.field_ctx.name}__{str(uuid.uuid4().hex)}"
+        f"{spec.field_ctx.name}__{random_hex()}"
     )
     lines.append("@classmethod")
     default_kwargs = spec.builder.get_unpack_method_default_flag_values()
@@ -704,7 +702,7 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
     lines = CodeLines()
     method_name = (
         f"__unpack_typed_dict_{spec.builder.cls.__name__}_"
-        f"{spec.field_ctx.name}__{str(uuid.uuid4().hex)}"
+        f"{spec.field_ctx.name}__{random_hex()}"
     )
     default_kwargs = spec.builder.get_unpack_method_default_flag_values()
     lines.append("@classmethod")

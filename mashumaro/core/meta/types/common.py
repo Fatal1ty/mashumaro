@@ -1,4 +1,5 @@
 import collections.abc
+import uuid
 from dataclasses import dataclass, field, is_dataclass, replace
 from typing import (
     TYPE_CHECKING,
@@ -145,3 +146,11 @@ def expr_or_maybe_none(spec: ValueSpec, new_expr: Expression) -> Expression:
         return f"{new_expr} if {spec.expression} is not None else None"
     else:
         return new_expr
+
+
+def random_hex() -> str:
+    return str(uuid.uuid4().hex)
+
+
+def clean_id(value: str) -> str:
+    return value.replace(".", "_")
