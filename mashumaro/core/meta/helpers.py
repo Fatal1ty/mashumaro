@@ -21,8 +21,12 @@ from typing import (
     Union,
 )
 
+try:
+    from typing import Unpack
+except ImportError:
+    from typing_extensions import Unpack
+
 import typing_extensions
-from typing_extensions import Unpack
 
 from mashumaro.core.const import (
     PEP_585_COMPATIBLE,
