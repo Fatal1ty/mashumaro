@@ -22,7 +22,7 @@ from typing import (
 )
 
 try:
-    from typing import Unpack
+    from typing import Unpack  # type: ignore[attr-defined]
 except ImportError:
     from typing_extensions import Unpack
 
