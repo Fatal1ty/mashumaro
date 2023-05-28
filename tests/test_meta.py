@@ -535,11 +535,11 @@ def test_get_literal_values():
 
 def test_type_name_literal():
     if PY_38_MIN:
-        module_name = "typing"
+        module = typing
     else:
-        module_name = "typing_extensions"
+        module = typing_extensions
     assert type_name(
-        typing_extensions.Literal[
+        getattr(module, "Literal")[
             1,
             "a",
             b"\x00",
@@ -556,7 +556,7 @@ def test_type_name_literal():
             typing_extensions.Literal[typing_extensions.Literal["b", "c"]],
         ]
     ) == (
-        f"{module_name}.Literal[1, 'a', b'\\x00', True, False, None, "
+        f"{module.__name__}.Literal[1, 'a', b'\\x00', True, False, None, "
         "tests.entities.MyEnum.a, tests.entities.MyStrEnum.a, "
         "tests.entities.MyNativeStrEnum.a, tests.entities.MyIntEnum.a, "
         "tests.entities.MyFlag.a, tests.entities.MyIntFlag.a, 2, 3, 'b', 'c']"
