@@ -621,9 +621,9 @@ def substitute_type_params(typ: Type, substitutions: Dict[Type, Type]) -> Type:
     if is_annotated(typ):
         origin = get_type_origin(typ)
         subst = substitutions.get(origin, origin)
-        return typing_extensions.Annotated[
-            subst, tuple(get_type_annotations(typ))
-        ]
+        return typing_extensions.Annotated.__class_getitem__(  # type: ignore
+            (subst, *get_type_annotations(typ))
+        )
     else:
         new_type_args = []
         for type_param in collect_type_params(typ):
