@@ -38,6 +38,7 @@ from mashumaro.core.meta.helpers import (
     is_unpack,
     not_none_type_arg,
     resolve_type_params,
+    substitute_type_params,
     type_name,
 )
 from mashumaro.core.meta.types.common import (
@@ -85,15 +86,11 @@ def _pack_with_annotated_serialization_strategy(
         )
     except (KeyError, ValueError):
         value_type = Any
-    resolved = resolve_type_params(strategy_type, get_args(spec.type))[
-        strategy_type
-    ]
-    new_type_args = []
-    for type_param in collect_type_params(value_type):
-        new_type_args.append(resolved.get(type_param, type_param))
-    with suppress(TypeError):
-        value_type = value_type[tuple(new_type_args)]
-    overridden_fn = f"__{spec.field_ctx.name}_serialize_{uuid.uuid4().hex}"
+    value_type = substitute_type_params(
+        value_type,
+        resolve_type_params(strategy_type, get_args(spec.type))[strategy_type],
+    )
+    overridden_fn = f"__{spec.field_ctx.name}_serialize_{random_hex()}"
     setattr(spec.builder.cls, overridden_fn, strategy.serialize)
     return PackerRegistry.get(
         spec.copy(
@@ -166,16 +163,12 @@ def _pack_annotated_serializable_type(
         ) from None
     if is_self(value_type):
         return f"{spec.expression}._serialize()"
-    args = get_args(value_type)
-    resolved = resolve_type_params(spec.origin_type, get_args(spec.type))[
-        spec.origin_type
-    ]
-    new_args = []
-    for arg in args:
-        new_args.append(resolved.get(arg, arg))
-    with suppress(TypeError):
-        # noinspection PyUnresolvedReferences
-        value_type = value_type[tuple(new_args)]
+    value_type = substitute_type_params(
+        value_type,
+        resolve_type_params(spec.origin_type, get_args(spec.type))[
+            spec.origin_type
+        ],
+    )
     return PackerRegistry.get(
         spec.copy(
             type=value_type,

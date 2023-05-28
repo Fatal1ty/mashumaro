@@ -61,11 +61,13 @@ __all__ = [
     "is_dataclass_dict_mixin_subclass",
     "collect_type_params",
     "resolve_type_params",
+    "substitute_type_params",
     "get_generic_name",
     "get_name_error_name",
     "is_dialect_subclass",
     "is_new_type",
     "is_annotated",
+    "get_type_annotations",
     "is_literal",
     "get_literal_values",
     "is_self",
@@ -366,6 +368,10 @@ def is_annotated(typ: Type) -> bool:
     return False
 
 
+def get_type_annotations(typ: Type) -> Sequence[Any]:
+    return getattr(typ, "__metadata__", [])
+
+
 def is_literal(typ: Type) -> bool:
     if PY_37 or PY_38 or PY_39:
         with suppress(AttributeError):
@@ -607,6 +613,25 @@ def resolve_type_params(
             result.update(resolve_type_params(base, base_type_args))
 
     return result
+
+
+def substitute_type_params(typ: Type, substitutions: Dict[Type, Type]) -> Type:
+    if is_type_var(typ):
+        return substitutions.get(typ, typ)
+    if is_annotated(typ):
+        origin = get_type_origin(typ)
+        subst = substitutions.get(origin, origin)
+        return typing_extensions.Annotated[
+            subst, tuple(get_type_annotations(typ))
+        ]
+    else:
+        new_type_args = []
+        for type_param in collect_type_params(typ):
+            new_type_args.append(substitutions.get(type_param, type_param))
+        if new_type_args:
+            with suppress(TypeError):
+                return typ[tuple(new_type_args)]
+        return typ
 
 
 def get_name_error_name(e: NameError) -> str:

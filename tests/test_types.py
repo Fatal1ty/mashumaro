@@ -81,6 +81,20 @@ class MyAnnotatedGenericSerializableType(
         return cls(value)
 
 
+class MyAnnotatedGenericSerializableTypeWithMixedTypeVars(
+    Generic[XT], SerializableType, use_annotations=True
+):
+    def __init__(self, value):
+        self.value = value
+
+    def _serialize(self) -> Tuple[int, XT, float]:
+        return self.value
+
+    @classmethod
+    def _deserialize(cls, value: Tuple[int, XT, float]):
+        return cls(value)
+
+
 if PEP_585_COMPATIBLE:
 
     class MyAnnotatedGenericPEP585SerializableType(
@@ -327,3 +341,13 @@ def test_serializable_type_with_self():
     obj = DataClass(MySelfSerializableType())
     assert obj.to_dict() == {"x": obj.x}
     assert DataClass.from_dict({"x": obj.x}) == obj
+
+
+def test_annotated_generic_serializable_type_with_mixed_type_vars():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: MyAnnotatedGenericSerializableTypeWithMixedTypeVars[date]
+
+    obj = DataClass.from_dict({"x": ["1", "2022-05-29", "2.3"]})
+    # assert obj.x.value == (1, date(2022, 5, 29), 2.3)
+    assert obj.to_dict() == {"x": [1, "2022-05-29", 2.3]}
