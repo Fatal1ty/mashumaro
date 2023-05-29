@@ -15,7 +15,7 @@ from typing import (
 )
 
 try:
-    from functools import cached_property
+    from functools import cached_property  # type: ignore
 except ImportError:
     # for python 3.7
     cached_property = property  # type: ignore
