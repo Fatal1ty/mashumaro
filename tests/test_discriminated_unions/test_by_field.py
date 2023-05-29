@@ -1,13 +1,12 @@
 from dataclasses import dataclass
 from datetime import date
 from enum import Enum
-from typing import ClassVar, Literal, Union
+from typing import ClassVar, Union, Tuple
 
 import pytest
-from typing_extensions import Annotated, Final
+from typing_extensions import Annotated, Final, Literal
 
 from mashumaro import DataClassDictMixin, Discriminator
-from mashumaro.config import BaseConfig
 from mashumaro.exceptions import InvalidFieldValue
 
 
@@ -160,9 +159,17 @@ class ByFieldWithSubtypes(DataClassDictMixin):
 
 
 @dataclass
-class BaseDiscriminatedByFieldDataclass(DataClassDictMixin):
-    class Config(BaseConfig):
-        discriminator = Discriminator(field="type")
+class ByFieldAndByFieldWithSubtypes(DataClassDictMixin):
+    x: Tuple[
+        Annotated[
+            Union[UnannotatedVariantStr, UnannotatedVariantDate],
+            Discriminator("type"),
+        ],
+        Annotated[
+            Union[UnannotatedVariantDate, UnannotatedVariantDateSubtype],
+            Discriminator("type", include_subtypes=True),
+        ],
+    ]
 
 
 def test_by_field():
@@ -249,3 +256,20 @@ def test_by_field_with_subtypes():
         # final=FinalVariantDateSubtype(dt_date),
         enum=EnumVariantDateSubtype(DT_DATE),
     )
+
+
+def test_tuple_with_discriminated_elements():
+    assert ByFieldAndByFieldWithSubtypes.from_dict(
+        {"x": [X_STR, X_DATE_SUBTYPE]}
+    ) == ByFieldAndByFieldWithSubtypes(
+        (
+            UnannotatedVariantStr(DT_STR),
+            UnannotatedVariantDateSubtype(DT_DATE),
+        ),
+    )
+    with pytest.raises(InvalidFieldValue):
+        ByFieldAndByFieldWithSubtypes.from_dict(
+            {"x": [X_DATE_SUBTYPE, X_DATE_SUBTYPE]}
+        )
+    with pytest.raises(InvalidFieldValue):
+        ByFieldAndByFieldWithSubtypes.from_dict({"x": [X_DATE_SUBTYPE, X_STR]})
