@@ -58,7 +58,6 @@ from mashumaro.core.meta.types.common import (
     ensure_generic_collection_subclass,
     ensure_generic_mapping,
     expr_or_maybe_none,
-    memoize,
     random_hex,
 )
 from mashumaro.exceptions import (
@@ -244,6 +243,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
     ):
         self.discriminator = discriminator
         self.base_variants = base_variants or tuple()
+        self._variants_attr: Optional[str] = None
 
     def get_method_prefix(self) -> str:
         return ""
@@ -251,9 +251,12 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
     def _get_extra_method_args(self) -> List[str]:
         return ["dialect", "default_dialect"]
 
-    @memoize
     def _get_variants_attr(self, spec: ValueSpec) -> str:
-        return f"__mashumaro_{spec.field_ctx.name}_variants_{random_hex()}__"
+        if self._variants_attr is None:
+            self._variants_attr = (
+                f"__mashumaro_{spec.field_ctx.name}_variants_{random_hex()}__"
+            )
+        return self._variants_attr
 
     def _get_variants_map(self, spec: ValueSpec) -> str:
         variants_attr = self._get_variants_attr(spec)
@@ -262,7 +265,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
     def _get_variant_names(self, spec: ValueSpec) -> List[str]:
         base_variants = self.base_variants or (spec.origin_type,)
         variant_names: List[str] = []
-        if self.discriminator.include_supertypes:
+        if self.discriminator.include_supertypes or self.base_variants:
             variant_names.extend(map(type_name, base_variants))
         if self.discriminator.include_subtypes:
             spec.builder.ensure_object_imported(iter_all_subclasses)
@@ -415,18 +418,22 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
 
 
 class SubtypeUnpackerBuilder(DiscriminatedUnionUnpackerBuilder):
-    @memoize
     def _get_variants_attr(self, spec: ValueSpec) -> str:
-        if (
-            self.discriminator.include_subtypes
-            and self.discriminator.include_supertypes
-        ):
-            prefix = "super_and_subtype"
-        elif self.discriminator.include_subtypes:
-            prefix = "subtype"
-        else:
-            prefix = "supertype"
-        return f"__mashumaro_{prefix}_variants_by_{self.discriminator.field}__"
+        if self._variants_attr is None:
+            if (
+                self.discriminator.include_subtypes
+                and self.discriminator.include_supertypes
+            ):
+                prefix = "super_and_subtype"
+            elif self.discriminator.include_subtypes:
+                prefix = "subtype"
+            else:
+                prefix = "supertype"
+            self._variants_attr = (
+                f"__mashumaro_{prefix}_variants_by_"
+                f"{self.discriminator.field}__"
+            )
+        return self._variants_attr
 
     def _get_variants_map(self, spec: ValueSpec) -> str:
         variants_attr = self._get_variants_attr(spec)

@@ -179,15 +179,3 @@ def random_hex() -> str:
 
 def clean_id(value: str) -> str:
     return value.replace(".", "_")
-
-
-def memoize(func: Callable[P, T]) -> Callable[P, T]:
-    result: Any = MISSING
-
-    def decorated(*args: P.args, **kwargs: P.kwargs) -> T:
-        nonlocal result
-        if result is MISSING:
-            result = func(*args, **kwargs)
-        return result
-
-    return decorated
