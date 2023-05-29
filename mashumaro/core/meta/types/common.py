@@ -1,6 +1,6 @@
 import collections.abc
 import uuid
-from dataclasses import MISSING, dataclass, field, is_dataclass, replace
+from dataclasses import dataclass, field, is_dataclass, replace
 from typing import (
     TYPE_CHECKING,
     Any,
