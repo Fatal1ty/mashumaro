@@ -90,7 +90,7 @@ class RoundedDecimal(SerializationStrategy):
 
 @dataclass(unsafe_hash=True)
 class Discriminator:
-    field: Optional[Union[str, Sequence[str]]] = None
+    field: Optional[str] = None
     include_supertypes: bool = False
     include_subtypes: bool = False
 
