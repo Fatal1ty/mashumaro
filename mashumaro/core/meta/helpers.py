@@ -617,8 +617,6 @@ def resolve_type_params(
 
 
 def substitute_type_params(typ: Type, substitutions: Dict[Type, Type]) -> Type:
-    if is_type_var(typ):
-        return substitutions.get(typ, typ)
     if is_annotated(typ):
         origin = get_type_origin(typ)
         subst = substitutions.get(origin, origin)
@@ -630,9 +628,9 @@ def substitute_type_params(typ: Type, substitutions: Dict[Type, Type]) -> Type:
         for type_param in collect_type_params(typ):
             new_type_args.append(substitutions.get(type_param, type_param))
         if new_type_args:
-            with suppress(TypeError):
+            with suppress(TypeError, KeyError):
                 return typ[tuple(new_type_args)]
-        return typ
+        return substitutions.get(typ, typ)
 
 
 def get_name_error_name(e: NameError) -> str:
