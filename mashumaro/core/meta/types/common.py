@@ -11,14 +11,16 @@ from typing import (
     Optional,
     Sequence,
     Type,
+    TypeVar,
 )
 
 try:
     from functools import cached_property
 except ImportError:
-    cached_property = property  # for python 3.7
+    # for python 3.7
+    cached_property = property  # type: ignore
 
-from typing_extensions import TypeAlias
+from typing_extensions import ParamSpec, TypeAlias
 
 from mashumaro.core.const import PEP_585_COMPATIBLE
 from mashumaro.core.meta.helpers import (
@@ -37,6 +39,9 @@ else:
 
 NoneType = type(None)
 Expression: TypeAlias = str
+
+P = ParamSpec("P")
+T = TypeVar("T")
 
 
 class ExpressionWrapper:
@@ -176,10 +181,10 @@ def clean_id(value: str) -> str:
     return value.replace(".", "_")
 
 
-def memoize(func):
-    result = MISSING
+def memoize(func: Callable[P, T]) -> Callable[P, T]:
+    result: Any = MISSING
 
-    def decorated(*args, **kwargs):
+    def decorated(*args: P.args, **kwargs: P.kwargs) -> T:
         nonlocal result
         if result is MISSING:
             result = func(*args, **kwargs)

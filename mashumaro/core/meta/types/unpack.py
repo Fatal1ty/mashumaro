@@ -136,7 +136,7 @@ class AbstractUnpackerBuilder(ABC):
             return f"cls, value{extra_args_str}"
 
     @abstractmethod
-    def _add_body(self, spec: ValueSpec, lines: CodeLines):
+    def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
         raise NotImplementedError
 
     def _add_setattr(self, method_name: str, lines: CodeLines) -> None:
@@ -209,7 +209,7 @@ class LiteralUnpackerBuilder(AbstractUnpackerBuilder):
     def get_method_prefix(self) -> str:
         return "literal"
 
-    def _add_body(self, spec: ValueSpec, lines: CodeLines):
+    def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
         for literal_value in get_literal_values(spec.type):
             if isinstance(literal_value, enum.Enum):
                 enum_type_name = type_name(type(literal_value))
@@ -261,7 +261,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
 
     def _get_variant_names(self, spec: ValueSpec) -> List[str]:
         base_variants = self.base_variants or (spec.origin_type,)
-        variant_names = []
+        variant_names: List[str] = []
         if self.discriminator.include_supertypes:
             variant_names.extend(map(type_name, base_variants))
         if self.discriminator.include_subtypes:

@@ -130,7 +130,7 @@ class VariantAttributeError(AttributeError):
         self.variant_cls = variant_cls
         self.attr_name = attr_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"{type_name(self.variant_cls)} "
             f"has no attribute '{self.attr_name}'"

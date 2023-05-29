@@ -94,7 +94,7 @@ class Discriminator:
     include_supertypes: bool = False
     include_subtypes: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if (
             not self.field
             and not self.include_supertypes
