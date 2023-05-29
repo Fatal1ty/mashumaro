@@ -78,6 +78,7 @@ __all__ = [
     "is_unpack",
     "is_type_var_tuple",
     "hash_type_args",
+    "iter_all_subclasses",
 ]
 
 
@@ -712,3 +713,9 @@ def is_variable_length_tuple(typ: Type) -> bool:
 
 def hash_type_args(type_args: typing.Iterable[typing.Type]) -> str:
     return md5(",".join(map(type_name, type_args)).encode()).hexdigest()
+
+
+def iter_all_subclasses(cls: Type) -> typing.Iterator[Type]:
+    for subclass in cls.__subclasses__():
+        yield subclass
+        yield from iter_all_subclasses(subclass)

@@ -1,6 +1,6 @@
 import collections.abc
 import uuid
-from dataclasses import dataclass, field, is_dataclass, replace
+from dataclasses import MISSING, dataclass, field, is_dataclass, replace
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -13,10 +13,20 @@ from typing import (
     Type,
 )
 
+try:
+    from functools import cached_property
+except ImportError:
+    cached_property = property  # for python 3.7
+
 from typing_extensions import TypeAlias
 
 from mashumaro.core.const import PEP_585_COMPATIBLE
-from mashumaro.core.meta.helpers import get_type_origin, is_generic, type_name
+from mashumaro.core.meta.helpers import (
+    get_type_origin,
+    is_annotated,
+    is_generic,
+    type_name,
+)
 from mashumaro.exceptions import UnserializableDataError, UnserializableField
 
 if TYPE_CHECKING:  # pragma no cover
@@ -65,6 +75,7 @@ class ValueSpec:
     builder: CodeBuilder
     field_ctx: FieldContext
     could_be_none: bool = True
+    annotated_type: Optional[Type] = None
 
     def __setattr__(self, key: str, value: Any) -> None:
         if key == "type":
@@ -73,6 +84,10 @@ class ValueSpec:
 
     def copy(self, **changes: Any) -> "ValueSpec":
         return replace(self, **changes)
+
+    @cached_property
+    def annotations(self) -> Sequence[str]:
+        return getattr(self.annotated_type, "__metadata__", [])
 
 
 ValueSpecExprCreator: TypeAlias = Callable[[ValueSpec], Optional[Expression]]
@@ -87,6 +102,11 @@ class Registry:
         return function
 
     def get(self, spec: ValueSpec) -> Expression:
+        if is_annotated(spec.type):
+            spec.annotated_type = spec.builder._get_real_type(
+                spec.field_ctx.name, spec.type
+            )
+            spec.type = get_type_origin(spec.type)
         spec.type = spec.builder._get_real_type(spec.field_ctx.name, spec.type)
         spec.builder.add_type_modules(spec.type)
         for packer in self._registry:
@@ -154,3 +174,15 @@ def random_hex() -> str:
 
 def clean_id(value: str) -> str:
     return value.replace(".", "_")
+
+
+def memoize(func):
+    result = MISSING
+
+    def decorated(*args, **kwargs):
+        nonlocal result
+        if result is MISSING:
+            result = func(*args, **kwargs)
+        return result
+
+    return decorated

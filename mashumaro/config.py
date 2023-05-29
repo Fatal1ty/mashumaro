@@ -2,7 +2,7 @@ from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 from mashumaro.core.const import PEP_586_COMPATIBLE, Sentinel
 from mashumaro.dialect import Dialect
-from mashumaro.types import SerializationStrategy
+from mashumaro.types import Discriminator, SerializationStrategy
 
 if PEP_586_COMPATIBLE:
     from typing import Literal  # type: ignore
@@ -48,3 +48,4 @@ class BaseConfig:
     omit_none: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
     orjson_options: Optional[int] = 0
     json_schema: Dict[str, Any] = {}
+    discriminator: Optional[Discriminator] = None

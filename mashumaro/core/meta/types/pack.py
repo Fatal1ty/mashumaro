@@ -256,12 +256,9 @@ def pack_union(
             PackerRegistry.get(spec.copy(type=type_arg, expression="value"))
             for type_arg in args
         ):
-            lines.append("try:")
-            with lines.indent():
+            with lines.indent("try:"):
                 lines.append(f"return {packer}")
-            lines.append("except:")
-            with lines.indent():
-                lines.append("pass")
+            lines.append("except Exception: pass")
         field_type = type_name(
             spec.type,
             resolved_type_params=spec.builder.get_field_resolved_type_params(
@@ -309,17 +306,15 @@ def pack_literal(spec: ValueSpec) -> Expression:
                     typ=value_type,
                     resolved_type_params=resolved_type_params,
                 )
-                lines.append(
+                with lines.indent(
                     f"if value == {enum_type_name}.{literal_value.name}:"
-                )
-                with lines.indent():
+                ):
                     lines.append(f"return {packer}")
             elif isinstance(  # type: ignore
                 literal_value,
                 (int, str, bytes, bool, NoneType),  # type: ignore
             ):
-                lines.append(f"if value == {literal_value!r}:")
-                with lines.indent():
+                with lines.indent(f"if value == {literal_value!r}:"):
                     lines.append(f"return {packer}")
         field_type = type_name(
             typ=spec.type,
@@ -605,8 +600,7 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
             lines.append(f"d['{key}'] = {packer}")
         for key in sorted(optional_keys, key=all_keys.index):
             lines.append(f"key_value = value.get('{key}', MISSING)")
-            lines.append("if key_value is not MISSING:")
-            with lines.indent():
+            with lines.indent("if key_value is not MISSING:"):
                 packer = PackerRegistry.get(
                     spec.copy(
                         type=annotations[key],
