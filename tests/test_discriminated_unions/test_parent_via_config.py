@@ -276,7 +276,7 @@ def test_by_field_with_supertypes_and_subtypes():
     ) == VariantByFieldWithSupertypesAndSubtypesSub4(x=DT_DATE)
 
     with pytest.raises(SuitableVariantNotFoundError):
-        VariantByFieldWithSupertypesAndSubtypesSub4.from_dict(X_1)
+        VariantByFieldWithSupertypesAndSubtypesSub3.from_dict(X_1)
 
     @dataclass
     class MyClass(DataClassDictMixin):
