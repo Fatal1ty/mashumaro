@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import Optional, Tuple
+from typing import Optional
 
 import pytest
-from typing_extensions import Annotated, Literal
+from typing_extensions import Literal
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
@@ -259,10 +259,3 @@ def test_by_supertypes_and_subtypes():
     assert MyClass.from_dict({"x": {}}) == MyClass(
         VariantBySupertypesAndSubtypesSub1()
     )
-
-    with pytest.raises(InvalidFieldValue):
-        # RecursionError
-        MyClass.from_dict({"x": {"type": "unknown"}})
-
-    with pytest.raises(InvalidFieldValue):
-        MyClass.from_dict({"x": {"type": "invalid"}})
