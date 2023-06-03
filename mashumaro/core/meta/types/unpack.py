@@ -96,7 +96,7 @@ register = UnpackerRegistry.register
 
 class AbstractUnpackerBuilder(ABC):
     @abstractmethod
-    def get_method_prefix(self) -> str:
+    def get_method_prefix(self) -> str:  # pragma: no cover
         raise NotImplementedError
 
     def _generate_method_name(self, spec: ValueSpec) -> str:
@@ -135,7 +135,9 @@ class AbstractUnpackerBuilder(ABC):
             return f"cls, value{extra_args_str}"
 
     @abstractmethod
-    def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
+    def _add_body(
+        self, spec: ValueSpec, lines: CodeLines
+    ) -> None:  # pragma: no cover
         raise NotImplementedError
 
     def _add_setattr(self, method_name: str, lines: CodeLines) -> None:

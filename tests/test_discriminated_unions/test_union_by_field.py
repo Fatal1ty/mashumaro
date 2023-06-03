@@ -10,7 +10,8 @@ from mashumaro import DataClassDictMixin
 from mashumaro.exceptions import InvalidFieldValue
 from mashumaro.types import Discriminator
 
-from .common import DT_DATE, DT_STR
+DT_STR = "2022-05-30"
+DT_DATE = date(2022, 5, 30)
 
 X_STR = {"x": "2022-05-30", "type": "str"}
 X_DATE = {"x": "2022-05-30", "type": "date"}
