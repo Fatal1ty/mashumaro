@@ -299,7 +299,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         variants = self._get_variant_names_iterable(spec)
         variants_type_expr = type_name(spec.type)
 
-        if not hasattr(variants_attr_holder, variants_attr):
+        if variants_attr not in variants_attr_holder.__dict__:
             setattr(variants_attr_holder, variants_attr, {})
         variant_method_name = spec.builder.get_unpack_method_name(
             format_name=spec.builder.format_name
@@ -425,19 +425,8 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
 class SubtypeUnpackerBuilder(DiscriminatedUnionUnpackerBuilder):
     def _get_variants_attr(self, spec: ValueSpec) -> str:
         if self._variants_attr is None:
-            if (
-                self.discriminator.include_subtypes
-                and self.discriminator.include_supertypes
-            ):
-                prefix = "super_and_subtype"
-            elif self.discriminator.include_subtypes:
-                prefix = "subtype"
-            else:
-                prefix = "supertype"
-            self._variants_attr = (
-                f"__mashumaro_{prefix}_variants_by_"
-                f"{self.discriminator.field}__"
-            )
+            assert self.discriminator.include_subtypes
+            self._variants_attr = f"__mashumaro_subtype_variants__"
         return self._variants_attr
 
     def _get_variants_map(self, spec: ValueSpec) -> str:

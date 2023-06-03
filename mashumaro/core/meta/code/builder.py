@@ -298,7 +298,17 @@ class CodeBuilder:
             if self.decoder is not None:
                 self.add_line("d = decoder(d)")
             discr = self.get_discriminator()
-            if discr and discr.include_subtypes:
+            if discr:
+                if not discr.include_subtypes:
+                    raise ValueError(
+                        "Config based discriminator must have "
+                        "'include_subtypes' enabled"
+                    )
+                discr = Discriminator(
+                    # prevent RecursionError
+                    field=discr.field,
+                    include_subtypes=discr.include_subtypes,
+                )
                 self.add_type_modules(self.cls)
                 method = SubtypeUnpackerBuilder(discr).build(
                     spec=ValueSpec(

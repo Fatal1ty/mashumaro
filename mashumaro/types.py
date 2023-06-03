@@ -97,5 +97,6 @@ class Discriminator:
     def __post_init__(self) -> None:
         if not self.include_supertypes and not self.include_subtypes:
             raise ValueError(
-                "Either include_supertypes or include_subtypes must be set"
+                "Either 'include_supertypes' or 'include_subtypes' "
+                "must be enabled"
             )

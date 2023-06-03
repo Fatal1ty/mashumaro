@@ -7,7 +7,10 @@ from typing_extensions import Literal
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
-from mashumaro.exceptions import InvalidFieldValue
+from mashumaro.exceptions import (
+    InvalidFieldValue,
+    SuitableVariantNotFoundError,
+)
 from mashumaro.types import Discriminator
 
 DT_STR = "2022-05-30"
@@ -15,6 +18,7 @@ DT_DATE = date(2022, 5, 30)
 
 X_1 = {"x": DT_STR, "type": 1}
 X_2 = {"x": DT_STR, "type": 2}
+X_3 = {"x": DT_STR, "type": 3}
 
 
 @dataclass
@@ -36,23 +40,17 @@ class VariantBySubtypesSub2(VariantBySubtypesSub1):
 
 
 @dataclass
-class VariantBySupertypes(DataClassDictMixin):
-    type: Literal["unknown"] = "unknown"
+class VariantBySubtypesSub3(VariantBySubtypes):
+    x: date
+    type: Literal[3] = 3
 
     class Config(BaseConfig):
-        discriminator = Discriminator(include_supertypes=True)
+        discriminator = Discriminator(include_subtypes=True)
 
 
 @dataclass
-class VariantBySupertypesSub1(VariantBySupertypes):
-    x: Optional[str] = None
-    type: Literal[1] = 1
-
-
-@dataclass
-class VariantBySupertypesSub2(VariantBySupertypesSub1):
-    x: Optional[date] = None
-    type: Literal[2] = 2
+class VariantBySubtypesSub4(VariantBySubtypesSub3):
+    pass
 
 
 @dataclass
@@ -74,23 +72,17 @@ class VariantByFieldWithSubtypesSub2(VariantByFieldWithSubtypesSub1):
 
 
 @dataclass
-class VariantByFieldWithSupertypes(DataClassDictMixin):
-    type: Literal["unknown"] = "unknown"
+class VariantByFieldWithSubtypesSub3(VariantByFieldWithSubtypes):
+    x: Optional[date] = None
+    type: Literal[3] = 3
 
     class Config(BaseConfig):
-        discriminator = Discriminator(field="type", include_supertypes=True)
+        discriminator = Discriminator(field="type", include_subtypes=True)
 
 
 @dataclass
-class VariantByFieldWithSupertypesSub1(VariantByFieldWithSupertypes):
-    x: Optional[str] = None
-    type: Literal[1] = 1
-
-
-@dataclass
-class VariantByFieldWithSupertypesSub2(VariantByFieldWithSupertypesSub1):
-    x: Optional[date] = None
-    type: Literal[2] = 2
+class VariantByFieldWithSubtypesSub4(VariantByFieldWithSubtypesSub3):
+    pass
 
 
 @dataclass
@@ -120,6 +112,26 @@ class VariantByFieldWithSupertypesAndSubtypesSub2(
 
 
 @dataclass
+class VariantByFieldWithSupertypesAndSubtypesSub3(
+    VariantByFieldWithSupertypesAndSubtypes
+):
+    x: Optional[date] = None
+    type: Literal[3] = 3
+
+    class Config(BaseConfig):
+        discriminator = Discriminator(
+            field="type", include_supertypes=True, include_subtypes=True
+        )
+
+
+@dataclass
+class VariantByFieldWithSupertypesAndSubtypesSub4(
+    VariantByFieldWithSupertypesAndSubtypesSub3
+):
+    pass
+
+
+@dataclass
 class VariantBySupertypesAndSubtypes(DataClassDictMixin):
     type: Literal["unknown"] = "unknown"
 
@@ -146,6 +158,18 @@ def test_by_subtypes():
 
     assert VariantBySubtypes.from_dict(X_2) == VariantBySubtypesSub2(x=DT_DATE)
 
+    assert VariantBySubtypes.from_dict(X_3) == VariantBySubtypesSub4(DT_DATE)
+
+    assert VariantBySubtypesSub3.from_dict(X_3) == VariantBySubtypesSub4(
+        DT_DATE
+    )
+
+    with pytest.raises(SuitableVariantNotFoundError):
+        VariantBySubtypesSub3.from_dict(X_1)
+
+    with pytest.raises(SuitableVariantNotFoundError):
+        VariantBySubtypesSub3.from_dict(X_2)
+
     @dataclass
     class MyClass(DataClassDictMixin):
         x: VariantBySubtypes
@@ -158,29 +182,25 @@ def test_by_subtypes():
         VariantBySubtypesSub2(DT_DATE)
     )
 
-    with pytest.raises(InvalidFieldValue):
-        assert MyClass.from_dict({"x": {}})
-
-
-def test_by_supertypes():
-    @dataclass
-    class MyClass(DataClassDictMixin):
-        x: VariantBySupertypes
-
-    assert MyClass.from_dict({"x": {}}) == MyClass(VariantBySupertypes())
-
-    assert MyClass.from_dict({"x": {"type": "unknown"}}) == MyClass(
-        VariantBySupertypes()
+    assert MyClass.from_dict({"x": X_3}) == MyClass(
+        VariantBySubtypesSub4(DT_DATE)
     )
 
     with pytest.raises(InvalidFieldValue):
-        MyClass.from_dict({"x": X_1})
+        MyClass.from_dict({"x": {}})
 
-    with pytest.raises(InvalidFieldValue):
-        MyClass.from_dict({"x": X_2})
 
-    with pytest.raises(InvalidFieldValue):
-        MyClass.from_dict({"x": {"type": "invalid"}})
+def test_by_supertypes():
+    with pytest.raises(ValueError) as exc_info:
+
+        @dataclass
+        class VariantBySupertypes(DataClassDictMixin):
+            class Config(BaseConfig):
+                discriminator = Discriminator(include_supertypes=True)
+
+    assert str(exc_info.value) == (
+        "Config based discriminator must have 'include_subtypes' enabled"
+    )
 
 
 def test_by_field_with_subtypes():
@@ -191,6 +211,17 @@ def test_by_field_with_subtypes():
     assert VariantByFieldWithSubtypes.from_dict(
         X_2
     ) == VariantByFieldWithSubtypesSub2(x=DT_DATE)
+
+    assert VariantByFieldWithSubtypes.from_dict(
+        X_3
+    ) == VariantByFieldWithSubtypesSub4(x=DT_DATE)
+
+    assert VariantByFieldWithSubtypesSub3.from_dict(
+        X_3
+    ) == VariantByFieldWithSubtypesSub4(x=DT_DATE)
+
+    with pytest.raises(SuitableVariantNotFoundError):
+        VariantByFieldWithSubtypesSub3.from_dict(X_1)
 
     @dataclass
     class MyClass(DataClassDictMixin):
@@ -204,31 +235,27 @@ def test_by_field_with_subtypes():
         VariantByFieldWithSubtypesSub2(DT_DATE)
     )
 
+    assert MyClass.from_dict({"x": X_3}) == MyClass(
+        VariantByFieldWithSubtypesSub4(DT_DATE)
+    )
+
     with pytest.raises(InvalidFieldValue):
-        assert MyClass.from_dict({"x": {}})
+        MyClass.from_dict({"x": {}})
 
 
 def test_by_field_with_supertypes():
-    @dataclass
-    class MyClass(DataClassDictMixin):
-        x: VariantByFieldWithSupertypes
+    with pytest.raises(ValueError) as exc_info:
 
-    assert MyClass.from_dict({"x": {}}) == MyClass(
-        VariantByFieldWithSupertypes()
+        @dataclass
+        class VariantByFieldWithSupertypes(DataClassDictMixin):
+            class Config(BaseConfig):
+                discriminator = Discriminator(
+                    field="type", include_supertypes=True
+                )
+
+    assert str(exc_info.value) == (
+        "Config based discriminator must have 'include_subtypes' enabled"
     )
-
-    assert MyClass.from_dict({"x": {"type": "unknown"}}) == MyClass(
-        VariantByFieldWithSupertypes()
-    )
-
-    with pytest.raises(InvalidFieldValue):
-        MyClass.from_dict({"x": X_1})
-
-    with pytest.raises(InvalidFieldValue):
-        MyClass.from_dict({"x": X_2})
-
-    with pytest.raises(InvalidFieldValue):
-        MyClass.from_dict({"x": {"type": "invalid"}})
 
 
 def test_by_field_with_supertypes_and_subtypes():
@@ -239,6 +266,17 @@ def test_by_field_with_supertypes_and_subtypes():
     assert VariantByFieldWithSupertypesAndSubtypes.from_dict(
         X_2
     ) == VariantByFieldWithSupertypesAndSubtypesSub2(x=DT_DATE)
+
+    assert VariantByFieldWithSupertypesAndSubtypes.from_dict(
+        X_3
+    ) == VariantByFieldWithSupertypesAndSubtypesSub4(x=DT_DATE)
+
+    assert VariantByFieldWithSupertypesAndSubtypesSub3.from_dict(
+        X_3
+    ) == VariantByFieldWithSupertypesAndSubtypesSub4(x=DT_DATE)
+
+    with pytest.raises(SuitableVariantNotFoundError):
+        VariantByFieldWithSupertypesAndSubtypesSub4.from_dict(X_1)
 
     @dataclass
     class MyClass(DataClassDictMixin):
@@ -252,8 +290,11 @@ def test_by_field_with_supertypes_and_subtypes():
         VariantByFieldWithSupertypesAndSubtypesSub2(x=DT_DATE)
     )
 
+    assert MyClass.from_dict({"x": X_3}) == MyClass(
+        VariantByFieldWithSupertypesAndSubtypesSub4(x=DT_DATE)
+    )
+
     with pytest.raises(InvalidFieldValue):
-        # RecursionError
         MyClass.from_dict({"x": {"type": "unknown"}})
 
     with pytest.raises(InvalidFieldValue):
