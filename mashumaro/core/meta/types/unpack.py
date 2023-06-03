@@ -277,8 +277,11 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
 
     def _get_variant_names_iterable(self, spec: ValueSpec) -> str:
         variant_names = self._get_variant_names(spec)
-        if len(variant_names) == 1 and variant_names[0].startswith("*"):
-            return variant_names[0][1:]
+        if len(variant_names) == 1:
+            if variant_names[0].startswith("*"):
+                return variant_names[0][1:]
+            else:
+                return f"[{variant_names[0]}]"
         return f'({", ".join(variant_names)})'
 
     @staticmethod
