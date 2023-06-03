@@ -7,7 +7,6 @@ import pytest
 from typing_extensions import Annotated, Final, Literal
 
 from mashumaro import DataClassDictMixin
-from mashumaro.config import BaseConfig
 from mashumaro.exceptions import InvalidFieldValue
 from mashumaro.types import Discriminator
 
