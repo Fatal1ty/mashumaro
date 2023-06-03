@@ -265,14 +265,14 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
     def _get_variant_names(self, spec: ValueSpec) -> List[str]:
         base_variants = self.base_variants or (spec.origin_type,)
         variant_names: List[str] = []
-        if self.discriminator.include_supertypes or self.base_variants:
-            variant_names.extend(map(type_name, base_variants))
         if self.discriminator.include_subtypes:
             spec.builder.ensure_object_imported(iter_all_subclasses)
             variant_names.extend(
                 f"*iter_all_subclasses({type_name(base_variant)})"
                 for base_variant in base_variants
             )
+        if self.discriminator.include_supertypes:
+            variant_names.extend(map(type_name, base_variants))
         return variant_names
 
     def _get_variant_names_iterable(self, spec: ValueSpec) -> str:

@@ -95,9 +95,7 @@ class Discriminator:
     include_subtypes: bool = False
 
     def __post_init__(self) -> None:
-        if (
-            not self.field
-            and not self.include_supertypes
-            and not self.include_subtypes
-        ):
-            raise ValueError("At least one of the parameters must be set")
+        if not self.include_supertypes and not self.include_subtypes:
+            raise ValueError(
+                "Either include_supertypes or include_subtypes must be set"
+            )
