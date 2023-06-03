@@ -426,7 +426,7 @@ class SubtypeUnpackerBuilder(DiscriminatedUnionUnpackerBuilder):
     def _get_variants_attr(self, spec: ValueSpec) -> str:
         if self._variants_attr is None:
             assert self.discriminator.include_subtypes
-            self._variants_attr = f"__mashumaro_subtype_variants__"
+            self._variants_attr = "__mashumaro_subtype_variants__"
         return self._variants_attr
 
     def _get_variants_map(self, spec: ValueSpec) -> str:
