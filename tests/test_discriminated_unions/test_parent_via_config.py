@@ -142,6 +142,10 @@ class VariantBySupertypesAndSubtypesSub2(VariantBySupertypesAndSubtypesSub1):
 
 
 def test_by_subtypes():
+    assert VariantBySubtypes.from_dict(X_1) == VariantBySubtypesSub1(x=DT_STR)
+
+    assert VariantBySubtypes.from_dict(X_2) == VariantBySubtypesSub2(x=DT_DATE)
+
     @dataclass
     class MyClass(DataClassDictMixin):
         x: VariantBySubtypes
@@ -180,6 +184,14 @@ def test_by_supertypes():
 
 
 def test_by_field_with_subtypes():
+    assert VariantByFieldWithSubtypes.from_dict(
+        X_1
+    ) == VariantByFieldWithSubtypesSub1(x=DT_STR)
+
+    assert VariantByFieldWithSubtypes.from_dict(
+        X_2
+    ) == VariantByFieldWithSubtypesSub2(x=DT_DATE)
+
     @dataclass
     class MyClass(DataClassDictMixin):
         x: VariantByFieldWithSubtypes
@@ -220,6 +232,14 @@ def test_by_field_with_supertypes():
 
 
 def test_by_field_with_supertypes_and_subtypes():
+    assert VariantByFieldWithSupertypesAndSubtypes.from_dict(
+        X_1
+    ) == VariantByFieldWithSupertypesAndSubtypesSub1(x=DT_STR)
+
+    assert VariantByFieldWithSupertypesAndSubtypes.from_dict(
+        X_2
+    ) == VariantByFieldWithSupertypesAndSubtypesSub2(x=DT_DATE)
+
     @dataclass
     class MyClass(DataClassDictMixin):
         x: VariantByFieldWithSupertypesAndSubtypes
@@ -244,6 +264,14 @@ def test_by_field_with_supertypes_and_subtypes():
 
 
 def test_by_supertypes_and_subtypes():
+    assert VariantBySupertypesAndSubtypes.from_dict(
+        X_1
+    ) == VariantBySupertypesAndSubtypesSub1(x=DT_STR)
+
+    assert VariantBySupertypesAndSubtypes.from_dict(
+        X_2
+    ) == VariantBySupertypesAndSubtypesSub2(x=DT_DATE)
+
     @dataclass
     class MyClass(DataClassDictMixin):
         x: VariantBySupertypesAndSubtypes
