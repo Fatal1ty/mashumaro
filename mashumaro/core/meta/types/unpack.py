@@ -970,10 +970,10 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
     )
     default_kwargs = spec.builder.get_unpack_method_default_flag_values()
     lines.append("@classmethod")
-    if default_kwargs:  # pragma: no cover
-        # we shouldn't be here because there will be default_kwargs
+    if default_kwargs:
         lines.append(f"def {method_name}(cls, value, {default_kwargs}):")
-    else:
+    else:  # pragma: no cover
+        # we shouldn't be here because there will be default_kwargs
         lines.append(f"def {method_name}(cls, value):")
     with lines.indent():
         lines.append("d = {}")
