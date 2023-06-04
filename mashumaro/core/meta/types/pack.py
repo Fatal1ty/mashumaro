@@ -21,6 +21,7 @@ from mashumaro.core.meta.helpers import (
     get_function_return_annotation,
     get_literal_values,
     is_dataclass_dict_mixin_subclass,
+    is_final,
     is_generic,
     is_literal,
     is_named_tuple,
@@ -237,6 +238,12 @@ def pack_dataclass_dict_mixin_subclass(
             builder.add_pack_method()
         flags = spec.builder.get_pack_method_flags(spec.type)
         return f"{spec.expression}.{method_name}({flags})"
+
+
+@register
+def pack_final(spec: ValueSpec) -> Optional[Expression]:
+    if is_final(spec.type):
+        return PackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
 
 
 @register

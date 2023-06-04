@@ -22,7 +22,7 @@ from typing import (
 )
 
 import typing_extensions
-from typing_extensions import Unpack
+from typing_extensions import Final, Unpack
 
 from mashumaro.core.const import (
     PEP_585_COMPATIBLE,
@@ -50,6 +50,7 @@ __all__ = [
     "is_type_var",
     "is_type_var_any",
     "is_class_var",
+    "is_final",
     "is_init_var",
     "get_class_that_defines_method",
     "get_class_that_defines_field",
@@ -403,6 +404,10 @@ def is_type_var_any(typ: Type) -> bool:
 
 def is_class_var(typ: Type) -> bool:
     return get_type_origin(typ) is ClassVar
+
+
+def is_final(typ: Type) -> bool:
+    return get_type_origin(typ) is Final
 
 
 def is_init_var(typ: Type) -> bool:
