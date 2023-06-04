@@ -54,6 +54,7 @@ __all__ = [
     "is_type_var",
     "is_type_var_any",
     "is_class_var",
+    "is_final",
     "is_init_var",
     "get_class_that_defines_method",
     "get_class_that_defines_field",
@@ -414,6 +415,10 @@ def is_type_var_any(typ: Type) -> bool:
 
 def is_class_var(typ: Type) -> bool:
     return get_type_origin(typ) is ClassVar
+
+
+def is_final(typ: Type) -> bool:
+    return get_type_origin(typ) is typing_extensions.Final
 
 
 def is_init_var(typ: Type) -> bool:

@@ -39,7 +39,7 @@ from typing import (
 )
 
 import pytest
-from typing_extensions import OrderedDict
+from typing_extensions import Final, OrderedDict
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
@@ -829,6 +829,19 @@ def test_class_vars():
 
     assert DataClass().to_dict() == {}
     assert DataClass.from_dict({}) == DataClass()
+
+
+def test_final():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Final[int] = 42
+
+    assert DataClass().to_dict() == {"x": 42}
+    assert DataClass(42).to_dict() == {"x": 42}
+    assert DataClass(33).to_dict() == {"x": 33}
+    assert DataClass.from_dict({}) == DataClass()
+    assert DataClass.from_dict({"x": 42}) == DataClass()
+    assert DataClass.from_dict({"x": 33}) == DataClass(33)
 
 
 def test_init_vars():

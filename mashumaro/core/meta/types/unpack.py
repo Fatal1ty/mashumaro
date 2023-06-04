@@ -26,6 +26,7 @@ from mashumaro.core.meta.helpers import (
     get_function_arg_annotation,
     get_literal_values,
     is_dataclass_dict_mixin_subclass,
+    is_final,
     is_generic,
     is_literal,
     is_named_tuple,
@@ -607,6 +608,12 @@ def unpack_dataclass_dict_mixin_subclass(
             )
         )
         return f"{type_name(spec.origin_type)}.{method_name}({method_args})"
+
+
+@register
+def unpack_final(spec: ValueSpec) -> Optional[Expression]:
+    if is_final(spec.type):
+        return UnpackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
 
 
 @register
