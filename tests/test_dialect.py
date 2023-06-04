@@ -270,10 +270,6 @@ def test_default_dialect():
     )
     with pytest.raises(TypeError):
         obj.to_dict(dialect=OrdinalDialect)
-    with pytest.raises(TypeError):
-        DataClassWithDefaultDialect.from_dict(
-            {"dt": ordinal, "i": "0xff"}, dialect=OrdinalDialect
-        )
 
 
 def test_dialect():

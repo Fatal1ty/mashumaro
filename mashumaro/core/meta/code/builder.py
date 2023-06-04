@@ -624,31 +624,34 @@ class CodeBuilder:
         return pluggable_flags_str
 
     def get_unpack_method_default_flag_values(
-        self,
-        cls: typing.Optional[typing.Type] = None,
-        pass_decoder: bool = False,
+        self, pass_decoder: bool = False
     ) -> str:
         pos_param_names = []
         pos_param_values = []
         kw_param_names = []
         kw_param_values = []
+
         if pass_decoder and self.decoder is not None:
             pos_param_names.append("decoder")
             pos_param_values.append(type_name(self.decoder))
+
         kw_param_names.append("dialect")
         kw_param_values.append("None")
+
         if pos_param_names:
             pluggable_flags_str = ", ".join(
                 [f"{n}={v}" for n, v in zip(pos_param_names, pos_param_values)]
             )
         else:
             pluggable_flags_str = ""
+
         if kw_param_names:
             if pos_param_names:
                 pluggable_flags_str += ", "
             pluggable_flags_str += "*, " + ", ".join(
                 [f"{n}={v}" for n, v in zip(kw_param_names, kw_param_values)]
             )
+
         return pluggable_flags_str
 
     def is_code_generation_option_enabled(

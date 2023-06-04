@@ -131,7 +131,8 @@ class AbstractUnpackerBuilder(ABC):
             extra_args_str = ""
         if default_kwargs:
             return f"cls, value{extra_args_str}, {default_kwargs}"
-        else:
+        else:  # pragma: no cover
+            # we shouldn't be here because there will be default_kwargs
             return f"cls, value{extra_args_str}"
 
     @abstractmethod
