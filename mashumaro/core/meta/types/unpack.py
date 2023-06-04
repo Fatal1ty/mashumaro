@@ -930,7 +930,8 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
     default_kwargs = spec.builder.get_unpack_method_default_flag_values()
     if default_kwargs:
         lines.append(f"def {method_name}(cls, value, {default_kwargs}):")
-    else:
+    else:  # pragma: no cover
+        # we shouldn't be here because there will be default_kwargs
         lines.append(f"def {method_name}(cls, value):")
     with lines.indent():
         lines.append("fields = []")
