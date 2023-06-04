@@ -3,7 +3,7 @@ import pytest
 from mashumaro.types import Discriminator
 
 
-def test_discriminator_without_creation():
+def test_discriminator_without_necessary_params():
     with pytest.raises(ValueError) as exc_info:
         Discriminator()
     assert str(exc_info.value) == (
