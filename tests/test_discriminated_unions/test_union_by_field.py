@@ -10,12 +10,12 @@ from mashumaro import DataClassDictMixin
 from mashumaro.exceptions import InvalidFieldValue
 from mashumaro.types import Discriminator
 
-DT_STR = "2022-05-30"
-DT_DATE = date(2022, 5, 30)
+DT_STR = "2023-05-30"
+DT_DATE = date(2023, 5, 30)
 
-X_STR = {"x": "2022-05-30", "type": "str"}
-X_DATE = {"x": "2022-05-30", "type": "date"}
-X_DATE_SUBTYPE = {"x": "2022-05-30", "type": "date_subtype"}
+X_STR = {"x": "2023-05-30", "type": "str"}
+X_DATE = {"x": "2023-05-30", "type": "date"}
+X_DATE_SUBTYPE = {"x": "2023-05-30", "type": "date_subtype"}
 
 
 class VariantType(str, Enum):
@@ -309,7 +309,7 @@ def test_by_field_with_supertypes():
 
     with pytest.raises(InvalidFieldValue) as exc_info:
         ByFieldWithSupertypes.from_dict(
-            {"unannotated": {"x": "2022-05-30", "type": "date_subtype"}}
+            {"unannotated": {"x": "2023-05-30", "type": "date_subtype"}}
         )
     assert exc_info.value.field_name == "unannotated"
 

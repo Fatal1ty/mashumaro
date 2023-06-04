@@ -635,12 +635,8 @@ class CodeBuilder:
         if pass_decoder and self.decoder is not None:
             pos_param_names.append("decoder")
             pos_param_values.append(type_name(self.decoder))
-        dialects_feature = self.is_code_generation_option_enabled(
-            ADD_DIALECT_SUPPORT, cls
-        )
-        if dialects_feature:
-            kw_param_names.append("dialect")
-            kw_param_values.append("None")
+        kw_param_names.append("dialect")
+        kw_param_values.append("None")
         if pos_param_names:
             pluggable_flags_str = ", ".join(
                 [f"{n}={v}" for n, v in zip(pos_param_names, pos_param_values)]

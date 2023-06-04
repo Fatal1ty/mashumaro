@@ -13,8 +13,8 @@ from mashumaro.exceptions import (
 )
 from mashumaro.types import Discriminator
 
-DT_STR = "2022-05-30"
-DT_DATE = date(2022, 5, 30)
+DT_STR = "2023-05-30"
+DT_DATE = date(2023, 5, 30)
 
 X_1 = {"x": DT_STR, "type": 1}
 X_2 = {"x": DT_STR, "type": 2}

@@ -251,7 +251,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         return ""
 
     def _get_extra_method_args(self) -> List[str]:
-        return ["dialect", "default_dialect"]
+        return ["_dialect", "_default_dialect"]
 
     def _get_variants_attr(self, spec: ValueSpec) -> str:
         if self._variants_attr is None:
@@ -290,6 +290,14 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
     def _get_variants_attr_holder(spec: ValueSpec) -> Type:
         return spec.builder.cls
 
+    @staticmethod
+    def _get_variant_method_call(method_name: str, spec: ValueSpec) -> str:
+        method_flags = spec.builder.get_unpack_method_flags()
+        if method_flags:
+            return f"{method_name}(value, {method_flags})"
+        else:
+            return f"{method_name}(value)"
+
     def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
         discriminator = self.discriminator
 
@@ -303,6 +311,9 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             setattr(variants_attr_holder, variants_attr, {})
         variant_method_name = spec.builder.get_unpack_method_name(
             format_name=spec.builder.format_name
+        )
+        variant_method_call = self._get_variant_method_call(
+            variant_method_name, spec
         )
 
         if spec.builder.dialect:
@@ -326,9 +337,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                     f" from None"
                 )
             with lines.indent("try:"):
-                lines.append(
-                    f"return {chosen_cls}.{variant_method_name}(value)"
-                )
+                lines.append(f"return {chosen_cls}.{variant_method_call}")
             with lines.indent("except (KeyError, AttributeError):"):
                 lines.append(f"variants_map = {variants_map}")
                 with lines.indent(f"for variant in {variants}:"):
@@ -355,15 +364,15 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                         )
                         lines.append(
                             f"CodeBuilder(variant, "
-                            f"dialect=dialect, "
+                            f"dialect=_dialect, "
                             f"format_name={repr(spec.builder.format_name)}, "
-                            f"default_dialect=default_dialect)"
+                            f"default_dialect=_default_dialect)"
                             f".add_unpack_method()"
                         )
                 with lines.indent("try:"):
                     lines.append(
                         f"return variants_map[discriminator]"
-                        f".{variant_method_name}(value)"
+                        f".{variant_method_call}"
                     )
                 with lines.indent("except KeyError:"):
                     lines.append(
@@ -374,9 +383,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         else:
             with lines.indent(f"for variant in {variants}:"):
                 with lines.indent("try:"):
-                    lines.append(
-                        f"return variant.{variant_method_name}(value)"
-                    )
+                    lines.append(f"return variant.{variant_method_call}")
                 with lines.indent("except AttributeError:"):
                     spec.builder.ensure_object_imported(
                         get_class_that_defines_method
@@ -391,14 +398,14 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                         )
                         lines.append(
                             f"CodeBuilder(variant, "
-                            f"dialect=dialect, "
+                            f"dialect=_dialect, "
                             f"format_name={repr(spec.builder.format_name)}, "
-                            f"default_dialect=default_dialect)"
+                            f"default_dialect=_default_dialect)"
                             f".add_unpack_method()"
                         )
                         with lines.indent("try:"):
                             lines.append(
-                                f"return variant.{variant_method_name}(value)"
+                                f"return variant.{variant_method_call}"
                             )
                         lines.append("except Exception: pass")
                 lines.append("except Exception: pass")
