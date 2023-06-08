@@ -174,6 +174,7 @@ for special primitives from the [`typing`](https://docs.python.org/3/library/typ
 * [`NewType`](https://docs.python.org/3/library/typing.html#newtype)
 * [`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated)
 * [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)
+* [`Final`](https://docs.python.org/3/library/typing.html#typing.Final)
 * [`Self`](https://docs.python.org/3/library/typing.html#typing.Self)
 * [`Unpack`](https://docs.python.org/3/library/typing.html#typing.Unpack)
 
