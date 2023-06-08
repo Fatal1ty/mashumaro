@@ -262,13 +262,11 @@ def test_by_field_with_subtypes():
         X_2
     ) == VariantByFieldWithSubtypesSub2(x=DT_DATE)
 
-    assert VariantByFieldWithSubtypes.from_dict(
-        X_3
-    ) == VariantByFieldWithSubtypesSub4(x=DT_DATE)
+    with pytest.raises(SuitableVariantNotFoundError):
+        VariantByFieldWithSubtypes.from_dict(X_3)
 
-    assert VariantByFieldWithSubtypesSub3.from_dict(
-        X_3
-    ) == VariantByFieldWithSubtypesSub4(x=DT_DATE)
+    with pytest.raises(SuitableVariantNotFoundError):
+        VariantByFieldWithSubtypesSub3.from_dict(X_3)
 
     with pytest.raises(SuitableVariantNotFoundError):
         VariantByFieldWithSubtypesSub3.from_dict(X_1)
@@ -285,9 +283,8 @@ def test_by_field_with_subtypes():
         VariantByFieldWithSubtypesSub2(DT_DATE)
     )
 
-    assert MyClass.from_dict({"x": X_3}) == MyClass(
-        VariantByFieldWithSubtypesSub4(DT_DATE)
-    )
+    with pytest.raises(InvalidFieldValue):
+        MyClass.from_dict({"x": X_3})
 
     with pytest.raises(InvalidFieldValue):
         MyClass.from_dict({"x": {}})
@@ -317,13 +314,11 @@ def test_by_field_with_supertypes_and_subtypes():
         X_2
     ) == VariantByFieldWithSupertypesAndSubtypesSub2(x=DT_DATE)
 
-    assert VariantByFieldWithSupertypesAndSubtypes.from_dict(
-        X_3
-    ) == VariantByFieldWithSupertypesAndSubtypesSub4(x=DT_DATE)
+    with pytest.raises(SuitableVariantNotFoundError):
+        VariantByFieldWithSupertypesAndSubtypes.from_dict(X_3)
 
-    assert VariantByFieldWithSupertypesAndSubtypesSub3.from_dict(
-        X_3
-    ) == VariantByFieldWithSupertypesAndSubtypesSub4(x=DT_DATE)
+    with pytest.raises(SuitableVariantNotFoundError):
+        VariantByFieldWithSupertypesAndSubtypesSub3.from_dict(X_3)
 
     with pytest.raises(SuitableVariantNotFoundError):
         VariantByFieldWithSupertypesAndSubtypesSub3.from_dict(X_1)
@@ -340,9 +335,8 @@ def test_by_field_with_supertypes_and_subtypes():
         VariantByFieldWithSupertypesAndSubtypesSub2(x=DT_DATE)
     )
 
-    assert MyClass.from_dict({"x": X_3}) == MyClass(
-        VariantByFieldWithSupertypesAndSubtypesSub4(x=DT_DATE)
-    )
+    with pytest.raises(InvalidFieldValue):
+        MyClass.from_dict({"x": X_3})
 
     with pytest.raises(InvalidFieldValue):
         MyClass.from_dict({"x": {"type": "unknown"}})
