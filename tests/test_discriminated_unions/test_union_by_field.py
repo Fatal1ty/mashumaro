@@ -36,18 +36,16 @@ class ClassVarVariantStr(DataClassDictMixin):
     type: ClassVar[str] = "str"
 
 
-# @dataclass
-# class FinalVariantStr(DataClassDictMixin):
-#     x: str
-#     type: Final[str] = "str"
+@dataclass
+class FinalVariantStr(DataClassDictMixin):
+    x: str
+    type: Final[str] = "str"
 
 
 @dataclass
 class LiteralVariantStr(DataClassDictMixin):
     x: str
     type: Literal["str"] = "str"
-
-    # class Config: code_generation_options = ["ADD_DIALECT_SUPPORT"]
 
 
 @dataclass
@@ -68,10 +66,10 @@ class ClassVarVariantDate(DataClassDictMixin):
     type: ClassVar[str] = "date"
 
 
-# @dataclass
-# class FinalVariantDate(DataClassDictMixin):
-#     x: date
-#     type: Final[str] = "date"
+@dataclass
+class FinalVariantDate(DataClassDictMixin):
+    x: date
+    type: Final[str] = "date"
 
 
 @dataclass
@@ -98,10 +96,10 @@ class ClassVarVariantDateSubtype(ClassVarVariantDate):
     type: ClassVar[str] = "date_subtype"
 
 
-# @dataclass
-# class FinalVariantDateSubtype(FinalVariantDate):
-#     x: date
-#     type: Final[str] = "date_subtype"
+@dataclass
+class FinalVariantDateSubtype(FinalVariantDate):
+    x: date
+    type: Final[str] = "date_subtype"
 
 
 @dataclass
@@ -126,10 +124,10 @@ class ByFieldWithSupertypes(DataClassDictMixin):
         Union[ClassVarVariantStr, ClassVarVariantDate],
         Discriminator("type", include_supertypes=True),
     ]
-    # final: Annotated[
-    #     Union[FinalVariantStr, FinalVariantDate],
-    #     Discriminator("type", include_supertypes=True),
-    # ]
+    final: Annotated[
+        Union[FinalVariantStr, FinalVariantDate],
+        Discriminator("type", include_supertypes=True),
+    ]
     literal: Annotated[
         Union[LiteralVariantStr, LiteralVariantDate],
         Discriminator("type", include_supertypes=True),
@@ -150,10 +148,10 @@ class ByFieldWithSubtypes(DataClassDictMixin):
         Union[ClassVarVariantStr, ClassVarVariantDate],
         Discriminator("type", include_subtypes=True),
     ]
-    # final: Annotated[
-    #     Union[FinalVariantStr, FinalVariantDate],
-    #     Discriminator("type", include_subtypes=True),
-    # ]
+    final: Annotated[
+        Union[FinalVariantStr, FinalVariantDate],
+        Discriminator("type", include_subtypes=True),
+    ]
     literal: Annotated[
         Union[LiteralVariantStr, LiteralVariantDate],
         Discriminator("type", include_subtypes=True),
@@ -174,10 +172,10 @@ class BySupertypes(DataClassDictMixin):
         Union[ClassVarVariantStr, ClassVarVariantDate],
         Discriminator(include_supertypes=True),
     ]
-    # final: Annotated[
-    #     Union[FinalVariantStr, FinalVariantDate],
-    #     Discriminator(include_supertypes=True),
-    # ]
+    final: Annotated[
+        Union[FinalVariantStr, FinalVariantDate],
+        Discriminator(include_supertypes=True),
+    ]
     literal: Annotated[
         Union[LiteralVariantStr, LiteralVariantDate],
         Discriminator(include_supertypes=True),
@@ -198,10 +196,10 @@ class BySubtypes(DataClassDictMixin):
         Union[ClassVarVariantStr, ClassVarVariantDate],
         Discriminator(include_subtypes=True),
     ]
-    # final: Annotated[
-    #     Union[FinalVariantStr, FinalVariantDate],
-    #     Discriminator(include_subtypes=True),
-    # ]
+    final: Annotated[
+        Union[FinalVariantStr, FinalVariantDate],
+        Discriminator(include_subtypes=True),
+    ]
     literal: Annotated[
         Union[LiteralVariantStr, LiteralVariantDate],
         Discriminator(include_subtypes=True),
@@ -222,10 +220,10 @@ class BySupertypesAndSubtypes(DataClassDictMixin):
         Union[ClassVarVariantStr, ClassVarVariantDate],
         Discriminator(include_supertypes=True, include_subtypes=True),
     ]
-    # final: Annotated[
-    #     Union[FinalVariantStr, FinalVariantDate],
-    #     Discriminator(include_supertypes=True, include_subtypes=True),
-    # ]
+    final: Annotated[
+        Union[FinalVariantStr, FinalVariantDate],
+        Discriminator(include_supertypes=True, include_subtypes=True),
+    ]
     literal: Annotated[
         Union[LiteralVariantStr, LiteralVariantDate],
         Discriminator(include_supertypes=True, include_subtypes=True),
@@ -246,10 +244,10 @@ class ByFieldWithSupertypesAndSubtypes(DataClassDictMixin):
         Union[ClassVarVariantStr, ClassVarVariantDate],
         Discriminator("type", include_supertypes=True, include_subtypes=True),
     ]
-    # final: Annotated[
-    #     Union[FinalVariantStr, FinalVariantDate],
-    #     Discriminator("type", include_supertypes=True, include_subtypes=True),
-    # ]
+    final: Annotated[
+        Union[FinalVariantStr, FinalVariantDate],
+        Discriminator("type", include_supertypes=True, include_subtypes=True),
+    ]
     literal: Annotated[
         Union[LiteralVariantStr, LiteralVariantDate],
         Discriminator("type", include_supertypes=True, include_subtypes=True),
@@ -287,7 +285,7 @@ def test_by_field_with_supertypes():
         unannotated=UnannotatedVariantStr(DT_STR),
         class_var=ClassVarVariantStr(DT_STR),
         literal=LiteralVariantStr(DT_STR),
-        # final=FinalVariantStr(dt_str),
+        final=FinalVariantStr(DT_STR),
         enum=EnumVariantStr(DT_STR),
     )
 
@@ -303,7 +301,7 @@ def test_by_field_with_supertypes():
         unannotated=UnannotatedVariantDate(DT_DATE),
         class_var=ClassVarVariantDate(DT_DATE),
         literal=LiteralVariantDate(DT_DATE),
-        # final=FinalVariantDate(dt_date),
+        final=FinalVariantDate(DT_DATE),
         enum=EnumVariantDate(DT_DATE),
     )
 
@@ -327,7 +325,7 @@ def test_by_field_with_subtypes():
         unannotated=UnannotatedVariantDateSubtype(DT_DATE),
         class_var=ClassVarVariantDateSubtype(DT_DATE),
         literal=LiteralVariantDateSubtype(DT_DATE),
-        # final=FinalVariantDateSubtype(DT_DATE),
+        final=FinalVariantDateSubtype(DT_DATE),
         enum=EnumVariantDateSubtype(DT_DATE),
     )
 
@@ -369,7 +367,7 @@ def test_by_field_with_supertypes_and_subtypes():
         unannotated=UnannotatedVariantStr(DT_STR),
         class_var=ClassVarVariantStr(DT_STR),
         literal=LiteralVariantStr(DT_STR),
-        # final=FinalVariantStr(dt_str),
+        final=FinalVariantStr(DT_STR),
         enum=EnumVariantStr(DT_STR),
     )
 
@@ -385,7 +383,7 @@ def test_by_field_with_supertypes_and_subtypes():
         unannotated=UnannotatedVariantDate(DT_DATE),
         class_var=ClassVarVariantDate(DT_DATE),
         literal=LiteralVariantDate(DT_DATE),
-        # final=FinalVariantDate(dt_date),
+        final=FinalVariantDate(DT_DATE),
         enum=EnumVariantDate(DT_DATE),
     )
 
@@ -401,7 +399,7 @@ def test_by_field_with_supertypes_and_subtypes():
         unannotated=UnannotatedVariantDateSubtype(DT_DATE),
         class_var=ClassVarVariantDateSubtype(DT_DATE),
         literal=LiteralVariantDateSubtype(DT_DATE),
-        # final=FinalVariantDateSubtype(dt_date),
+        final=FinalVariantDateSubtype(DT_DATE),
         enum=EnumVariantDateSubtype(DT_DATE),
     )
 
@@ -419,7 +417,7 @@ def test_by_supertypes():
         unannotated=UnannotatedVariantStr(DT_STR),
         class_var=ClassVarVariantStr(DT_STR),
         literal=LiteralVariantStr(DT_STR),
-        # final=FinalVariantStr(DT_STR),
+        final=FinalVariantStr(DT_STR),
         enum=EnumVariantStr(DT_STR),
     )
 
@@ -435,7 +433,8 @@ def test_by_supertypes():
         unannotated=UnannotatedVariantStr(DT_STR),
         class_var=ClassVarVariantStr(DT_STR),
         literal=LiteralVariantDate(DT_DATE),
-        # final=FinalVariantStr(DT_STR),
+        # using final without field discriminator can lead to unexpected result
+        final=FinalVariantStr(DT_STR, type=VariantType.DATE),
         # using enum without field discriminator can lead to unexpected result
         enum=EnumVariantStr(DT_STR, type=VariantType.DATE),
     )
@@ -466,7 +465,7 @@ def test_by_subtypes():
         unannotated=UnannotatedVariantDateSubtype(DT_DATE),
         class_var=ClassVarVariantDateSubtype(DT_DATE),
         literal=LiteralVariantDateSubtype(DT_DATE),
-        # final=FinalVariantDateSubtype(dt_date),
+        final=FinalVariantDateSubtype(DT_DATE),
         enum=EnumVariantDateSubtype(DT_DATE),
     )
 
@@ -482,7 +481,8 @@ def test_by_subtypes():
         unannotated=UnannotatedVariantDateSubtype(DT_DATE),
         class_var=ClassVarVariantDateSubtype(DT_DATE),
         literal=LiteralVariantDateSubtype(DT_DATE),
-        # final=FinalVariantDateSubtype(dt_date),
+        # using final without field discriminator can lead to unexpected result
+        final=FinalVariantDateSubtype(DT_DATE, type=VariantType.DATE),
         # using enum without field discriminator can lead to unexpected result
         enum=EnumVariantDateSubtype(DT_DATE, type=VariantType.DATE),
     )
@@ -513,7 +513,7 @@ def test_by_supertypes_and_subtypes():
         unannotated=UnannotatedVariantDateSubtype(DT_DATE),
         class_var=ClassVarVariantDateSubtype(DT_DATE),
         literal=LiteralVariantDateSubtype(DT_DATE),
-        # final=FinalVariantStr(DT_STR),
+        final=FinalVariantDateSubtype(DT_DATE),
         enum=EnumVariantDateSubtype(DT_DATE),
     )
 
@@ -529,7 +529,8 @@ def test_by_supertypes_and_subtypes():
         unannotated=UnannotatedVariantDateSubtype(DT_DATE),
         class_var=ClassVarVariantDateSubtype(DT_DATE),
         literal=LiteralVariantStr(DT_STR),
-        # final=FinalVariantStr(DT_STR),
+        # using final without field discriminator can lead to unexpected result
+        final=FinalVariantDateSubtype(DT_DATE, type=VariantType.STR),
         # using enum without field discriminator can lead to unexpected result
         enum=EnumVariantDateSubtype(DT_DATE, type=VariantType.STR),
     )
@@ -546,7 +547,8 @@ def test_by_supertypes_and_subtypes():
         unannotated=UnannotatedVariantDateSubtype(DT_DATE),
         class_var=ClassVarVariantDateSubtype(DT_DATE),
         literal=LiteralVariantDate(DT_DATE),
-        # final=FinalVariantStr(DT_STR),
+        # using final without field discriminator can lead to unexpected result
+        final=FinalVariantDateSubtype(DT_DATE, type=VariantType.DATE),
         # using enum without field discriminator can lead to unexpected result
         enum=EnumVariantDateSubtype(DT_DATE, type=VariantType.DATE),
     )
