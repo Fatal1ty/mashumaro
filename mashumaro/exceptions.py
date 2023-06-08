@@ -125,18 +125,6 @@ class InvalidFieldValue(ValueError):
         return s
 
 
-class VariantAttributeError(AttributeError):
-    def __init__(self, variant_cls: Type, attr_name: str):
-        self.variant_cls = variant_cls
-        self.attr_name = attr_name
-
-    def __str__(self) -> str:
-        return (
-            f"{type_name(self.variant_cls)} "
-            f"has no attribute '{self.attr_name}'"
-        )
-
-
 class MissingDiscriminatorError(LookupError):
     def __init__(self, field_name: str):
         self.field_name = field_name

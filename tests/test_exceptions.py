@@ -10,7 +10,6 @@ from mashumaro.exceptions import (
     UnserializableField,
     UnsupportedDeserializationEngine,
     UnsupportedSerializationEngine,
-    VariantAttributeError,
 )
 
 
@@ -141,13 +140,6 @@ def test_unresolved_type_reference_error():
         str(exc) == "Class object has unresolved type reference "
         "x in some of its fields"
     )
-
-
-def test_variant_attribute_error():
-    exc = VariantAttributeError(object, "x")
-    assert exc.variant_cls == object
-    assert exc.attr_name == "x"
-    assert str(exc) == "object has no attribute 'x'"
 
 
 def test_missing_discriminator_error():

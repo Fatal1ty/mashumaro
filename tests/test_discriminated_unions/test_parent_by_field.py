@@ -117,6 +117,34 @@ class BySupertypesAndSubtypes(DataClassDictMixin):
     ]
 
 
+@dataclass
+class Foo1(DataClassDictMixin):
+    x1: int
+
+
+@dataclass
+class Foo2(Foo1):
+    x2: int
+
+
+@dataclass
+class Foo3(Foo2):
+    x: int
+    type = 3
+
+
+@dataclass
+class Foo4(Foo2):
+    x: int
+    type = 4
+
+
+@dataclass
+class Bar(DataClassDictMixin):
+    baz1: Annotated[Foo1, Discriminator(field="type", include_subtypes=True)]
+    baz2: Annotated[Foo1, Discriminator(include_subtypes=True)]
+
+
 @pytest.mark.parametrize(
     ["variant_data", "variant"],
     [
@@ -220,3 +248,12 @@ def test_by_field_with_supertypes_and_subtypes(dataclass_cls):
 
     with pytest.raises(InvalidFieldValue):
         dataclass_cls.from_dict({"x1": X_DATE_22, "x2": X_DATE_12})
+
+
+def test_subclass_tree_with_class_without_field():
+    assert Bar.from_dict(
+        {
+            "baz1": {"type": 4, "x1": 1, "x2": 2, "x": 42},
+            "baz2": {"type": 4, "x1": 1, "x2": 2, "x": 42},
+        }
+    ) == Bar(baz1=Foo4(1, 2, 42), baz2=Foo2(1, 2))

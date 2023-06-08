@@ -59,7 +59,6 @@ from mashumaro.exceptions import (  # noqa
     UnserializableField,
     UnsupportedDeserializationEngine,
     UnsupportedSerializationEngine,
-    VariantAttributeError,
 )
 from mashumaro.types import Discriminator
 

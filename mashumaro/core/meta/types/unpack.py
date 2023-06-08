@@ -345,14 +345,11 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                 with lines.indent(f"for variant in {variants}:"):
                     with lines.indent("try:"):
                         lines.append(
-                            f"variants_map[variant.{discriminator.field}]"
-                            f" = variant"
+                            f"variants_map[variant.__dict__["
+                            f"'{discriminator.field}']] = variant"
                         )
-                    with lines.indent("except AttributeError:"):
-                        lines.append(
-                            f"raise VariantAttributeError(variant, "
-                            f"'{discriminator.field}') from None"
-                        )
+                    with lines.indent("except KeyError:"):
+                        lines.append("continue")
                     spec.builder.ensure_object_imported(
                         get_class_that_defines_method
                     )

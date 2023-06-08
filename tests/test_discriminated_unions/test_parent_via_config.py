@@ -153,6 +153,56 @@ class VariantBySupertypesAndSubtypesSub2(VariantBySupertypesAndSubtypesSub1):
     type: Literal[2] = 2
 
 
+@dataclass
+class Foo1(DataClassDictMixin):
+    x1: int
+
+    class Config(BaseConfig):
+        discriminator = Discriminator(field="type", include_subtypes=True)
+
+
+@dataclass
+class Foo2(Foo1):
+    x2: int
+
+
+@dataclass
+class Foo3(Foo2):
+    x: int
+    type = 3
+
+
+@dataclass
+class Foo4(Foo2):
+    x: int
+    type = 4
+
+
+@dataclass
+class Bar1(DataClassDictMixin):
+    x1: int
+
+    class Config(BaseConfig):
+        discriminator = Discriminator(include_subtypes=True)
+
+
+@dataclass
+class Bar2(Bar1):
+    x2: int
+
+
+@dataclass
+class Bar3(Bar2):
+    x: int
+    type = 3
+
+
+@dataclass
+class Bar4(Bar2):
+    x: int
+    type = 4
+
+
 def test_by_subtypes():
     assert VariantBySubtypes.from_dict(X_1) == VariantBySubtypesSub1(x=DT_STR)
 
@@ -328,3 +378,16 @@ def test_by_supertypes_and_subtypes():
     assert MyClass.from_dict({"x": {}}) == MyClass(
         VariantBySupertypesAndSubtypesSub1()
     )
+
+
+def test_subclass_tree_with_class_without_field():
+    assert Foo1.from_dict({"type": 3, "x1": 1, "x2": 2, "x": 42}) == Foo3(
+        1, 2, 42
+    )
+
+    assert Foo1.from_dict({"type": 4, "x1": 1, "x2": 2, "x": 42}) == Foo4(
+        1, 2, 42
+    )
+
+    assert Bar1.from_dict({"type": 3, "x1": 1, "x2": 2, "x": 42}) == Bar2(1, 2)
+    assert Bar1.from_dict({"type": 4, "x1": 1, "x2": 2, "x": 42}) == Bar2(1, 2)
