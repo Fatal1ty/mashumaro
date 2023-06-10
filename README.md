@@ -63,6 +63,7 @@ Table of contents
         * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
         * [`dialect` config option](#dialect-config-option)
         * [`orjson_options`](#orjson_options-config-option)
+        * [`discriminator` config option](#discriminator-config-option)
     * [Passing field values as is](#passing-field-values-as-is)
     * [Dialects](#dialects)
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
@@ -1332,6 +1333,11 @@ class MyClass(DataClassORJSONMixin):
 
 assert MyClass({1: 2}).to_json() == {"1": 2}
 ```
+
+#### `discriminator` config option
+
+This option is described in the
+[Class level discriminator](#class-level-discriminator) section.
 
 ### Passing field values as is
 
