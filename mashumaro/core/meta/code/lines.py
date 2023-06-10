@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from typing import Generator, List
+from typing import Generator, List, Optional
 
 __all__ = ["CodeLines"]
 
@@ -13,7 +13,12 @@ class CodeLines:
         self._lines.append(f"{self._current_indent}{line}")
 
     @contextmanager
-    def indent(self) -> Generator[None, None, None]:
+    def indent(
+        self,
+        expr: Optional[str] = None,
+    ) -> Generator[None, None, None]:
+        if expr:
+            self.append(expr)
         self._current_indent += " " * 4
         try:
             yield

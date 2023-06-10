@@ -1,8 +1,10 @@
-from typing import List
+from typing import List, Union
 
 from mashumaro.exceptions import (
     InvalidFieldValue,
+    MissingDiscriminatorError,
     MissingField,
+    SuitableVariantNotFoundError,
     ThirdPartyModuleNotFoundError,
     UnresolvedTypeReferenceError,
     UnserializableField,
@@ -138,3 +140,26 @@ def test_unresolved_type_reference_error():
         str(exc) == "Class object has unresolved type reference "
         "x in some of its fields"
     )
+
+
+def test_missing_discriminator_error():
+    exc = MissingDiscriminatorError("x")
+    assert exc.field_name == "x"
+    assert str(exc) == "Discriminator 'x' is missing"
+
+
+def test_suitable_variant_not_found_error():
+    exc = SuitableVariantNotFoundError(Union[str, int], "type", 42)
+    assert exc.discriminator_value == 42
+    assert exc.variants_type == Union[str, int]
+    assert exc.discriminator_name == "type"
+    assert str(exc) == (
+        "typing.Union[str, int] has no subtype with attribute 'type' "
+        "equal to 42"
+    )
+
+    exc = SuitableVariantNotFoundError(Union[str, int], "type")
+    assert exc.discriminator_value is None
+    assert exc.variants_type == Union[str, int]
+    assert exc.discriminator_name == "type"
+    assert str(exc) == "typing.Union[str, int] has no suitable subtype"

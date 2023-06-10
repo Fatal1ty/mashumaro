@@ -1,4 +1,5 @@
 import collections.abc
+import uuid
 from dataclasses import dataclass, field, is_dataclass, replace
 from typing import (
     TYPE_CHECKING,
@@ -10,12 +11,24 @@ from typing import (
     Optional,
     Sequence,
     Type,
+    TypeVar,
 )
 
-from typing_extensions import TypeAlias
+try:
+    from functools import cached_property  # type: ignore
+except ImportError:
+    # for python 3.7
+    cached_property = property  # type: ignore
+
+from typing_extensions import ParamSpec, TypeAlias
 
 from mashumaro.core.const import PEP_585_COMPATIBLE
-from mashumaro.core.meta.helpers import get_type_origin, is_generic, type_name
+from mashumaro.core.meta.helpers import (
+    get_type_origin,
+    is_annotated,
+    is_generic,
+    type_name,
+)
 from mashumaro.exceptions import UnserializableDataError, UnserializableField
 
 if TYPE_CHECKING:  # pragma no cover
@@ -26,6 +39,9 @@ else:
 
 NoneType = type(None)
 Expression: TypeAlias = str
+
+P = ParamSpec("P")
+T = TypeVar("T")
 
 
 class ExpressionWrapper:
@@ -64,6 +80,7 @@ class ValueSpec:
     builder: CodeBuilder
     field_ctx: FieldContext
     could_be_none: bool = True
+    annotated_type: Optional[Type] = None
 
     def __setattr__(self, key: str, value: Any) -> None:
         if key == "type":
@@ -72,6 +89,10 @@ class ValueSpec:
 
     def copy(self, **changes: Any) -> "ValueSpec":
         return replace(self, **changes)
+
+    @cached_property
+    def annotations(self) -> Sequence[str]:
+        return getattr(self.annotated_type, "__metadata__", [])
 
 
 ValueSpecExprCreator: TypeAlias = Callable[[ValueSpec], Optional[Expression]]
@@ -86,6 +107,11 @@ class Registry:
         return function
 
     def get(self, spec: ValueSpec) -> Expression:
+        if is_annotated(spec.type):
+            spec.annotated_type = spec.builder._get_real_type(
+                spec.field_ctx.name, spec.type
+            )
+            spec.type = get_type_origin(spec.type)
         spec.type = spec.builder._get_real_type(spec.field_ctx.name, spec.type)
         spec.builder.add_type_modules(spec.type)
         for packer in self._registry:
@@ -145,3 +171,11 @@ def expr_or_maybe_none(spec: ValueSpec, new_expr: Expression) -> Expression:
         return f"{new_expr} if {spec.expression} is not None else None"
     else:
         return new_expr
+
+
+def random_hex() -> str:
+    return str(uuid.uuid4().hex)
+
+
+def clean_id(value: str) -> str:
+    return value.replace(".", "_")

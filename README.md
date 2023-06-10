@@ -63,11 +63,17 @@ Table of contents
         * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
         * [`dialect` config option](#dialect-config-option)
         * [`orjson_options`](#orjson_options-config-option)
+        * [`discriminator` config option](#discriminator-config-option)
     * [Passing field values as is](#passing-field-values-as-is)
     * [Dialects](#dialects)
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
       * [`omit_none` dialect option](#omit_none-dialect-option)
       * [Changing the default dialect](#changing-the-default-dialect)
+    * [Discriminator](#discriminator)
+      * [Subclasses distinguishable by a field](#subclasses-distinguishable-by-a-field)
+      * [Subclasses without a common field](#subclasses-without-a-common-field)
+      * [Class level discriminator](#class-level-discriminator)
+      * [Working with union of classes](#working-with-union-of-classes)
     * [Code generation options](#code-generation-options)
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
         * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
@@ -169,6 +175,7 @@ for special primitives from the [`typing`](https://docs.python.org/3/library/typ
 * [`NewType`](https://docs.python.org/3/library/typing.html#newtype)
 * [`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated)
 * [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal)
+* [`Final`](https://docs.python.org/3/library/typing.html#typing.Final)
 * [`Self`](https://docs.python.org/3/library/typing.html#typing.Self)
 * [`Unpack`](https://docs.python.org/3/library/typing.html#typing.Unpack)
 
@@ -1327,6 +1334,11 @@ class MyClass(DataClassORJSONMixin):
 assert MyClass({1: 2}).to_json() == {"1": 2}
 ```
 
+#### `discriminator` config option
+
+This option is described in the
+[Class level discriminator](#class-level-discriminator) section.
+
 ### Passing field values as is
 
 In some cases it's needed to pass a field value as is without any changes
@@ -1401,7 +1413,7 @@ assert a1_dict == a2_dict == a3_dict == a4_dict == {"x": my_class_instance}
 Sometimes it's needed to have different serialization and deserialization
 methods depending on the data source where entities of the dataclass are
 stored or on the API to which the entities are being sent or received from.
-There is a special Dialect type that may contain all the differences from the
+There is a special `Dialect` type that may contain all the differences from the
 default serialization and deserialization methods. You can create different
 dialects and use each of them for the same dataclass depending on
 the situation.
@@ -1491,6 +1503,398 @@ class Entity(DataClassDictMixin):
 entity = Entity(date(2021, 12, 31))
 entity.to_dict()  # {'dt': '2021年12月31日'}
 assert Entity.from_dict({'dt': '2021年12月31日'}) == entity
+```
+
+### Discriminator
+
+There is a special `Discriminator` class that allows you to customize how
+a union of dataclasses or their hierarchy will be deserialized.
+It has the following parameters that affects class selection rules:
+
+* `field` — optional name of the input dictionary key by which all the variants
+  can be distinguished
+* `include_subtypes` — allow to deserialize subclasses
+* `include_supertypes` — allow to deserialize superclasses
+
+Parameter `field` coule be in the following forms:
+
+* without annotations: `type = 42`
+* annotated as ClassVar: `type: ClassVar[int] = 42`
+* annotated as Final: `type: Final[int] = 42`
+* annotated as Literal: `type: Literal[42] = 42`
+* annotated as StrEnum: `type: ResponseType = ResponseType.OK`
+
+> **Warning**
+>
+> Keep in mind that by default only Final, Literal and StrEnum fields are
+> processed during serialization.
+
+Next, we will look at different use cases, as well as their pros and cons.
+
+#### Subclasses distinguishable by a field
+
+Often you have a base dataclass and multiple subclasses that are easily
+distinguishable from each other by the value of a particular field.
+For example, there may be different events, messages or requests with
+a discriminator field "event_type", "message_type" or just "type". You could've
+listed all of them within `Union` type, but it would be too verbose and
+impractical. Moreover, deserialization of the union would be slow, since we
+need to iterate over each variant in the list until we find the right one.
+
+We can improve subclass deserialization using `Discriminator` as annotation
+within `Annotated` type. We will use `field` parameter and set
+`include_subtypes` to `True`.
+
+> **Note**
+>
+> The discriminator field should be accessible from the `__dict__` attribute
+> of a specific descendant, i.e. defined at the level of that descendant.
+> A descendant class without a discriminator field will be ignored, but
+> its descendants won't.
+
+Suppose we have a hierarchy of client events distinguishable by a class
+attribute "type":
+
+```python
+from dataclasses import dataclass
+from ipaddress import IPv4Address
+from mashumaro import DataClassDictMixin
+
+@dataclass
+class ClientEvent(DataClassDictMixin):
+    pass
+
+@dataclass
+class ClientConnectedEvent(ClientEvent):
+    type = "connected"
+    client_ip: IPv4Address
+
+@dataclass
+class ClientDisconnectedEvent(ClientEvent):
+    type = "disconnected"
+    client_ip: IPv4Address
+```
+
+We use base dataclass `ClientEvent` for a field of another dataclass:
+
+```python
+from typing import Annotated, List
+# or from typing_extensions import Annotated
+from mashumaro.types import Discriminator
+
+
+@dataclass
+class AggregatedEvents(DataClassDictMixin):
+    list: List[
+        Annotated[
+            ClientEvent, Discriminator(field="type", include_subtypes=True)
+        ]
+    ]
+```
+
+Now we can deserialize events based on "type" value:
+
+```python
+events = AggregatedEvents.from_dict(
+    {
+        "list": [
+            {"type": "connected", "client_ip": "10.0.0.42"},
+            {"type": "disconnected", "client_ip": "10.0.0.42"},
+        ]
+    }
+)
+assert events == AggregatedEvents(
+    list=[
+        ClientConnectedEvent(client_ip=IPv4Address("10.0.0.42")),
+        ClientDisconnectedEvent(client_ip=IPv4Address("10.0.0.42")),
+    ]
+)
+```
+
+#### Subclasses without a common field
+
+In rare cases you have to deal with subclasses that don't have a common field
+name which they can be distinguished by. Since `Discriminator` can be
+initialized without "field" parameter you can use it with only
+`include_subclasses` enabled. The drawback is that we will have to go through all
+the subclasses until we find the suitable one. It's almost like using `Union`
+type but with subclasses support.
+
+Suppose we're making a brunch. We have some ingredients:
+
+```python
+@dataclass
+class Ingredient(DataClassDictMixin):
+    name: str
+
+@dataclass
+class Hummus(Ingredient):
+    made_of: Literal["chickpeas", "beet", "artichoke"]
+    grams: int
+
+@dataclass
+class Celery(Ingredient):
+    pieces: int
+```
+
+Let's create a plate:
+
+```python
+@dataclass
+class Plate(DataClassDictMixin):
+    ingredients: List[
+        Annotated[Ingredient, Discriminator(include_subtypes=True)]
+    ]
+```
+
+And now we can put our ingredients on the plate:
+
+```python
+plate = Plate.from_dict(
+    {
+        "ingredients": [
+            {
+                "name": "hummus from the shop",
+                "made_of": "chickpeas",
+                "grams": 150,
+            },
+            {"name": "celery from my garden", "pieces": 5},
+        ]
+    }
+)
+assert plate == Plate(
+    ingredients=[
+        Hummus(name="hummus from the shop", made_of="chickpeas", grams=150),
+        Celery(name="celery from my garden", pieces=5),
+    ]
+)
+```
+
+In some cases it's necessary to fall back to the base class if there is no
+suitable subclass. We can set `include_supertypes` to `True`:
+
+```python
+@dataclass
+class Plate(DataClassDictMixin):
+    ingredients: List[
+        Annotated[
+            Ingredient,
+            Discriminator(include_subtypes=True, include_supertypes=True),
+        ]
+    ]
+
+plate = Plate.from_dict(
+    {
+        "ingredients": [
+            {
+                "name": "hummus from the shop",
+                "made_of": "chickpeas",
+                "grams": 150,
+            },
+            {"name": "celery from my garden", "pieces": 5},
+            {"name": "cumin"}  # <- new unknown ingredient
+        ]
+    }
+)
+assert plate == Plate(
+    ingredients=[
+        Hummus(name="hummus from the shop", made_of="chickpeas", grams=150),
+        Celery(name="celery from my garden", pieces=5),
+        Ingredient(name="cumin"),  # <- unknown ingredient added
+    ]
+)
+```
+
+#### Class level discriminator
+
+It may often be more convenient to specify a `Discriminator` once at the class
+level and use that class without `Annotated` type for subclass deserialization.
+Depending on the `Discriminator` parameters, it can be used as a replacement for
+[subclasses distinguishable by a field](#subclasses-distinguishable-by-a-field)
+as well as for [subclasses without a common field](#subclasses-without-a-common-field).
+The only difference is that you can't use `include_supertypes=True` because
+it would lead to a recursion error.
+
+Reworked example will look like this:
+
+```python
+from dataclasses import dataclass
+from ipaddress import IPv4Address
+from typing import List
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+from mashumaro.types import Discriminator
+
+@dataclass
+class ClientEvent(DataClassDictMixin):
+    class Config(BaseConfig):
+        discriminator = Discriminator(  # <- add discriminator
+            field="type",
+            include_subtypes=True,
+        )
+
+@dataclass
+class ClientConnectedEvent(ClientEvent):
+    type = "connected"
+    client_ip: IPv4Address
+
+@dataclass
+class ClientDisconnectedEvent(ClientEvent):
+    type = "disconnected"
+    client_ip: IPv4Address
+
+@dataclass
+class AggregatedEvents(DataClassDictMixin):
+    list: List[ClientEvent]  # <- use base class here
+```
+
+And now we can deserialize events based on "type" value as we did earlier:
+
+```python
+events = AggregatedEvents.from_dict(
+    {
+        "list": [
+            {"type": "connected", "client_ip": "10.0.0.42"},
+            {"type": "disconnected", "client_ip": "10.0.0.42"},
+        ]
+    }
+)
+assert events == AggregatedEvents(
+    list=[
+        ClientConnectedEvent(client_ip=IPv4Address("10.0.0.42")),
+        ClientDisconnectedEvent(client_ip=IPv4Address("10.0.0.42")),
+    ]
+)
+```
+
+What's more interesting is that you can now deserialize subclasses simply by
+calling the superclass `from_*` method, which is very useful:
+```python
+disconnected_event = ClientEvent.from_dict(
+    {"type": "disconnected", "client_ip": "10.0.0.42"}
+)
+assert disconnected_event == ClientDisconnectedEvent(IPv4Address("10.0.0.42"))
+```
+
+The same is applicable for subclasses without a common field:
+
+```python
+@dataclass
+class Ingredient(DataClassDictMixin):
+    name: str
+
+    class Config:
+        discriminator = Discriminator(include_subtypes=True)
+
+...
+
+celery = Ingredient.from_dict({"name": "celery from my garden", "pieces": 5})
+assert celery == Celery(name="celery from my garden", pieces=5)
+```
+
+#### Working with union of classes
+
+Deserialization of union of types distinguishable by a particular field will
+be much faster using `Discriminator` because there will be no traversal
+of all classes and an attempt to deserialize each of them.
+Usually this approach can be used when you have multiple classes without a
+common superclass or when you only need to deserialize some of the subclasses.
+In the following example we will use `include_supertypes=True` to
+deserialize 2 subclasses out of 3:
+
+```python
+from dataclasses import dataclass
+from typing import Annotated, Literal, Union
+# or from typing_extensions import Annotated
+from mashumaro import DataClassDictMixin
+from mashumaro.types import Discriminator
+
+@dataclass
+class Event(DataClassDictMixin):
+    pass
+
+@dataclass
+class Event1(Event):
+    code: Literal[1] = 1
+    ...
+
+@dataclass
+class Event2(Event):
+    code: Literal[2] = 2
+    ...
+
+@dataclass
+class Event3(Event):
+    code: Literal[3] = 3
+    ...
+
+@dataclass
+class Message(DataClassDictMixin):
+    event: Annotated[
+        Union[Event1, Event2],
+        Discriminator(field="code", include_supertypes=True),
+    ]
+
+event1_msg = Message.from_dict({"event": {"code": 1, ...}})
+event2_msg = Message.from_dict({"event": {"code": 2, ...}})
+assert isinstance(event1_msg.event, Event1)
+assert isinstance(event2_msg.event, Event2)
+
+# raises InvalidFieldValue:
+Message.from_dict({"event": {"code": 3, ...}})
+```
+
+Again, it's not necessary to have a common superclass. If you have a union of
+dataclasses without a field that they can be distinguishable by, you can still
+use `Discriminator`, but deserialization will almost be the same as for `Union`
+type without `Discriminator` except that it could be possible to deserialize
+subclasses with `include_subtypes=True`.
+
+> **Note**
+>
+> When both `include_subtypes` and `include_supertypes` are enabled,
+> all subclasses will be attempted to be deserialized first,
+> superclasses — at the end.
+
+```python
+@dataclass
+class Hummus(DataClassDictMixin):
+    made_of: Literal["chickpeas", "artichoke"]
+    grams: int
+
+@dataclass
+class ChickpeaHummus(Hummus):
+    made_of: Literal["chickpeas"]
+
+@dataclass
+class Celery(DataClassDictMixin):
+    pieces: int
+
+@dataclass
+class Plate(DataClassDictMixin):
+    ingredients: List[
+        Annotated[
+            Union[Hummus, Celery],
+            Discriminator(include_subtypes=True, include_supertypes=True),
+        ]
+    ]
+
+plate = Plate.from_dict(
+    {
+        "ingredients": [
+            {"made_of": "chickpeas", "grams": 100},
+            {"made_of": "artichoke", "grams": 50},
+            {"pieces": 4},
+        ]
+    }
+)
+assert plate == Plate(
+    ingredients=[
+        ChickpeaHummus(made_of='chickpeas', grams=100),  # <- subclass
+        Hummus(made_of='artichoke', grams=50),  # <- superclass
+        Celery(pieces=4),
+    ]
+)
 ```
 
 ### Code generation options

@@ -15,12 +15,12 @@ import typing_extensions
 from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
-    collect_type_params,
     get_args,
     get_class_that_defines_method,
     get_function_return_annotation,
     get_literal_values,
     is_dataclass_dict_mixin_subclass,
+    is_final,
     is_generic,
     is_literal,
     is_named_tuple,
@@ -38,6 +38,7 @@ from mashumaro.core.meta.helpers import (
     is_unpack,
     not_none_type_arg,
     resolve_type_params,
+    substitute_type_params,
     type_name,
 )
 from mashumaro.core.meta.types.common import (
@@ -50,6 +51,7 @@ from mashumaro.core.meta.types.common import (
     ensure_generic_collection_subclass,
     ensure_generic_mapping,
     expr_or_maybe_none,
+    random_hex,
 )
 from mashumaro.exceptions import (
     UnserializableDataError,
@@ -85,15 +87,11 @@ def _pack_with_annotated_serialization_strategy(
         )
     except (KeyError, ValueError):
         value_type = Any
-    resolved = resolve_type_params(strategy_type, get_args(spec.type))[
-        strategy_type
-    ]
-    new_type_args = []
-    for type_param in collect_type_params(value_type):
-        new_type_args.append(resolved.get(type_param, type_param))
-    with suppress(TypeError):
-        value_type = value_type[tuple(new_type_args)]
-    overridden_fn = f"__{spec.field_ctx.name}_serialize_{uuid.uuid4().hex}"
+    value_type = substitute_type_params(
+        value_type,
+        resolve_type_params(strategy_type, get_args(spec.type))[strategy_type],
+    )
+    overridden_fn = f"__{spec.field_ctx.name}_serialize_{random_hex()}"
     setattr(spec.builder.cls, overridden_fn, strategy.serialize)
     return PackerRegistry.get(
         spec.copy(
@@ -141,7 +139,7 @@ def pack_type_with_overridden_serialization(
     elif isinstance(serialization_method, ExpressionWrapper):
         return serialization_method.expression
     elif callable(serialization_method):
-        overridden_fn = f"__{spec.field_ctx.name}_serialize_{uuid.uuid4().hex}"
+        overridden_fn = f"__{spec.field_ctx.name}_serialize_{random_hex()}"
         setattr(
             spec.builder.cls, overridden_fn, staticmethod(serialization_method)
         )
@@ -166,16 +164,12 @@ def _pack_annotated_serializable_type(
         ) from None
     if is_self(value_type):
         return f"{spec.expression}._serialize()"
-    args = get_args(value_type)
-    resolved = resolve_type_params(spec.origin_type, get_args(spec.type))[
-        spec.origin_type
-    ]
-    new_args = []
-    for arg in args:
-        new_args.append(resolved.get(arg, arg))
-    with suppress(TypeError):
-        # noinspection PyUnresolvedReferences
-        value_type = value_type[tuple(new_args)]
+    value_type = substitute_type_params(
+        value_type,
+        resolve_type_params(spec.origin_type, get_args(spec.type))[
+            spec.origin_type
+        ],
+    )
     return PackerRegistry.get(
         spec.copy(
             type=value_type,
@@ -240,6 +234,12 @@ def pack_dataclass_dict_mixin_subclass(
 
 
 @register
+def pack_final(spec: ValueSpec) -> Optional[Expression]:
+    if is_final(spec.type):
+        return PackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
+
+
+@register
 def pack_any(spec: ValueSpec) -> Optional[Expression]:
     if spec.type is Any:
         return spec.expression
@@ -251,7 +251,7 @@ def pack_union(
     lines = CodeLines()
     method_name = (
         f"__pack_{prefix}_{spec.builder.cls.__name__}_{spec.field_ctx.name}__"
-        f"{str(uuid.uuid4().hex)}"
+        f"{random_hex()}"
     )
     default_kwargs = spec.builder.get_pack_method_default_flag_values()
     if default_kwargs:
@@ -263,12 +263,9 @@ def pack_union(
             PackerRegistry.get(spec.copy(type=type_arg, expression="value"))
             for type_arg in args
         ):
-            lines.append("try:")
-            with lines.indent():
+            with lines.indent("try:"):
                 lines.append(f"return {packer}")
-            lines.append("except:")
-            with lines.indent():
-                lines.append("pass")
+            lines.append("except Exception: pass")
         field_type = type_name(
             spec.type,
             resolved_type_params=spec.builder.get_field_resolved_type_params(
@@ -295,7 +292,7 @@ def pack_literal(spec: ValueSpec) -> Expression:
     lines = CodeLines()
     method_name = (
         f"__pack_literal_{spec.builder.cls.__name__}_{spec.field_ctx.name}__"
-        f"{str(uuid.uuid4().hex)}"
+        f"{random_hex()}"
     )
     default_kwargs = spec.builder.get_pack_method_default_flag_values()
     if default_kwargs:
@@ -316,17 +313,15 @@ def pack_literal(spec: ValueSpec) -> Expression:
                     typ=value_type,
                     resolved_type_params=resolved_type_params,
                 )
-                lines.append(
+                with lines.indent(
                     f"if value == {enum_type_name}.{literal_value.name}:"
-                )
-                with lines.indent():
+                ):
                     lines.append(f"return {packer}")
             elif isinstance(  # type: ignore
                 literal_value,
                 (int, str, bytes, bool, NoneType),  # type: ignore
             ):
-                lines.append(f"if value == {literal_value!r}:")
-                with lines.indent():
+                with lines.indent(f"if value == {literal_value!r}:"):
                     lines.append(f"return {packer}")
         field_type = type_name(
             typ=spec.type,
@@ -592,7 +587,7 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
     lines = CodeLines()
     method_name = (
         f"__pack_typed_dict_{spec.builder.cls.__name__}_"
-        f"{spec.field_ctx.name}__{str(uuid.uuid4().hex)}"
+        f"{spec.field_ctx.name}__{random_hex()}"
     )
     default_kwargs = spec.builder.get_pack_method_default_flag_values()
     if default_kwargs:
@@ -612,8 +607,7 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
             lines.append(f"d['{key}'] = {packer}")
         for key in sorted(optional_keys, key=all_keys.index):
             lines.append(f"key_value = value.get('{key}', MISSING)")
-            lines.append("if key_value is not MISSING:")
-            with lines.indent():
+            with lines.indent("if key_value is not MISSING:"):
                 packer = PackerRegistry.get(
                     spec.copy(
                         type=annotations[key],

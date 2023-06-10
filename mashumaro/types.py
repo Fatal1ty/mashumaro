@@ -1,4 +1,5 @@
 import decimal
+from dataclasses import dataclass
 from typing import Any, List, Optional, Type, Union
 
 from typing_extensions import Literal
@@ -10,6 +11,7 @@ __all__ = [
     "GenericSerializableType",
     "SerializationStrategy",
     "RoundedDecimal",
+    "Discriminator",
 ]
 
 
@@ -84,3 +86,17 @@ class RoundedDecimal(SerializationStrategy):
 
     def deserialize(self, value: str) -> decimal.Decimal:
         return decimal.Decimal(str(value))
+
+
+@dataclass(unsafe_hash=True)
+class Discriminator:
+    field: Optional[str] = None
+    include_supertypes: bool = False
+    include_subtypes: bool = False
+
+    def __post_init__(self) -> None:
+        if not self.include_supertypes and not self.include_subtypes:
+            raise ValueError(
+                "Either 'include_supertypes' or 'include_subtypes' "
+                "must be enabled"
+            )

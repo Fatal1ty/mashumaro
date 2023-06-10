@@ -21,8 +21,12 @@ from typing import (
     Union,
 )
 
+try:
+    from typing import Unpack  # type: ignore[attr-defined]
+except ImportError:
+    from typing_extensions import Unpack
+
 import typing_extensions
-from typing_extensions import Unpack
 
 from mashumaro.core.const import (
     PEP_585_COMPATIBLE,
@@ -50,6 +54,7 @@ __all__ = [
     "is_type_var",
     "is_type_var_any",
     "is_class_var",
+    "is_final",
     "is_init_var",
     "get_class_that_defines_method",
     "get_class_that_defines_field",
@@ -57,11 +62,13 @@ __all__ = [
     "is_dataclass_dict_mixin_subclass",
     "collect_type_params",
     "resolve_type_params",
+    "substitute_type_params",
     "get_generic_name",
     "get_name_error_name",
     "is_dialect_subclass",
     "is_new_type",
     "is_annotated",
+    "get_type_annotations",
     "is_literal",
     "get_literal_values",
     "is_self",
@@ -72,6 +79,7 @@ __all__ = [
     "is_unpack",
     "is_type_var_tuple",
     "hash_type_args",
+    "iter_all_subclasses",
 ]
 
 
@@ -362,6 +370,10 @@ def is_annotated(typ: Type) -> bool:
     return False
 
 
+def get_type_annotations(typ: Type) -> Sequence[Any]:
+    return getattr(typ, "__metadata__", [])
+
+
 def is_literal(typ: Type) -> bool:
     if PY_37 or PY_38 or PY_39:
         with suppress(AttributeError):
@@ -403,6 +415,10 @@ def is_type_var_any(typ: Type) -> bool:
 
 def is_class_var(typ: Type) -> bool:
     return get_type_origin(typ) is ClassVar
+
+
+def is_final(typ: Type) -> bool:
+    return get_type_origin(typ) is typing_extensions.Final
 
 
 def is_init_var(typ: Type) -> bool:
@@ -605,6 +621,23 @@ def resolve_type_params(
     return result
 
 
+def substitute_type_params(typ: Type, substitutions: Dict[Type, Type]) -> Type:
+    if is_annotated(typ):
+        origin = get_type_origin(typ)
+        subst = substitutions.get(origin, origin)
+        return typing_extensions.Annotated.__class_getitem__(  # type: ignore
+            (subst, *get_type_annotations(typ))
+        )
+    else:
+        new_type_args = []
+        for type_param in collect_type_params(typ):
+            new_type_args.append(substitutions.get(type_param, type_param))
+        if new_type_args:
+            with suppress(TypeError, KeyError):
+                return typ[tuple(new_type_args)]
+        return substitutions.get(typ, typ)
+
+
 def get_name_error_name(e: NameError) -> str:
     if PY_310_MIN:
         return e.name  # type: ignore
@@ -683,3 +716,9 @@ def is_variable_length_tuple(typ: Type) -> bool:
 
 def hash_type_args(type_args: typing.Iterable[typing.Type]) -> str:
     return md5(",".join(map(type_name, type_args)).encode()).hexdigest()
+
+
+def iter_all_subclasses(cls: Type) -> typing.Iterator[Type]:
+    for subclass in cls.__subclasses__():
+        yield subclass
+        yield from iter_all_subclasses(subclass)

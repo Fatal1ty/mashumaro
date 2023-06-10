@@ -36,17 +36,23 @@ from mashumaro.core.meta.helpers import (
     is_optional,
     is_type_var_any,
     resolve_type_params,
+    substitute_type_params,
     type_name,
 )
 from mashumaro.core.meta.types.common import FieldContext, ValueSpec
 from mashumaro.core.meta.types.pack import PackerRegistry
-from mashumaro.core.meta.types.unpack import UnpackerRegistry
+from mashumaro.core.meta.types.unpack import (
+    SubtypeUnpackerBuilder,
+    UnpackerRegistry,
+)
 from mashumaro.dialect import Dialect
 from mashumaro.exceptions import (  # noqa
     BadDialect,
     BadHookSignature,
     InvalidFieldValue,
+    MissingDiscriminatorError,
     MissingField,
+    SuitableVariantNotFoundError,
     ThirdPartyModuleNotFoundError,
     UnresolvedTypeReferenceError,
     UnserializableDataError,
@@ -54,6 +60,7 @@ from mashumaro.exceptions import (  # noqa
     UnsupportedDeserializationEngine,
     UnsupportedSerializationEngine,
 )
+from mashumaro.types import Discriminator
 
 __PRE_SERIALIZE__ = "__pre_serialize__"
 __PRE_DESERIALIZE__ = "__pre_deserialize__"
@@ -142,7 +149,9 @@ class CodeBuilder:
         self, field_name: str, field_type: typing.Type
     ) -> typing.Type:
         cls = self._get_field_class(field_name)
-        return self.resolved_type_params[cls].get(field_type, field_type)
+        return substitute_type_params(
+            field_type, self.resolved_type_params[cls]
+        )
 
     def get_field_resolved_type_params(
         self, field_name: str
@@ -234,8 +243,11 @@ class CodeBuilder:
         self.lines.append(line)
 
     @contextmanager
-    def indent(self) -> typing.Generator[None, None, None]:
-        with self.lines.indent():
+    def indent(
+        self,
+        expr: typing.Optional[str] = None,
+    ) -> typing.Generator[None, None, None]:
+        with self.lines.indent(expr):
             yield
 
     def compile(self) -> None:
@@ -256,7 +268,7 @@ class CodeBuilder:
     def _add_unpack_method_lines(self, method_name: str) -> None:
         config = self.get_config()
         try:
-            field_types = self.field_types
+            field_types = self.get_field_types(include_extras=True)
         except UnresolvedTypeReferenceError:
             if (
                 not self.allow_postponed_evaluation
@@ -284,6 +296,29 @@ class CodeBuilder:
         else:
             if self.decoder is not None:
                 self.add_line("d = decoder(d)")
+            discr = self.get_discriminator()
+            if discr:
+                if not discr.include_subtypes:
+                    raise ValueError(
+                        "Config based discriminator must have "
+                        "'include_subtypes' enabled"
+                    )
+                discr = Discriminator(
+                    # prevent RecursionError
+                    field=discr.field,
+                    include_subtypes=discr.include_subtypes,
+                )
+                self.add_type_modules(self.cls)
+                method = SubtypeUnpackerBuilder(discr).build(
+                    spec=ValueSpec(
+                        type=self.cls,
+                        expression="d",
+                        builder=self,
+                        field_ctx=FieldContext("", {}),
+                    )
+                )
+                self.add_line(f"return {method}")
+                return
             pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
             if pre_deserialize:
                 if not isinstance(pre_deserialize, classmethod):
@@ -301,8 +336,7 @@ class CodeBuilder:
                     continue
                 filtered_fields.append((fname, ftype))
             if filtered_fields:
-                self.add_line("try:")
-                with self.indent():
+                with self.indent("try:"):
                     self.add_line("kwargs = {}")
                     for fname, ftype in filtered_fields:
                         self.add_type_modules(ftype)
@@ -313,17 +347,14 @@ class CodeBuilder:
                         self._unpack_method_set_value(
                             fname, ftype, metadata, alias
                         )
-                self.add_line("except TypeError:")
-                with self.indent():
-                    self.add_line("if not isinstance(d, dict):")
-                    with self.indent():
+                with self.indent("except TypeError:"):
+                    with self.indent("if not isinstance(d, dict):"):
                         self.add_line(
                             f"raise ValueError('Argument for "
                             f"{type_name(self.cls)}.{method_name} method "
                             f"should be a dict instance') from None"
                         )
-                    self.add_line("else:")
-                    with self.indent():
+                    with self.indent("else:"):
                         self.add_line("raise")
             else:
                 self.add_line("kwargs = {}")
@@ -350,8 +381,7 @@ class CodeBuilder:
         )
         cache_name = f"__dialect_{self.format_name}_unpacker_cache__"
         self.add_line(f"unpacker = cls.{cache_name}.get(dialect)")
-        self.add_line("if unpacker is not None:")
-        with self.indent():
+        with self.indent("if unpacker is not None:"):
             self.add_line(f"return unpacker({unpacker_args})")
         if self.default_dialect:
             self.add_type_modules(self.default_dialect)
@@ -379,8 +409,7 @@ class CodeBuilder:
         )
         cache_name = f"__dialect_{self.format_name}_unpacker_cache__"
         if dialects_feature:
-            self.add_line(f"if not '{cache_name}' in cls.__dict__:")
-            with self.indent():
+            with self.indent(f"if not '{cache_name}' in cls.__dict__:"):
                 self.add_line(f"cls.{cache_name} = {{}}")
 
         if self.dialect is None:
@@ -388,11 +417,9 @@ class CodeBuilder:
         self._add_unpack_method_definition(method_name)
         with self.indent():
             if dialects_feature and self.dialect is None:
-                self.add_line("if dialect is None:")
-                with self.indent():
+                with self.indent("if dialect is None:"):
                     self._add_unpack_method_lines(method_name)
-                self.add_line("else:")
-                with self.indent():
+                with self.indent("else:"):
                     self._add_unpack_method_with_dialect_lines(method_name)
             else:
                 self._add_unpack_method_lines(method_name)
@@ -418,8 +445,7 @@ class CodeBuilder:
         metadata: typing.Mapping,
         alias: typing.Optional[str] = None,
     ) -> None:
-        self.add_line("try:")
-        with self.indent():
+        with self.indent("try:"):
             could_be_none = False
             if is_named_tuple(ftype):
                 self.add_line(f"value = d['{alias or fname}']")
@@ -450,16 +476,13 @@ class CodeBuilder:
                 )
             )
             if could_be_none:
-                self.add_line("if value is not None:")
-                with self.indent():
+                with self.indent("if value is not None:"):
                     self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
-                self.add_line("else:")
-                with self.indent():
+                with self.indent("else:"):
                     self.add_line(f"kwargs['{fname}'] = None")
             else:
                 self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
-        self.add_line("except KeyError as e:")
-        with self.indent():
+        with self.indent("except KeyError as e:"):
             field_type = type_name(
                 ftype,
                 resolved_type_params=self.get_field_resolved_type_params(
@@ -467,27 +490,23 @@ class CodeBuilder:
                 ),
             )
             if self.get_field_default(fname) is MISSING:
-                self.add_line("if e.__traceback__.tb_next is None:")
-                with self.indent():
+                with self.indent("if e.__traceback__.tb_next is None:"):
                     self.add_line(
                         f"raise MissingField('{fname}',{field_type},cls) "
                         f"from None"
                     )
-                self.add_line("else:")
-                with self.indent():
+                with self.indent("else:"):
                     self.add_line(
                         f"raise InvalidFieldValue("
                         f"'{fname}',{field_type},{packed_value},cls)"
                     )
             else:
-                self.add_line("if e.__traceback__.tb_next is not None:")
-                with self.indent():
+                with self.indent("if e.__traceback__.tb_next is not None:"):
                     self.add_line(
                         f"raise InvalidFieldValue("
                         f"'{fname}',{field_type},{packed_value},cls)"
                     )
-        self.add_line("except Exception:")
-        with self.indent():
+        with self.indent("except Exception:"):
             self.add_line(
                 f"raise InvalidFieldValue("
                 f"'{fname}',{field_type},{packed_value},cls)"
@@ -496,11 +515,16 @@ class CodeBuilder:
     @lru_cache()
     @typing.no_type_check
     def get_config(
-        self, cls: typing.Optional[typing.Type] = None
+        self,
+        cls: typing.Optional[typing.Type] = None,
+        look_in_parents: bool = True,
     ) -> typing.Type[BaseConfig]:
         if cls is None:
             cls = self.cls
-        config_cls = getattr(cls, "Config", BaseConfig)
+        if look_in_parents:
+            config_cls = getattr(cls, "Config", BaseConfig)
+        else:
+            config_cls = self.namespace.get("Config", BaseConfig)
         if not issubclass(config_cls, BaseConfig):
             config_cls = type(
                 "Config",
@@ -508,6 +532,9 @@ class CodeBuilder:
                 {**BaseConfig.__dict__, **config_cls.__dict__},
             )
         return config_cls
+
+    def get_discriminator(self) -> typing.Optional[Discriminator]:
+        return self.get_config(look_in_parents=False).discriminator
 
     def get_pack_method_flags(
         self,
@@ -596,35 +623,34 @@ class CodeBuilder:
         return pluggable_flags_str
 
     def get_unpack_method_default_flag_values(
-        self,
-        cls: typing.Optional[typing.Type] = None,
-        pass_decoder: bool = False,
+        self, pass_decoder: bool = False
     ) -> str:
         pos_param_names = []
         pos_param_values = []
         kw_param_names = []
         kw_param_values = []
+
         if pass_decoder and self.decoder is not None:
             pos_param_names.append("decoder")
             pos_param_values.append(type_name(self.decoder))
-        dialects_feature = self.is_code_generation_option_enabled(
-            ADD_DIALECT_SUPPORT, cls
-        )
-        if dialects_feature:
-            kw_param_names.append("dialect")
-            kw_param_values.append("None")
+
+        kw_param_names.append("dialect")
+        kw_param_values.append("None")
+
         if pos_param_names:
             pluggable_flags_str = ", ".join(
                 [f"{n}={v}" for n, v in zip(pos_param_names, pos_param_values)]
             )
         else:
             pluggable_flags_str = ""
+
         if kw_param_names:
             if pos_param_names:
                 pluggable_flags_str += ", "
             pluggable_flags_str += "*, " + ", ".join(
                 [f"{n}={v}" for n, v in zip(kw_param_names, kw_param_values)]
             )
+
         return pluggable_flags_str
 
     def is_code_generation_option_enabled(
@@ -726,18 +752,15 @@ class CodeBuilder:
                     alias = aliases.get(fname)
                     if fname in fields_could_be_none:
                         self.add_line(f"value = self.{fname}")
-                        self.add_line("if value is not None:")
-                        with self.indent():
+                        with self.indent("if value is not None:"):
                             self._pack_method_set_value(
                                 fname, alias, by_alias_feature, packer
                             )
                         if omit_none and not omit_none_feature:
                             continue
-                        self.add_line("else:")
-                        with self.indent():
+                        with self.indent("else:"):
                             if omit_none_feature:
-                                self.add_line("if not omit_none:")
-                                with self.indent():
+                                with self.indent("if not omit_none:"):
                                     self._pack_method_set_value(
                                         fname, alias, by_alias_feature, "None"
                                     )
@@ -789,11 +812,9 @@ class CodeBuilder:
         packed_value: str,
     ) -> None:
         if by_alias_feature and alias is not None:
-            self.add_line("if by_alias:")
-            with self.indent():
+            with self.indent("if by_alias:"):
                 self.add_line(f"kwargs['{alias}'] = {packed_value}")
-            self.add_line("else:")
-            with self.indent():
+            with self.indent("else:"):
                 self.add_line(f"kwargs['{fname}'] = {packed_value}")
         else:
             serialize_by_alias = self.get_config().serialize_by_alias
@@ -867,18 +888,15 @@ class CodeBuilder:
         )
         cache_name = f"__dialect_{self.format_name}_packer_cache__"
         if dialects_feature:
-            self.add_line(f"if not '{cache_name}' in cls.__dict__:")
-            with self.indent():
+            with self.indent(f"if not '{cache_name}' in cls.__dict__:"):
                 self.add_line(f"cls.{cache_name} = {{}}")
 
         self._add_pack_method_definition(method_name)
         with self.indent():
             if dialects_feature and self.dialect is None:
-                self.add_line("if dialect is None:")
-                with self.indent():
+                with self.indent("if dialect is None:"):
                     self._add_pack_method_lines(method_name)
-                self.add_line("else:")
-                with self.indent():
+                with self.indent("else:"):
                     self._add_pack_method_with_dialect_lines(method_name)
             else:
                 self._add_pack_method_lines(method_name)

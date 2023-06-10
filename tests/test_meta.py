@@ -27,6 +27,7 @@ from mashumaro.core.meta.helpers import (
     get_function_return_annotation,
     get_generic_name,
     get_literal_values,
+    get_type_annotations,
     get_type_origin,
     hash_type_args,
     is_annotated,
@@ -43,6 +44,7 @@ from mashumaro.core.meta.helpers import (
     is_union,
     not_none_type_arg,
     resolve_type_params,
+    substitute_type_params,
     type_name,
 )
 from mashumaro.core.meta.types.common import (
@@ -535,11 +537,11 @@ def test_get_literal_values():
 
 def test_type_name_literal():
     if PY_38_MIN:
-        module_name = "typing"
+        module = typing
     else:
-        module_name = "typing_extensions"
+        module = typing_extensions
     assert type_name(
-        typing_extensions.Literal[
+        getattr(module, "Literal")[
             1,
             "a",
             b"\x00",
@@ -556,7 +558,7 @@ def test_type_name_literal():
             typing_extensions.Literal[typing_extensions.Literal["b", "c"]],
         ]
     ) == (
-        f"{module_name}.Literal[1, 'a', b'\\x00', True, False, None, "
+        f"{module.__name__}.Literal[1, 'a', b'\\x00', True, False, None, "
         "tests.entities.MyEnum.a, tests.entities.MyStrEnum.a, "
         "tests.entities.MyNativeStrEnum.a, tests.entities.MyIntEnum.a, "
         "tests.entities.MyFlag.a, tests.entities.MyIntFlag.a, 2, 3, 'b', 'c']"
@@ -696,3 +698,21 @@ def test_is_generic_like_with_class_getitem():
 
     assert is_generic(MyClass)
     assert is_generic(MyClass[int])
+
+
+def test_get_type_annotations():
+    assert get_type_annotations(int) == []
+    assert get_type_annotations(typing_extensions.Annotated[int, 42]) == (42,)
+
+
+def test_substitute_type_params():
+    assert substitute_type_params(int, {}) == int
+    assert substitute_type_params(T, {T: int}) == int
+    assert (
+        substitute_type_params(typing.Dict[T, TAny], {T: str})
+        == typing.Dict[str, TAny]
+    )
+    assert (
+        substitute_type_params(typing_extensions.Annotated[T, 42], {T: int})
+        == typing_extensions.Annotated[int, 42]
+    )

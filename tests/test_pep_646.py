@@ -3,8 +3,16 @@ from datetime import date
 from functools import partial
 from typing import Generic, Tuple, TypeVar
 
+try:
+    from typing import TypeVarTuple
+except ImportError:
+    from typing_extensions import TypeVarTuple
+try:
+    from typing import Unpack
+except ImportError:
+    from typing_extensions import Unpack
+
 import pytest
-from typing_extensions import TypeVarTuple, Unpack
 
 from mashumaro import DataClassDictMixin
 from mashumaro.core.const import PEP_585_COMPATIBLE, PY_311_MIN

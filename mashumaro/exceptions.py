@@ -125,6 +125,37 @@ class InvalidFieldValue(ValueError):
         return s
 
 
+class MissingDiscriminatorError(LookupError):
+    def __init__(self, field_name: str):
+        self.field_name = field_name
+
+    def __str__(self) -> str:
+        return f"Discriminator '{self.field_name}' is missing"
+
+
+class SuitableVariantNotFoundError(ValueError):
+    def __init__(
+        self,
+        variants_type: Type,
+        discriminator_name: Optional[str] = None,
+        discriminator_value: Any = None,
+    ):
+        self.variants_type = variants_type
+        self.discriminator_name = discriminator_name
+        self.discriminator_value = discriminator_value
+
+    def __str__(self) -> str:
+        s = f"{type_name(self.variants_type)} has no "
+        if self.discriminator_value is not None:
+            s += (
+                f"subtype with attribute '{self.discriminator_name}' "
+                f"equal to {self.discriminator_value!r}"
+            )
+        else:
+            s += "suitable subtype"
+        return s
+
+
 class BadHookSignature(TypeError):
     pass
 
