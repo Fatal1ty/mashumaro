@@ -1788,11 +1788,13 @@ assert celery == Celery(name="celery from my garden", pieces=5)
 
 #### Working with union of classes
 
-Deserialization of union of types distinguishable by a specific field will
+Deserialization of union of types distinguishable by a particular field will
 be much faster using `Discriminator` because there will be no traversal
 of all classes and an attempt to deserialize each of them.
 Usually this approach can be used when you have multiple classes without a
 common superclass or when you only need to deserialize some of the subclasses.
+In the following example we will use `include_supertypes=True` to
+deserialize 2 subclasses out of 3:
 
 ```python
 from dataclasses import dataclass
@@ -1844,8 +1846,9 @@ subclasses with `include_subtypes=True`.
 
 > **Note**
 >
-> All subclasses are attempted to be deserialized first,
-> superclasses are attempted to be deserialized at the end.
+> When both `include_subtypes` and `include_supertypes` are enabled,
+> all subclasses will be attempted to be deserialized first,
+> superclasses — at the end.
 
 ```python
 @dataclass
