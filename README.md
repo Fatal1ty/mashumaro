@@ -1546,7 +1546,7 @@ within `Annotated` type. We will use `field` parameter and set
 > A descendant class without a discriminator field will be ignored, but
 > its descendants won't.
 
-Suppose we have a hierarchy of client events distinguishable by class
+Suppose we have a hierarchy of client events distinguishable by a class
 attribute "type":
 
 ```python
@@ -1762,7 +1762,7 @@ assert events == AggregatedEvents(
 ```
 
 What's more interesting is that you can now deserialize subclasses simply by
-calling the parent `from_*` method, which is very useful:
+calling the superclass `from_*` method, which is very useful:
 ```python
 disconnected_event = ClientEvent.from_dict(
     {"type": "disconnected", "client_ip": "10.0.0.42"}
@@ -1787,6 +1787,106 @@ assert celery == Celery(name="celery from my garden", pieces=5)
 ```
 
 #### Working with union of classes
+
+Deserialization of union of types distinguishable by a specific field will
+be much faster using `Discriminator` because there will be no traversal
+of all classes and an attempt to deserialize each of them.
+Usually this approach can be used when you have multiple classes without a
+common superclass or when you only need to deserialize some of the subclasses.
+
+```python
+from dataclasses import dataclass
+from typing import Annotated, Literal, Union
+# or from typing_extensions import Annotated
+from mashumaro import DataClassDictMixin
+from mashumaro.types import Discriminator
+
+@dataclass
+class Event(DataClassDictMixin):
+    pass
+
+@dataclass
+class Event1(Event):
+    code: Literal[1] = 1
+    ...
+
+@dataclass
+class Event2(Event):
+    code: Literal[2] = 2
+    ...
+
+@dataclass
+class Event3(Event):
+    code: Literal[3] = 3
+    ...
+
+@dataclass
+class Message(DataClassDictMixin):
+    event: Annotated[
+        Union[Event1, Event2],
+        Discriminator(field="code", include_supertypes=True),
+    ]
+
+event1_msg = Message.from_dict({"event": {"code": 1, ...}})
+event2_msg = Message.from_dict({"event": {"code": 2, ...}})
+assert isinstance(event1_msg.event, Event1)
+assert isinstance(event2_msg.event, Event2)
+
+# raises InvalidFieldValue:
+Message.from_dict({"event": {"code": 3, ...}})
+```
+
+Again, it's not necessary to have a common superclass. If you have a union of
+dataclasses without a field that they can be distinguishable by, you can still
+use `Discriminator`, but deserialization will almost be the same as for `Union`
+type without `Discriminator` except that it could be possible to deserialize
+subclasses with `include_subtypes=True`.
+
+> **Note**
+>
+> All subclasses are attempted to be deserialized first,
+> superclasses are attempted to be deserialized at the end.
+
+```python
+@dataclass
+class Hummus(DataClassDictMixin):
+    made_of: Literal["chickpeas", "artichoke"]
+    grams: int
+
+@dataclass
+class ChickpeaHummus(Hummus):
+    made_of: Literal["chickpeas"]
+
+@dataclass
+class Celery(DataClassDictMixin):
+    pieces: int
+
+@dataclass
+class Plate(DataClassDictMixin):
+    ingredients: List[
+        Annotated[
+            Union[Hummus, Celery],
+            Discriminator(include_subtypes=True, include_supertypes=True),
+        ]
+    ]
+
+plate = Plate.from_dict(
+    {
+        "ingredients": [
+            {"made_of": "chickpeas", "grams": 100},
+            {"made_of": "artichoke", "grams": 50},
+            {"pieces": 4},
+        ]
+    }
+)
+assert plate == Plate(
+    ingredients=[
+        ChickpeaHummus(made_of='chickpeas', grams=100),  # <- subclass
+        Hummus(made_of='artichoke', grams=50),  # <- superclass
+        Celery(pieces=4),
+    ]
+)
+```
 
 ### Code generation options
 
