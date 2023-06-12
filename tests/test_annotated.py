@@ -35,11 +35,9 @@ def test_annotated_with_overridden_methods():
                     "deserialize": date.fromisoformat,
                 },
                 date: {
-                    "serialize": lambda x: datetime(
-                        x.year, x.month, x.day
-                    ).timestamp(),
+                    "serialize": lambda x: x.strftime("%Y%m%d"),
                     "deserialize": (
-                        lambda x: datetime.fromtimestamp(x).date()
+                        lambda x: datetime.strptime(x, "%Y%m%d").date()
                     ),
                 },
             }
@@ -49,14 +47,15 @@ def test_annotated_with_overridden_methods():
         bar=date(2023, 6, 12),
         baz=date(2023, 6, 12),
     )
+    obj.foo.strftime("%Y%M%D")
     assert (
         DataClass.from_dict(
-            {"bar": "2023-06-12", "baz": 1686517200.0, "foo": 738683}
+            {"foo": 738683, "bar": "2023-06-12", "baz": "20230612"}
         )
         == obj
     )
     assert obj.to_dict() == {
-        "bar": "2023-06-12",
-        "baz": 1686517200.0,
         "foo": 738683,
+        "bar": "2023-06-12",
+        "baz": "20230612",
     }
