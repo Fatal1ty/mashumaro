@@ -107,7 +107,10 @@ def get_overridden_serialization_method(
     serialize_option = spec.field_ctx.metadata.get("serialize")
     if serialize_option is not None:
         return serialize_option
-    for typ in (spec.type, spec.origin_type):
+    checking_types = [spec.type, spec.origin_type]
+    if spec.annotated_type:
+        checking_types.insert(0, spec.annotated_type)
+    for typ in checking_types:
         for strategy in spec.builder.iter_serialization_strategies(
             spec.field_ctx.metadata, typ
         ):
