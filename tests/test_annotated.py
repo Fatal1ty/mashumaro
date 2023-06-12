@@ -17,7 +17,7 @@ def test_annotated():
     assert obj.to_dict() == {"x": "2022-02-06"}
 
 
-def test_annotated_with_overriden_methods():
+def test_annotated_with_overridden_methods():
     @dataclass
     class DataClass(DataClassDictMixin):
         foo: Annotated[date, "foo"]

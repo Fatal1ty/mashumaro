@@ -895,7 +895,7 @@ def test_jsonschema_for_unsupported_type():
         build_json_schema(object)
 
 
-def test_overriden_serialization_method_without_signature():
+def test_overridden_serialization_method_without_signature():
     @dataclass
     class DataClass:
         x: datetime.datetime
@@ -921,7 +921,7 @@ def test_overriden_serialization_method_without_signature():
         )
 
 
-def test_overriden_serialization_method_without_return_annotation():
+def test_overridden_serialization_method_without_return_annotation():
     def as_timestamp(dt: datetime.datetime):  # pragma no cover
         return dt.timestamp()
 
@@ -939,7 +939,7 @@ def test_overriden_serialization_method_without_return_annotation():
     assert build_json_schema(DataClass).properties["y"] == EmptyJSONSchema()
 
 
-def test_overriden_serialization_method_with_return_annotation():
+def test_overridden_serialization_method_with_return_annotation():
     def as_timestamp(dt: datetime.datetime) -> float:
         return dt.timestamp()  # pragma no cover
 
