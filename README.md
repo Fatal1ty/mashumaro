@@ -1524,7 +1524,7 @@ Parameter `field` coule be in the following forms:
 * annotated as Literal: `type: Literal[42] = 42`
 * annotated as StrEnum: `type: ResponseType = ResponseType.OK`
 
-> **Warning**
+> **Note**
 >
 > Keep in mind that by default only Final, Literal and StrEnum fields are
 > processed during serialization.
