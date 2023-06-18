@@ -1800,7 +1800,7 @@ of all classes and an attempt to deserialize each of them.
 Usually this approach can be used when you have multiple classes without a
 common superclass or when you only need to deserialize some of the subclasses.
 In the following example we will use `include_supertypes=True` to
-deserialize 2 subclasses out of 3:
+deserialize two subclasses out of three:
 
 ```python
 from dataclasses import dataclass
