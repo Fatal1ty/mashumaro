@@ -159,10 +159,6 @@ class CodeBuilder:
         cls = self._get_field_class(field_name)
         return self.resolved_type_params[cls]
 
-    @property
-    def field_types(self) -> typing.Dict[str, typing.Any]:
-        return self.__get_field_types()
-
     def get_field_types(
         self, include_extras: bool = False
     ) -> typing.Dict[str, typing.Any]:
