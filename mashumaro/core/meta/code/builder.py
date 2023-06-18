@@ -159,10 +159,6 @@ class CodeBuilder:
         cls = self._get_field_class(field_name)
         return self.resolved_type_params[cls]
 
-    @property
-    def field_types(self) -> typing.Dict[str, typing.Any]:
-        return self.__get_field_types()
-
     def get_field_types(
         self, include_extras: bool = False
     ) -> typing.Dict[str, typing.Any]:
@@ -697,7 +693,7 @@ class CodeBuilder:
     def _add_pack_method_lines(self, method_name: str) -> None:
         config = self.get_config()
         try:
-            field_types = self.field_types
+            field_types = self.get_field_types(include_extras=True)
         except UnresolvedTypeReferenceError:
             if (
                 not self.allow_postponed_evaluation

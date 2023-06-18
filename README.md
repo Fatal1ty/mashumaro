@@ -74,6 +74,7 @@ Table of contents
       * [Subclasses without a common field](#subclasses-without-a-common-field)
       * [Class level discriminator](#class-level-discriminator)
       * [Working with union of classes](#working-with-union-of-classes)
+    * [Extending existing types](#extending-existing-types)
     * [Code generation options](#code-generation-options)
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
         * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
@@ -1127,6 +1128,10 @@ dictionary = instance.to_dict()
 # {'x': '2021', 'y': '2021-01-01'}
 ```
 
+Note that you can register different methods for multiple logical types which
+are based on the same type using `NewType` and `Annotated`.
+See [Extending existing types](#extending-existing-types) for details.
+
 #### `aliases` config option
 
 Sometimes it's better to write the field aliases in one place. You can mix
@@ -1800,7 +1805,7 @@ of all classes and an attempt to deserialize each of them.
 Usually this approach can be used when you have multiple classes without a
 common superclass or when you only need to deserialize some of the subclasses.
 In the following example we will use `include_supertypes=True` to
-deserialize 2 subclasses out of 3:
+deserialize two subclasses out of three:
 
 ```python
 from dataclasses import dataclass
@@ -1896,6 +1901,60 @@ assert plate == Plate(
     ]
 )
 ```
+
+### Extending existing types
+
+There are situations where you might want some values of the same type to be
+treated as their own type. You can create new logical types with
+[`NewType`](https://docs.python.org/3/library/typing.html#newtype) or
+[`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated)
+and register serialization strategies for them:
+
+```python
+from typing import Mapping, NewType, Annotated
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+
+SessionID = NewType("SessionID", str)
+AccountID = Annotated[str, "AccountID"]
+
+@dataclass
+class Context(DataClassDictMixin):
+    account_sessions: Mapping[AccountID, SessionID]
+
+    class Config:
+        serialization_strategy = {
+            AccountID: {
+                "deserialize": lambda x: ...,
+                "serialize": lambda x: ...,
+            },
+            SessionID: {
+                "deserialize": lambda x: ...,
+                "serialize": lambda x: ...,
+            }
+        }
+```
+
+Although using `NewType` is usually the most reliable way to avoid logical
+errors, you have to pay for it with notable overhead. If you are creating
+dataclass instances manually, then you know that type checkers will
+enforce you to enclose a value in your `"NewType"` callable, which leads
+to performance degradation:
+
+```python
+python -m timeit -s "from typing import NewType; MyInt = NewType('MyInt', int)" "MyInt(42)"
+10000000 loops, best of 5: 31.1 nsec per loop
+
+python -m timeit -s "from typing import NewType; MyInt = NewType('MyInt', int)" "42"
+50000000 loops, best of 5: 4.35 nsec per loop
+```
+
+However, when you instantiate dataclasses using the `from_*` method, there will
+be no performance degradation, because the value won't be enclosed in the
+callable in the generated code. Therefore, if performance is more important
+to you than catching logical errors by type checkers in case you are actively
+creating or changing dataclasses manually, then you should take a closer look
+at using `Annotated`.
 
 ### Code generation options
 
