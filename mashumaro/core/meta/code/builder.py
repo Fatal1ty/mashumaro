@@ -12,6 +12,7 @@ import typing_extensions
 
 from mashumaro.config import (
     ADD_DIALECT_SUPPORT,
+    ADD_SERIALIZATION_CONTEXT,
     TO_DICT_ADD_BY_ALIAS_FLAG,
     TO_DICT_ADD_OMIT_NONE_FLAG,
     BaseConfig,
@@ -547,6 +548,7 @@ class CodeBuilder:
             (TO_DICT_ADD_OMIT_NONE_FLAG, "omit_none"),
             (TO_DICT_ADD_BY_ALIAS_FLAG, "by_alias"),
             (ADD_DIALECT_SUPPORT, "dialect"),
+            (ADD_SERIALIZATION_CONTEXT, "context"),
         ):
             if self.is_code_generation_option_enabled(option, cls):
                 if self.is_code_generation_option_enabled(option):
@@ -582,6 +584,7 @@ class CodeBuilder:
             for value in self._get_encoder_kwargs(cls).values():
                 kw_param_names.append(value[0])
                 kw_param_values.append(value[1])
+
         omit_none_feature = self.is_code_generation_option_enabled(
             TO_DICT_ADD_OMIT_NONE_FLAG, cls
         )
@@ -591,6 +594,7 @@ class CodeBuilder:
             )
             kw_param_names.append("omit_none")
             kw_param_values.append("True" if omit_none else "False")
+
         by_alias_feature = self.is_code_generation_option_enabled(
             TO_DICT_ADD_BY_ALIAS_FLAG, cls
         )
@@ -598,12 +602,21 @@ class CodeBuilder:
             serialize_by_alias = self.get_config(cls).serialize_by_alias
             kw_param_names.append("by_alias")
             kw_param_values.append("True" if serialize_by_alias else "False")
+
         dialects_feature = self.is_code_generation_option_enabled(
             ADD_DIALECT_SUPPORT, cls
         )
         if dialects_feature:
             kw_param_names.append("dialect")
             kw_param_values.append("None")
+
+        context_feature = self.is_code_generation_option_enabled(
+            ADD_SERIALIZATION_CONTEXT, cls
+        )
+        if context_feature:
+            kw_param_names.append("context")
+            kw_param_values.append("None")
+
         if pos_param_names:
             pluggable_flags_str = ", ".join(
                 [f"{n}={v}" for n, v in zip(pos_param_names, pos_param_values)]
@@ -718,7 +731,15 @@ class CodeBuilder:
         else:
             pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
             if pre_serialize:
-                self.add_line(f"self = self.{__PRE_SERIALIZE__}()")
+                if self.is_code_generation_option_enabled(
+                    ADD_SERIALIZATION_CONTEXT
+                ):
+                    pre_serialize_args = "context=context"
+                else:
+                    pre_serialize_args = ""
+                self.add_line(
+                    f"self = self.{__PRE_SERIALIZE__}({pre_serialize_args})"
+                )
             by_alias_feature = self.is_code_generation_option_enabled(
                 TO_DICT_ADD_BY_ALIAS_FLAG
             )
@@ -792,6 +813,10 @@ class CodeBuilder:
             else:
                 return_statement = "return {}"
             if post_serialize:
+                if self.is_code_generation_option_enabled(
+                    ADD_SERIALIZATION_CONTEXT
+                ):
+                    kwargs = f"{kwargs}, context=context"
                 self.add_line(
                     return_statement.format(
                         f"self.{__POST_SERIALIZE__}({kwargs})"
