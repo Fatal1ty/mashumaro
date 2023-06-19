@@ -1,10 +1,58 @@
 from dataclasses import dataclass
-from typing import Any, ClassVar, Dict, no_type_check
+from typing import Any, ClassVar, Dict, Optional, no_type_check
 
 import pytest
 
 from mashumaro import DataClassDictMixin
+from mashumaro.config import ADD_SERIALIZATION_CONTEXT, BaseConfig
 from mashumaro.exceptions import BadHookSignature
+
+
+class BaseClassWithSerializationContext(DataClassDictMixin):
+    class Config(BaseConfig):
+        code_generation_options = [ADD_SERIALIZATION_CONTEXT]
+
+
+@dataclass
+class Foo(BaseClassWithSerializationContext):
+    baz: int
+
+    class Config(BaseConfig):
+        code_generation_options = []
+
+    def __pre_serialize__(self):
+        return self
+
+    def __post_serialize__(self, d: Dict):
+        return d
+
+
+@dataclass
+class Bar(BaseClassWithSerializationContext):
+    baz: int
+
+    def __pre_serialize__(self, context: Optional[Dict] = None):
+        return self
+
+    def __post_serialize__(self, d: Dict, context: Optional[Dict] = None):
+        if context and context.get("omit_baz"):
+            d.pop("baz")
+        return d
+
+
+@dataclass
+class FooBarBaz(BaseClassWithSerializationContext):
+    foo: Foo
+    bar: Bar
+    baz: int
+
+    def __pre_serialize__(self, context: Optional[Dict] = None):
+        return self
+
+    def __post_serialize__(self, d: Dict, context: Optional[Dict] = None):
+        if context and context.get("omit_baz"):
+            d.pop("baz")
+        return d
 
 
 def test_bad_pre_deserialize_hook():
@@ -143,3 +191,12 @@ def test_hook_in_parent_class(mocker):
     post_deserialize_hook.assert_called_once()
     pre_serialize_hook.assert_called_once()
     post_serialize_hook.assert_called_once()
+
+
+def test_passing_context_into_hook():
+    foo = FooBarBaz(foo=Foo(1), bar=Bar(baz=2), baz=3)
+    assert foo.to_dict() == {"foo": {"baz": 1}, "bar": {"baz": 2}, "baz": 3}
+    assert foo.to_dict(context={"omit_baz": True}) == {
+        "foo": {"baz": 1},
+        "bar": {},
+    }
