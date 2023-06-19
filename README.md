@@ -2045,6 +2045,7 @@ as well as its mutability is up to you.
 ```python
 from dataclasses import dataclass
 from typing import Dict, Optional
+from uuid import UUID
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig, ADD_SERIALIZATION_CONTEXT
 
@@ -2053,34 +2054,62 @@ class BaseModel(DataClassDictMixin):
         code_generation_options = [ADD_SERIALIZATION_CONTEXT]
 
 @dataclass
-class Bar(BaseModel):
-    baz: int
+class Account(BaseModel):
+    id: UUID
+    username: str
+    name: str
 
     def __pre_serialize__(self, context: Optional[Dict] = None):
         return self
 
     def __post_serialize__(self, d: Dict, context: Optional[Dict] = None):
-        if context and context.get("omit_baz"):
-            d.pop("baz")
+        if context and context.get("remove_sensitive_data"):
+            d["username"] = "***"
+            d["name"] = "***"
         return d
 
 @dataclass
-class Foo(BaseModel):
-    bar: Bar
-    baz: int
+class Session(BaseModel):
+    id: UUID
+    key: str
+    account: Account
 
     def __pre_serialize__(self, context: Optional[Dict] = None):
         return self
 
     def __post_serialize__(self, d: Dict, context: Optional[Dict] = None):
-        if context and context.get("omit_baz"):
-            d.pop("baz")
+        if context and context.get("remove_sensitive_data"):
+            d["key"] = "***"
         return d
 
 
-foo = Foo(bar=Bar(baz=1), baz=2)
-assert foo.to_dict() == {"bar": {"baz": 1}, "baz": 2}
-assert foo.to_dict(context={"omit_baz": True}) == {"bar": {}}
+foo = Session(
+    id=UUID('03321c9f-6a97-421e-9869-918ff2867a71'),
+    key="VQ6Q9bX4c8s",
+    account=Account(
+        id=UUID('4ef2baa7-edef-4d6a-b496-71e6d72c58fb'),
+        username="john_doe",
+        name="John"
+    )
+)
+assert foo.to_dict() == {
+    'id': '03321c9f-6a97-421e-9869-918ff2867a71',
+    'key': 'VQ6Q9bX4c8s',
+    'account': {
+        'id': '4ef2baa7-edef-4d6a-b496-71e6d72c58fb',
+        'username': 'john_doe',
+        'name': 'John'
+    }
+}
+assert foo.to_dict(context={"remove_sensitive_data": True}) == {
+    'id': '03321c9f-6a97-421e-9869-918ff2867a71',
+    'key': '***',
+    'account': {
+        'id': '4ef2baa7-edef-4d6a-b496-71e6d72c58fb',
+        'username': '***',
+        'name': '***'
+    }
+}
 ```
 
 ### Generic dataclasses
