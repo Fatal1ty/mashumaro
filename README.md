@@ -79,6 +79,7 @@ Table of contents
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
         * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
         * [Add `dialect` keyword argument](#add-dialect-keyword-argument)
+        * [Add `context` keyword argument](#add-context-keyword-argument)
     * [Generic dataclasses](#generic-dataclasses)
       * [Generic dataclass inheritance](#generic-dataclass-inheritance)
       * [Generic dataclass in a field type](#generic-dataclass-in-a-field-type)
@@ -1079,6 +1080,7 @@ described below.
 | [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_*` methods.            |
 | [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-by_alias-keyword-argument)   | Adds `by_alias` keyword-only argument to `to_*` methods.             |
 | [`ADD_DIALECT_SUPPORT`](#add-dialect-keyword-argument)          | Adds `dialect` keyword-only argument to `from_*` and `to_*` methods. |
+| [`ADD_SERIALIZATION_CONTEXT`](#add-context-keyword-argument)    | Adds `context` argument to `to_*` methods.                           |
 
 #### `serialization_strategy` config option
 
@@ -2030,6 +2032,57 @@ class Entity(DataClassDictMixin):
         code_generation_options = [ADD_DIALECT_SUPPORT]
 ```
 
+#### Add `context` keyword argument
+
+Sometimes it's needed to pass a "context" object to the serialization hooks
+that will take it into account. For example, you could want to have an option
+to remove sensitive data from the serialization result if you need to.
+You can add `context` parameter to `to_*` methods that will be passed to
+[`__pre_serialize__`](#before-serialization) and
+[`__post_serialize__`](#after-serialization) hooks. The type of this context
+as well as its mutability is up to you.
+
+```python
+from dataclasses import dataclass
+from typing import Dict, Optional
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig, ADD_SERIALIZATION_CONTEXT
+
+class BaseModel(DataClassDictMixin):
+    class Config(BaseConfig):
+        code_generation_options = [ADD_SERIALIZATION_CONTEXT]
+
+@dataclass
+class Bar(BaseModel):
+    baz: int
+
+    def __pre_serialize__(self, context: Optional[Dict] = None):
+        return self
+
+    def __post_serialize__(self, d: Dict, context: Optional[Dict] = None):
+        if context and context.get("omit_baz"):
+            d.pop("baz")
+        return d
+
+@dataclass
+class Foo(BaseModel):
+    bar: Bar
+    baz: int
+
+    def __pre_serialize__(self, context: Optional[Dict] = None):
+        return self
+
+    def __post_serialize__(self, d: Dict, context: Optional[Dict] = None):
+        if context and context.get("omit_baz"):
+            d.pop("baz")
+        return d
+
+
+foo = Foo(bar=Bar(baz=1), baz=2)
+assert foo.to_dict() == {"bar": {"baz": 1}, "baz": 2}
+assert foo.to_dict(context={"omit_baz": True}) == {"bar": {}}
+```
+
 ### Generic dataclasses
 
 Along with [user-defined generic types](#user-defined-generic-types)
@@ -2220,6 +2273,9 @@ obj.to_json()
 print(obj.counter)  # 2
 ```
 
+Note that you can add an additional `context` argument using the
+[corresponding](#add-context-keyword-argument) code generation option.
+
 #### After serialization
 
 For doing something with a dictionary that was created as a result of
@@ -2239,6 +2295,9 @@ obj = DataClass(user="name", password="secret")
 print(obj.to_dict())  # {"user": "name"}
 print(obj.to_json())  # '{"user": "name"}'
 ```
+
+Note that you can add an additional `context` argument using the
+[corresponding](#add-context-keyword-argument) code generation option.
 
 JSON Schema
 --------------------------------------------------------------------------------
