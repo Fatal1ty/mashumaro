@@ -1080,7 +1080,7 @@ described below.
 | [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_*` methods.            |
 | [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-by_alias-keyword-argument)   | Adds `by_alias` keyword-only argument to `to_*` methods.             |
 | [`ADD_DIALECT_SUPPORT`](#add-dialect-keyword-argument)          | Adds `dialect` keyword-only argument to `from_*` and `to_*` methods. |
-| [`ADD_SERIALIZATION_CONTEXT`](#add-context-keyword-argument)    | Adds `context` argument to `to_*` methods.                           |
+| [`ADD_SERIALIZATION_CONTEXT`](#add-context-keyword-argument)    | Adds `context` keyword-only argument to `to_*` methods.              |
 
 #### `serialization_strategy` config option
 
