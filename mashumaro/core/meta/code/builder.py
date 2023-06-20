@@ -324,16 +324,32 @@ class CodeBuilder:
                     )
                 else:
                     self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
+            post_deserialize = self.get_declared_hook(__POST_DESERIALIZE__)
+            if post_deserialize:
+                if not isinstance(post_deserialize, classmethod):
+                    raise BadHookSignature(
+                        f"`{__POST_DESERIALIZE__}` must be a class method "
+                        f"with Callable[[{type_name(self.cls)}], "
+                        f"{type_name(self.cls)}] signature"
+                    )
             filtered_fields = []
+            kwargs_only = post_deserialize is not None
+            kw_args = []
+            can_be_kwargs = False
             for fname, ftype in field_types.items():
                 field = self.dataclass_fields.get(fname)  # type: ignore
                 # https://github.com/python/mypy/issues/1362
                 if field and not field.init:
                     continue
+                if self.get_field_default(fname) is MISSING:
+                    kw_args.append(fname)
+                else:
+                    can_be_kwargs = True
                 filtered_fields.append((fname, ftype))
             if filtered_fields:
                 with self.indent("try:"):
-                    self.add_line("kwargs = {}")
+                    if kwargs_only or can_be_kwargs:
+                        self.add_line("kwargs = {}")
                     for fname, ftype in filtered_fields:
                         self.add_type_modules(ftype)
                         metadata = self.metadatas.get(fname, {})
@@ -341,7 +357,11 @@ class CodeBuilder:
                         if alias is None:
                             alias = config.aliases.get(fname)
                         self._unpack_method_set_value(
-                            fname, ftype, metadata, alias
+                            fname,
+                            ftype,
+                            metadata,
+                            alias=alias,
+                            kwargs_only=kwargs_only,
                         )
                 with self.indent("except TypeError:"):
                     with self.indent("if not isinstance(d, dict):"):
@@ -354,20 +374,15 @@ class CodeBuilder:
                         self.add_line("raise")
             else:
                 self.add_line("kwargs = {}")
-            post_deserialize = self.get_declared_hook(__POST_DESERIALIZE__)
             if post_deserialize:
-                if not isinstance(post_deserialize, classmethod):
-                    raise BadHookSignature(
-                        f"`{__POST_DESERIALIZE__}` must be a class method "
-                        f"with Callable[[{type_name(self.cls)}], "
-                        f"{type_name(self.cls)}] signature"
-                    )
-                else:
-                    self.add_line(
-                        f"return cls.{__POST_DESERIALIZE__}(cls(**kwargs))"
-                    )
+                self.add_line(
+                    f"return cls.{__POST_DESERIALIZE__}(cls(**kwargs))"
+                )
             else:
-                self.add_line("return cls(**kwargs)")
+                args = [f"{f}=__{f}" for f in kw_args]
+                if can_be_kwargs:
+                    args.append("**kwargs")
+                self.add_line(f"return cls({', '.join(args)})")
 
     def _add_unpack_method_with_dialect_lines(self, method_name: str) -> None:
         if self.decoder is not None:
@@ -439,8 +454,12 @@ class CodeBuilder:
         fname: str,
         ftype: typing.Type,
         metadata: typing.Mapping,
+        *,
         alias: typing.Optional[str] = None,
+        kwargs_only: bool = False,
     ) -> None:
+        default = self.get_field_default(fname)
+        has_default = default is not MISSING
         with self.indent("try:"):
             could_be_none = False
             if is_named_tuple(ftype):
@@ -454,7 +473,7 @@ class CodeBuilder:
                     or is_optional(
                         ftype, self.get_field_resolved_type_params(fname)
                     )
-                    or self.get_field_default(fname) is None
+                    or default is None
                 )
                 if could_be_none:
                     self.add_line(f"value = {packed_value}")
@@ -473,11 +492,17 @@ class CodeBuilder:
             )
             if could_be_none:
                 with self.indent("if value is not None:"):
-                    self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+                    self.__unpack_set_value(
+                        fname, unpacked_value, kwargs_only or has_default
+                    )
                 with self.indent("else:"):
-                    self.add_line(f"kwargs['{fname}'] = None")
+                    self.__unpack_set_value(
+                        fname, "None", kwargs_only or has_default
+                    )
             else:
-                self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+                self.__unpack_set_value(
+                    fname, unpacked_value, kwargs_only or has_default
+                )
         with self.indent("except KeyError as e:"):
             field_type = type_name(
                 ftype,
@@ -485,7 +510,7 @@ class CodeBuilder:
                     fname
                 ),
             )
-            if self.get_field_default(fname) is MISSING:
+            if not has_default:
                 with self.indent("if e.__traceback__.tb_next is None:"):
                     self.add_line(
                         f"raise MissingField('{fname}',{field_type},cls) "
@@ -507,6 +532,14 @@ class CodeBuilder:
                 f"raise InvalidFieldValue("
                 f"'{fname}',{field_type},{packed_value},cls)"
             )
+
+    def __unpack_set_value(
+        self, fname: str, unpacked_value: str, kwargs_only: bool
+    ) -> None:
+        if kwargs_only:
+            self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
+        else:
+            self.add_line(f"__{fname} = {unpacked_value}")
 
     @lru_cache()
     @typing.no_type_check
