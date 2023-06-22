@@ -661,7 +661,7 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
                 )
             )
 
-    if issubclass(spec.origin_type, typing.ByteString):
+    if issubclass(spec.origin_type, typing.ByteString):  # type: ignore
         spec.builder.ensure_object_imported(encodebytes)
         return f"encodebytes({spec.expression}).decode()"
     elif issubclass(spec.origin_type, str):

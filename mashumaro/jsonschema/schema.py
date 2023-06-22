@@ -657,7 +657,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
     args = get_args(instance.type)
 
-    if issubclass(instance.origin_type, typing.ByteString):
+    if issubclass(instance.origin_type, typing.ByteString):  # type: ignore
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,
