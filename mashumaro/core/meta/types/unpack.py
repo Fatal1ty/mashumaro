@@ -604,7 +604,9 @@ def unpack_dataclass_dict_mixin_subclass(
                 ),
             )
         )
-        return f"{type_name(spec.origin_type)}.{method_name}({method_args})"
+        cls_alias = clean_id(type_name(spec.origin_type))
+        spec.builder.ensure_object_imported(spec.origin_type, cls_alias)
+        return f"{cls_alias}.{method_name}({method_args})"
 
 
 @register
@@ -1043,7 +1045,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
                 )
             )
 
-    if issubclass(spec.origin_type, typing.ByteString):
+    if issubclass(spec.origin_type, typing.ByteString):  # type: ignore
         if spec.origin_type is bytes:
             spec.builder.ensure_object_imported(decodebytes)
             return f"decodebytes({spec.expression}.encode())"

@@ -19,6 +19,14 @@ from .entities import (
 )
 
 
+@dataclass
+class LazyCompilationDataClass(DataClassDictMixin):
+    x: int
+
+    class Config(BaseConfig):
+        lazy_compilation = True
+
+
 def test_debug_true_option(mocker):
     mocked_print = mocker.patch("builtins.print")
 
@@ -230,3 +238,9 @@ def test_omit_none_code_generation_flag_with_omit_none_by_default():
     assert DataClass().to_dict() == {}
     assert DataClass().to_dict(omit_none=True) == {}
     assert DataClass().to_dict(omit_none=False) == {"x": None}
+
+
+def test_lazy_compilation():
+    obj = LazyCompilationDataClass(42)
+    assert LazyCompilationDataClass.from_dict({"x": "42"}) == obj
+    assert obj.to_dict() == {"x": 42}

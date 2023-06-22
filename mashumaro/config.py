@@ -49,3 +49,4 @@ class BaseConfig:
     orjson_options: Optional[int] = 0
     json_schema: Dict[str, Any] = {}
     discriminator: Optional[Discriminator] = None
+    lazy_compilation: bool = False
