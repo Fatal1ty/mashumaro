@@ -1,8 +1,11 @@
-from dataclasses import dataclass
+import dataclasses
+from dataclasses import dataclass, field
 
 import msgpack
 import pytest
 
+from mashumaro.config import BaseConfig
+from mashumaro.core.const import PY_310_MIN
 from mashumaro.mixins.dict import DataClassDictMixin
 from mashumaro.mixins.json import DataClassJSONMixin
 from mashumaro.mixins.msgpack import DataClassMessagePackMixin
@@ -53,6 +56,63 @@ class EntityB2WrapperMessagePack(DataClassMessagePackMixin):
 class EntityBWrapperMessagePack(DataClassMessagePackMixin):
     entity1wrapper: EntityB1WrapperDict
     entity2wrapper: EntityB2WrapperMessagePack
+
+
+if PY_310_MIN:
+
+    @dataclass(kw_only=True)
+    class DataClassKwOnly1(DataClassDictMixin):
+        x: int
+        y: int
+
+    @dataclass
+    class DataClassKwOnly2(DataClassDictMixin):
+        x: int = field(kw_only=True)
+        y: int
+
+    @dataclass(kw_only=True)
+    class DataClassKwOnly3(DataClassDictMixin):
+        x: int
+        y: int = field(kw_only=False)
+
+    @dataclass
+    class DataClassKwOnly4(DataClassDictMixin):
+        x: int
+        _: dataclasses.KW_ONLY
+        y: int
+
+    @dataclass(kw_only=True)
+    class LazyDataClassKwOnly1(DataClassDictMixin):
+        x: int
+        y: int
+
+        class Config(BaseConfig):
+            lazy_compilation = True
+
+    @dataclass
+    class LazyDataClassKwOnly2(DataClassDictMixin):
+        x: int = field(kw_only=True)
+        y: int
+
+        class Config(BaseConfig):
+            lazy_compilation = True
+
+    @dataclass(kw_only=True)
+    class LazyDataClassKwOnly3(DataClassDictMixin):
+        x: int
+        y: int = field(kw_only=False)
+
+        class Config(BaseConfig):
+            lazy_compilation = True
+
+    @dataclass
+    class LazyDataClassKwOnly4(DataClassDictMixin):
+        x: int
+        _: dataclasses.KW_ONLY
+        y: int
+
+        class Config(BaseConfig):
+            lazy_compilation = True
 
 
 def test_slots():
@@ -126,3 +186,21 @@ def test_compiled_mixin_with_inheritance_2():
     )
     assert wrapper.to_msgpack() == data
     assert EntityBWrapperMessagePack.from_msgpack(data) == wrapper
+
+
+@pytest.mark.skipif(not PY_310_MIN, reason="requires python 3.10+")
+def test_kw_only_dataclasses():
+    data = {"x": "1", "y": "2"}
+    for cls in (
+        DataClassKwOnly1,
+        DataClassKwOnly2,
+        DataClassKwOnly3,
+        DataClassKwOnly4,
+        LazyDataClassKwOnly1,
+        LazyDataClassKwOnly2,
+        LazyDataClassKwOnly3,
+        LazyDataClassKwOnly4,
+    ):
+        obj = cls.from_dict(data)
+        assert obj.x == 1
+        assert obj.y == 2

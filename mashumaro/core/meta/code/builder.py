@@ -5,8 +5,14 @@ import typing
 from contextlib import contextmanager
 
 # noinspection PyProtectedMember
-from dataclasses import _FIELDS, MISSING, Field, is_dataclass  # type: ignore
+from dataclasses import _FIELDS  # type: ignore
+from dataclasses import MISSING, Field, is_dataclass
 from functools import lru_cache
+
+try:
+    from dataclasses import KW_ONLY  # type: ignore
+except ImportError:
+    KW_ONLY = object()  # type: ignore
 
 import typing_extensions
 
@@ -32,7 +38,6 @@ from mashumaro.core.meta.helpers import (
     is_dialect_subclass,
     is_init_var,
     is_literal,
-    is_named_tuple,
     is_optional,
     is_type_var_any,
     resolve_type_params,
@@ -131,7 +136,7 @@ class CodeBuilder:
             name = get_name_error_name(e)
             raise UnresolvedTypeReferenceError(self.cls, name) from None
         for fname, ftype in field_type_hints.items():
-            if is_class_var(ftype) or is_init_var(ftype):
+            if is_class_var(ftype) or is_init_var(ftype) or ftype is KW_ONLY:
                 continue
             if recursive or fname in self.annotations:
                 fields[fname] = ftype
@@ -261,8 +266,31 @@ class CodeBuilder:
         if cls is not None and not is_dataclass_dict_mixin(cls):
             return cls.__dict__[method_name]
 
+    def _add_unpack_method_lines_lazy(self, method_name: str) -> None:
+        if self.default_dialect is not None:
+            self.add_type_modules(self.default_dialect)
+        self.add_line(
+            f"CodeBuilder("
+            f"cls,"
+            f"first_method='{method_name}',"
+            f"allow_postponed_evaluation=False,"
+            f"format_name='{self.format_name}',"
+            f"decoder={type_name(self.decoder)},"  # type: ignore
+            f"default_dialect={type_name(self.default_dialect)}"
+            f").add_unpack_method()"
+        )
+        unpacker_args = [
+            "d",
+            self.get_unpack_method_flags(pass_decoder=True),
+        ]
+        unpacker_args_s = ", ".join(filter(None, unpacker_args))
+        self.add_line(f"return cls.{method_name}({unpacker_args_s})")
+
     def _add_unpack_method_lines(self, method_name: str) -> None:
         config = self.get_config()
+        if config.lazy_compilation and self.allow_postponed_evaluation:
+            self._add_unpack_method_lines_lazy(method_name)
+            return
         try:
             field_types = self.get_field_types(include_extras=True)
         except UnresolvedTypeReferenceError:
@@ -271,24 +299,7 @@ class CodeBuilder:
                 or not config.allow_postponed_evaluation
             ):
                 raise
-            if self.default_dialect is not None:
-                self.add_type_modules(self.default_dialect)
-            self.add_line(
-                f"CodeBuilder("
-                f"cls,"
-                f"first_method='{method_name}',"
-                f"allow_postponed_evaluation=False,"
-                f"format_name='{self.format_name}',"
-                f"decoder={type_name(self.decoder)},"  # type: ignore
-                f"default_dialect={type_name(self.default_dialect)}"
-                f").add_unpack_method()"
-            )
-            unpacker_args = [
-                "d",
-                self.get_unpack_method_flags(pass_decoder=True),
-            ]
-            unpacker_args_s = ", ".join(filter(None, unpacker_args))
-            self.add_line(f"return cls.{method_name}({unpacker_args_s})")
+            self._add_unpack_method_lines_lazy(method_name)
         else:
             if self.decoder is not None:
                 self.add_line("d = decoder(d)")
@@ -334,6 +345,7 @@ class CodeBuilder:
                     )
             filtered_fields = []
             kwargs_only = post_deserialize is not None
+            pos_args = []
             kw_args = []
             can_be_kwargs = False
             for fname, ftype in field_types.items():
@@ -342,7 +354,10 @@ class CodeBuilder:
                 if field and not field.init:
                     continue
                 if self.get_field_default(fname) is MISSING:
-                    kw_args.append(fname)
+                    if field and not getattr(field, "kw_only", False):
+                        pos_args.append(fname)
+                    else:
+                        kw_args.append(fname)
                 else:
                     can_be_kwargs = True
                 filtered_fields.append((fname, ftype))
@@ -379,7 +394,9 @@ class CodeBuilder:
                     f"return cls.{__POST_DESERIALIZE__}(cls(**kwargs))"
                 )
             else:
-                args = [f"{f}=__{f}" for f in kw_args]
+                args = [f"__{f}" for f in pos_args]
+                for kw_arg in kw_args:
+                    args.append(f"{kw_arg}=__{kw_arg}")
                 if can_be_kwargs:
                     args.append("**kwargs")
                 self.add_line(f"return cls({', '.join(args)})")
@@ -460,77 +477,107 @@ class CodeBuilder:
     ) -> None:
         default = self.get_field_default(fname)
         has_default = default is not MISSING
-        with self.indent("try:"):
-            could_be_none = False
-            if is_named_tuple(ftype):
-                self.add_line(f"value = d['{alias or fname}']")
-                packed_value = "value"
-            else:
-                packed_value = f"d['{alias or fname}']"
-                could_be_none = (
-                    ftype in (typing.Any, type(None), None)
-                    or is_type_var_any(self._get_real_type(fname, ftype))
-                    or is_optional(
-                        ftype, self.get_field_resolved_type_params(fname)
-                    )
-                    or default is None
-                )
-                if could_be_none:
-                    self.add_line(f"value = {packed_value}")
-                    packed_value = "value"
-            unpacked_value = UnpackerRegistry.get(
-                ValueSpec(
-                    type=ftype,
-                    expression=packed_value,
-                    builder=self,
-                    field_ctx=FieldContext(
-                        name=fname,
-                        metadata=metadata,
-                    ),
-                    could_be_none=False if could_be_none else True,
-                )
-            )
-            if could_be_none:
-                with self.indent("if value is not None:"):
-                    self.__unpack_set_value(
-                        fname, unpacked_value, kwargs_only or has_default
-                    )
-                with self.indent("else:"):
-                    self.__unpack_set_value(
-                        fname, "None", kwargs_only or has_default
-                    )
-            else:
-                self.__unpack_set_value(
-                    fname, unpacked_value, kwargs_only or has_default
-                )
-        with self.indent("except KeyError as e:"):
-            field_type = type_name(
-                ftype,
-                resolved_type_params=self.get_field_resolved_type_params(
-                    fname
+        field_type = type_name(
+            ftype,
+            resolved_type_params=self.get_field_resolved_type_params(fname),
+        )
+        could_be_none = (
+            ftype in (typing.Any, type(None), None)
+            or is_type_var_any(self._get_real_type(fname, ftype))
+            or is_optional(ftype, self.get_field_resolved_type_params(fname))
+            or default is None
+        )
+        unpacked_value = UnpackerRegistry.get(
+            ValueSpec(
+                type=ftype,
+                expression="value",
+                builder=self,
+                field_ctx=FieldContext(
+                    name=fname,
+                    metadata=metadata,
                 ),
+                could_be_none=False if could_be_none else True,
             )
-            if not has_default:
-                with self.indent("if e.__traceback__.tb_next is None:"):
-                    self.add_line(
-                        f"raise MissingField('{fname}',{field_type},cls) "
-                        f"from None"
+        )
+        if unpacked_value != "value":
+            self.add_line(f"value = d.get('{alias or fname}', MISSING)")
+            packed_value = "value"
+        elif has_default:
+            self.add_line(f"value = d.get('{alias or fname}', MISSING)")
+            packed_value = "value"
+        else:
+            self.add_line(f"__{fname} = d.get('{alias or fname}', MISSING)")
+            packed_value = f"__{fname}"
+            unpacked_value = packed_value
+        if not has_default:
+            with self.indent(f"if {packed_value} is MISSING:"):
+                self.add_line(
+                    f"raise MissingField('{fname}',{field_type},cls) "
+                    f"from None"
+                )
+            if packed_value != unpacked_value:
+                if could_be_none:
+                    with self.indent(f"if {packed_value} is not None:"):
+                        self.__unpack_try_set_value(
+                            fname,
+                            field_type,
+                            unpacked_value,
+                            kwargs_only,
+                            has_default,
+                        )
+                    with self.indent("else:"):
+                        self.__unpack_set_value(
+                            fname, "None", kwargs_only or has_default
+                        )
+                else:
+                    self.__unpack_try_set_value(
+                        fname,
+                        field_type,
+                        unpacked_value,
+                        kwargs_only,
+                        has_default,
                     )
-                with self.indent("else:"):
-                    self.add_line(
-                        f"raise InvalidFieldValue("
-                        f"'{fname}',{field_type},{packed_value},cls)"
+        else:
+            with self.indent(f"if {packed_value} is not MISSING:"):
+                if could_be_none:
+                    with self.indent(f"if {packed_value} is not None:"):
+                        self.__unpack_try_set_value(
+                            fname,
+                            field_type,
+                            unpacked_value,
+                            kwargs_only,
+                            has_default,
+                        )
+                    if default is not None:
+                        with self.indent("else:"):
+                            self.__unpack_set_value(
+                                fname, "None", kwargs_only or has_default
+                            )
+                else:
+                    self.__unpack_try_set_value(
+                        fname,
+                        field_type,
+                        unpacked_value,
+                        kwargs_only,
+                        has_default,
                     )
-            else:
-                with self.indent("if e.__traceback__.tb_next is not None:"):
-                    self.add_line(
-                        f"raise InvalidFieldValue("
-                        f"'{fname}',{field_type},{packed_value},cls)"
-                    )
-        with self.indent("except Exception:"):
+
+    def __unpack_try_set_value(
+        self,
+        field_name: str,
+        field_type_name: str,
+        unpacked_value: str,
+        kwargs_only: bool,
+        has_default: bool,
+    ) -> None:
+        with self.indent("try:"):
+            self.__unpack_set_value(
+                field_name, unpacked_value, kwargs_only or has_default
+            )
+        with self.indent("except:"):
             self.add_line(
                 f"raise InvalidFieldValue("
-                f"'{fname}',{field_type},{packed_value},cls)"
+                f"'{field_name}',{field_type_name},value,cls)"
             )
 
     def __unpack_set_value(
@@ -723,8 +770,28 @@ class CodeBuilder:
                 method_name += f"_{hash_type_args(type_args)}"
             return method_name
 
+    def _add_pack_method_lines_lazy(self, method_name: str) -> None:
+        if self.default_dialect is not None:
+            self.add_type_modules(self.default_dialect)
+        self.add_line(
+            f"CodeBuilder("
+            f"self.__class__,"
+            f"first_method='{method_name}',"
+            f"allow_postponed_evaluation=False,"
+            f"format_name='{self.format_name}',"
+            f"encoder={type_name(self.encoder)},"
+            f"encoder_kwargs={self._get_encoder_kwargs()},"
+            f"default_dialect={type_name(self.default_dialect)}"
+            f").add_pack_method()"
+        )
+        packer_args = self.get_pack_method_flags(pass_encoder=True)
+        self.add_line(f"return self.{method_name}({packer_args})")
+
     def _add_pack_method_lines(self, method_name: str) -> None:
         config = self.get_config()
+        if config.lazy_compilation and self.allow_postponed_evaluation:
+            self._add_pack_method_lines_lazy(method_name)
+            return
         try:
             field_types = self.get_field_types(include_extras=True)
         except UnresolvedTypeReferenceError:
@@ -733,21 +800,7 @@ class CodeBuilder:
                 or not config.allow_postponed_evaluation
             ):
                 raise
-            if self.default_dialect is not None:
-                self.add_type_modules(self.default_dialect)
-            self.add_line(
-                f"CodeBuilder("
-                f"self.__class__,"
-                f"first_method='{method_name}',"
-                f"allow_postponed_evaluation=False,"
-                f"format_name='{self.format_name}',"
-                f"encoder={type_name(self.encoder)},"
-                f"encoder_kwargs={self._get_encoder_kwargs()},"
-                f"default_dialect={type_name(self.default_dialect)}"
-                f").add_pack_method()"
-            )
-            packer_args = self.get_pack_method_flags(pass_encoder=True)
-            self.add_line(f"return self.{method_name}({packer_args})")
+            self._add_pack_method_lines_lazy(method_name)
         else:
             pre_serialize = self.get_declared_hook(__PRE_SERIALIZE__)
             if pre_serialize:
