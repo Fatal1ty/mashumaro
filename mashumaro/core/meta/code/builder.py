@@ -354,7 +354,7 @@ class CodeBuilder:
                 if field and not field.init:
                     continue
                 if self.get_field_default(fname) is MISSING:
-                    if field and not getattr(field, "kw_only", False):
+                    if field and not getattr(field, "kw_only", True):
                         pos_args.append(fname)
                     else:
                         kw_args.append(fname)
