@@ -37,6 +37,7 @@ from mashumaro.core.meta.helpers import (
     is_generic,
     is_init_var,
     is_literal,
+    is_named_tuple,
     is_new_type,
     is_optional,
     is_self,
@@ -65,8 +66,10 @@ from .entities import (
     MyGenericList,
     MyIntEnum,
     MyIntFlag,
+    MyNamedTuple,
     MyNativeStrEnum,
     MyStrEnum,
+    MyUntypedNamedTuple,
     T,
     TAny,
     TInt,
@@ -508,6 +511,12 @@ def test_not_non_type_arg():
     assert not_none_type_arg((str, NoneType)) == str
     assert not_none_type_arg((T, int), {T: NoneType}) == int
     assert not_none_type_arg((NoneType,)) is None
+
+
+def test_is_named_tuple():
+    assert is_named_tuple(MyNamedTuple)
+    assert is_named_tuple(MyUntypedNamedTuple)
+    assert not is_named_tuple(typing.Literal[1])
 
 
 def test_is_new_type():
