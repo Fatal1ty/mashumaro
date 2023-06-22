@@ -64,6 +64,7 @@ Table of contents
         * [`dialect` config option](#dialect-config-option)
         * [`orjson_options`](#orjson_options-config-option)
         * [`discriminator` config option](#discriminator-config-option)
+        * [`lazy_compilation` config option](#lazycompilation-config-option)
     * [Passing field values as is](#passing-field-values-as-is)
     * [Extending existing types](#extending-existing-types)
     * [Dialects](#dialects)
@@ -297,6 +298,8 @@ field types on every call of parsing or building at runtime.
 These specific parsers and builders are presented by the corresponding
 `from_*` and `to_*` methods. They are compiled during import time (or at
 runtime in some cases) and are set as attributes to your dataclasses.
+To minimize the import time, you can explicitly enable
+[lazy compilation](#lazycompilation-config-option).
 
 Benchmark
 --------------------------------------------------------------------------------
@@ -1343,6 +1346,23 @@ assert MyClass({1: 2}).to_json() == {"1": 2}
 
 This option is described in the
 [Class level discriminator](#class-level-discriminator) section.
+
+#### `lazy_compilation` config option
+
+By using this option, the compilation of the `from_*` and `to_*` methods will
+be deferred until they are called first time. This will reduce the import time
+and, in certain instances, may enhance the speed of deserialization
+by leveraging the data that is accessible after the class has been created.
+
+> **Warning**
+>
+> If you need to save a reference to `from_*` or `to_*` method, you should
+> do it after the method is compiled. To be safe, you can always use lambda
+> function:
+> ```python
+> from_dict = lambda x: MyModel.from_dict(x)
+> to_dict = lambda x: x.to_dict()
+> ```
 
 ### Passing field values as is
 
