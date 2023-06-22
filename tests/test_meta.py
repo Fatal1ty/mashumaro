@@ -516,7 +516,7 @@ def test_not_non_type_arg():
 def test_is_named_tuple():
     assert is_named_tuple(MyNamedTuple)
     assert is_named_tuple(MyUntypedNamedTuple)
-    assert not is_named_tuple(typing.Literal[1])
+    assert not is_named_tuple(object())
 
 
 def test_is_new_type():
