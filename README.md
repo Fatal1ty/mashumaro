@@ -64,7 +64,7 @@ Table of contents
         * [`dialect` config option](#dialect-config-option)
         * [`orjson_options`](#orjson_options-config-option)
         * [`discriminator` config option](#discriminator-config-option)
-        * [`lazy_compilation` config option](#lazycompilation-config-option)
+        * [`lazy_compilation` config option](#lazy_compilation-config-option)
     * [Passing field values as is](#passing-field-values-as-is)
     * [Extending existing types](#extending-existing-types)
     * [Dialects](#dialects)
@@ -299,7 +299,7 @@ These specific parsers and builders are presented by the corresponding
 `from_*` and `to_*` methods. They are compiled during import time (or at
 runtime in some cases) and are set as attributes to your dataclasses.
 To minimize the import time, you can explicitly enable
-[lazy compilation](#lazycompilation-config-option).
+[lazy compilation](#lazy_compilation-config-option).
 
 Benchmark
 --------------------------------------------------------------------------------
