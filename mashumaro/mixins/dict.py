@@ -54,8 +54,15 @@ class DataClassDictMixin:
     def __post_deserialize__(cls: Type[T], obj: T) -> T:
         ...
 
-    def __pre_serialize__(self: T) -> T:
+    def __pre_serialize__(
+        self: T,
+        # context: Any = None,  # added with ADD_SERIALIZATION_CONTEXT option
+    ) -> T:
         ...
 
-    def __post_serialize__(self: T, d: Dict[Any, Any]) -> Dict[Any, Any]:
+    def __post_serialize__(
+        self: T,
+        d: Dict[Any, Any],
+        # context: Any = None,  # added with ADD_SERIALIZATION_CONTEXT option
+    ) -> Dict[Any, Any]:
         ...
