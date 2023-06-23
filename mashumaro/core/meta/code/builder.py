@@ -348,6 +348,7 @@ class CodeBuilder:
             kwargs_only = post_deserialize is not None
             pos_args = []
             kw_args = []
+            missing_kw_only = False
             can_be_kwargs = False
             for fname, ftype in field_types.items():
                 field = self.dataclass_fields.get(fname)  # type: ignore
@@ -355,10 +356,20 @@ class CodeBuilder:
                 if field and not field.init:
                     continue
                 if self.get_field_default(fname) is MISSING:
-                    if field and not getattr(field, "kw_only", True):
-                        pos_args.append(fname)
+                    if missing_kw_only:
+                        kw_args.append(fname)
+                    elif field:
+                        kw_only = getattr(field, "kw_only", MISSING)
+                        if kw_only is MISSING:
+                            kw_args.append(fname)
+                            missing_kw_only = True
+                        elif kw_only:
+                            kw_args.append(fname)
+                        else:
+                            pos_args.append(fname)
                     else:
                         kw_args.append(fname)
+                        missing_kw_only = True
                 else:
                     can_be_kwargs = True
                 filtered_fields.append((fname, ftype))

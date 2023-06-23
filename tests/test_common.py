@@ -115,6 +115,25 @@ if PY_310_MIN:
             lazy_compilation = True
 
 
+@dataclass
+class BaseClassWithPosArgs(DataClassDictMixin):
+    pos1: int
+    pos2: int
+    pos3: int
+
+
+@dataclass
+class DerivedClassWithOverriddenMiddlePosArg(BaseClassWithPosArgs):
+    kw1: int = 0
+    pos2: int
+
+
+@dataclass
+class DerivedClassWithOverriddenMiddlePosArgWithField(BaseClassWithPosArgs):
+    kw1: int = 0
+    pos2: int = field(metadata={})
+
+
 def test_slots():
     @dataclass
     class RegularDataClass:
@@ -204,3 +223,27 @@ def test_kw_only_dataclasses():
         obj = cls.from_dict(data)
         assert obj.x == 1
         assert obj.y == 2
+
+
+def test_kw_args_when_pos_arg_is_overridden_without_field():
+    obj = DerivedClassWithOverriddenMiddlePosArg(1, 2, 3, 4)
+    loaded = DerivedClassWithOverriddenMiddlePosArg.from_dict(
+        {"pos1": "1", "pos2": "2", "pos3": "3", "kw1": "4"}
+    )
+    assert loaded == obj
+    assert loaded.pos1 == 1
+    assert loaded.pos2 == 2
+    assert loaded.pos3 == 3
+    assert loaded.kw1 == 4
+
+
+def test_kw_args_when_pos_arg_is_overridden_with_field():
+    obj = DerivedClassWithOverriddenMiddlePosArgWithField(1, 2, 3, 4)
+    loaded = DerivedClassWithOverriddenMiddlePosArgWithField.from_dict(
+        {"pos1": "1", "pos2": "2", "pos3": "3", "kw1": "4"}
+    )
+    assert loaded == obj
+    assert loaded.pos1 == 1
+    assert loaded.pos2 == 2
+    assert loaded.pos3 == 3
+    assert loaded.kw1 == 4
