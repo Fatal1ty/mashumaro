@@ -1,9 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, Optional, no_type_check
 
 import pytest
 
-from mashumaro import DataClassDictMixin
+from mashumaro import DataClassDictMixin, field_options, pass_through
 from mashumaro.config import ADD_SERIALIZATION_CONTEXT, BaseConfig
 from mashumaro.exceptions import BadHookSignature
 
@@ -191,6 +191,28 @@ def test_hook_in_parent_class(mocker):
     post_deserialize_hook.assert_called_once()
     pre_serialize_hook.assert_called_once()
     post_serialize_hook.assert_called_once()
+
+
+def test_post_deserialize_hook_with_pass_through_field():
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: int = field(metadata=field_options(deserialize=pass_through))
+
+        @classmethod
+        def __post_deserialize__(cls, obj):
+            return obj
+
+    assert MyClass.from_dict({"x": 42}) == MyClass(42)
+
+
+def test_post_deserialize_hook_with_empty_dataclass():
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        @classmethod
+        def __post_deserialize__(cls, obj):
+            return obj  # pragma no cover
+
+    assert MyClass.from_dict({}) == MyClass()
 
 
 def test_passing_context_into_hook():

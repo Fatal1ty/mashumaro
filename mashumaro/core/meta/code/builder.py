@@ -345,7 +345,6 @@ class CodeBuilder:
                         f"{type_name(self.cls)}] signature"
                     )
             filtered_fields = []
-            kwargs_only = post_deserialize is not None
             pos_args = []
             kw_args = []
             missing_kw_only = False
@@ -375,7 +374,7 @@ class CodeBuilder:
                 filtered_fields.append((fname, ftype))
             if filtered_fields:
                 with self.indent("try:"):
-                    if kwargs_only or can_be_kwargs:
+                    if can_be_kwargs:
                         self.add_line("kwargs = {}")
                     for fname, ftype in filtered_fields:
                         self.add_type_modules(ftype)
@@ -384,11 +383,7 @@ class CodeBuilder:
                         if alias is None:
                             alias = config.aliases.get(fname)
                         self._unpack_method_set_value(
-                            fname,
-                            ftype,
-                            metadata,
-                            alias=alias,
-                            kwargs_only=kwargs_only,
+                            fname, ftype, metadata, alias=alias
                         )
                 with self.indent("except TypeError:"):
                     with self.indent("if not isinstance(d, dict):"):
@@ -399,19 +394,18 @@ class CodeBuilder:
                         )
                     with self.indent("else:"):
                         self.add_line("raise")
-            else:
-                self.add_line("kwargs = {}")
+
+            args = [f"__{f}" for f in pos_args]
+            for kw_arg in kw_args:
+                args.append(f"{kw_arg}=__{kw_arg}")
+            if can_be_kwargs:
+                args.append("**kwargs")
+            cls_inst = f"cls({', '.join(args)})"
+
             if post_deserialize:
-                self.add_line(
-                    f"return cls.{__POST_DESERIALIZE__}(cls(**kwargs))"
-                )
+                self.add_line(f"return cls.{__POST_DESERIALIZE__}({cls_inst})")
             else:
-                args = [f"__{f}" for f in pos_args]
-                for kw_arg in kw_args:
-                    args.append(f"{kw_arg}=__{kw_arg}")
-                if can_be_kwargs:
-                    args.append("**kwargs")
-                self.add_line(f"return cls({', '.join(args)})")
+                self.add_line(f"return {cls_inst}")
 
     def _add_unpack_method_with_dialect_lines(self, method_name: str) -> None:
         if self.decoder is not None:
@@ -485,7 +479,6 @@ class CodeBuilder:
         metadata: typing.Mapping,
         *,
         alias: typing.Optional[str] = None,
-        kwargs_only: bool = False,
     ) -> None:
         default = self.get_field_default(fname)
         has_default = default is not MISSING
@@ -531,47 +524,27 @@ class CodeBuilder:
                 if could_be_none:
                     with self.indent(f"if {packed_value} is not None:"):
                         self.__unpack_try_set_value(
-                            fname,
-                            field_type,
-                            unpacked_value,
-                            kwargs_only,
-                            has_default,
+                            fname, field_type, unpacked_value, has_default
                         )
                     with self.indent("else:"):
-                        self.__unpack_set_value(
-                            fname, "None", kwargs_only or has_default
-                        )
+                        self.__unpack_set_value(fname, "None", has_default)
                 else:
                     self.__unpack_try_set_value(
-                        fname,
-                        field_type,
-                        unpacked_value,
-                        kwargs_only,
-                        has_default,
+                        fname, field_type, unpacked_value, has_default
                     )
         else:
             with self.indent(f"if {packed_value} is not MISSING:"):
                 if could_be_none:
                     with self.indent(f"if {packed_value} is not None:"):
                         self.__unpack_try_set_value(
-                            fname,
-                            field_type,
-                            unpacked_value,
-                            kwargs_only,
-                            has_default,
+                            fname, field_type, unpacked_value, has_default
                         )
                     if default is not None:
                         with self.indent("else:"):
-                            self.__unpack_set_value(
-                                fname, "None", kwargs_only or has_default
-                            )
+                            self.__unpack_set_value(fname, "None", has_default)
                 else:
                     self.__unpack_try_set_value(
-                        fname,
-                        field_type,
-                        unpacked_value,
-                        kwargs_only,
-                        has_default,
+                        fname, field_type, unpacked_value, has_default
                     )
 
     def __unpack_try_set_value(
@@ -579,13 +552,10 @@ class CodeBuilder:
         field_name: str,
         field_type_name: str,
         unpacked_value: str,
-        kwargs_only: bool,
         has_default: bool,
     ) -> None:
         with self.indent("try:"):
-            self.__unpack_set_value(
-                field_name, unpacked_value, kwargs_only or has_default
-            )
+            self.__unpack_set_value(field_name, unpacked_value, has_default)
         with self.indent("except:"):
             self.add_line(
                 f"raise InvalidFieldValue("
@@ -593,9 +563,9 @@ class CodeBuilder:
             )
 
     def __unpack_set_value(
-        self, fname: str, unpacked_value: str, kwargs_only: bool
+        self, fname: str, unpacked_value: str, in_kwargs: bool
     ) -> None:
-        if kwargs_only:
+        if in_kwargs:
             self.add_line(f"kwargs['{fname}'] = {unpacked_value}")
         else:
             self.add_line(f"__{fname} = {unpacked_value}")
