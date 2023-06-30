@@ -154,7 +154,7 @@ class Instance:
             self.__builder = CodeBuilder(self.origin_type, type_args)
             self.__builder.reset()
 
-    def fields(self) -> Iterable[Tuple[str, Type, Any]]:
+    def fields(self) -> Iterable[Tuple[str, Type, bool, Any]]:
         for f_name, f_type in self._builder.get_field_types(
             include_extras=True
         ).items():
@@ -166,7 +166,12 @@ class Instance:
                 f_default = self._builder.namespace.get(f_name, MISSING)
             if f_default is not MISSING:
                 f_default = _default(f_type, f_default)
-            yield f_name, f_type, f_default
+
+            has_default = (
+                f.default is not MISSING or f.default_factory is not MISSING
+            )
+
+            yield f_name, f_type, has_default, f_default
 
     def get_overridden_serialization_method(
         self,
@@ -289,7 +294,7 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         field_schema_overrides = instance.get_config().json_schema.get(
             "properties", {}
         )
-        for f_name, f_type, f_default in instance.fields():
+        for f_name, f_type, has_default, f_default in instance.fields():
             override = field_schema_overrides.get(f_name)
             f_instance = instance.copy(type=f_type, name=f_name)
             if override:
@@ -301,8 +306,10 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
                 f_name = f_instance.alias
             if f_default is not MISSING:
                 f_schema.default = f_default
-            else:
+
+            if not has_default:
                 required.append(f_name)
+
             properties[f_name] = f_schema
         if properties:
             schema.properties = properties
