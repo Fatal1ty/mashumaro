@@ -126,6 +126,7 @@ def test_jsonschema_for_dataclass():
         c: Optional[int] = field(default=None, metadata={"alias": "cc"})
         d: str = ""
         e: int = field(init=False)
+        f: List[int] = field(default_factory=list)
 
         class Config:
             aliases = {"a": "aa", "d": "dd"}
@@ -143,6 +144,9 @@ def test_jsonschema_for_dataclass():
                 default=None,
             ),
             "dd": JSONSchema(type=JSONSchemaInstanceType.STRING, default=""),
+            "f": JSONArraySchema(
+                items=JSONSchema(type=JSONSchemaInstanceType.INTEGER)
+            ),
         },
         additionalProperties=False,
         required=["aa"],
