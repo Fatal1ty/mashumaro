@@ -1134,8 +1134,8 @@ dictionary = instance.to_dict()
 ```
 
 Note that you can register different methods for multiple logical types which
-are based on the same type using `NewType` and `Annotated`.
-See [Extending existing types](#extending-existing-types) for details.
+are based on the same type using `NewType` and `Annotated`,
+see [Extending existing types](#extending-existing-types) for details.
 
 #### `aliases` config option
 
