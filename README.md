@@ -2364,7 +2364,7 @@ For simple one-time cases it's recommended to start from using a configurable
 serialized to json or to dict:
 
 ```python
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 from uuid import UUID
 
@@ -2374,7 +2374,7 @@ from mashumaro.jsonschema import build_json_schema
 @dataclass
 class User:
     id: UUID
-    name: str
+    name: str = field(metadata={"description": "User name"})
 
 
 print(build_json_schema(List[User]).to_json())
@@ -2395,7 +2395,8 @@ print(build_json_schema(List[User]).to_json())
                 "format": "uuid"
             },
             "name": {
-                "type": "string"
+                "type": "string",
+                "description": "User name"
             }
         },
         "additionalProperties": false,
