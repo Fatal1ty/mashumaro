@@ -2699,7 +2699,9 @@ Object constraints:
 ### Extending JSON Schema
 
 Using a `Config` class it is possible to override some parts of the schema.
-Currently, it works for dataclass fields via "properties" key:
+Currently, you can do the following:
+* override some field schemas using the "properties" key
+* change `additionalProperties` using the "additionalProperties" key
 
 ```python
 from dataclasses import dataclass
@@ -2717,7 +2719,8 @@ class FooBar:
                     "type": "string",
                     "description": "bar"
                 }
-            }
+            },
+            "additionalProperties": True,
         }
 
 print(build_json_schema(FooBar).to_json())
@@ -2739,7 +2742,7 @@ print(build_json_schema(FooBar).to_json())
             "type": "integer"
         }
     },
-    "additionalProperties": false,
+    "additionalProperties": true,
     "required": [
         "foo",
         "bar"
@@ -2747,6 +2750,9 @@ print(build_json_schema(FooBar).to_json())
 }
 ```
 </details>
+
+You can also change the "additionalProperties" key to a specific schema
+by passing it a `JSONSchema` instance instead of a bool value.
 
 ### JSON Schema and custom serialization methods
 

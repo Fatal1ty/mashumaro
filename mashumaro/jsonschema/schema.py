@@ -285,15 +285,16 @@ def override_field_instance_type_if_needed(
 def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     # TODO: Self references might not work
     if is_dataclass(instance.origin_type):
+        jsonschema_config = instance.get_config().json_schema
         schema = JSONObjectSchema(
             title=instance.origin_type.__name__,
-            additionalProperties=False,
+            additionalProperties=jsonschema_config.get(
+                "additionalProperties", False
+            ),
         )
         properties: Dict[str, JSONSchema] = {}
         required = []
-        field_schema_overrides = instance.get_config().json_schema.get(
-            "properties", {}
-        )
+        field_schema_overrides = jsonschema_config.get("properties", {})
         for f_name, f_type, has_default, f_default in instance.fields():
             override = field_schema_overrides.get(f_name)
             f_instance = instance.copy(type=f_type, name=f_name)
