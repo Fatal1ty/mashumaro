@@ -1051,3 +1051,45 @@ def test_jsonschema_with_ref_prefix():
         .items.to_dict()
         == schema
     )
+
+
+def test_jsonschema_with_additional_properties_true():
+    @dataclass
+    class DataClass:
+        x: int
+
+        class Config(BaseConfig):
+            json_schema = {"additionalProperties": True}
+
+    schema = JSONObjectSchema(
+        title="DataClass",
+        properties={
+            "x": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        },
+        additionalProperties=True,
+        required=["x"],
+    )
+    assert build_json_schema(DataClass) == schema
+
+
+def test_jsonschema_with_additional_properties_schema():
+    @dataclass
+    class DataClass:
+        x: int
+
+        class Config(BaseConfig):
+            json_schema = {
+                "additionalProperties": JSONSchema(
+                    type=JSONSchemaInstanceType.INTEGER
+                )
+            }
+
+    schema = JSONObjectSchema(
+        title="DataClass",
+        properties={
+            "x": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        },
+        additionalProperties=JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        required=["x"],
+    )
+    assert build_json_schema(DataClass) == schema
