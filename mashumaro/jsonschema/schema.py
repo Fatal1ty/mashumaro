@@ -306,6 +306,9 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
                 f_name = f_instance.alias
             if f_default is not MISSING:
                 f_schema.default = f_default
+            description = f_instance.metadata.get("description")
+            if description:
+                f_schema.description = description
 
             if not has_default:
                 required.append(f_name)
