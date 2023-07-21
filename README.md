@@ -1356,7 +1356,7 @@ be deferred until they are called first time. This will reduce the import time
 and, in certain instances, may enhance the speed of deserialization
 by leveraging the data that is accessible after the class has been created.
 
-> **Warning**\
+> [!Warning]\
 > If you need to save a reference to `from_*` or `to_*` method, you should
 > do it after the method is compiled. To be safe, you can always use lambda
 > function:
@@ -1604,7 +1604,7 @@ Parameter `field` coule be in the following forms:
 * annotated as Literal: `type: Literal[42] = 42`
 * annotated as StrEnum: `type: ResponseType = ResponseType.OK`
 
-> **Note**\
+> [!NOTE]\
 > Keep in mind that by default only Final, Literal and StrEnum fields are
 > processed during serialization.
 
@@ -1624,7 +1624,7 @@ We can improve subclass deserialization using `Discriminator` as annotation
 within `Annotated` type. We will use `field` parameter and set
 `include_subtypes` to `True`.
 
-> **Note**\
+> [!IMPORTANT]\
 > The discriminator field should be accessible from the `__dict__` attribute
 > of a specific descendant, i.e. defined at the level of that descendant.
 > A descendant class without a discriminator field will be ignored, but
@@ -1928,7 +1928,7 @@ use `Discriminator`, but deserialization will almost be the same as for `Union`
 type without `Discriminator` except that it could be possible to deserialize
 subclasses with `include_subtypes=True`.
 
-> **Note**\
+> [!IMPORTANT]\
 > When both `include_subtypes` and `include_supertypes` are enabled,
 > all subclasses will be attempted to be deserialized first,
 > superclasses — at the end.
