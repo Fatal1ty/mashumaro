@@ -1933,6 +1933,9 @@ subclasses with `include_subtypes=True`.
 > all subclasses will be attempted to be deserialized first,
 > superclasses — at the end.
 
+In the following example you can see how priority works — first we try
+to deserialize `ChickpeaHummus`, and if it fails, then we try `Hummus`:
+
 ```python
 @dataclass
 class Hummus(DataClassDictMixin):
