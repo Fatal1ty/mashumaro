@@ -1369,7 +1369,7 @@ by leveraging the data that is accessible after the class has been created.
 
 In some cases it's needed to pass a field value as is without any changes
 during serialization / deserialization. There is a predefined
-[`pass_through`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/helper.py#L49)
+[`pass_through`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/helper.py#L58)
 object that can be used as `serialization_strategy` or
 `serialize` / `deserialize` options:
 
