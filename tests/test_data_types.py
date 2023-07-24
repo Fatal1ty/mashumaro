@@ -1039,18 +1039,13 @@ def test_serialize_deserialize_options(value_info):
 
 
 def test_dataclass_field_without_mixin():
-    with pytest.raises(UnserializableField):
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        p: DataClassWithoutMixin
 
-        @dataclass
-        class _(DataClassDictMixin):
-            p: DataClassWithoutMixin
-
-    with add_unpack_method:
-        with pytest.raises(UnserializableField):
-
-            @dataclass
-            class _(DataClassDictMixin):
-                p: DataClassWithoutMixin
+    obj = DataClass(DataClassWithoutMixin(42))
+    assert DataClass.from_dict({"p": {"i": "42"}}) == obj
+    assert obj.to_dict() == {"p": {"i": 42}}
 
 
 def test_serializable_type_dataclass():

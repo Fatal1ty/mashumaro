@@ -11,6 +11,7 @@ import uuid
 from abc import ABC, abstractmethod
 from base64 import decodebytes
 from contextlib import suppress
+from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, Union
@@ -25,7 +26,6 @@ from mashumaro.core.meta.helpers import (
     get_class_that_defines_method,
     get_function_arg_annotation,
     get_literal_values,
-    is_dataclass_dict_mixin_subclass,
     is_final,
     is_generic,
     is_literal,
@@ -563,10 +563,8 @@ def unpack_generic_serializable_type(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def unpack_dataclass_dict_mixin_subclass(
-    spec: ValueSpec,
-) -> Optional[Expression]:
-    if is_dataclass_dict_mixin_subclass(spec.origin_type):
+def unpack_dataclass(spec: ValueSpec) -> Optional[Expression]:
+    if is_dataclass(spec.origin_type):
         for annotation in spec.annotations:
             if isinstance(annotation, Discriminator):
                 return DiscriminatedUnionUnpackerBuilder(annotation).build(
