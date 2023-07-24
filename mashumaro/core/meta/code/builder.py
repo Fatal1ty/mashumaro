@@ -85,7 +85,7 @@ class InternalMethodName(str):
 
     @property
     def public(self) -> str:
-        return self[len(self._PREFIX):-len(self._SUFFIX)]
+        return self[len(self._PREFIX) : -len(self._SUFFIX)]
 
 
 class CodeBuilder:
