@@ -36,6 +36,7 @@ from mashumaro.core.meta.helpers import (
     hash_type_args,
     is_class_var,
     is_dataclass_dict_mixin,
+    is_dataclass_dict_mixin_subclass,
     is_dialect_subclass,
     is_init_var,
     is_literal,
@@ -72,6 +73,19 @@ __PRE_SERIALIZE__ = "__pre_serialize__"
 __PRE_DESERIALIZE__ = "__pre_deserialize__"
 __POST_SERIALIZE__ = "__post_serialize__"
 __POST_DESERIALIZE__ = "__post_deserialize__"
+
+
+class InternalMethodName(str):
+    _PREFIX = "__mashumaro_"
+    _SUFFIX = "__"
+
+    @classmethod
+    def from_public(cls, value: str) -> "InternalMethodName":
+        return cls(f"{cls._PREFIX}{value}{cls._SUFFIX}")
+
+    @property
+    def public(self) -> str:
+        return self[len(self._PREFIX) : -len(self._SUFFIX)]
 
 
 class CodeBuilder:
@@ -459,6 +473,10 @@ class CodeBuilder:
                 self._add_unpack_method_lines(method_name)
         if self.dialect is None:
             self.add_line(f"setattr(cls, '{method_name}', {method_name})")
+            if is_dataclass_dict_mixin_subclass(self.cls):
+                self.add_line(
+                    f"setattr(cls, '{method_name.public}', {method_name})"
+                )
         else:
             self.add_line(f"cls.{cache_name}[dialect] = {method_name}")
         self.compile()
@@ -736,16 +754,16 @@ class CodeBuilder:
         type_args: typing.Iterable = (),
         format_name: str = "dict",
         decoder: typing.Optional[typing.Any] = None,
-    ) -> str:
+    ) -> InternalMethodName:
         if format_name != "dict" and decoder is not None:
-            return f"from_{format_name}"
+            return InternalMethodName.from_public(f"from_{format_name}")
         else:
             method_name = "from_dict"
             if format_name != "dict":
                 method_name += f"_{format_name}"
             if type_args:
                 method_name += f"_{hash_type_args(type_args)}"
-            return method_name
+            return InternalMethodName.from_public(method_name)
 
     @classmethod
     def get_pack_method_name(
@@ -753,16 +771,16 @@ class CodeBuilder:
         type_args: typing.Tuple[typing.Type, ...] = (),
         format_name: str = "dict",
         encoder: typing.Optional[typing.Any] = None,
-    ) -> str:
+    ) -> InternalMethodName:
         if format_name != "dict" and encoder is not None:
-            return f"to_{format_name}"
+            return InternalMethodName.from_public(f"to_{format_name}")
         else:
             method_name = "to_dict"
             if format_name != "dict":
                 method_name += f"_{format_name}"
             if type_args:
                 method_name += f"_{hash_type_args(type_args)}"
-            return method_name
+            return InternalMethodName.from_public(f"{method_name}")
 
     def _add_pack_method_lines_lazy(self, method_name: str) -> None:
         if self.default_dialect is not None:
@@ -990,6 +1008,10 @@ class CodeBuilder:
                 self._add_pack_method_lines(method_name)
         if self.dialect is None:
             self.add_line(f"setattr(cls, '{method_name}', {method_name})")
+            if is_dataclass_dict_mixin_subclass(self.cls):
+                self.add_line(
+                    f"setattr(cls, '{method_name.public}', {method_name})"
+                )
         else:
             self.add_line(f"cls.{cache_name}[dialect] = {method_name}")
         self.compile()

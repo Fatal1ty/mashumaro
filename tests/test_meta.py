@@ -578,64 +578,98 @@ def test_code_builder_get_pack_method_name():
     builder = CodeBuilder(object)
     type_args = (int,)
     type_args_hash = hash_type_args((int,))
-    assert builder.get_pack_method_name() == "to_dict"
-    assert (
-        builder.get_pack_method_name(type_args=type_args)
-        == f"to_dict_{type_args_hash}"
+
+    method_name = builder.get_pack_method_name()
+    assert method_name == "__mashumaro_to_dict__"
+    assert method_name.public == "to_dict"
+
+    method_name = builder.get_pack_method_name(type_args=type_args)
+    assert method_name == f"__mashumaro_to_dict_{type_args_hash}__"
+    assert method_name.public == f"to_dict_{type_args_hash}"
+
+    method_name = builder.get_pack_method_name(
+        type_args=type_args, format_name="yaml"
     )
-    assert (
-        builder.get_pack_method_name(type_args=type_args, format_name="yaml")
-        == f"to_dict_yaml_{type_args_hash}"
+    assert method_name == f"__mashumaro_to_dict_yaml_{type_args_hash}__"
+    assert method_name.public == f"to_dict_yaml_{type_args_hash}"
+
+    method_name = builder.get_pack_method_name(
+        type_args=type_args, format_name="yaml"
     )
-    assert builder.get_pack_method_name(format_name="yaml") == "to_dict_yaml"
-    assert (
-        builder.get_pack_method_name(format_name="yaml", encoder=object)
-        == "to_yaml"
+    assert method_name == f"__mashumaro_to_dict_yaml_{type_args_hash}__"
+    assert method_name.public == f"to_dict_yaml_{type_args_hash}"
+
+    method_name = builder.get_pack_method_name(format_name="yaml")
+    assert method_name == "__mashumaro_to_dict_yaml__"
+    assert method_name.public == "to_dict_yaml"
+
+    method_name = builder.get_pack_method_name(
+        format_name="yaml", encoder=object
     )
-    assert (
-        builder.get_pack_method_name(type_args=type_args, encoder=object)
-        == f"to_dict_{type_args_hash}"
+    assert method_name == "__mashumaro_to_yaml__"
+    assert method_name.public == "to_yaml"
+
+    method_name = builder.get_pack_method_name(
+        type_args=type_args, encoder=object
     )
-    assert builder.get_pack_method_name(encoder=object) == "to_dict"
-    assert (
-        builder.get_pack_method_name(
-            type_args=type_args, format_name="yaml", encoder=object
-        )
-        == f"to_yaml"
+    assert method_name == f"__mashumaro_to_dict_{type_args_hash}__"
+    assert method_name.public == f"to_dict_{type_args_hash}"
+
+    method_name = builder.get_pack_method_name(encoder=object)
+    assert method_name == "__mashumaro_to_dict__"
+    assert method_name.public == "to_dict"
+
+    method_name = builder.get_pack_method_name(
+        type_args=type_args, format_name="yaml", encoder=object
     )
+    assert method_name == "__mashumaro_to_yaml__"
+    assert method_name.public == "to_yaml"
 
 
 def test_code_builder_get_unpack_method_name():
     builder = CodeBuilder(object)
     type_args = (int,)
     type_args_hash = hash_type_args((int,))
-    assert builder.get_unpack_method_name() == "from_dict"
-    assert (
-        builder.get_unpack_method_name(type_args=type_args)
-        == f"from_dict_{type_args_hash}"
+
+    method_name = builder.get_unpack_method_name()
+    assert method_name == "__mashumaro_from_dict__"
+    assert method_name.public == "from_dict"
+
+    method_name = builder.get_unpack_method_name(type_args=type_args)
+    assert method_name == f"__mashumaro_from_dict_{type_args_hash}__"
+    assert method_name.public == f"from_dict_{type_args_hash}"
+
+    method_name = builder.get_unpack_method_name(
+        type_args=type_args, format_name="yaml"
     )
-    assert (
-        builder.get_unpack_method_name(type_args=type_args, format_name="yaml")
-        == f"from_dict_yaml_{type_args_hash}"
+    assert method_name == f"__mashumaro_from_dict_yaml_{type_args_hash}__"
+    assert method_name.public == f"from_dict_yaml_{type_args_hash}"
+
+    method_name = builder.get_unpack_method_name(format_name="yaml")
+    assert method_name == "__mashumaro_from_dict_yaml__"
+    assert method_name.public == "from_dict_yaml"
+
+    method_name = builder.get_unpack_method_name(
+        format_name="yaml", decoder=object
     )
-    assert (
-        builder.get_unpack_method_name(format_name="yaml") == "from_dict_yaml"
+    assert method_name == "__mashumaro_from_yaml__"
+    assert method_name.public == "from_yaml"
+
+    method_name = builder.get_unpack_method_name(
+        type_args=type_args, decoder=object
     )
-    assert (
-        builder.get_unpack_method_name(format_name="yaml", decoder=object)
-        == "from_yaml"
+    assert method_name == f"__mashumaro_from_dict_{type_args_hash}__"
+    assert method_name.public == f"from_dict_{type_args_hash}"
+
+    method_name = builder.get_unpack_method_name(decoder=object)
+    assert method_name == "__mashumaro_from_dict__"
+    assert method_name.public == "from_dict"
+
+    method_name = builder.get_unpack_method_name(
+        type_args=type_args, format_name="yaml", decoder=object
     )
-    assert (
-        builder.get_unpack_method_name(type_args=type_args, decoder=object)
-        == f"from_dict_{type_args_hash}"
-    )
-    assert builder.get_unpack_method_name(decoder=object) == "from_dict"
-    assert (
-        builder.get_unpack_method_name(
-            type_args=type_args, format_name="yaml", decoder=object
-        )
-        == f"from_yaml"
-    )
+    assert method_name == "__mashumaro_from_yaml__"
+    assert method_name.public == "from_yaml"
 
 
 def test_is_self():

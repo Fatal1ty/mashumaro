@@ -6,6 +6,7 @@ import typing
 import uuid
 from base64 import encodebytes
 from contextlib import suppress
+from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
 from typing import Any, Callable, List, Optional, Tuple, Type, Union
@@ -19,7 +20,6 @@ from mashumaro.core.meta.helpers import (
     get_class_that_defines_method,
     get_function_return_annotation,
     get_literal_values,
-    is_dataclass_dict_mixin_subclass,
     is_final,
     is_generic,
     is_literal,
@@ -205,10 +205,8 @@ def pack_generic_serializable_type(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def pack_dataclass_dict_mixin_subclass(
-    spec: ValueSpec,
-) -> Optional[Expression]:
-    if is_dataclass_dict_mixin_subclass(spec.origin_type):
+def pack_dataclass(spec: ValueSpec) -> Optional[Expression]:
+    if is_dataclass(spec.origin_type):
         type_args = get_args(spec.type)
         method_name = spec.builder.get_pack_method_name(
             type_args, spec.builder.format_name
