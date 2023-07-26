@@ -156,7 +156,7 @@ def test_jsonschema_for_dataclass():
     )
     assert build_json_schema(DataClass) == schema
     assert build_json_schema(DataClass, all_refs=True) == JSONSchema(
-        reference="#/defs/DataClass", definitions={"DataClass": schema}
+        reference="#/$defs/DataClass", definitions={"DataClass": schema}
     )
 
 

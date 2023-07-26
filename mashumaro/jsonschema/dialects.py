@@ -11,7 +11,7 @@ class JSONSchemaDialect:
 @dataclass(frozen=True)
 class JSONSchemaDraft202012Dialect(JSONSchemaDialect):
     uri: str = "https://json-schema.org/draft/2020-12/schema"
-    definitions_root_pointer: str = "#/defs"
+    definitions_root_pointer: str = "#/$defs"
     all_refs: bool = False
 
 

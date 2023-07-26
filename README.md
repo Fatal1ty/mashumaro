@@ -2519,7 +2519,7 @@ print(build_json_schema(List[User], all_refs=True).to_json())
         }
     },
     "items": {
-        "$ref": "#/defs/User"
+        "$ref": "#/$defs/User"
     }
 }
 ```

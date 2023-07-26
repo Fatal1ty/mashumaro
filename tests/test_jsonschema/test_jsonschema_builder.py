@@ -65,8 +65,8 @@ def test_jsonschema_builder_draft_2020_12():
 
 def test_jsonschema_builder_draft_2020_12_with_refs():
     builder = JSONSchemaBuilder(dialect=DRAFT_2020_12, all_refs=True)
-    assert builder.build(A).to_dict() == {"$ref": "#/defs/A"}
-    assert builder.build(B).to_dict() == {"$ref": "#/defs/B"}
+    assert builder.build(A).to_dict() == {"$ref": "#/$defs/A"}
+    assert builder.build(B).to_dict() == {"$ref": "#/$defs/B"}
     assert builder.get_definitions().to_dict() == {
         "A": {
             "type": "object",
