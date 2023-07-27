@@ -835,7 +835,8 @@ class CodeBuilder:
             omit_none = self._get_dialect_or_config_option("omit_none", False)
             packers = {}
             aliases = {}
-            fields_could_be_none = set()
+            nullable_fields = set()
+            nontrivial_nullable_fields = set()
             for fname, ftype in field_types.items():
                 if self.metadatas.get(fname, {}).get("serialize") == "omit":
                     continue
@@ -846,13 +847,30 @@ class CodeBuilder:
                 if alias:
                     aliases[fname] = alias
                 if could_be_none:
-                    fields_could_be_none.add(fname)
-            if fields_could_be_none or by_alias_feature and aliases:
+                    nullable_fields.add(fname)
+                    if packer != "value":
+                        nontrivial_nullable_fields.add(fname)
+            if (
+                nontrivial_nullable_fields
+                or nullable_fields
+                and (omit_none or omit_none_feature)
+                or by_alias_feature
+                and aliases
+            ):
                 kwargs = "kwargs"
                 self.add_line("kwargs = {}")
                 for fname, packer in packers.items():
                     alias = aliases.get(fname)
-                    if fname in fields_could_be_none:
+                    if fname in nullable_fields:
+                        if (
+                            packer == "value"
+                            and not omit_none
+                            and not omit_none_feature
+                        ):
+                            self._pack_method_set_value(
+                                fname, alias, by_alias_feature, f"self.{fname}"
+                            )
+                            continue
                         self.add_line(f"value = self.{fname}")
                         with self.indent("if value is not None:"):
                             self._pack_method_set_value(
@@ -881,7 +899,12 @@ class CodeBuilder:
                         fname_or_alias = aliases.get(fname, fname)
                     else:
                         fname_or_alias = fname
-                    kwargs_parts.append((fname_or_alias, packer))
+                    kwargs_parts.append(
+                        (
+                            fname_or_alias,
+                            packer if packer != "value" else f"self.{fname}",
+                        )
+                    )
                 kwargs = ", ".join(f"'{k}': {v}" for k, v in kwargs_parts)
                 kwargs = f"{{{kwargs}}}"
             post_serialize = self.get_declared_hook(__POST_SERIALIZE__)
