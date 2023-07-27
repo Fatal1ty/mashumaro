@@ -447,8 +447,7 @@ def _unpack_with_annotated_serialization_strategy(
     strategy_type = type(strategy)
     try:
         value_type: Union[Type, Any] = get_function_arg_annotation(
-            strategy.deserialize,
-            arg_pos=0,
+            strategy.deserialize, arg_pos=0
         )
     except (KeyError, ValueError):
         value_type = Any
@@ -514,8 +513,7 @@ def _unpack_annotated_serializable_type(
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
         value_type = get_function_arg_annotation(
-            spec.origin_type._deserialize,
-            arg_pos=0,
+            spec.origin_type._deserialize, arg_pos=0
         )
     except (KeyError, ValueError):
         raise UnserializableField(
