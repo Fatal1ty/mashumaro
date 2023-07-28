@@ -652,10 +652,11 @@ Here we add annotations to the only argument of `_deserialize` method and
 to the return value of `_serialize` method as well. The latter is needed for
 correct serialization.
 
-The importance of explicit passing `use_annotations=True` when defining a class
-is that otherwise implicit using annotations might break compatibility with old
-code that wasn't aware of this feature. It will be enabled by default in the
-future major release.
+> [!IMPORTANT]\
+> The importance of explicit passing `use_annotations=True` when defining a
+> class is that otherwise implicit using annotations might break compatibility
+> with old code that wasn't aware of this feature. It will be enabled by
+> default in the future major release.
 
 #### User-defined generic types
 
@@ -793,7 +794,9 @@ print(example.to_dict())
 Here the passed string value `"1672531200"` will be converted to `float` before being passed to `deserialize` method
 thanks to the `float` annotation.
 
-As well as for `SerializableType`, the value of `use_annotatons` will be `True` by default in the future major release.
+> [!IMPORTANT]\
+> As well as for `SerializableType`, the value of `use_annotatons` will be
+> `True` by default in the future major release.
 
 #### Third-party generic types
 
@@ -883,7 +886,8 @@ with. At this moment there are next serialization engines to choose from:
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict` | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine. |
 | `Any`                      | `omit`               | Skip the field during serialization                                                                                                                                                                          |
 
-In addition, you can pass a field value as is without changes using
+> [!NOTE]\
+> You can pass a field value as is without changes on serialization using
 [`pass_through`](#passing-field-values-as-is).
 
 Example:
@@ -927,7 +931,8 @@ with. At this moment there are next deserialization engines to choose from:
 | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict`                                                                                                                | How to unpack named tuples. By default `as_list` engine is used that means your named tuple class instance will be created from a list of its values. You can unpack it from a dictionary using `as_dict` engine.                                                                                       |
 
-In addition, you can pass a field value as is without changes using
+> [!NOTE]\
+> You can pass a field value as is without changes on deserialization using
 [`pass_through`](#passing-field-values-as-is).
 
 Example:
@@ -971,9 +976,13 @@ class D(DataClassDictMixin):
 #### `serialization_strategy` option
 
 This option is useful when you want to change the serialization logic
-for a dataclass field depending on some defined parameters using a reusable serialization scheme.
-You can find an example in the [`SerializationStrategy`](#serializationstrategy) chapter.
-In addition, you can pass a field value as is without changes using
+for a dataclass field depending on some defined parameters using a reusable
+serialization scheme. You can find an example in the
+[`SerializationStrategy`](#serializationstrategy) chapter.
+
+> [!NOTE]\
+> You can pass a field value as is without changes on
+> serialization / deserialization using
 [`pass_through`](#passing-field-values-as-is).
 
 #### `alias` option
