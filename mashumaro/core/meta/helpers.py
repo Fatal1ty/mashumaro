@@ -80,6 +80,7 @@ __all__ = [
     "is_type_var_tuple",
     "hash_type_args",
     "iter_all_subclasses",
+    "is_hashable",
 ]
 
 
@@ -635,7 +636,10 @@ def substitute_type_params(typ: Type, substitutions: Dict[Type, Type]) -> Type:
         if new_type_args:
             with suppress(TypeError, KeyError):
                 return typ[tuple(new_type_args)]
-        return substitutions.get(typ, typ)
+        if is_hashable(typ):
+            return substitutions.get(typ, typ)
+        else:
+            return typ
 
 
 def get_name_error_name(e: NameError) -> str:
@@ -722,3 +726,11 @@ def iter_all_subclasses(cls: Type) -> typing.Iterator[Type]:
     for subclass in cls.__subclasses__():
         yield subclass
         yield from iter_all_subclasses(subclass)
+
+
+def is_hashable(typ: Any) -> bool:
+    try:
+        hash(typ)
+        return True
+    except TypeError:
+        return False

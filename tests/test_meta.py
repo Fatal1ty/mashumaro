@@ -35,6 +35,7 @@ from mashumaro.core.meta.helpers import (
     is_dataclass_dict_mixin_subclass,
     is_dialect_subclass,
     is_generic,
+    is_hashable,
     is_init_var,
     is_literal,
     is_named_tuple,
@@ -759,3 +760,16 @@ def test_substitute_type_params():
         substitute_type_params(typing_extensions.Annotated[T, 42], {T: int})
         == typing_extensions.Annotated[int, 42]
     )
+    assert (
+        substitute_type_params(
+            typing.Dict[str, typing_extensions.Annotated[int, {}]], {T: int}
+        )
+        == typing.Dict[str, typing_extensions.Annotated[int, {}]]
+    )
+
+
+def test_is_hashable():
+    assert is_hashable(42) is True
+    assert is_hashable({}) is False
+    assert is_hashable(typing_extensions.Annotated[int, 42]) is True
+    assert is_hashable(typing_extensions.Annotated[int, {}]) is False
