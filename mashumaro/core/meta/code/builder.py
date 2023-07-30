@@ -38,6 +38,7 @@ from mashumaro.core.meta.helpers import (
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
     is_dialect_subclass,
+    is_hashable,
     is_init_var,
     is_literal,
     is_optional,
@@ -1074,8 +1075,9 @@ class CodeBuilder:
     def iter_serialization_strategies(
         self, metadata: typing.Mapping, ftype: typing.Type
     ) -> typing.Iterator[SerializationStrategyValueType]:
-        yield metadata.get("serialization_strategy")
-        yield from self.__iter_serialization_strategies(ftype)
+        if is_hashable(ftype):
+            yield metadata.get("serialization_strategy")
+            yield from self.__iter_serialization_strategies(ftype)
 
     @typing.no_type_check
     def __iter_serialization_strategies(
