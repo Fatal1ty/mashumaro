@@ -310,78 +310,26 @@ Benchmark
 * 16GB RAM
 * Python 3.11.4
 
-Benchmark using [pyperf](https://github.com/psf/pyperf) with GitHub Issue
-model.
+Benchmark using [pyperf](https://github.com/psf/pyperf) with GitHub Issue model. Please note that the
+following charts use logarithmic scale, as it is convenient for displaying
+very large ranges of values.
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/load_light.svg">
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/load_dark.svg">
-  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.svg" width="604">
+  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/load_light.svg" width="604">
 </picture>
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/dump_light.svg">
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/dump_dark.svg">
-  <img src="https://raw.githubusercontent.com/Fatal1ty/trash/f06fa7c5b6502f7d837e2f5ce07adac3f126a9a8/dump_light_.svg" width="604">
+  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/dump_light.svg" width="604">
 </picture>
 
-<table>
-  <col>
-  <colgroup span="2"></colgroup>
-  <colgroup span="2"></colgroup>
-  <tr>
-    <th rowspan="2">Library</th>
-    <th colspan="2" scope="colgroup">From dict</th>
-    <th colspan="2" scope="colgroup">To dict</th>
-</tr>
-<tr>
-    <th scope="col">Time</th>
-    <th scope="col">Slowdown factor</th>
-    <th scope="col">Time</th>
-    <th scope="col">Slowdown factor</th>
-</tr>
-<tr>
-    <th scope="row"><a href="https://github.com/Fatal1ty/mashumaro">mashumaro</a></th>
-    <td align="right">0.14724</td>
-    <td align="left">1x</td>
-    <td align="right">0.10128</td>
-    <td align="left">1x</td>
-</tr>
-<tr>
-    <th scope="row"><a href="https://github.com/Tinche/cattrs">cattrs</a></th>
-    <td align="right">0.18906</td>
-    <td align="left">1.28x</td>
-    <td align="right">0.14072</td>
-    <td align="left">1.39x</td>
-</tr>
-<tr>
-    <th scope="row"><a href="https://github.com/samuelcolvin/pydantic/">pydantic</a></th>
-    <td align="right">1.02666</td>
-    <td align="left">6.97x</td>
-    <td align="right">0.81932</td>
-    <td align="left">8.09x</td>
-</tr>
-<tr>
-    <th scope="row"><a href="https://github.com/marshmallow-code/marshmallow">marshmallow</a></th>
-    <td align="right">1.38348</td>
-    <td align="left">9.4x</td>
-    <td align="right">0.45695</td>
-    <td align="left">4.51x</td>
-</tr>
-<tr>
-    <th scope="row"><a href="https://docs.python.org/3/library/dataclasses.html#dataclasses.asdict">dataclasses</a></th>
-    <td align="left">—</td>
-    <td align="left">—</td>
-    <td align="right">0.68057</td>
-    <td align="left">6.72x</td>
-</tr>
-<tr>
-    <th scope="row"><a href="https://github.com/konradhalas/dacite">dacite</a></th>
-    <td align="right">2.37315</td>
-    <td align="left">16.12x</td>
-    <td align="left">—</td>
-    <td align="left">—</td>
-</tr>
-</table>
+> [!NOTE]\
+> Benchmark results may vary depending on the specific configuration and
+> parameters used for serialization and deserialization. However, we have made
+> an attempt to use the available options that can speed up and smooth out the
+> differences in how libraries work.
 
 To run benchmark in your environment:
 ```bash
