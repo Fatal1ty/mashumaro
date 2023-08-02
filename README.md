@@ -314,13 +314,13 @@ Benchmark using [pyperf](https://github.com/psf/pyperf) with GitHub Issue
 model.
 
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/trash/f06fa7c5b6502f7d837e2f5ce07adac3f126a9a8/load_light_.svg">
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/trash/f06fa7c5b6502f7d837e2f5ce07adac3f126a9a8/load_light_.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/load_light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/load_dark.svg">
   <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.svg" width="604">
 </picture>
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/trash/f06fa7c5b6502f7d837e2f5ce07adac3f126a9a8/dump_light_.svg">
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/trash/f06fa7c5b6502f7d837e2f5ce07adac3f126a9a8/dump_light_.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/dump_light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/dump_dark.svg">
   <img src="https://raw.githubusercontent.com/Fatal1ty/trash/f06fa7c5b6502f7d837e2f5ce07adac3f126a9a8/dump_light_.svg" width="604">
 </picture>
 

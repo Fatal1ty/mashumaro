@@ -28,7 +28,7 @@ pytablewriter[html]>=0.58.0
 cattrs==23.1.2
 pydantic==2.1.1
 dacite==1.7.0  # see https://github.com/konradhalas/dacite/issues/236#issuecomment-1613987368
-marshmallow==3.20.1
+marshmallow>=3.19.0
 dataclasses-json==0.5.14
 
 # library stubs
