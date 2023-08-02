@@ -1,6 +1,6 @@
 <div align="center">
 
-<img alt="logo" width="175" src="https://github.com/Fatal1ty/mashumaro/blob/master/img/logo.svg">
+<img alt="logo" width="175" src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/ac2f924591d488dbd9a776a6b1ae7dede2d8c73e/img/logo.svg">
 
 ###### Fast and well tested serialization library on top of dataclasses
 
@@ -305,25 +305,23 @@ To minimize the import time, you can explicitly enable
 Benchmark
 --------------------------------------------------------------------------------
 
-* macOS 13.0.1 Ventura
+* macOS 13.3.1 Ventura
 * Apple M1
-* 8GB RAM
-* Python 3.11.0
+* 16GB RAM
+* Python 3.11.4
 
-Load and dump [sample data](https://github.com/Fatal1ty/mashumaro/blob/master/benchmark/sample.py) 100 times in 5 runs.
-The following figures show the best overall time in each case.
-
-[//]: # (<img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.png" width="400"><img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_light.png" width="400">)
+Benchmark using [pyperf](https://github.com/psf/pyperf) with GitHub Issue
+model.
 
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.svg">
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_dark.svg">
-  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.svg" width="400">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/trash/f06fa7c5b6502f7d837e2f5ce07adac3f126a9a8/load_light_.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/trash/f06fa7c5b6502f7d837e2f5ce07adac3f126a9a8/load_light_.svg">
+  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/load_light.svg" width="604">
 </picture>
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_light.svg">
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_dark.svg">
-  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/master/benchmark/charts/dump_light.svg" width="400">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/trash/f06fa7c5b6502f7d837e2f5ce07adac3f126a9a8/dump_light_.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/trash/f06fa7c5b6502f7d837e2f5ce07adac3f126a9a8/dump_light_.svg">
+  <img src="https://raw.githubusercontent.com/Fatal1ty/trash/f06fa7c5b6502f7d837e2f5ce07adac3f126a9a8/dump_light_.svg" width="604">
 </picture>
 
 <table>
@@ -392,7 +390,7 @@ cd mashumaro
 python3 -m venv env && source env/bin/activate
 pip install -e .
 pip install -r requirements-dev.txt
-python benchmark/run.py
+./benchmark/run.sh
 ```
 
 Serialization mixins
