@@ -110,9 +110,7 @@ class Instance:
     @property
     def metadata(self) -> Dict[str, Any]:
         if self.__metadata is None:
-            if not self.name:
-                self.__metadata = {}
-            elif self.__owner_builder:
+            if self.name and self.__owner_builder:
                 self.__metadata = dict(
                     **self.__owner_builder.metadatas.get(self.name, {})
                 )
@@ -291,7 +289,8 @@ def on_type_with_overridden_deserialization(
     def override_with_any(reason: Any) -> None:
         if instance.owner_class is not None:
             name = f"{type_name(instance.owner_class)}.{instance.name}"
-        else:
+        else:  # pragma: no cover
+            # we will have an owner class, but leave this here just in case
             name = type_name(instance.type)
         warnings.warn(
             f"Type Any will be used for {name} with "
