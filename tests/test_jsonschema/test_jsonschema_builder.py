@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from typing_extensions import Literal, TypeVarTuple
 
+from mashumaro.config import BaseConfig
 from mashumaro.jsonschema import DRAFT_2020_12, OPEN_API_3_1
 from mashumaro.jsonschema.builder import JSONSchemaBuilder, build_json_schema
 from mashumaro.jsonschema.schema import Instance
@@ -23,15 +24,24 @@ class B:
 def test_instance():
     @dataclass
     class DataClass:
-        pass
+        class Config(BaseConfig):
+            pass
 
     instance = Instance(int)
     assert instance.metadata == {}
-    assert instance.holder_class is None
+    assert instance.owner_class is None
+    assert instance.metadata == {}
+    assert instance.get_self_config() is BaseConfig
 
     instance = Instance(DataClass)
-    assert instance.holder_class is DataClass
+    assert instance.owner_class is None
     assert instance.metadata == {}
+    assert instance.get_self_config() is DataClass.Config
+
+    derived_instance = instance.derive(type=int)
+    assert derived_instance.owner_class is DataClass
+    assert derived_instance.metadata == {}
+    assert derived_instance.get_self_config() is BaseConfig
 
 
 def test_jsonschema_json_simple():

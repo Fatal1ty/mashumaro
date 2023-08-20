@@ -950,21 +950,94 @@ def test_overridden_serialization_method_with_return_annotation():
     def as_timestamp(dt: datetime.datetime) -> float:
         return dt.timestamp()  # pragma no cover
 
+    def first_datetime_as_timestamp(
+        seq: List[datetime.datetime],
+    ) -> float:
+        return as_timestamp(seq[0])  # pragma no cover
+
     @dataclass
     class DataClass:
-        x: datetime.datetime
-        y: datetime.datetime = field(metadata={"serialize": as_timestamp})
+        a: datetime.datetime
+        b: datetime.datetime = field(metadata={"serialize": as_timestamp})
+        c: List[datetime.datetime]
+        d: List[datetime.datetime] = field(
+            metadata={"serialize": first_datetime_as_timestamp}
+        )
+        e: Optional[datetime.datetime]
+        f: List[Optional[datetime.datetime]]
 
         class Config(BaseConfig):
             serialization_strategy = {
                 datetime.datetime: {"serialize": as_timestamp}
             }
 
-    assert build_json_schema(DataClass).properties["x"] == JSONSchema(
+    schema = build_json_schema(DataClass)
+    assert schema.properties["a"] == JSONSchema(
         type=JSONSchemaInstanceType.NUMBER
     )
-    assert build_json_schema(DataClass).properties["y"] == JSONSchema(
+    assert schema.properties["b"] == JSONSchema(
         type=JSONSchemaInstanceType.NUMBER
+    )
+    assert schema.properties["c"] == JSONArraySchema(
+        items=JSONSchema(type=JSONSchemaInstanceType.NUMBER)
+    )
+    assert schema.properties["d"] == JSONSchema(
+        type=JSONSchemaInstanceType.NUMBER
+    )
+    assert schema.properties["e"] == JSONSchema(
+        anyOf=[
+            JSONSchema(type=JSONSchemaInstanceType.NUMBER),
+            JSONSchema(type=JSONSchemaInstanceType.NULL),
+        ]
+    )
+    assert schema.properties["f"] == JSONArraySchema(
+        items=JSONSchema(
+            anyOf=[
+                JSONSchema(type=JSONSchemaInstanceType.NUMBER),
+                JSONSchema(type=JSONSchemaInstanceType.NULL),
+            ]
+        )
+    )
+
+
+def test_dataclass_overridden_serialization_method():
+    def serialize_as_str(value: Any) -> str:
+        return str(value)  # pragma no cover
+
+    @dataclass
+    class Inner:
+        x: int
+
+    @dataclass
+    class DataClass:
+        a: Inner
+        b: Optional[Inner]
+        c: List[Inner]
+        d: List[Optional[Inner]]
+
+        class Config(BaseConfig):
+            serialization_strategy = {Inner: {"serialize": serialize_as_str}}
+
+    schema = build_json_schema(DataClass)
+    assert schema.properties["a"] == JSONSchema(
+        type=JSONSchemaInstanceType.STRING
+    )
+    assert schema.properties["b"] == JSONSchema(
+        anyOf=[
+            JSONSchema(type=JSONSchemaInstanceType.STRING),
+            JSONSchema(type=JSONSchemaInstanceType.NULL),
+        ]
+    )
+    assert schema.properties["c"] == JSONArraySchema(
+        items=JSONSchema(type=JSONSchemaInstanceType.STRING)
+    )
+    assert schema.properties["d"] == JSONArraySchema(
+        items=JSONSchema(
+            anyOf=[
+                JSONSchema(type=JSONSchemaInstanceType.STRING),
+                JSONSchema(type=JSONSchemaInstanceType.NULL),
+            ]
+        )
     )
 
 
