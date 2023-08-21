@@ -704,6 +704,18 @@ def test_ensure_generic_collection_not_generic():
     )
 
 
+@pytest.mark.skipif(PEP_585_COMPATIBLE, reason="requires python <3.9")
+def test_ensure_generic_collection_with_unhashable_args():
+    assert ensure_generic_collection(
+        ValueSpec(
+            typing.Dict[str, typing_extensions.Annotated[int, {"x": 42}]],
+            "",
+            CodeBuilder(None),
+            FieldContext("", {}),
+        )
+    )
+
+
 def test_get_function_arg_annotation():
     def foo(x: int, y: Dialect) -> None:
         pass  # pragma no cover
