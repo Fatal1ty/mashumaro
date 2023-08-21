@@ -275,7 +275,7 @@ def _default(f_type: Type, f_value: Any, config_cls: Type[BaseConfig]) -> Any:
     class CC(DataClassJSONMixin):
         x: f_type = f_value  # type: ignore
 
-        class Config(config_cls):
+        class Config(config_cls):  # type: ignore
             pass
 
     return CC(f_value).to_dict()["x"]
@@ -619,7 +619,9 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
             if isinstance(f_schema, EmptyJSONSchema):
                 f_schema = JSONSchema()
             f_schema.default = _default(
-                f_type, f_default, instance.get_self_config()
+                f_type,  # type: ignore[arg-type]
+                f_default,
+                instance.get_self_config(),
             )
         properties[f_name] = f_schema
     if as_dict:
