@@ -24,6 +24,7 @@ from typing_extensions import ParamSpec, TypeAlias
 
 from mashumaro.core.const import PEP_585_COMPATIBLE
 from mashumaro.core.meta.helpers import (
+    get_args,
     get_type_origin,
     is_annotated,
     is_generic,
@@ -124,7 +125,7 @@ class Registry:
 
 
 def ensure_generic_collection(spec: ValueSpec) -> bool:
-    if not PEP_585_COMPATIBLE:
+    if not PEP_585_COMPATIBLE and not get_args(spec.type):
         proper_type = PROPER_COLLECTION_TYPES.get(spec.type)
         if proper_type:
             raise UnserializableField(
