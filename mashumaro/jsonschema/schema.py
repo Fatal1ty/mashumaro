@@ -178,7 +178,7 @@ class Instance:
             if f_default is MISSING:
                 f_default = self._self_builder.namespace.get(f_name, MISSING)
             if f_default is not MISSING:
-                f_default = _default(f_type, f_default)
+                f_default = _default(f_type, f_default, self.get_self_config())
 
             has_default = (
                 f.default is not MISSING or f.default_factory is not MISSING
@@ -270,10 +270,13 @@ def _get_schema_or_none(
     return schema
 
 
-def _default(f_type: Type, f_value: Any) -> Any:
+def _default(f_type: Type, f_value: Any, config_cls: Type[BaseConfig]) -> Any:
     @dataclass
     class CC(DataClassJSONMixin):
         x: f_type = f_value  # type: ignore
+
+        class Config(config_cls):  # type: ignore
+            pass
 
     return CC(f_value).to_dict()["x"]
 
@@ -615,7 +618,11 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
         if f_default is not MISSING:
             if isinstance(f_schema, EmptyJSONSchema):
                 f_schema = JSONSchema()
-            f_schema.default = _default(f_type, f_default)  # type: ignore
+            f_schema.default = _default(
+                f_type,  # type: ignore[arg-type]
+                f_default,
+                instance.get_self_config(),
+            )
         properties[f_name] = f_schema
     if as_dict:
         return JSONObjectSchema(

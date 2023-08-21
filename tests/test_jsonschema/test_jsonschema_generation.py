@@ -118,6 +118,30 @@ if PY_39_MIN:
 Ts = TypeVarTuple("Ts")
 
 
+def dummy_serialize_as_str(_: Any) -> str:
+    return "dummy"  # pragma no cover
+
+
+class ThirdPartyType:
+    pass
+
+
+@dataclass
+class DataClassWithThirdPartyType:
+    a: ThirdPartyType
+    b: Optional[ThirdPartyType]
+    c: ThirdPartyType = ThirdPartyType()
+    d: Optional[ThirdPartyType] = None
+
+    class Config(BaseConfig):
+        serialization_strategy = {
+            ThirdPartyType: {
+                "deserialize": ThirdPartyType,
+                "serialize": dummy_serialize_as_str,
+            }
+        }
+
+
 def test_jsonschema_for_dataclass():
     @dataclass
     class DataClass:
@@ -1038,6 +1062,29 @@ def test_dataclass_overridden_serialization_method():
                 JSONSchema(type=JSONSchemaInstanceType.NULL),
             ]
         )
+    )
+
+
+def test_third_party_overridden_serialization_method():
+    schema = build_json_schema(DataClassWithThirdPartyType)
+    assert schema.properties["a"] == JSONSchema(
+        type=JSONSchemaInstanceType.STRING
+    )
+    assert schema.properties["b"] == JSONSchema(
+        anyOf=[
+            JSONSchema(type=JSONSchemaInstanceType.STRING),
+            JSONSchema(type=JSONSchemaInstanceType.NULL),
+        ]
+    )
+    assert schema.properties["c"] == JSONSchema(
+        type=JSONSchemaInstanceType.STRING, default="dummy"
+    )
+    assert schema.properties["d"] == JSONSchema(
+        anyOf=[
+            JSONSchema(type=JSONSchemaInstanceType.STRING),
+            JSONSchema(type=JSONSchemaInstanceType.NULL),
+        ],
+        default=None,
     )
 
 
