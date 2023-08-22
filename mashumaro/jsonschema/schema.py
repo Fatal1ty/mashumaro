@@ -8,6 +8,7 @@ from dataclasses import MISSING, dataclass, field, is_dataclass, replace
 from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
+from functools import cached_property
 from typing import (
     Any,
     Callable,
@@ -101,22 +102,19 @@ UTC_OFFSET_PATTERN = r"^UTC([+-][0-2][0-9]:[0-5][0-9])?$"
 class Instance:
     type: Type
     name: Optional[str] = None
-    origin_type: Type = field(init=False)
-    annotations: List[Annotation] = field(init=False, default_factory=list)
-    __metadata: Optional[Dict[str, Any]] = None
+
     __owner_builder: Optional[CodeBuilder] = None
     __self_builder: Optional[CodeBuilder] = None
 
-    @property
+    origin_type: Type = field(init=False)
+    annotations: List[Annotation] = field(init=False, default_factory=list)
+
+    @cached_property
     def metadata(self) -> Dict[str, Any]:
-        if self.__metadata is None:
-            if self.name and self.__owner_builder:
-                self.__metadata = dict(
-                    **self.__owner_builder.metadatas.get(self.name, {})
-                )
-            else:
-                self.__metadata = {}
-        return self.__metadata
+        if self.name and self.__owner_builder:
+            return dict(**self.__owner_builder.metadatas.get(self.name, {}))
+        else:
+            return {}
 
     @property
     def _self_builder(self) -> CodeBuilder:
@@ -140,9 +138,8 @@ class Instance:
         return None
 
     def derive(self, **changes: Any) -> "Instance":
-        self_builder = self.__self_builder
         new_instance = replace(self, **changes)
-        if self_builder:
+        if is_dataclass(self.origin_type):
             new_instance.__owner_builder = self.__self_builder
         return new_instance
 
