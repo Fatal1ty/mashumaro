@@ -21,12 +21,6 @@ from typing import (
 )
 from uuid import UUID
 
-try:
-    from functools import cached_property  # type: ignore
-except ImportError:
-    # for python 3.7
-    cached_property = property  # type: ignore
-
 from typing_extensions import TypeAlias
 
 from mashumaro.config import BaseConfig
@@ -114,12 +108,19 @@ class Instance:
     origin_type: Type = field(init=False)
     annotations: List[Annotation] = field(init=False, default_factory=list)
 
-    @cached_property
+    __metadata: Optional[Dict[str, Any]] = field(init=False, default=None)
+
+    @property
+    # TODO: switch to cached_property after dropping python 3.7 support
     def metadata(self) -> Dict[str, Any]:
-        if self.name and self.__owner_builder:
-            return dict(**self.__owner_builder.metadatas.get(self.name, {}))
-        else:
-            return {}
+        if self.__metadata is None:
+            if self.name and self.__owner_builder:
+                self.__metadata = dict(
+                    **self.__owner_builder.metadatas.get(self.name, {})
+                )
+            else:
+                self.__metadata = {}
+        return self.__metadata
 
     @property
     def _self_builder(self) -> CodeBuilder:
@@ -288,7 +289,7 @@ register = Registry.register
 
 
 @register
-def on_type_with_overridden_deserialization(
+def on_type_with_overridden_serialization(
     instance: Instance, ctx: Context
 ) -> Optional[JSONSchema]:
     def override_with_any(reason: Any) -> None:
