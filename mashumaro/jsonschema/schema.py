@@ -8,7 +8,6 @@ from dataclasses import MISSING, dataclass, field, is_dataclass, replace
 from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
-from functools import cached_property
 from typing import (
     Any,
     Callable,
@@ -21,6 +20,12 @@ from typing import (
     Union,
 )
 from uuid import UUID
+
+try:
+    from functools import cached_property  # type: ignore
+except ImportError:
+    # for python 3.7
+    cached_property = property  # type: ignore
 
 from typing_extensions import TypeAlias
 
