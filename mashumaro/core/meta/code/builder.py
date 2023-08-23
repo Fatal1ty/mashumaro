@@ -28,6 +28,7 @@ from mashumaro.core.const import Sentinel
 from mashumaro.core.helpers import ConfigValue
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
+    evaluate_forward_ref,
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
@@ -276,6 +277,9 @@ class CodeBuilder:
                 print(f"{type_name(self.cls)}:")
             print(code)
         exec(code, self.globals, self.__dict__)
+
+    def evaluate_forward_ref(self, typ: typing.ForwardRef) -> typing.Type:
+        return evaluate_forward_ref(typ, globals(), self.__dict__)
 
     def get_declared_hook(self, method_name: str) -> typing.Any:
         cls = get_class_that_defines_method(method_name, self.cls)

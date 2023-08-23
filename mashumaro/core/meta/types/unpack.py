@@ -14,7 +14,17 @@ from contextlib import suppress
 from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    Callable,
+    ForwardRef,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 import typing_extensions
 
@@ -702,6 +712,9 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             return f"*{unpacker}"
         elif is_type_var_tuple(spec.type):
             return UnpackerRegistry.get(spec.copy(type=Tuple[Any, ...]))
+        elif isinstance(spec.type, ForwardRef):
+            evaluated = spec.builder.evaluate_forward_ref(spec.type)
+            return UnpackerRegistry.get(spec.copy(type=evaluated))
         else:
             raise UnserializableDataError(
                 f"{spec.type} as a field type is not supported by mashumaro"
