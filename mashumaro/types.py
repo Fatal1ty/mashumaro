@@ -1,6 +1,6 @@
 import decimal
 from dataclasses import dataclass
-from typing import Any, List, Optional, Type, Union
+from typing import Any, Callable, List, Optional, Type, Union
 
 from typing_extensions import Literal
 
@@ -93,6 +93,7 @@ class Discriminator:
     field: Optional[str] = None
     include_supertypes: bool = False
     include_subtypes: bool = False
+    variant_tagger_fn: Optional[Callable[[Any], Any]] = None
 
     def __post_init__(self) -> None:
         if not self.include_supertypes and not self.include_subtypes:

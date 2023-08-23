@@ -203,6 +203,26 @@ class Bar4(Bar2):
     type = 4
 
 
+@dataclass
+class VariantWitCustomTagger(DataClassDictMixin):
+    class Config(BaseConfig):
+        discriminator = Discriminator(
+            field="type",
+            include_subtypes=True,
+            variant_tagger_fn=lambda cls: cls.__name__.lower(),
+        )
+
+
+@dataclass
+class VariantWitCustomTaggerSub1(VariantWitCustomTagger):
+    pass
+
+
+@dataclass
+class VariantWitCustomTaggerSub2(VariantWitCustomTagger):
+    pass
+
+
 def test_by_subtypes():
     assert VariantBySubtypes.from_dict(X_1) == VariantBySubtypesSub1(x=DT_STR)
 
@@ -385,3 +405,20 @@ def test_subclass_tree_with_class_without_field():
 
     assert Bar1.from_dict({"type": 3, "x1": 1, "x2": 2, "x": 42}) == Bar2(1, 2)
     assert Bar1.from_dict({"type": 4, "x1": 1, "x2": 2, "x": 42}) == Bar2(1, 2)
+
+
+def test_by_subtypes_with_custom_variant_tagger():
+    assert (
+        VariantWitCustomTagger.from_dict(
+            {"type": "variantwitcustomtaggersub1"}
+        )
+        == VariantWitCustomTaggerSub1()
+    )
+    assert (
+        VariantWitCustomTagger.from_dict(
+            {"type": "variantwitcustomtaggersub2"}
+        )
+        == VariantWitCustomTaggerSub2()
+    )
+    with pytest.raises(SuitableVariantNotFoundError):
+        VariantWitCustomTagger.from_dict({"type": "unknown"})
