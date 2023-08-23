@@ -317,6 +317,13 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         variant_method_call = self._get_variant_method_call(
             variant_method_name, spec
         )
+        if discriminator.variant_tagger_fn:
+            spec.builder.ensure_object_imported(
+                discriminator.variant_tagger_fn, "variant_tagger_fn"
+            )
+            variant_tagger_expr = "variant_tagger_fn(variant)"
+        else:
+            variant_tagger_expr = f"variant.__dict__['{discriminator.field}']"
 
         if spec.builder.dialect:
             spec.builder.ensure_object_imported(
@@ -345,8 +352,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                 with lines.indent(f"for variant in {variants}:"):
                     with lines.indent("try:"):
                         lines.append(
-                            f"variants_map[variant.__dict__["
-                            f"'{discriminator.field}']] = variant"
+                            f"variants_map[{variant_tagger_expr}] = variant"
                         )
                     with lines.indent("except KeyError:"):
                         lines.append("continue")

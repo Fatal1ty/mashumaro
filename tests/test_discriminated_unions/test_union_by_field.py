@@ -272,6 +272,28 @@ class ByFieldAndByFieldWithSubtypesInOneField(DataClassDictMixin):
     ]
 
 
+@dataclass
+class VariantWitCustomTagger1:
+    pass
+
+
+@dataclass
+class VariantWitCustomTagger2:
+    pass
+
+
+@dataclass
+class VariantWitCustomTaggerOwner(DataClassDictMixin):
+    x: Annotated[
+        Union[VariantWitCustomTagger1, VariantWitCustomTagger2],
+        Discriminator(
+            field="type",
+            include_supertypes=True,
+            variant_tagger_fn=lambda cls: cls.__name__.lower(),
+        ),
+    ]
+
+
 def test_by_field_with_supertypes():
     assert ByFieldWithSupertypes.from_dict(
         {
@@ -573,3 +595,14 @@ def test_tuple_with_discriminated_elements():
         ByFieldAndByFieldWithSubtypesInOneField.from_dict(
             {"x": [X_STR, X_STR]}
         )
+
+
+def test_by_field_with_subtypes_with_custom_variant_tagger():
+    assert VariantWitCustomTaggerOwner.from_dict(
+        {"x": {"type": "variantwitcustomtagger1"}}
+    ) == VariantWitCustomTaggerOwner(VariantWitCustomTagger1())
+    assert VariantWitCustomTaggerOwner.from_dict(
+        {"x": {"type": "variantwitcustomtagger2"}}
+    ) == VariantWitCustomTaggerOwner(VariantWitCustomTagger2())
+    with pytest.raises(InvalidFieldValue):
+        VariantWitCustomTaggerOwner.from_dict({"x": {"type": "unknown"}})
