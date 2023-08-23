@@ -319,8 +319,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         )
         if discriminator.variant_tagger_fn:
             spec.builder.ensure_object_imported(
-                discriminator.variant_tagger_fn,
-                "variant_tagger_fn"
+                discriminator.variant_tagger_fn, "variant_tagger_fn"
             )
             variant_tagger_expr = "variant_tagger_fn(variant)"
         else:
