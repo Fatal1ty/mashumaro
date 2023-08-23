@@ -76,6 +76,7 @@ Table of contents
       * [Subclasses without a common field](#subclasses-without-a-common-field)
       * [Class level discriminator](#class-level-discriminator)
       * [Working with union of classes](#working-with-union-of-classes)
+      * [Using a custom variant tagger function](#using-a-custom-variant-tagger-function)
     * [Code generation options](#code-generation-options)
         * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
         * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
@@ -1546,12 +1547,17 @@ There is a special `Discriminator` class that allows you to customize how
 a union of dataclasses or their hierarchy will be deserialized.
 It has the following parameters that affects class selection rules:
 
-* `field` — optional name of the input dictionary key by which all the variants
-  can be distinguished
+* `field` — optional name of the input dictionary key (also known as tag)
+  by which all the variants can be distinguished
 * `include_subtypes` — allow to deserialize subclasses
 * `include_supertypes` — allow to deserialize superclasses
+* `variant_tagger_fn` — a custom function used to generate a tag value
+  associated with a variant
 
-Parameter `field` coule be in the following forms:
+By default, each variant that you want to discriminate by tags should have a
+class-level attribute containing an associated tag value. This attribute should
+have a name defined by `field` parameter. The tag value coule be in the
+following forms:
 
 * without annotations: `type = 42`
 * annotated as ClassVar: `type: ClassVar[int] = 42`
@@ -1562,6 +1568,16 @@ Parameter `field` coule be in the following forms:
 > [!NOTE]\
 > Keep in mind that by default only Final, Literal and StrEnum fields are
 > processed during serialization.
+
+However, it is possible to use discriminator without the class-level
+attribute. You can provide a custom function that generates a variant tag
+value. This function should take a class as the only argument and return a
+value of the basic type like `str` or `int`. The common practice is to use
+a class name as a tag value:
+
+```python
+variant_tagger_fn = lambda cls: cls.__name__
+```
 
 Next, we will look at different use cases, as well as their pros and cons.
 
@@ -1930,6 +1946,55 @@ assert plate == Plate(
         Celery(pieces=4),
     ]
 )
+```
+
+#### Using a custom variant tagger function
+
+Sometimes it is impractical to have a class-level attribute with a tag value,
+especially when you have a lot of classes. We can have a custom tagger
+function instead. This method is applicable for all scenarios of using
+the discriminator, but for demonstration purposes, let's focus only on one
+of them.
+
+Suppose we want to use the middle part of `Client*Event` as a tag value:
+
+```python
+from dataclasses import dataclass
+from ipaddress import IPv4Address
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+from mashumaro.types import Discriminator
+
+
+def client_event_tagger(cls):
+    # not the best way of doing it, it's just a demo
+    return cls.__name__[6:-5].lower()
+
+@dataclass
+class ClientEvent(DataClassDictMixin):
+    class Config(BaseConfig):
+        discriminator = Discriminator(
+            field="type",
+            include_subtypes=True,
+            variant_tagger_fn=client_event_tagger,
+        )
+
+@dataclass
+class ClientConnectedEvent(ClientEvent):
+    client_ip: IPv4Address
+
+@dataclass
+class ClientDisconnectedEvent(ClientEvent):
+    client_ip: IPv4Address
+```
+
+We can now deserialize subclasses as we did it
+[without variant tagger](#class-level-discriminator) earlier:
+```python
+disconnected_event = ClientEvent.from_dict(
+    {"type": "disconnected", "client_ip": "10.0.0.42"}
+)
+assert disconnected_event == ClientDisconnectedEvent(IPv4Address("10.0.0.42"))
 ```
 
 ### Code generation options
