@@ -26,8 +26,8 @@ jobs:
           pip install --upgrade pip
           pip install .
           pip install -r requirements-dev.txt
-      - name: Run flake8
-        run: flake8 mashumaro --ignore=E203,W503
+      - name: Run ruff
+        run: ruff mashumaro
       - name: Run mypy
         run: mypy mashumaro
       - name: Run black

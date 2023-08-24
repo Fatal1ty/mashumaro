@@ -299,7 +299,7 @@ def is_generic(typ: Type) -> bool:
         # noinspection PyUnresolvedReferences
         if (
             issubclass(typ.__class__, typing._BaseGenericAlias)  # type: ignore
-            or type(typ) is types.GenericAlias  # type: ignore
+            or type(typ) is types.GenericAlias  # type: ignore  # noqa: E721
         ):
             return True
         else:
