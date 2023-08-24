@@ -112,7 +112,7 @@ It's not recommended to use any version of Python that has reached its
 [end of life](https://devguide.python.org/versions/) and is no longer receiving
 security updates or bug fixes from the Python development team.
 For convenience, there is a table below that outlines the
-latest version of `mashumaro` that can be installed on deprecated versions
+latest version of `mashumaro` that can be installed on unmaintained versions
 of Python.
 
 | Python Version | Latest Version of mashumaro                                        | Python EOL |
