@@ -8,6 +8,7 @@ from dataclasses import MISSING, dataclass, field, is_dataclass, replace
 from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
+from functools import cached_property
 from typing import (
     Any,
     Callable,
@@ -108,19 +109,12 @@ class Instance:
     origin_type: Type = field(init=False)
     annotations: List[Annotation] = field(init=False, default_factory=list)
 
-    __metadata: Optional[Dict[str, Any]] = field(init=False, default=None)
-
-    @property
-    # TODO: switch to cached_property after dropping python 3.7 support
+    @cached_property
     def metadata(self) -> Dict[str, Any]:
-        if self.__metadata is None:
-            if self.name and self.__owner_builder:
-                self.__metadata = dict(
-                    **self.__owner_builder.metadatas.get(self.name, {})
-                )
-            else:
-                self.__metadata = {}
-        return self.__metadata
+        if self.name and self.__owner_builder:
+            return dict(**self.__owner_builder.metadatas.get(self.name, {}))
+        else:
+            return {}
 
     @property
     def _self_builder(self) -> CodeBuilder:
