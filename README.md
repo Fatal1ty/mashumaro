@@ -112,10 +112,10 @@ It's not recommended to use any version of Python that has reached its
 [end of life](https://devguide.python.org/versions/) and is no longer receiving
 security updates or bug fixes from the Python development team.
 For convenience, there is a table below that outlines the
-latest version of `mashumaro` that can be installed on unmaintained versions
+last version of `mashumaro` that can be installed on unmaintained versions
 of Python.
 
-| Python Version | Latest Version of mashumaro                                        | Python EOL |
+| Python Version | Last Version of mashumaro                                        | Python EOL |
 |----------------|--------------------------------------------------------------------|------------|
 | 3.7            | [3.9.1](https://github.com/Fatal1ty/mashumaro/releases/tag/v3.9.1) | 2023-06-27 |
 | 3.6            | [3.1.1](https://github.com/Fatal1ty/mashumaro/releases/tag/v3.1.1) | 2021-12-23 |
