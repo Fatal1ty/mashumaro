@@ -1,6 +1,7 @@
 import collections.abc
 import uuid
 from dataclasses import dataclass, field, is_dataclass, replace
+from functools import cached_property
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -13,12 +14,6 @@ from typing import (
     Type,
     TypeVar,
 )
-
-try:
-    from functools import cached_property  # type: ignore
-except ImportError:
-    # for python 3.7
-    cached_property = property  # type: ignore
 
 from typing_extensions import ParamSpec, TypeAlias
 
