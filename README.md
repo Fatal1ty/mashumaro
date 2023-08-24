@@ -2001,8 +2001,8 @@ class ClientDisconnectedEvent(ClientEvent):
     client_ip: IPv4Address
 ```
 
-We can now deserialize subclasses as we did it
-[without variant tagger](#class-level-discriminator) earlier:
+We can now deserialize subclasses as we did it earlier
+[without variant tagger](#class-level-discriminator):
 ```python
 disconnected_event = ClientEvent.from_dict(
     {"type": "disconnected", "client_ip": "10.0.0.42"}
