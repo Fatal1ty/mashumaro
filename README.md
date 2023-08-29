@@ -105,7 +105,7 @@ Use pip to install:
 $ pip install mashumaro
 ```
 
-The current version of `mashumaro` supports Python versions 3.8 - 3.11.
+The current version of `mashumaro` supports Python versions 3.8 — 3.12.
 
 
 It's not recommended to use any version of Python that has reached its
