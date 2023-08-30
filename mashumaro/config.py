@@ -48,3 +48,4 @@ class BaseConfig:
     json_schema: Dict[str, Any] = {}
     discriminator: Optional[Discriminator] = None
     lazy_compilation: bool = False
+    sort_keys: bool = False

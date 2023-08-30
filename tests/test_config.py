@@ -244,3 +244,32 @@ def test_lazy_compilation():
     obj = LazyCompilationDataClass(42)
     assert LazyCompilationDataClass.from_dict({"x": "42"}) == obj
     assert obj.to_dict() == {"x": 42}
+
+
+def test_sort_keys():
+    @dataclass
+    class SortedDataClass(DataClassDictMixin):
+        foo: int
+        bar: int
+
+        class Config(BaseConfig):
+            sort_keys = True
+
+    @dataclass
+    class UnSortedDataClass(DataClassDictMixin):
+        foo: int
+        bar: int
+
+        class Config(BaseConfig):
+            sort_keys = False
+
+    t = SortedDataClass(1, 2)
+    assert t.to_dict() == {"bar": 2, "foo": 1}
+    assert (
+        SortedDataClass.from_dict({"bar": 2, "foo": 1})
+        == SortedDataClass.from_dict({"foo": 1, "bar": 2})
+        == t
+    )
+
+    t = UnSortedDataClass(1, 2)
+    assert t.to_dict() == {"foo": 1, "bar": 2}
