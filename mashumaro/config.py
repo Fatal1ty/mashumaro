@@ -1,14 +1,8 @@
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Type, Union
 
-from mashumaro.core.const import PEP_586_COMPATIBLE, Sentinel
+from mashumaro.core.const import Sentinel
 from mashumaro.dialect import Dialect
 from mashumaro.types import Discriminator, SerializationStrategy
-
-if PEP_586_COMPATIBLE:
-    from typing import Literal  # type: ignore
-else:
-    from typing_extensions import Literal  # type: ignore
-
 
 __all__ = [
     "BaseConfig",
