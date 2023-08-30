@@ -77,6 +77,7 @@ class ValueSpec:
     field_ctx: FieldContext
     could_be_none: bool = True
     annotated_type: Optional[Type] = None
+    owner: Optional[Type] = None
 
     def __setattr__(self, key: str, value: Any) -> None:
         if key == "type":

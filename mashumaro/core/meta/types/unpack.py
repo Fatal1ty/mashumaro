@@ -717,7 +717,9 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
         elif is_type_var_tuple(spec.type):
             return UnpackerRegistry.get(spec.copy(type=Tuple[Any, ...]))
         elif isinstance(spec.type, ForwardRef):
-            evaluated = spec.builder.evaluate_forward_ref(spec.type)
+            evaluated = spec.builder.evaluate_forward_ref(
+                spec.type, spec.owner
+            )
             return UnpackerRegistry.get(spec.copy(type=evaluated))
         else:
             raise UnserializableDataError(
@@ -1002,6 +1004,7 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
                     type=annotations[key],
                     expression=f"value['{key}']",
                     could_be_none=True,
+                    owner=spec.type,
                 )
             )
             lines.append(f"d['{key}'] = {unpacker}")
@@ -1013,6 +1016,7 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
                         type=annotations[key],
                         expression="key_value",
                         could_be_none=True,
+                        owner=spec.type,
                     )
                 )
                 lines.append(f"d['{key}'] = {unpacker}")
