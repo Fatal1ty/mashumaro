@@ -33,17 +33,18 @@ from typing import (
     MutableSet,
     NewType,
     Optional,
+    OrderedDict,
     Sequence,
     Set,
     Tuple,
 )
 
 import pytest
-from typing_extensions import Final, OrderedDict
+from typing_extensions import Final
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
-from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN, PY_311_MIN
+from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
 from mashumaro.exceptions import (
     InvalidFieldValue,
     MissingField,

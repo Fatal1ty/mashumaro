@@ -31,7 +31,6 @@ import typing_extensions
 
 from mashumaro.core.const import (
     PEP_585_COMPATIBLE,
-    PY_37,
     PY_38,
     PY_38_MIN,
     PY_39,
@@ -293,7 +292,7 @@ def is_generic(typ: Type) -> bool:
     with suppress(Exception):
         if hasattr(typ, "__class_getitem__"):
             return True
-    if PY_37 or PY_38:
+    if PY_38:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
         return issubclass(typ.__class__, typing._GenericAlias)  # type: ignore
@@ -302,7 +301,7 @@ def is_generic(typ: Type) -> bool:
         # noinspection PyUnresolvedReferences
         if (
             issubclass(typ.__class__, typing._BaseGenericAlias)  # type: ignore
-            or type(typ) is types.GenericAlias  # type: ignore
+            or type(typ) is types.GenericAlias  # type: ignore  # noqa: E721
         ):
             return True
         else:
@@ -378,7 +377,7 @@ def get_type_annotations(typ: Type) -> Sequence[Any]:
 
 
 def is_literal(typ: Type) -> bool:
-    if PY_37 or PY_38 or PY_39:
+    if PY_38 or PY_39:
         with suppress(AttributeError):
             return is_generic(typ) and get_generic_name(typ, True) == "Literal"
     elif PY_310_MIN:
@@ -425,9 +424,7 @@ def is_final(typ: Type) -> bool:
 
 
 def is_init_var(typ: Type) -> bool:
-    if PY_37:
-        return get_type_origin(typ) is dataclasses.InitVar
-    elif PY_38_MIN:
+    if PY_38_MIN:
         return isinstance(typ, dataclasses.InitVar)
     else:
         raise NotImplementedError

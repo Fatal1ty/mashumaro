@@ -20,8 +20,6 @@ from typing import (
     Union,
 )
 
-import typing_extensions
-
 from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
@@ -691,7 +689,7 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
             f"for key, value in m.items()}} "
             f"for m in {spec.expression}.maps]"
         )
-    elif ensure_generic_mapping(spec, args, typing_extensions.OrderedDict):
+    elif ensure_generic_mapping(spec, args, typing.OrderedDict):
         return (
             f'{{{inner_expr(0, "key")}: {inner_expr(1)} '
             f"for key, value in {spec.expression}.items()}}"

@@ -145,6 +145,33 @@ class Bar(DataClassDictMixin):
     baz2: Annotated[Foo1, Discriminator(include_subtypes=True)]
 
 
+@dataclass
+class BaseVariantWitCustomTagger(DataClassDictMixin):
+    pass
+
+
+@dataclass
+class VariantWitCustomTaggerSub1(BaseVariantWitCustomTagger):
+    pass
+
+
+@dataclass
+class VariantWitCustomTaggerSub2(BaseVariantWitCustomTagger):
+    pass
+
+
+@dataclass
+class VariantWitCustomTaggerOwner(DataClassDictMixin):
+    x: Annotated[
+        BaseVariantWitCustomTagger,
+        Discriminator(
+            field="type",
+            include_subtypes=True,
+            variant_tagger_fn=lambda cls: cls.__name__.lower(),
+        ),
+    ]
+
+
 @pytest.mark.parametrize(
     ["variant_data", "variant"],
     [
@@ -257,3 +284,14 @@ def test_subclass_tree_with_class_without_field():
             "baz2": {"type": 4, "x1": 1, "x2": 2, "x": 42},
         }
     ) == Bar(baz1=Foo4(1, 2, 42), baz2=Foo2(1, 2))
+
+
+def test_by_field_with_custom_variant_tagger():
+    assert VariantWitCustomTaggerOwner.from_dict(
+        {"x": {"type": "variantwitcustomtaggersub1"}}
+    ) == VariantWitCustomTaggerOwner(VariantWitCustomTaggerSub1())
+    assert VariantWitCustomTaggerOwner.from_dict(
+        {"x": {"type": "variantwitcustomtaggersub2"}}
+    ) == VariantWitCustomTaggerOwner(VariantWitCustomTaggerSub2())
+    with pytest.raises(InvalidFieldValue):
+        VariantWitCustomTaggerOwner.from_dict({"x": {"type": "unknown"}})

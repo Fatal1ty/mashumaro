@@ -10,7 +10,6 @@ import typing_extensions
 from mashumaro import DataClassDictMixin
 from mashumaro.core.const import (
     PEP_585_COMPATIBLE,
-    PY_37,
     PY_38,
     PY_38_MIN,
     PY_310_MIN,
@@ -83,7 +82,6 @@ TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 
 
 def test_is_generic_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_37", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_38", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_39_MIN", False)
     with pytest.raises(NotImplementedError):
@@ -91,14 +89,12 @@ def test_is_generic_unsupported_python(mocker):
 
 
 def test_is_init_var_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_37", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_38_MIN", False)
     with pytest.raises(NotImplementedError):
         is_init_var(int)
 
 
 def test_is_literal_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_37", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_38", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_39", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_310_MIN", False)
@@ -181,8 +177,8 @@ def test_is_type_var_any():
     assert not is_type_var_any(TMyDataClass)
 
 
-@pytest.mark.skipif(not (PY_37 or PY_38), reason="requires python 3.7..3.8")
-def test_is_type_var_any_list_37_38():
+@pytest.mark.skipif(not PY_38, reason="requires python 3.8")
+def test_is_type_var_any_list_38():
     # noinspection PyProtectedMember
     # noinspection PyUnresolvedReferences
     assert is_type_var_any(typing.List.__args__[0])
@@ -215,7 +211,7 @@ def test_type_name():
         == "typing.Union[int, typing.Any]"
     )
     assert (
-        type_name(typing_extensions.OrderedDict[int, int])
+        type_name(typing.OrderedDict[int, int])
         == "typing.OrderedDict[int, int]"
     )
     assert (
@@ -325,7 +321,7 @@ def test_type_name_short():
         == "Union[int, Any]"
     )
     assert (
-        type_name(typing_extensions.OrderedDict[int, int], short=True)
+        type_name(typing.OrderedDict[int, int], short=True)
         == "OrderedDict[int, int]"
     )
     assert (

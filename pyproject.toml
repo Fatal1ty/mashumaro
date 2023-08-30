@@ -19,9 +19,6 @@ module = [
 ]
 disable_error_code = 'return'
 
-[flake8]
-max-line-length = 79
-
 [tool.isort]
 profile = 'black'
 line_length = 79
@@ -31,4 +28,4 @@ ensure_newline_before_comments = true
 
 [tool.black]
 line-length = 79
-target-version = ['py37', 'py38', 'py39']
+target-version = ['py38', 'py39', 'py310', 'py311']

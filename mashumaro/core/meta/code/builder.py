@@ -334,6 +334,7 @@ class CodeBuilder:
                     # prevent RecursionError
                     field=discr.field,
                     include_subtypes=discr.include_subtypes,
+                    variant_tagger_fn=discr.variant_tagger_fn,
                 )
                 self.add_type_modules(self.cls)
                 method = SubtypeUnpackerBuilder(discr).build(

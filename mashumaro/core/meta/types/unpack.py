@@ -26,8 +26,6 @@ from typing import (
     Union,
 )
 
-import typing_extensions
-
 from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.helpers import parse_timezone
 from mashumaro.core.meta.code.lines import CodeLines
@@ -327,6 +325,13 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         variant_method_call = self._get_variant_method_call(
             variant_method_name, spec
         )
+        if discriminator.variant_tagger_fn:
+            spec.builder.ensure_object_imported(
+                discriminator.variant_tagger_fn, "variant_tagger_fn"
+            )
+            variant_tagger_expr = "variant_tagger_fn(variant)"
+        else:
+            variant_tagger_expr = f"variant.__dict__['{discriminator.field}']"
 
         if spec.builder.dialect:
             spec.builder.ensure_object_imported(
@@ -355,8 +360,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                 with lines.indent(f"for variant in {variants}:"):
                     with lines.indent("try:"):
                         lines.append(
-                            f"variants_map[variant.__dict__["
-                            f"'{discriminator.field}']] = variant"
+                            f"variants_map[{variant_tagger_expr}] = variant"
                         )
                     with lines.indent("except KeyError:"):
                         lines.append("continue")
@@ -1086,7 +1090,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
             f'collections.ChainMap(*[{{{inner_expr(0, "key")}:{inner_expr(1)} '
             f"for key, value in m.items()}} for m in {spec.expression}])"
         )
-    elif ensure_generic_mapping(spec, args, typing_extensions.OrderedDict):
+    elif ensure_generic_mapping(spec, args, typing.OrderedDict):
         spec.builder.ensure_module_imported(collections)
         return (
             f'collections.OrderedDict({{{inner_expr(0, "key")}: '

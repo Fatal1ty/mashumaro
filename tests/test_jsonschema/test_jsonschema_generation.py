@@ -29,6 +29,7 @@ from typing import (
     Mapping,
     MutableMapping,
     Optional,
+    OrderedDict,
     Sequence,
     Tuple,
     Union,
@@ -36,13 +37,7 @@ from typing import (
 from uuid import UUID
 
 import pytest
-from typing_extensions import (
-    Annotated,
-    Literal,
-    OrderedDict,
-    TypeVarTuple,
-    Unpack,
-)
+from typing_extensions import Annotated, Literal, TypeVarTuple, Unpack
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
