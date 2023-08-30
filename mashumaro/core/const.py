@@ -5,7 +5,6 @@ __all__ = [
     "PY_38",
     "PY_39",
     "PY_310",
-    "PY_38_MIN",
     "PY_39_MIN",
     "PY_310_MIN",
     "PY_311_MIN",
@@ -23,7 +22,6 @@ PY_312_MIN = sys.version_info.major == 3 and sys.version_info.minor >= 12
 PY_311_MIN = PY_311 or PY_312_MIN
 PY_310_MIN = PY_310 or PY_311_MIN
 PY_39_MIN = PY_39 or PY_310_MIN
-PY_38_MIN = PY_38 or PY_39_MIN
 
 PEP_585_COMPATIBLE = PY_39_MIN  # Type Hinting Generics In Standard Collections
 
