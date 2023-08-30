@@ -8,12 +8,7 @@ import pytest
 import typing_extensions
 
 from mashumaro import DataClassDictMixin
-from mashumaro.core.const import (
-    PEP_585_COMPATIBLE,
-    PY_38,
-    PY_38_MIN,
-    PY_310_MIN,
-)
+from mashumaro.core.const import PEP_585_COMPATIBLE, PY_38, PY_310_MIN
 from mashumaro.core.meta.code.builder import CodeBuilder
 
 # noinspection PyProtectedMember
@@ -542,12 +537,8 @@ def test_get_literal_values():
 
 
 def test_type_name_literal():
-    if PY_38_MIN:
-        module = typing
-    else:
-        module = typing_extensions
     assert type_name(
-        getattr(module, "Literal")[
+        getattr(typing, "Literal")[
             1,
             "a",
             b"\x00",
@@ -564,7 +555,7 @@ def test_type_name_literal():
             typing_extensions.Literal[typing_extensions.Literal["b", "c"]],
         ]
     ) == (
-        f"{module.__name__}.Literal[1, 'a', b'\\x00', True, False, None, "
+        f"typing.Literal[1, 'a', b'\\x00', True, False, None, "
         "tests.entities.MyEnum.a, tests.entities.MyStrEnum.a, "
         "tests.entities.MyNativeStrEnum.a, tests.entities.MyIntEnum.a, "
         "tests.entities.MyFlag.a, tests.entities.MyIntFlag.a, 2, 3, 'b', 'c']"
