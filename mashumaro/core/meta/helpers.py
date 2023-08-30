@@ -32,7 +32,6 @@ import typing_extensions
 from mashumaro.core.const import (
     PEP_585_COMPATIBLE,
     PY_38,
-    PY_38_MIN,
     PY_39,
     PY_39_MIN,
     PY_310_MIN,
@@ -424,10 +423,7 @@ def is_final(typ: Type) -> bool:
 
 
 def is_init_var(typ: Type) -> bool:
-    if PY_38_MIN:
-        return isinstance(typ, dataclasses.InitVar)
-    else:
-        raise NotImplementedError
+    return isinstance(typ, dataclasses.InitVar)
 
 
 def get_class_that_defines_method(

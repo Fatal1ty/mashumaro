@@ -1,19 +1,14 @@
 import collections
 import collections.abc
 import typing
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from datetime import datetime
 
 import pytest
 import typing_extensions
 
 from mashumaro import DataClassDictMixin
-from mashumaro.core.const import (
-    PEP_585_COMPATIBLE,
-    PY_38,
-    PY_38_MIN,
-    PY_310_MIN,
-)
+from mashumaro.core.const import PEP_585_COMPATIBLE, PY_38, PY_310_MIN
 from mashumaro.core.meta.code.builder import CodeBuilder
 
 # noinspection PyProtectedMember
@@ -88,10 +83,9 @@ def test_is_generic_unsupported_python(mocker):
         is_generic(int)
 
 
-def test_is_init_var_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_38_MIN", False)
-    with pytest.raises(NotImplementedError):
-        is_init_var(int)
+def test_is_init_var():
+    assert is_init_var(InitVar[int])
+    assert not is_init_var(int)
 
 
 def test_is_literal_unsupported_python(mocker):
@@ -542,12 +536,8 @@ def test_get_literal_values():
 
 
 def test_type_name_literal():
-    if PY_38_MIN:
-        module = typing
-    else:
-        module = typing_extensions
     assert type_name(
-        getattr(module, "Literal")[
+        getattr(typing, "Literal")[
             1,
             "a",
             b"\x00",
@@ -564,7 +554,7 @@ def test_type_name_literal():
             typing_extensions.Literal[typing_extensions.Literal["b", "c"]],
         ]
     ) == (
-        f"{module.__name__}.Literal[1, 'a', b'\\x00', True, False, None, "
+        f"typing.Literal[1, 'a', b'\\x00', True, False, None, "
         "tests.entities.MyEnum.a, tests.entities.MyStrEnum.a, "
         "tests.entities.MyNativeStrEnum.a, tests.entities.MyIntEnum.a, "
         "tests.entities.MyFlag.a, tests.entities.MyIntFlag.a, 2, 3, 'b', 'c']"
