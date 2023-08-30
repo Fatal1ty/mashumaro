@@ -9,7 +9,16 @@ from contextlib import suppress
 from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, Callable, List, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    Callable,
+    ForwardRef,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.meta.code.lines import CodeLines
@@ -405,10 +414,15 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             return f"*{packer}"
         elif is_type_var_tuple(spec.type):
             return PackerRegistry.get(spec.copy(type=Tuple[Any, ...]))
-        else:
-            raise UnserializableDataError(
-                f"{spec.type} as a field type is not supported by mashumaro"
+        elif isinstance(spec.type, ForwardRef):
+            evaluated = spec.builder.evaluate_forward_ref(
+                spec.type, spec.owner
             )
+            if evaluated is not None:
+                return PackerRegistry.get(spec.copy(type=evaluated))
+        raise UnserializableDataError(
+            f"{spec.type} as a field type is not supported by mashumaro"
+        )
 
 
 @register
@@ -601,6 +615,7 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
                     type=annotations[key],
                     expression=f"value['{key}']",
                     could_be_none=True,
+                    owner=spec.type,
                 )
             )
             lines.append(f"d['{key}'] = {packer}")
@@ -612,6 +627,7 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
                         type=annotations[key],
                         expression="key_value",
                         could_be_none=True,
+                        owner=spec.type,
                     )
                 )
                 lines.append(f"d['{key}'] = {packer}")

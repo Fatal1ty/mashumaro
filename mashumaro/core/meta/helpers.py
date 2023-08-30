@@ -13,6 +13,7 @@ from typing import (
     Any,
     ClassVar,
     Dict,
+    ForwardRef,
     List,
     Optional,
     Sequence,
@@ -79,6 +80,7 @@ __all__ = [
     "hash_type_args",
     "iter_all_subclasses",
     "is_hashable",
+    "evaluate_forward_ref",
 ]
 
 
@@ -727,3 +729,20 @@ def is_hashable(typ: Any) -> bool:
         return True
     except TypeError:
         return False
+
+
+if PY_39_MIN:
+
+    def evaluate_forward_ref(
+        typ: ForwardRef, globalns: Any, localns: Any
+    ) -> Optional[Type]:
+        return typ._evaluate(
+            globalns, localns, frozenset()
+        )  # type: ignore[call-arg]
+
+else:
+
+    def evaluate_forward_ref(
+        typ: ForwardRef, globalns: Any, localns: Any
+    ) -> Optional[Type]:
+        return typ._evaluate(globalns, localns)  # type: ignore[call-arg]

@@ -1,5 +1,6 @@
 import importlib
 import inspect
+import sys
 import types
 import typing
 from contextlib import contextmanager
@@ -28,6 +29,7 @@ from mashumaro.core.const import Sentinel
 from mashumaro.core.helpers import ConfigValue
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
+    evaluate_forward_ref,
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
@@ -276,6 +278,25 @@ class CodeBuilder:
                 print(f"{type_name(self.cls)}:")
             print(code)
         exec(code, self.globals, self.__dict__)
+
+    def evaluate_forward_ref(
+        self,
+        typ: typing.ForwardRef,
+        owner: typing.Optional[typing.Type],
+    ) -> typing.Optional[typing.Type]:
+        if not getattr(typ, "__forward_module__", None) and owner:
+            # We can't get the module in which ForwardRef is defined on
+            # Python < 3.10, ForwardRef evaluation might not work properly
+            # without this information, so we will consider the namespace of
+            # the module in which this ForwardRef is used as globalns.
+            globalns = getattr(
+                sys.modules.get(owner.__module__, None),
+                "__dict__",
+                self.globals,
+            )
+        else:
+            globalns = self.globals
+        return evaluate_forward_ref(typ, globalns, self.__dict__)
 
     def get_declared_hook(self, method_name: str) -> typing.Any:
         cls = get_class_that_defines_method(method_name, self.cls)
