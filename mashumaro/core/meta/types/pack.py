@@ -418,11 +418,11 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             evaluated = spec.builder.evaluate_forward_ref(
                 spec.type, spec.owner
             )
-            return PackerRegistry.get(spec.copy(type=evaluated))
-        else:
-            raise UnserializableDataError(
-                f"{spec.type} as a field type is not supported by mashumaro"
-            )
+            if evaluated is not None:
+                return PackerRegistry.get(spec.copy(type=evaluated))
+        raise UnserializableDataError(
+            f"{spec.type} as a field type is not supported by mashumaro"
+        )
 
 
 @register

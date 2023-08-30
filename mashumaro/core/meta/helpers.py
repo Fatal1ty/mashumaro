@@ -739,12 +739,14 @@ if PY_39_MIN:
 
     def evaluate_forward_ref(
         typ: ForwardRef, globalns: Any, localns: Any
-    ) -> Type:
-        return typ._evaluate(globalns, localns, set())
+    ) -> Optional[Type]:
+        return typ._evaluate(
+            globalns, localns, frozenset()
+        )  # type: ignore[call-arg]
 
 else:
 
     def evaluate_forward_ref(
         typ: ForwardRef, globalns: Any, localns: Any
-    ) -> Type:
-        return typ._evaluate(globalns, localns)
+    ) -> Optional[Type]:
+        return typ._evaluate(globalns, localns)  # type: ignore[call-arg]
