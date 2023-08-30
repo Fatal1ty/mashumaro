@@ -1,7 +1,7 @@
 import collections
 import collections.abc
 import typing
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from datetime import datetime
 
 import pytest
@@ -83,10 +83,9 @@ def test_is_generic_unsupported_python(mocker):
         is_generic(int)
 
 
-def test_is_init_var_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_38_MIN", False)
-    with pytest.raises(NotImplementedError):
-        is_init_var(int)
+def test_is_init_var():
+    assert is_init_var(InitVar[int])
+    assert not is_init_var(int)
 
 
 def test_is_literal_unsupported_python(mocker):
