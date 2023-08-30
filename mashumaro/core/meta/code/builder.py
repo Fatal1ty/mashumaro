@@ -285,7 +285,7 @@ class CodeBuilder:
         owner: typing.Optional[typing.Type],
     ) -> typing.Optional[typing.Type]:
         if not getattr(typ, "__forward_module__", None) and owner:
-            # We can't get the module in which ForwardRef is defined on
+            # We can't get the module in which ForwardRef's value is defined on
             # Python < 3.10, ForwardRef evaluation might not work properly
             # without this information, so we will consider the namespace of
             # the module in which this ForwardRef is used as globalns.
