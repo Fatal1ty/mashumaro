@@ -10,6 +10,7 @@ from mashumaro.mixins.dict import DataClassDictMixin
 from mashumaro.mixins.json import DataClassJSONMixin
 from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 from mashumaro.mixins.yaml import DataClassYAMLMixin
+from mashumaro.types import GenericSerializableType, SerializableType
 
 
 @dataclass
@@ -160,12 +161,26 @@ def test_slots():
         __slots__ = ("number",)
         number: int
 
+    class MySerializableType(SerializableType):
+        __slots__ = ("number",)
+
+        def __init__(self, number):
+            self.number = number
+
+    class MyGenericSerializableType(GenericSerializableType):
+        __slots__ = ("number",)
+
+        def __init__(self, number):
+            self.number = number
+
     for cls in (
         RegularDataClass,
         DictDataClass,
         JSONDataClass,
         MessagePackDataClass,
         YAMLDataClass,
+        MySerializableType,
+        MyGenericSerializableType,
     ):
         instance = cls(1)
         with pytest.raises(AttributeError) as e:
