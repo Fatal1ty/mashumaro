@@ -16,6 +16,8 @@ __all__ = [
 
 
 class SerializableType:
+    __slots__ = ()
+
     __use_annotations__ = False
 
     def __init_subclass__(
@@ -37,6 +39,8 @@ class SerializableType:
 
 
 class GenericSerializableType:
+    __slots__ = ()
+
     def _serialize(self, types: List[Type]) -> Any:
         raise NotImplementedError
 
