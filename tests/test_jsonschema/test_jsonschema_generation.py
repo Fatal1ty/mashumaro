@@ -1019,6 +1019,36 @@ def test_overridden_serialization_method_with_return_annotation():
     )
 
 
+@pytest.mark.parametrize(
+    ("basic_type", "schema_type"),
+    (
+        (str, JSONSchemaInstanceType.STRING),
+        (int, JSONSchemaInstanceType.INTEGER),
+        (float, JSONSchemaInstanceType.NUMBER),
+        (bool, JSONSchemaInstanceType.BOOLEAN),
+    ),
+)
+def test_basic_type_as_overridden_serialization_method(
+    basic_type, schema_type
+):
+    @dataclass
+    class DataClass:
+        x: ThirdPartyType
+        y: List[ThirdPartyType]
+
+        class Config(BaseConfig):
+            serialization_strategy = {
+                ThirdPartyType: {"serialize": basic_type}
+            }
+
+    assert build_json_schema(DataClass).properties["x"] == JSONSchema(
+        type=schema_type
+    )
+    assert build_json_schema(DataClass).properties["y"] == JSONArraySchema(
+        items=JSONSchema(type=schema_type)
+    )
+
+
 def test_dataclass_overridden_serialization_method():
     def serialize_as_str(value: Any) -> str:
         return str(value)  # pragma no cover
