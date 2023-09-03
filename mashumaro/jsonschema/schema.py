@@ -282,6 +282,9 @@ Registry = InstanceSchemaCreatorRegistry()
 register = Registry.register
 
 
+BASIC_TYPES = {str, int, float, bool}
+
+
 @register
 def on_type_with_overridden_serialization(
     instance: Instance, ctx: Context
@@ -301,6 +304,8 @@ def on_type_with_overridden_serialization(
     overridden_method = instance.get_overridden_serialization_method()
     if overridden_method is pass_through:
         return None
+    elif overridden_method in BASIC_TYPES:
+        instance.update_type(overridden_method)  # type: ignore
     elif callable(overridden_method):
         try:
             new_type = get_function_return_annotation(overridden_method)
