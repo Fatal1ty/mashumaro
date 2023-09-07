@@ -1204,7 +1204,9 @@ class CodeBuilder:
         return default
 
     def _get_field_default_literal(self, value: typing.Any) -> str:
-        if isinstance(value, (str, int, float, bool, NoneType)):
+        if isinstance(
+            value, (str, int, float, bool, NoneType)  # type: ignore
+        ):
             return repr(value)
         elif isinstance(value, tuple) and not is_named_tuple(type(value)):
             return repr(value)
