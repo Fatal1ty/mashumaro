@@ -43,6 +43,7 @@ class BaseConfig:
     allow_postponed_evaluation: bool = True
     dialect: Optional[Type[Dialect]] = None
     omit_none: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
+    omit_default: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
     orjson_options: Optional[int] = 0
     json_schema: Dict[str, Any] = {}
     discriminator: Optional[Discriminator] = None
