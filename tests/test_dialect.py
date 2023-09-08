@@ -1,6 +1,16 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
-from typing import Generic, List, NamedTuple, Optional, TypeVar, Union
+from typing import (
+    FrozenSet,
+    Generic,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import pytest
 from typing_extensions import TypedDict
@@ -66,6 +76,14 @@ class OmitNoneDialect(Dialect):
 
 class NotOmitNoneDialect(Dialect):
     omit_none = False
+
+
+class OmitDefaultDialect(Dialect):
+    omit_default = True
+
+
+class NotOmitDefaultDialect(Dialect):
+    omit_default = False
 
 
 @dataclass
@@ -254,6 +272,118 @@ class DataClassWithOptionalAndEmptyDialect(DataClassDictMixin):
 @dataclass
 class DataClassWithOptionalAndDialectSupport(DataClassDictMixin):
     x: Optional[int] = None
+
+    class Config(BaseConfig):
+        code_generation_options = [ADD_DIALECT_SUPPORT]
+
+
+@dataclass
+class DataClassWithDefaultAndOmitDefaultDialect(DataClassDictMixin):
+    a: int = 42
+    b: float = 3.14
+    c: str = "foo"
+    d: bool = False
+    e: None = None
+    f: type(None) = None
+    g: Tuple[int] = (1, 2, 3)
+    h: MyNamedTuple = field(default_factory=lambda: MyNamedTuple())
+    i: List[int] = field(default_factory=list)
+    j: List[int] = field(default_factory=lambda: [1, 2, 3])
+    k: Set[int] = field(default_factory=set)
+    l: Set[int] = field(default_factory=lambda: {1, 2, 3})
+    m: FrozenSet[int] = field(default_factory=frozenset)
+    n: FrozenSet[int] = field(default_factory=lambda: frozenset({1, 2, 3}))
+
+    class Config(BaseConfig):
+        dialect = OmitDefaultDialect
+
+
+@dataclass
+class DataClassWithDefaultAndOmitDefaultDialectAndOmitDefaultFalse(
+    DataClassDictMixin
+):
+    a: int = 42
+    b: float = 3.14
+    c: str = "foo"
+    d: bool = False
+    e: None = None
+    f: type(None) = None
+    g: Tuple[int] = (1, 2, 3)
+    h: MyNamedTuple = field(default_factory=lambda: MyNamedTuple())
+    i: List[int] = field(default_factory=list)
+    j: List[int] = field(default_factory=lambda: [1, 2, 3])
+    k: Set[int] = field(default_factory=set)
+    l: Set[int] = field(default_factory=lambda: {1, 2, 3})
+    m: FrozenSet[int] = field(default_factory=frozenset)
+    n: FrozenSet[int] = field(default_factory=lambda: frozenset({1, 2, 3}))
+
+    class Config(BaseConfig):
+        dialect = OmitDefaultDialect
+        omit_default = False
+
+
+@dataclass
+class DataClassWithDefaultAndNotOmitDefaultDialectAndOmitDefaultTrue(
+    DataClassDictMixin
+):
+    a: int = 42
+    b: float = 3.14
+    c: str = "foo"
+    d: bool = False
+    e: None = None
+    f: type(None) = None
+    g: Tuple[int] = (1, 2, 3)
+    h: MyNamedTuple = field(default_factory=lambda: MyNamedTuple())
+    i: List[int] = field(default_factory=list)
+    j: List[int] = field(default_factory=lambda: [1, 2, 3])
+    k: Set[int] = field(default_factory=set)
+    l: Set[int] = field(default_factory=lambda: {1, 2, 3})
+    m: FrozenSet[int] = field(default_factory=frozenset)
+    n: FrozenSet[int] = field(default_factory=lambda: frozenset({1, 2, 3}))
+
+    class Config(BaseConfig):
+        dialect = NotOmitDefaultDialect
+        omit_default = True
+
+
+@dataclass
+class DataClassWithDefaultAndEmptyDialect(DataClassDictMixin):
+    a: int = 42
+    b: float = 3.14
+    c: str = "foo"
+    d: bool = False
+    e: None = None
+    f: type(None) = None
+    g: Tuple[int] = (1, 2, 3)
+    h: MyNamedTuple = field(default_factory=lambda: MyNamedTuple())
+    i: List[int] = field(default_factory=list)
+    j: List[int] = field(default_factory=lambda: [1, 2, 3])
+    k: Set[int] = field(default_factory=set)
+    l: Set[int] = field(default_factory=lambda: {1, 2, 3})
+    m: FrozenSet[int] = field(default_factory=frozenset)
+    n: FrozenSet[int] = field(default_factory=lambda: frozenset({1, 2, 3}))
+
+    class Config(BaseConfig):
+        dialect = EmptyDialect
+        omit_default = True
+
+
+@dataclass
+class DataClassWithDefaultAndDialectSupport(DataClassDictMixin):
+    a: int = 42
+    b: float = 3.14
+    c: str = "foo"
+    d: bool = False
+    e: None = None
+    f: type(None) = None
+    g: Tuple[int] = (1, 2, 3)
+    h: MyNamedTuple = field(default_factory=lambda: MyNamedTuple())
+    i: List[int] = field(default_factory=list)
+    j: List[int] = field(default_factory=lambda: [1, 2, 3])
+    k: Set[int] = field(default_factory=set)
+    l: Set[int] = field(default_factory=lambda: {1, 2, 3})
+    m: FrozenSet[int] = field(default_factory=frozenset)
+    n: FrozenSet[int] = field(default_factory=lambda: frozenset({1, 2, 3}))
 
     class Config(BaseConfig):
         code_generation_options = [ADD_DIALECT_SUPPORT]
@@ -985,3 +1115,49 @@ def test_dataclass_omit_none_dialects():
     assert DataClassWithOptionalAndDialectSupport().to_dict(
         dialect=EmptyDialect
     ) == {"x": None}
+
+
+def test_dataclass_omit_default_dialects():
+    complete_dict = {
+        "a": 42,
+        "b": 3.14,
+        "c": "foo",
+        "d": False,
+        "e": None,
+        "f": None,
+        "g": [1],
+        "h": [{"dt": "2022-01-01", "i": 999}, {"dt": "2022-01-01", "i": 999}],
+        "i": [],
+        "j": [1, 2, 3],
+        "k": [],
+        "l": [1, 2, 3],
+        "m": [],
+        "n": [1, 2, 3],
+    }
+    assert DataClassWithDefaultAndOmitDefaultDialect().to_dict() == {}
+    assert (
+        DataClassWithDefaultAndOmitDefaultDialectAndOmitDefaultFalse().to_dict()
+        == {}
+    )
+    assert (
+        DataClassWithDefaultAndNotOmitDefaultDialectAndOmitDefaultTrue().to_dict()
+        == complete_dict
+    )
+    assert DataClassWithDefaultAndEmptyDialect().to_dict() == {}
+    assert DataClassWithDefaultAndDialectSupport().to_dict() == complete_dict
+    assert (
+        DataClassWithDefaultAndDialectSupport().to_dict(
+            dialect=OmitDefaultDialect
+        )
+        == {}
+    )
+    assert (
+        DataClassWithDefaultAndDialectSupport().to_dict(
+            dialect=NotOmitDefaultDialect
+        )
+        == complete_dict
+    )
+    assert (
+        DataClassWithDefaultAndDialectSupport().to_dict(dialect=EmptyDialect)
+        == complete_dict
+    )

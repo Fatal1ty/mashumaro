@@ -698,9 +698,7 @@ class CodeBuilder:
             TO_DICT_ADD_OMIT_NONE_FLAG, cls
         )
         if omit_none_feature:
-            omit_none = self._get_dialect_or_config_option(
-                "omit_none", False, None
-            )
+            omit_none = self._get_dialect_or_config_option("omit_none", False)
             kw_param_names.append("omit_none")
             kw_param_values.append("True" if omit_none else "False")
 
