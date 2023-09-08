@@ -1438,3 +1438,25 @@ def test_dataclass_with_optional_list_with_optional_ints():
     obj = DataClass(x=[42, None])
     assert DataClass.from_dict({"x": [42, None]}) == obj
     assert obj.to_dict() == {"x": [42, None]}
+
+
+def test_dataclass_with_default_nan_and_inf_with_omit_default():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        a: float = float("nan")
+        b: float = float("inf")
+        c: float = float("-inf")
+
+        class Config(BaseConfig):
+            omit_default = True
+
+    assert DataClass().to_dict() == {}
+    assert DataClass(float("nan"), float("inf"), float("-inf")).to_dict() == {}
+    assert (
+        DataClass(float("nan"), float("+inf"), float("-inf")).to_dict() == {}
+    )
+    assert DataClass(float("inf"), float("-inf"), float("+inf")).to_dict() == {
+        "a": float("inf"),
+        "b": float("-inf"),
+        "c": float("+inf"),
+    }

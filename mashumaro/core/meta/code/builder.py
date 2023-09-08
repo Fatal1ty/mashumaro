@@ -1,5 +1,6 @@
 import importlib
 import inspect
+import math
 import sys
 import types
 import typing
@@ -1011,8 +1012,14 @@ class CodeBuilder:
                 default_literal = self._get_field_default_literal(
                     self.get_field_default(fname, call_factory=True)
                 )
-                comp_op = "is not" if default_literal == "None" else "!="
-                with self.indent(f"if value {comp_op} {default_literal}:"):
+                if default is None:
+                    comp_expr = f"value is not {default_literal}"
+                elif math.isnan(default):
+                    self.ensure_object_imported(math.isnan, "isnan")
+                    comp_expr = "not isnan(value)"
+                else:
+                    comp_expr = f"value != {default_literal}"
+                with self.indent(f"if {comp_expr}:"):
                     return self.__pack_method_set_value(
                         fname, alias, by_alias_feature, packed_value
                     )
@@ -1202,8 +1209,12 @@ class CodeBuilder:
         return default
 
     def _get_field_default_literal(self, value: typing.Any) -> str:
-        if isinstance(
-            value, (str, int, float, bool, NoneType)  # type: ignore
+        if isinstance(value, (str, int, bool, NoneType)):  # type: ignore
+            return repr(value)
+        elif (
+            isinstance(value, float)
+            and not math.isnan(value)
+            and not math.isinf(value)
         ):
             return repr(value)
         elif isinstance(value, tuple) and not is_named_tuple(type(value)):
