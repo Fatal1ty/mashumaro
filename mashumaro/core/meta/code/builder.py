@@ -1012,9 +1012,9 @@ class CodeBuilder:
                 default_literal = self._get_field_default_literal(
                     self.get_field_default(fname, call_factory=True)
                 )
-                if default is None:
-                    comp_expr = f"value is not {default_literal}"
-                elif isinstance(default, float) and math.isnan(default):
+                # if default is None:
+                #     comp_expr = f"value is not {default_literal}"
+                if isinstance(default, float) and math.isnan(default):
                     self.ensure_object_imported(math.isnan, "isnan")
                     comp_expr = "not isnan(value)"
                 else:
