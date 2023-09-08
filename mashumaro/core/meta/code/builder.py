@@ -3,6 +3,7 @@ import inspect
 import sys
 import types
 import typing
+import uuid
 from contextlib import contextmanager
 
 # noinspection PyProtectedMember
@@ -43,13 +44,14 @@ from mashumaro.core.meta.helpers import (
     is_hashable,
     is_init_var,
     is_literal,
+    is_named_tuple,
     is_optional,
     is_type_var_any,
     resolve_type_params,
     substitute_type_params,
     type_name,
 )
-from mashumaro.core.meta.types.common import FieldContext, ValueSpec
+from mashumaro.core.meta.types.common import FieldContext, NoneType, ValueSpec
 from mashumaro.core.meta.types.pack import PackerRegistry
 from mashumaro.core.meta.types.unpack import (
     SubtypeUnpackerBuilder,
@@ -215,14 +217,19 @@ class CodeBuilder:
             # https://github.com/python/mypy/issues/1362
         }
 
-    def get_field_default(self, name: str) -> typing.Any:
+    def get_field_default(
+        self, name: str, call_factory: bool = False
+    ) -> typing.Any:
         field = self.dataclass_fields.get(name)  # type: ignore
         # https://github.com/python/mypy/issues/1362
         if field:
             if field.default is not MISSING:
                 return field.default
             else:
-                return field.default_factory
+                if call_factory and field.default_factory is not MISSING:
+                    return field.default_factory()
+                else:
+                    return field.default_factory
         else:
             return self.namespace.get(name, MISSING)
 
@@ -691,9 +698,7 @@ class CodeBuilder:
             TO_DICT_ADD_OMIT_NONE_FLAG, cls
         )
         if omit_none_feature:
-            omit_none = self._get_dialect_or_config_option(
-                "omit_none", False, None
-            )
+            omit_none = self._get_dialect_or_config_option("omit_none", False)
             kw_param_names.append("omit_none")
             kw_param_values.append("True" if omit_none else "False")
 
@@ -856,6 +861,10 @@ class CodeBuilder:
             )
             serialize_by_alias = self.get_config().serialize_by_alias
             omit_none = self._get_dialect_or_config_option("omit_none", False)
+            omit_default = self._get_dialect_or_config_option(
+                "omit_default", False
+            )
+            force_value = omit_default
             packers = {}
             aliases = {}
             nullable_fields = set()
@@ -864,7 +873,7 @@ class CodeBuilder:
                 if self.metadatas.get(fname, {}).get("serialize") == "omit":
                     continue
                 packer, alias, could_be_none = self._get_field_packer(
-                    fname, ftype, config
+                    fname, ftype, config, force_value
                 )
                 packers[fname] = packer
                 if alias:
@@ -879,41 +888,73 @@ class CodeBuilder:
                 and (omit_none or omit_none_feature)
                 or by_alias_feature
                 and aliases
+                or omit_default
             ):
                 kwargs = "kwargs"
                 self.add_line("kwargs = {}")
                 for fname, packer in packers.items():
+                    if force_value:
+                        self.add_line(f"value = self.{fname}")
                     alias = aliases.get(fname)
+                    default = self.get_field_default(fname, call_factory=True)
                     if fname in nullable_fields:
                         if (
                             packer == "value"
                             and not omit_none
                             and not omit_none_feature
+                            and not (omit_default and default is None)
                         ):
                             self._pack_method_set_value(
-                                fname, alias, by_alias_feature, f"self.{fname}"
+                                fname=fname,
+                                alias=alias,
+                                by_alias_feature=by_alias_feature,
+                                packed_value=(
+                                    "value" if force_value else f"self.{fname}"
+                                ),
+                                omit_default=omit_default,
                             )
                             continue
-                        self.add_line(f"value = self.{fname}")
+                        if not force_value:  # to add it only once
+                            self.add_line(f"value = self.{fname}")
                         with self.indent("if value is not None:"):
                             self._pack_method_set_value(
-                                fname, alias, by_alias_feature, packer
+                                fname=fname,
+                                alias=alias,
+                                by_alias_feature=by_alias_feature,
+                                packed_value=packer,
+                                omit_default=(
+                                    omit_default and default is not None
+                                ),
                             )
                         if omit_none and not omit_none_feature:
+                            continue
+                        elif omit_default and default is None:
                             continue
                         with self.indent("else:"):
                             if omit_none_feature:
                                 with self.indent("if not omit_none:"):
                                     self._pack_method_set_value(
-                                        fname, alias, by_alias_feature, "None"
+                                        fname=fname,
+                                        alias=alias,
+                                        by_alias_feature=by_alias_feature,
+                                        packed_value="None",
+                                        omit_default=False,
                                     )
                             else:
                                 self._pack_method_set_value(
-                                    fname, alias, by_alias_feature, "None"
+                                    fname=fname,
+                                    alias=alias,
+                                    by_alias_feature=by_alias_feature,
+                                    packed_value="None",
+                                    omit_default=False,
                                 )
                     else:
                         self._pack_method_set_value(
-                            fname, alias, by_alias_feature, packer
+                            fname=fname,
+                            alias=alias,
+                            by_alias_feature=by_alias_feature,
+                            packed_value=packer,
+                            omit_default=omit_default,
                         )
             else:
                 kwargs_parts = []
@@ -957,6 +998,29 @@ class CodeBuilder:
                 self.add_line(return_statement.format(kwargs))
 
     def _pack_method_set_value(
+        self,
+        fname: str,
+        alias: typing.Optional[str],
+        by_alias_feature: bool,
+        packed_value: str,
+        omit_default: bool,
+    ) -> None:
+        if omit_default:
+            default = self.get_field_default(fname, call_factory=True)
+            if default is not MISSING:
+                default_literal = self._get_field_default_literal(
+                    self.get_field_default(fname, call_factory=True)
+                )
+                comp_op = "is not" if default_literal == "None" else "!="
+                with self.indent(f"if value {comp_op} {default_literal}:"):
+                    return self.__pack_method_set_value(
+                        fname, alias, by_alias_feature, packed_value
+                    )
+        return self.__pack_method_set_value(
+            fname, alias, by_alias_feature, packed_value
+        )
+
+    def __pack_method_set_value(
         self,
         fname: str,
         alias: typing.Optional[str],
@@ -1067,6 +1131,7 @@ class CodeBuilder:
         fname: str,
         ftype: typing.Type,
         config: typing.Type[BaseConfig],
+        force_value: bool = False,
     ) -> typing.Tuple[str, typing.Optional[str], bool]:
         metadata = self.metadatas.get(fname, {})
         alias = metadata.get("alias")
@@ -1078,7 +1143,7 @@ class CodeBuilder:
             or is_optional(ftype, self.get_field_resolved_type_params(fname))
             or self.get_field_default(fname) is None
         )
-        value = "value" if could_be_none else f"self.{fname}"
+        value = "value" if could_be_none or force_value else f"self.{fname}"
         packer = PackerRegistry.get(
             ValueSpec(
                 type=ftype,
@@ -1135,3 +1200,15 @@ class CodeBuilder:
             if value is not Sentinel.MISSING:
                 return value
         return default
+
+    def _get_field_default_literal(self, value: typing.Any) -> str:
+        if isinstance(
+            value, (str, int, float, bool, NoneType)  # type: ignore
+        ):
+            return repr(value)
+        elif isinstance(value, tuple) and not is_named_tuple(type(value)):
+            return repr(value)
+        else:
+            name = f"v_{uuid.uuid4().hex}"
+            self.ensure_object_imported(value, name)
+            return name

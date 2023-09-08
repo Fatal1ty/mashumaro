@@ -59,6 +59,7 @@ Table of contents
         * [`aliases` config option](#aliases-config-option)
         * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
         * [`omit_none` config option](#omit_none-config-option)
+        * [`omit_default` config option](#omit_default-config-option)
         * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
         * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
         * [`dialect` config option](#dialect-config-option)
@@ -70,6 +71,7 @@ Table of contents
     * [Dialects](#dialects)
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
       * [`omit_none` dialect option](#omit_none-dialect-option)
+      * [`omit_default` dialect option](#omit_default-dialect-option)
       * [Changing the default dialect](#changing-the-default-dialect)
     * [Discriminator](#discriminator)
       * [Subclasses distinguishable by a field](#subclasses-distinguishable-by-a-field)
@@ -1159,19 +1161,47 @@ default when this option is enabled. You can mix this config option with
 [`omit_none`](#add-omit_none-keyword-argument) keyword argument.
 
 ```python
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
-from mashumaro import DataClassDictMixin, field_options
+from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
 
 @dataclass
 class DataClass(DataClassDictMixin):
-    x: Optional[int] = None
+    x: Optional[int] = 42
 
     class Config(BaseConfig):
         omit_none = True
 
-DataClass().to_dict()  # {}
+DataClass(x=None).to_dict()  # {}
+```
+
+#### `omit_default` config option
+
+When this option enabled, all the fields that have values equal to the defaults
+or the default_factory results will be excluded during serialization.
+
+```python
+from dataclasses import dataclass, field
+from typing import List, Optional, Tuple
+from mashumaro import DataClassDictMixin, field_options
+from mashumaro.config import BaseConfig
+
+@dataclass
+class Foo:
+    foo: str
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    a: int = 42
+    b: Tuple[int, ...] = field(default=(1, 2, 3))
+    c: List[Foo] = field(default_factory=lambda: [Foo("foo")])
+    d: Optional[str] = None
+
+    class Config(BaseConfig):
+        omit_default = True
+
+DataClass(a=42, b=(1, 2, 3), c=[Foo("foo")]).to_dict()  # {}
 ```
 
 #### `namedtuple_as_dict` config option
@@ -1531,6 +1561,11 @@ but for the dialect scope. You can register custom [`SerializationStrategy`](#se
 
 This dialect option has the same meaning as the
 [similar config option](#omit_none-config-option) but for the dialect scope.
+
+#### `omit_default` dialect option
+
+This dialect option has the same meaning as the
+[similar config option](#omitdefault-config-option) but for the dialect scope.
 
 #### Changing the default dialect
 
