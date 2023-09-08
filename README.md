@@ -1179,7 +1179,7 @@ DataClass(x=None).to_dict()  # {}
 #### `omit_default` config option
 
 When this option enabled, all the fields that have values equal to the defaults
-or the default_factory results will be excluded during serialization.
+or the default_factory results will be skipped during serialization.
 
 ```python
 from dataclasses import dataclass, field
