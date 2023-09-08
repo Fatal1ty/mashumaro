@@ -1014,7 +1014,7 @@ class CodeBuilder:
                 )
                 if default is None:
                     comp_expr = f"value is not {default_literal}"
-                elif math.isnan(default):
+                elif isinstance(default, float) and math.isnan(default):
                     self.ensure_object_imported(math.isnan, "isnan")
                     comp_expr = "not isnan(value)"
                 else:
