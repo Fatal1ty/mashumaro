@@ -17,3 +17,4 @@ class Dialect:
     serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
     omit_none: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
     omit_default: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
+    no_copy: bool = False

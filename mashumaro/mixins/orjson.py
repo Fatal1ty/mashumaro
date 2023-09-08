@@ -18,6 +18,7 @@ Decoder = Callable[[EncodedData], Dict[Any, Any]]
 
 
 class OrjsonDialect(Dialect):
+    no_copy = True
     serialization_strategy = {
         datetime: {"serialize": pass_through},
         date: {"serialize": pass_through},
