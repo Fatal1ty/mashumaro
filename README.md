@@ -59,7 +59,7 @@ Table of contents
         * [`aliases` config option](#aliases-config-option)
         * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
         * [`omit_none` config option](#omit_none-config-option)
-        * [`omit_default` config option](#omitdefault-config-option)
+        * [`omit_default` config option](#omit_default-config-option)
         * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
         * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
         * [`dialect` config option](#dialect-config-option)
@@ -71,7 +71,7 @@ Table of contents
     * [Dialects](#dialects)
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
       * [`omit_none` dialect option](#omit_none-dialect-option)
-      * [`omit_default` dialect option](#omitdefault-dialect-option)
+      * [`omit_default` dialect option](#omit_default-dialect-option)
       * [Changing the default dialect](#changing-the-default-dialect)
     * [Discriminator](#discriminator)
       * [Subclasses distinguishable by a field](#subclasses-distinguishable-by-a-field)
@@ -1178,8 +1178,8 @@ DataClass(x=None).to_dict()  # {}
 
 #### `omit_default` config option
 
-When this option enabled, any field that has a value equal to the default or the default_factory result
-will be skipped during serialization.
+When this option enabled, all the fields that have values equal to the defaults
+or the default_factory results will be excluded during serialization.
 
 ```python
 from dataclasses import dataclass, field
