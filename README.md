@@ -383,7 +383,7 @@ Can be imported as:
 from mashumaro.mixins.json import DataClassJSONMixin
 ```
 
-This mixins adds json serialization functionality to a dataclass.
+This mixin adds json serialization functionality to a dataclass.
 It adds methods [`from_json`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L24-L31)
 and [`to_json`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L17-L22).
 
@@ -394,7 +394,7 @@ Can be imported as:
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 ```
 
-This mixins adds json serialization functionality to a dataclass using
+This mixin adds json serialization functionality to a dataclass using
 a third-party [`orjson`](https://pypi.org/project/orjson/) library.
 It adds methods [`from_json`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/orjson.pyi#L33-L39),
 [`to_jsonb`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/orjson.pyi#L19-L25),
@@ -421,7 +421,7 @@ Can be imported as:
 from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 ```
 
-This mixins adds MessagePack serialization functionality to a dataclass.
+This mixin adds MessagePack serialization functionality to a dataclass.
 It adds methods [`from_msgpack`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L58-L65)
 and [`to_msgpack`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L51-L56).
 
@@ -444,7 +444,7 @@ Can be imported as:
 from mashumaro.mixins.yaml import DataClassYAMLMixin
 ```
 
-This mixins adds YAML serialization functionality to a dataclass.
+This mixin adds YAML serialization functionality to a dataclass.
 It adds methods [`from_yaml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L51-L56)
 and [`to_yaml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L30-L35).
 
@@ -462,7 +462,7 @@ Can be imported as:
 from mashumaro.mixins.toml import DataClassTOMLMixin
 ```
 
-This mixins adds TOML serialization functionality to a dataclass.
+This mixin adds TOML serialization functionality to a dataclass.
 It adds methods [`from_toml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L55-L62)
 and [`to_toml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L48-L53).
 
