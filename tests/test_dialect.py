@@ -1,3 +1,5 @@
+import collections
+import typing
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import (
@@ -15,7 +17,7 @@ from typing import (
 import pytest
 from typing_extensions import TypedDict
 
-from mashumaro import DataClassDictMixin
+from mashumaro import DataClassDictMixin, pass_through
 from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
 from mashumaro.dialect import Dialect
 from mashumaro.exceptions import BadDialect
@@ -1161,3 +1163,40 @@ def test_dataclass_omit_default_dialects():
         DataClassWithDefaultAndDialectSupport().to_dict(dialect=EmptyDialect)
         == complete_dict
     )
+
+
+def test_dialect_no_copy():
+    class NoCopyDialect(Dialect):
+        no_copy = True
+        serialization_strategy = {int: {"serialize": pass_through}}
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        a: List[str]
+        b: Set[str]
+        c: typing.ChainMap[str, str]
+        d: typing.OrderedDict[str, str]
+        e: typing.Counter[str]
+        f: typing.Dict[str, str]
+        g: typing.Sequence[str]
+
+        class Config(BaseConfig):
+            dialect = NoCopyDialect
+
+    obj = DataClass(
+        a=["foo"],
+        b={"foo"},
+        c=collections.ChainMap({"foo": "bar"}),
+        d=collections.OrderedDict({"foo": "bar"}),
+        e=collections.Counter({"foo": 1}),
+        f={"foo": "bar"},
+        g=["foo"],
+    )
+    data = obj.to_dict()
+    assert data["a"] is obj.a
+    assert data["b"] is obj.b
+    assert data["c"] is obj.c
+    assert data["d"] is obj.d
+    assert data["e"] is obj.e
+    assert data["f"] is obj.f
+    assert data["g"] is obj.g

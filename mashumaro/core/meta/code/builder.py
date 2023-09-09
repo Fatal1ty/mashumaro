@@ -1161,6 +1161,7 @@ class CodeBuilder:
                     metadata=metadata,
                 ),
                 could_be_none=False,
+                no_copy=self._get_dialect_or_config_option("no_copy", False),
             )
         )
         return packer, alias, could_be_none

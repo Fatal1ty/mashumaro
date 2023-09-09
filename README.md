@@ -72,6 +72,7 @@ Table of contents
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
       * [`omit_none` dialect option](#omit_none-dialect-option)
       * [`omit_default` dialect option](#omit_default-dialect-option)
+      * [`no_copy` dialect option](#no_copy-dialect-option)
       * [Changing the default dialect](#changing-the-default-dialect)
     * [Discriminator](#discriminator)
       * [Subclasses distinguishable by a field](#subclasses-distinguishable-by-a-field)
@@ -1566,6 +1567,29 @@ This dialect option has the same meaning as the
 
 This dialect option has the same meaning as the
 [similar config option](#omitdefault-config-option) but for the dialect scope.
+
+#### `no_copy` dialect option
+
+By default, all collection data types are serialized as a copy to prevent
+mutation of the original collection. As an example, if a dataclass contains
+a field of type `list[str]`, then it will be serialized as follows:
+```python
+[value for value in value]
+```
+This expression will copy the original list, so you can safely mutate it after.
+The downside is that copying is always slower that using a reference to the
+original collection.
+
+In some cases we're sure that mutation doesn't take place, and we can
+benefit from avoiding unnecessary copies. To prevent copying you can set
+`no_copy` to `True`.
+
+> [!NOTE]\
+> This option is enabled in the dialects that are used within the
+> following mixins:
+> * [`DataClassORJSONMixin`](#dataclassorjsonmixin)
+> * [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
+> * [`DataClassTOMLMixin`](#dataclasstomlmixin)
 
 #### Changing the default dialect
 
