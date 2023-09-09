@@ -1580,7 +1580,7 @@ This expression will copy the original list, so you can safely mutate it after.
 The downside is that copying is always slower that using a reference to the
 original collection.
 
-In some cases we're sure that mutation doesn't take place, and we can
+In some cases we now beforehand that mutation doesn't take place, so we can
 benefit from avoiding unnecessary copies. To prevent copying you can set
 `no_copy` to `True`.
 
