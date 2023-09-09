@@ -72,6 +72,7 @@ Table of contents
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
       * [`omit_none` dialect option](#omit_none-dialect-option)
       * [`omit_default` dialect option](#omit_default-dialect-option)
+      * [`no_copy` dialect option](#nocopy-dialect-option)
       * [Changing the default dialect](#changing-the-default-dialect)
     * [Discriminator](#discriminator)
       * [Subclasses distinguishable by a field](#subclasses-distinguishable-by-a-field)
@@ -1584,9 +1585,11 @@ benefit from avoiding unnecessary copies. To prevent copying you can set
 `no_copy` to `True`.
 
 > [!NOTE]\
-> This option is enabled for native mixins like [`DataClassORJSONMixin`](#dataclassorjsonmixin),
-> [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
-> and [`DataClassTOMLMixin`](#dataclasstomlmixin).
+> This option is enabled in the dialects that are used within the
+> following mixins:
+> * [`DataClassORJSONMixin`](#dataclassorjsonmixin)
+> * [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
+> * [`DataClassTOMLMixin`](#dataclasstomlmixin)
 
 #### Changing the default dialect
 
