@@ -870,9 +870,11 @@ class CodeBuilder:
             aliases = {}
             nullable_fields = set()
             nontrivial_nullable_fields = set()
-            fnames_and_types = list(field_types.items())
+            fnames_and_types: typing.Iterable[
+                tuple[str, typing.Any]
+            ] = field_types.items()
             if self.get_config().sort_keys:
-                fnames_and_types.sort(key=lambda x: x[0])
+                fnames_and_types = sorted(fnames_and_types, key=lambda x: x[0])
 
             for fname, ftype in fnames_and_types:
                 if self.metadatas.get(fname, {}).get("serialize") == "omit":
