@@ -1579,13 +1579,14 @@ This expression will copy the original list, so you can safely mutate it after.
 The downside is that copying is always slower that using a reference to the
 original collection.
 
-In some cases we're 100% sure that mutation doesn't take place, and we can
+In some cases we're sure that mutation doesn't take place, and we can
 benefit from avoiding unnecessary copies. To prevent copying you can set
 `no_copy` to `True`.
 
-This option is enabled for native mixins like [`DataClassORJSONMixin`](#dataclassorjsonmixin),
-[`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
-and [`DataClassTOMLMixin`](#dataclasstomlmixin).
+> [!NOTE]\
+> This option is enabled for native mixins like [`DataClassORJSONMixin`](#dataclassorjsonmixin),
+> [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
+> and [`DataClassTOMLMixin`](#dataclasstomlmixin).
 
 #### Changing the default dialect
 
