@@ -1587,23 +1587,21 @@ from mashumaro.config import BaseConfig
 from mashumaro.dialect import Dialect
 
 class NoCopyDialect(Dialect):
-    no_copy_collections = (list, dict, set)
+    no_copy_collections = (list, dict)
 
 @dataclass
 class DataClass(DataClassDictMixin):
     simple_list: list[str]
     simple_dict: dict[str, str]
-    simple_set: set[str]
 
     class Config(BaseConfig):
         dialect = NoCopyDialect
 
-obj = DataClass(["foo"], {"bar": "baz"}, {"foobar"})
+obj = DataClass(["foo"], {"bar": "baz"})
 data = obj.to_dict()
 
 assert data["simple_list"] is obj.simple_list
 assert data["simple_dict"] is obj.simple_dict
-assert data["simple_set"] is obj.simple_set
 ```
 
 > [!NOTE]\
