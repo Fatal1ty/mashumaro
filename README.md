@@ -72,7 +72,7 @@ Table of contents
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
       * [`omit_none` dialect option](#omit_none-dialect-option)
       * [`omit_default` dialect option](#omit_default-dialect-option)
-      * [`no_copy` dialect option](#no_copy-dialect-option)
+      * [`no_copy_collections` dialect option](#no_copy_collections-dialect-option)
       * [Changing the default dialect](#changing-the-default-dialect)
     * [Discriminator](#discriminator)
       * [Subclasses distinguishable by a field](#subclasses-distinguishable-by-a-field)
