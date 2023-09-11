@@ -1374,12 +1374,12 @@ Unlike the `sort_keys` option in the standard library's `json.dumps` function, t
 
 ```python
 @dataclass
-    class SortedDataClass(DataClassDictMixin):
-        foo: int
-        bar: int
+class SortedDataClass(DataClassDictMixin):
+    foo: int
+    bar: int
 
-        class Config(BaseConfig):
-            sort_keys = True
+    class Config(BaseConfig):
+        sort_keys = True
 
 t = SortedDataClass(1, 2)
 assert t.to_dict() == {"bar": 2, "foo": 1}
