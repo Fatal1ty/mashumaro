@@ -673,16 +673,20 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
                 )
             )
 
-    def _check_sequence_pass_through(ie: Expression) -> bool:
-        return spec.no_copy and ie == "value"
-
     def _make_sequence_expression(ie: Expression) -> Expression:
+        if ie == "value":
+            if spec.origin_type in spec.no_copy_collections:
+                return spec.expression
+            elif spec.origin_type is list:
+                return f"{spec.expression}.copy()"
         return f"[{ie} for value in {spec.expression}]"
 
-    def _check_mapping_pass_through(ke: Expression, ve: Expression) -> bool:
-        return spec.no_copy and ke == "key" and ve == "value"
-
     def _make_mapping_expression(ke: Expression, ve: Expression) -> Expression:
+        if ke == "key" and ve == "value":
+            if spec.origin_type in spec.no_copy_collections:
+                return spec.expression
+            elif spec.origin_type is dict:
+                return f"{spec.expression}.copy()"
         return f"{{{ke}: {ve} for key, value in {spec.expression}.items()}}"
 
     if issubclass(spec.origin_type, typing.ByteString):  # type: ignore
@@ -699,14 +703,10 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
         spec, typing.List, typing.Deque, typing.AbstractSet
     ):
         ie = inner_expr()
-        if _check_sequence_pass_through(ie):
-            return spec.expression
         return _make_sequence_expression(ie)
     elif ensure_generic_mapping(spec, args, typing.ChainMap):
         ke = inner_expr(0, "key")
         ve = inner_expr(1)
-        if _check_mapping_pass_through(ke, ve):
-            return spec.expression
         return (
             f"[{{{ke}: {ve} for key, value in m.items()}} "
             f"for m in {spec.expression}.maps]"
@@ -714,27 +714,19 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
     elif ensure_generic_mapping(spec, args, typing.OrderedDict):
         ke = inner_expr(0, "key")
         ve = inner_expr(1)
-        if _check_mapping_pass_through(ke, ve):
-            return spec.expression
         return _make_mapping_expression(ke, ve)
     elif ensure_generic_mapping(spec, args, typing.Counter):
         ke = inner_expr(0, "key")
         ve = inner_expr(1, v_type=int)
-        if _check_mapping_pass_through(ke, ve):
-            return spec.expression
         return _make_mapping_expression(ke, ve)
     elif is_typed_dict(spec.origin_type):
         return pack_typed_dict(spec)
     elif ensure_generic_mapping(spec, args, typing.Mapping):
         ke = inner_expr(0, "key")
         ve = inner_expr(1)
-        if _check_mapping_pass_through(ke, ve):
-            return spec.expression
         return _make_mapping_expression(ke, ve)
     elif ensure_generic_collection_subclass(spec, typing.Sequence):
         ie = inner_expr()
-        if _check_sequence_pass_through(ie):
-            return spec.expression
         return _make_sequence_expression(ie)
 
 

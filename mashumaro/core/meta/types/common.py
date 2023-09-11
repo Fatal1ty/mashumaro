@@ -78,7 +78,7 @@ class ValueSpec:
     could_be_none: bool = True
     annotated_type: Optional[Type] = None
     owner: Optional[Type] = None
-    no_copy: bool = False
+    no_copy_collections: Sequence = tuple()
 
     def __setattr__(self, key: str, value: Any) -> None:
         if key == "type":

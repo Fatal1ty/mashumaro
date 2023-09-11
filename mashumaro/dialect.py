@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Dict, Sequence, Union
 
 from typing_extensions import Literal
 
@@ -17,4 +17,4 @@ class Dialect:
     serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
     omit_none: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
     omit_default: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
-    no_copy: bool = False
+    no_copy_collections: Sequence[Any] = tuple()

@@ -1167,7 +1167,7 @@ def test_dataclass_omit_default_dialects():
 
 def test_dialect_no_copy():
     class NoCopyDialect(Dialect):
-        no_copy = True
+        no_copy_collections = (list, dict, set)
         serialization_strategy = {int: {"serialize": pass_through}}
 
     @dataclass
@@ -1195,8 +1195,8 @@ def test_dialect_no_copy():
     data = obj.to_dict()
     assert data["a"] is obj.a
     assert data["b"] is obj.b
-    assert data["c"] is obj.c
-    assert data["d"] is obj.d
-    assert data["e"] is obj.e
+    assert data["c"] is not obj.c
+    assert data["d"] is not obj.d
+    assert data["e"] is not obj.e
     assert data["f"] is obj.f
-    assert data["g"] is obj.g
+    assert data["g"] is not obj.g

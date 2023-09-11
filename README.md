@@ -1568,25 +1568,47 @@ This dialect option has the same meaning as the
 This dialect option has the same meaning as the
 [similar config option](#omitdefault-config-option) but for the dialect scope.
 
-#### `no_copy` dialect option
+#### `no_copy_collections` dialect option
 
-By default, all collection data types are serialized as a copy to prevent
-mutation of the original collection. As an example, if a dataclass contains
-a field of type `list[str]`, then it will be serialized as follows:
-```python
-[value for value in value]
-```
-This expression will copy the original list, so you can safely mutate it after.
+By default, all collection data types with simple elements are serialized
+as a copy to prevent mutation of the original collection. As an example, if
+a dataclass contains a field of type `list[str]`, then it will be serialized
+as a copy of the original list, so you can safely mutate it after.
 The downside is that copying is always slower that using a reference to the
-original collection.
+original collection. In some cases we know beforehand that mutation doesn't
+take place or is even desirable, so we can benefit from avoiding unnecessary
+copies by setting `no_copy_collections` to a sequence of collection data origin
+types.
 
-In some cases we now beforehand that mutation doesn't take place, so we can
-benefit from avoiding unnecessary copies. To prevent copying you can set
-`no_copy` to `True`.
+```python
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+from mashumaro.dialect import Dialect
+
+class NoCopyDialect(Dialect):
+    no_copy_collections = (list, dict, set)
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    simple_list: list[str]
+    simple_dict: dict[str, str]
+    simple_set: set[str]
+
+    class Config(BaseConfig):
+        dialect = NoCopyDialect
+
+obj = DataClass(["foo"], {"bar": "baz"}, {"foobar"})
+data = obj.to_dict()
+
+assert data["simple_list"] is obj.simple_list
+assert data["simple_dict"] is obj.simple_dict
+assert data["simple_set"] is obj.simple_set
+```
 
 > [!NOTE]\
-> This option is enabled in the dialects that are used within the
-> following mixins:
+> This option is enabled for `list` and `dict` in the dialects that are used
+> within the following mixins:
 > * [`DataClassORJSONMixin`](#dataclassorjsonmixin)
 > * [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
 > * [`DataClassTOMLMixin`](#dataclasstomlmixin)
