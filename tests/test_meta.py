@@ -30,6 +30,7 @@ from mashumaro.core.meta.helpers import (
     is_dialect_subclass,
     is_generic,
     is_hashable,
+    is_hashable_type,
     is_init_var,
     is_literal,
     is_named_tuple,
@@ -47,6 +48,7 @@ from mashumaro.core.meta.types.common import (
     FieldContext,
     ValueSpec,
     ensure_generic_collection,
+    ensure_mapping_key_type_hashable,
 )
 from mashumaro.dialect import Dialect
 from mashumaro.exceptions import UnserializableField
@@ -57,6 +59,7 @@ from .entities import (
     MyDatetimeNewType,
     MyEnum,
     MyFlag,
+    MyFrozenDataClass,
     MyGenericDataClass,
     MyGenericList,
     MyIntEnum,
@@ -702,6 +705,16 @@ def test_ensure_generic_collection_with_unhashable_args():
     )
 
 
+def test_ensure_mapping_key_type_hashable():
+    spec = ValueSpec(typing.Dict, "", CodeBuilder(None), FieldContext("", {}))
+
+    with pytest.raises(UnserializableField):
+        ensure_mapping_key_type_hashable(spec, (dict, str))
+    with pytest.raises(UnserializableField):
+        ensure_mapping_key_type_hashable(spec, (MyDataClass, str))
+    assert ensure_mapping_key_type_hashable(spec, (MyFrozenDataClass, str))
+
+
 def test_get_function_arg_annotation():
     def foo(x: int, y: Dialect) -> None:
         pass  # pragma no cover
@@ -771,3 +784,10 @@ def test_is_hashable():
     assert is_hashable({}) is False
     assert is_hashable(typing_extensions.Annotated[int, 42]) is True
     assert is_hashable(typing_extensions.Annotated[int, {}]) is False
+
+
+def test_is_hashable_type():
+    assert is_hashable_type(dict) is False
+    assert is_hashable_type(int) is True
+    assert is_hashable_type(MyFrozenDataClass) is True
+    assert is_hashable_type(MyDataClass) is False

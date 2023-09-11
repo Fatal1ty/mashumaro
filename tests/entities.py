@@ -66,6 +66,11 @@ class MyDataClass(DataClassDictMixin):
     b: int
 
 
+@dataclass(frozen=True)
+class MyFrozenDataClass:
+    x: int
+
+
 class MutableString(SerializableType):
     def __init__(self, value: str):
         self.characters = [c for c in value]

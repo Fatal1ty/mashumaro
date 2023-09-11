@@ -723,12 +723,19 @@ def iter_all_subclasses(cls: Type) -> typing.Iterator[Type]:
         yield from iter_all_subclasses(subclass)
 
 
-def is_hashable(typ: Any) -> bool:
+def is_hashable(value: Any) -> bool:
     try:
-        hash(typ)
+        hash(value)
         return True
     except TypeError:
         return False
+
+
+def is_hashable_type(typ: Any) -> bool:
+    try:
+        return issubclass(typ, typing.Hashable)
+    except TypeError:
+        return True
 
 
 if PY_39_MIN:
