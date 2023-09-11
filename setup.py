@@ -17,6 +17,7 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Development Status :: 5 - Production/Stable",
     ],
     license="Apache License, Version 2.0",
