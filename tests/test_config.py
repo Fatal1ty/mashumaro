@@ -244,3 +244,65 @@ def test_lazy_compilation():
     obj = LazyCompilationDataClass(42)
     assert LazyCompilationDataClass.from_dict({"x": "42"}) == obj
     assert obj.to_dict() == {"x": 42}
+
+
+def test_sort_keys_with_mixin():
+    @dataclass
+    class SortedDataClass(DataClassDictMixin):
+        foo: int
+        bar: int
+
+        class Config(BaseConfig):
+            sort_keys = True
+
+    @dataclass
+    class UnSortedDataClass(DataClassDictMixin):
+        foo: int
+        bar: int
+
+        class Config(BaseConfig):
+            sort_keys = False
+
+    t = SortedDataClass(1, 2)
+    assert t.to_dict() == {"bar": 2, "foo": 1}
+    assert (
+        SortedDataClass.from_dict({"bar": 2, "foo": 1})
+        == SortedDataClass.from_dict({"foo": 1, "bar": 2})
+        == t
+    )
+
+    t = UnSortedDataClass(1, 2)
+    assert t.to_dict() == {"foo": 1, "bar": 2}
+
+
+@dataclass
+class SortedDataClass:
+    foo: int
+    bar: int
+
+
+def test_sort_keys_plain_dataclass():
+    @dataclass
+    class RootSortedModel(DataClassDictMixin):
+        sub: SortedDataClass
+
+        class Config(BaseConfig):
+            sort_keys = True
+
+    @dataclass
+    class RootUnSortedModel(DataClassDictMixin):
+        sub: SortedDataClass
+
+        class Config(BaseConfig):
+            sort_keys = False
+
+    t = RootSortedModel(SortedDataClass(1, 2))
+    assert t.to_dict() == {"sub": {"bar": 2, "foo": 1}}
+    assert (
+        RootSortedModel.from_dict({"sub": {"bar": 2, "foo": 1}})
+        == RootSortedModel.from_dict({"sub": {"foo": 1, "bar": 2}})
+        == t
+    )
+
+    t = RootUnSortedModel(SortedDataClass(1, 2))
+    assert t.to_dict() == {"sub": {"foo": 1, "bar": 2}}

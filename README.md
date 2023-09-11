@@ -66,6 +66,7 @@ Table of contents
         * [`orjson_options`](#orjson_options-config-option)
         * [`discriminator` config option](#discriminator-config-option)
         * [`lazy_compilation` config option](#lazy_compilation-config-option)
+        * [`sort_keys` config option](#sort_keys-config-option)
     * [Passing field values as is](#passing-field-values-as-is)
     * [Extending existing types](#extending-existing-types)
     * [Dialects](#dialects)
@@ -1364,6 +1365,25 @@ by leveraging the data that is accessible after the class has been created.
 > from_dict = lambda x: MyModel.from_dict(x)
 > to_dict = lambda x: x.to_dict()
 > ```
+
+#### `sort_keys` config option
+
+When set, the keys on serialized dataclasses will be sorted in alphabetical order.
+
+Unlike the `sort_keys` option in the standard library's `json.dumps` function, this option acts at class creation time and has no effect on the performance of serialization.
+
+```python
+@dataclass
+    class SortedDataClass(DataClassDictMixin):
+        foo: int
+        bar: int
+
+        class Config(BaseConfig):
+            sort_keys = True
+
+t = SortedDataClass(1, 2)
+assert t.to_dict() == {"bar": 2, "foo": 1}
+```
 
 ### Passing field values as is
 
