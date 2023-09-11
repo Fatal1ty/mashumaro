@@ -58,18 +58,22 @@ def test_ciso8601_time_parser():
     assert instance == should_be
 
 
-@pytest.mark.skip(reason="https://github.com/sdispater/pendulum/issues/696")
+@pytest.mark.skipif(
+    PY_312_MIN, reason="https://github.com/sdispater/pendulum/issues/696"
+)
 def test_pendulum_datetime_parser():
     @dataclass
     class DataClass(DataClassDictMixin):
         x: datetime = field(metadata={"deserialize": "pendulum"})
 
     should_be = DataClass(x=datetime(2008, 12, 29, 7, tzinfo=timezone.utc))
-    instance = DataClass.from_dict({"x": "2009-W01 0700"})
+    instance = DataClass.from_dict({"x": "2009-W01 07:00"})
     assert instance == should_be
 
 
-@pytest.mark.skip(reason="https://github.com/sdispater/pendulum/issues/696")
+@pytest.mark.skipif(
+    PY_312_MIN, reason="https://github.com/sdispater/pendulum/issues/696"
+)
 def test_pendulum_date_parser():
     @dataclass
     class DataClass(DataClassDictMixin):
@@ -80,14 +84,16 @@ def test_pendulum_date_parser():
     assert instance == should_be
 
 
-@pytest.mark.skip(reason="https://github.com/sdispater/pendulum/issues/696")
+@pytest.mark.skipif(
+    PY_312_MIN, reason="https://github.com/sdispater/pendulum/issues/696"
+)
 def test_pendulum_time_parser():
     @dataclass
     class DataClass(DataClassDictMixin):
         x: time = field(metadata={"deserialize": "pendulum"})
 
     should_be = DataClass(x=time(3, 4, 5))
-    instance = DataClass.from_dict({"x": "2009-W01 030405"})
+    instance = DataClass.from_dict({"x": "2009-W01 03:04:05"})
     assert instance == should_be
 
 

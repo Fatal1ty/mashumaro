@@ -9,6 +9,7 @@ __all__ = [
     "PY_39_MIN",
     "PY_310_MIN",
     "PY_311_MIN",
+    "PY_312_MIN",
     "PEP_585_COMPATIBLE",
     "PEP_586_COMPATIBLE",
     "Sentinel",
