@@ -1590,15 +1590,16 @@ This dialect option has the same meaning as the
 
 #### `no_copy_collections` dialect option
 
-By default, all collection data types with simple elements are serialized
-as a copy to prevent mutation of the original collection. As an example, if
-a dataclass contains a field of type `list[str]`, then it will be serialized
-as a copy of the original list, so you can safely mutate it after.
-The downside is that copying is always slower that using a reference to the
-original collection. In some cases we know beforehand that mutation doesn't
-take place or is even desirable, so we can benefit from avoiding unnecessary
-copies by setting `no_copy_collections` to a sequence of collection data origin
-types.
+By default, all collection data types are serialized as a copy to prevent
+mutation of the original collection. As an example, if a dataclass contains
+a field of type `list[str]`, then it will be serialized as a copy of the
+original list, so you can safely mutate it after. The downside is that copying
+is always slower that using a reference to the original collection. In some
+cases we know beforehand that mutation doesn't take place or is even desirable,
+so we can benefit from avoiding unnecessary copies by setting
+`no_copy_collections` to a sequence of origin collection data types.
+This is applicable only for collections containing elements that do not
+require conversion.
 
 ```python
 from dataclasses import dataclass
@@ -1607,21 +1608,23 @@ from mashumaro.config import BaseConfig
 from mashumaro.dialect import Dialect
 
 class NoCopyDialect(Dialect):
-    no_copy_collections = (list, dict)
+    no_copy_collections = (list, dict, set)
 
 @dataclass
 class DataClass(DataClassDictMixin):
     simple_list: list[str]
     simple_dict: dict[str, str]
+    simple_set: set[str]
 
     class Config(BaseConfig):
         dialect = NoCopyDialect
 
-obj = DataClass(["foo"], {"bar": "baz"})
+obj = DataClass(["foo"], {"bar": "baz"}, {"foobar"})
 data = obj.to_dict()
 
 assert data["simple_list"] is obj.simple_list
 assert data["simple_dict"] is obj.simple_dict
+assert data["simple_set"] is obj.simple_set
 ```
 
 > [!NOTE]\
