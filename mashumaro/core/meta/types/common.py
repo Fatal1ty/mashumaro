@@ -1,6 +1,6 @@
 import collections.abc
 import uuid
-from dataclasses import dataclass, field, is_dataclass, replace
+from dataclasses import dataclass, field, replace
 from functools import cached_property
 from typing import (
     TYPE_CHECKING,
@@ -23,9 +23,10 @@ from mashumaro.core.meta.helpers import (
     get_type_origin,
     is_annotated,
     is_generic,
+    is_hashable_type,
     type_name,
 )
-from mashumaro.exceptions import UnserializableDataError, UnserializableField
+from mashumaro.exceptions import UnserializableField
 
 if TYPE_CHECKING:  # pragma no cover
     from mashumaro.core.meta.code.builder import CodeBuilder
@@ -136,15 +137,21 @@ def ensure_generic_collection(spec: ValueSpec) -> bool:
     return True
 
 
-def ensure_collection_type_args_supported(
-    collection_type: Type,
-    type_args: Sequence[Type],
+def ensure_mapping_key_type_hashable(
+    spec: ValueSpec, type_args: Sequence[Type]
 ) -> bool:
-    if type_args and is_dataclass(type_args[0]):
-        raise UnserializableDataError(
-            f"{type_name(collection_type, short=True)} "
-            f"with dataclasses as keys is not supported by mashumaro"
-        )
+    if type_args:
+        first_type_arg = type_args[0]
+        if not is_hashable_type(first_type_arg):
+            raise UnserializableField(
+                field_name=spec.field_ctx.name,
+                field_type=spec.type,
+                holder_class=spec.builder.cls,
+                msg=(
+                    f"{type_name(first_type_arg, short=True)} "
+                    "is unhashable and can not be used as a key"
+                ),
+            )
     return True
 
 
@@ -161,7 +168,7 @@ def ensure_generic_mapping(
 ) -> bool:
     return ensure_generic_collection_subclass(
         spec, checked_type
-    ) and ensure_collection_type_args_supported(spec.origin_type, args)
+    ) and ensure_mapping_key_type_hashable(spec, args)
 
 
 def expr_or_maybe_none(spec: ValueSpec, new_expr: Expression) -> Expression:
