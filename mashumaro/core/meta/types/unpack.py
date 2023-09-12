@@ -26,6 +26,8 @@ from typing import (
     Union,
 )
 
+import typing_extensions
+
 from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.helpers import parse_timezone
 from mashumaro.core.meta.code.lines import CodeLines
@@ -673,6 +675,8 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             )
         elif is_literal(spec.type):
             return LiteralUnpackerBuilder().build(spec)
+        elif spec.type is typing_extensions.LiteralString:
+            return UnpackerRegistry.get(spec.copy(type=str))
         elif is_self(spec.type):
             method_name = spec.builder.get_unpack_method_name(
                 format_name=spec.builder.format_name

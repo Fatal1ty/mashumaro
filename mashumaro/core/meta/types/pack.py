@@ -20,6 +20,8 @@ from typing import (
     Union,
 )
 
+import typing_extensions
+
 from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
@@ -384,6 +386,8 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             return PackerRegistry.get(spec.copy(type=spec.type.__supertype__))
         elif is_literal(spec.type):
             return pack_literal(spec)
+        elif spec.type is typing_extensions.LiteralString:
+            return PackerRegistry.get(spec.copy(type=str))
         elif is_self(spec.type):
             method_name = spec.builder.get_pack_method_name(
                 format_name=spec.builder.format_name
