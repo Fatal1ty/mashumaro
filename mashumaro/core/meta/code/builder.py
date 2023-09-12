@@ -218,6 +218,7 @@ class CodeBuilder:
             # https://github.com/python/mypy/issues/1362
         }
 
+    @lru_cache(None)
     def get_field_default(
         self, name: str, call_factory: bool = False
     ) -> typing.Any:
@@ -903,7 +904,13 @@ class CodeBuilder:
                     if force_value:
                         self.add_line(f"value = self.{fname}")
                     alias = aliases.get(fname)
-                    default = self.get_field_default(fname, call_factory=True)
+                    if omit_default:
+                        # do not call default_factory if we don't need to
+                        default = self.get_field_default(
+                            fname, call_factory=True
+                        )
+                    else:
+                        default = None
                     if fname in nullable_fields:
                         if (
                             packer == "value"
