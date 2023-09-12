@@ -40,7 +40,7 @@ from typing import (
 )
 
 import pytest
-from typing_extensions import Final
+from typing_extensions import Final, LiteralString
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
@@ -170,6 +170,7 @@ class Fixture:
     CUSTOM_SERIALIZE = "_FOOBAR_"
     GENERIC_SERIALIZABLE_LIST_INT = GenericSerializableList([1, 2, 3])
     GENERIC_SERIALIZABLE_LIST_STR = GenericSerializableList(["a", "b", "c"])
+    LITERAL_STRING = "foo"
 
 
 inner_values = [
@@ -247,6 +248,7 @@ inner_values = [
         ["_a", "_b", "_c"],
     ),
     (MyDatetimeNewType, Fixture.DATETIME, Fixture.DATETIME_STR),
+    (LiteralString, Fixture.LITERAL_STRING, Fixture.LITERAL_STRING),
 ]
 
 if os.name == "posix":
