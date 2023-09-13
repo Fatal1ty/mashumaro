@@ -425,8 +425,8 @@ from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 ```
 
 This mixin adds MessagePack serialization functionality to a dataclass.
-It adds methods [`from_msgpack`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L58-L65)
-and [`to_msgpack`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L51-L56).
+It adds methods [`from_msgpack`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L59-L66)
+and [`to_msgpack`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L52-L57).
 
 In order to use this mixin, the [`msgpack`](https://pypi.org/project/msgpack/) package must be installed.
 You can install it manually or using an extra option for `mashumaro`:
@@ -448,7 +448,7 @@ from mashumaro.mixins.yaml import DataClassYAMLMixin
 ```
 
 This mixin adds YAML serialization functionality to a dataclass.
-It adds methods [`from_yaml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L51-L56)
+It adds methods [`from_yaml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L37-L44)
 and [`to_yaml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L30-L35).
 
 In order to use this mixin, the [`pyyaml`](https://pypi.org/project/PyYAML/) package must be installed.
@@ -466,8 +466,8 @@ from mashumaro.mixins.toml import DataClassTOMLMixin
 ```
 
 This mixin adds TOML serialization functionality to a dataclass.
-It adds methods [`from_toml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L55-L62)
-and [`to_toml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L48-L53).
+It adds methods [`from_toml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L56-L63)
+and [`to_toml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L49-L54).
 
 In order to use this mixin, the [`tomli`](https://pypi.org/project/tomli/) and
 [`tomli-w`](https://pypi.org/project/tomli-w/) packages must be installed.
