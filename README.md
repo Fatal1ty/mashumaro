@@ -1375,6 +1375,10 @@ When set, the keys on serialized dataclasses will be sorted in alphabetical orde
 Unlike the `sort_keys` option in the standard library's `json.dumps` function, this option acts at class creation time and has no effect on the performance of serialization.
 
 ```python
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+
 @dataclass
 class SortedDataClass(DataClassDictMixin):
     foo: int
@@ -1629,12 +1633,11 @@ assert data["simple_dict"] is obj.simple_dict
 assert data["simple_set"] is obj.simple_set
 ```
 
-> [!NOTE]\
-> This option is enabled for `list` and `dict` in the dialects that are used
-> within the following mixins:
-> * [`DataClassORJSONMixin`](#dataclassorjsonmixin)
-> * [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
-> * [`DataClassTOMLMixin`](#dataclasstomlmixin)
+This option is enabled for `list` and `dict` in the dialects that are used
+within the following mixins:
+* [`DataClassORJSONMixin`](#dataclassorjsonmixin)
+* [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
+* [`DataClassTOMLMixin`](#dataclasstomlmixin)
 
 #### Changing the default dialect
 
