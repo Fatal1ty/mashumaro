@@ -1600,7 +1600,7 @@ By default, all collection data types are serialized as a copy to prevent
 mutation of the original collection. As an example, if a dataclass contains
 a field of type `list[str]`, then it will be serialized as a copy of the
 original list, so you can safely mutate it after. The downside is that copying
-is always slower that using a reference to the original collection. In some
+is always slower than using a reference to the original collection. In some
 cases we know beforehand that mutation doesn't take place or is even desirable,
 so we can benefit from avoiding unnecessary copies by setting
 `no_copy_collections` to a sequence of origin collection data types.
@@ -2494,7 +2494,7 @@ You can build JSON Schema not only for dataclasses but also for any other
 [supported](#supported-data-types) data
 types. There is support for the following standards:
 * [Draft 2022-12](https://json-schema.org/specification.html)
-* [OpenAPI Specification 3.1.0](https://swagger.io/specification/)
+* [OpenAPI Specification 3.1.0](https://spec.openapis.org/oas/v3.1.0)
 
 ### Building JSON Schema
 
