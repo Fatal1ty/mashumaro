@@ -41,7 +41,7 @@ class CodecCodeBuilder(CodeBuilder):
                 )
             )
             self.add_line(f"return {unpacked_value}")
-        self.add_line(f"setattr(decoder_obj, 'decode', decode)")
+        self.add_line("setattr(decoder_obj, 'decode', decode)")
         self.ensure_object_imported(decoder_obj, "decoder_obj")
         self.ensure_object_imported(self.cls, "cls")
         self.compile()
@@ -71,7 +71,7 @@ class CodecCodeBuilder(CodeBuilder):
                 self.add_line(f"return encoder({packed_value})")
             else:
                 self.add_line(f"return {packed_value}")
-        self.add_line(f"setattr(encoder_obj, 'encode', encode)")
+        self.add_line("setattr(encoder_obj, 'encode', encode)")
         self.ensure_object_imported(encoder_obj, "encoder_obj")
         self.ensure_object_imported(self.cls, "cls")
         self.compile()
