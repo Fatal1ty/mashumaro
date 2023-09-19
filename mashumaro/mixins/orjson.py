@@ -1,5 +1,5 @@
 from datetime import date, datetime, time
-from typing import Any, Callable, Dict, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Type, TypeVar, Union, final
 from uuid import UUID
 
 import orjson
@@ -46,6 +46,7 @@ class DataClassORJSONMixin(DataClassDictMixin):
         },
     }
 
+    @final
     def to_jsonb(
         self: T,
         encoder: Encoder = orjson.dumps,
@@ -59,6 +60,7 @@ class DataClassORJSONMixin(DataClassDictMixin):
         return self.to_jsonb(**kwargs).decode()
 
     @classmethod
+    @final
     def from_json(
         cls: Type[T],
         data: EncodedData,

@@ -8,6 +8,7 @@ module = [
     'mashumaro.mixins.dict',
     'mashumaro.mixins.msgpack',
     'mashumaro.mixins.toml',
+    'mashumaro.codecs.*',
 ]
 disable_error_code = 'empty-body'
 
