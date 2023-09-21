@@ -74,4 +74,5 @@ class CodecCodeBuilder(CodeBuilder):
         self.add_line("setattr(encoder_obj, 'encode', encode)")
         self.ensure_object_imported(encoder_obj, "encoder_obj")
         self.ensure_object_imported(self.cls, "cls")
+        self.ensure_object_imported(self.cls, "self")
         self.compile()

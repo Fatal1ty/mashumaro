@@ -126,7 +126,8 @@ class AbstractUnpackerBuilder(ABC):
     def _add_definition(self, spec: ValueSpec, lines: CodeLines) -> str:
         method_name = self._generate_method_name(spec)
         method_args = self._generate_method_args(spec)
-        lines.append("@classmethod")
+        if not spec.is_root:
+            lines.append("@classmethod")
         lines.append(f"def {method_name}({method_args}):")
         return method_name
 
@@ -140,11 +141,12 @@ class AbstractUnpackerBuilder(ABC):
             extra_args_str = f", {', '.join(extra_args)}"
         else:
             extra_args_str = ""
+        first_args = "value" if spec.is_root else "cls, value"
         if default_kwargs:
-            return f"cls, value{extra_args_str}, {default_kwargs}"
+            return f"{first_args}{extra_args_str}, {default_kwargs}"
         else:  # pragma: no cover
             # we shouldn't be here because there will be default_kwargs
-            return f"cls, value{extra_args_str}"
+            return f"{first_args}{extra_args_str}"
 
     @abstractmethod
     def _add_body(
@@ -951,13 +953,15 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
         f"__unpack_named_tuple_{spec.builder.cls.__name__}_"
         f"{spec.field_ctx.name}__{random_hex()}"
     )
-    lines.append("@classmethod")
+    method_args = "value" if spec.is_root else "cls, value"
     default_kwargs = spec.builder.get_unpack_method_default_flag_values()
+    if not spec.is_root:
+        lines.append("@classmethod")
     if default_kwargs:
-        lines.append(f"def {method_name}(cls, value, {default_kwargs}):")
+        lines.append(f"def {method_name}({method_args}, {default_kwargs}):")
     else:  # pragma: no cover
         # we shouldn't be here because there will be default_kwargs
-        lines.append(f"def {method_name}(cls, value):")
+        lines.append(f"def {method_name}({method_args}):")
     with lines.indent():
         lines.append("fields = []")
         with lines.indent("try:"):
@@ -993,13 +997,15 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
         f"__unpack_typed_dict_{spec.builder.cls.__name__}_"
         f"{spec.field_ctx.name}__{random_hex()}"
     )
+    method_args = "value" if spec.is_root else "cls, value"
     default_kwargs = spec.builder.get_unpack_method_default_flag_values()
-    lines.append("@classmethod")
+    if not spec.is_root:
+        lines.append("@classmethod")
     if default_kwargs:
-        lines.append(f"def {method_name}(cls, value, {default_kwargs}):")
+        lines.append(f"def {method_name}({method_args}, {default_kwargs}):")
     else:  # pragma: no cover
         # we shouldn't be here because there will be default_kwargs
-        lines.append(f"def {method_name}(cls, value):")
+        lines.append(f"def {method_name}({method_args}):")
     with lines.indent():
         lines.append("d = {}")
         for key in sorted(required_keys, key=all_keys.index):

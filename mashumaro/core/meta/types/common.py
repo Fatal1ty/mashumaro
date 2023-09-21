@@ -93,6 +93,10 @@ class ValueSpec:
     def annotations(self) -> Sequence[str]:
         return getattr(self.annotated_type, "__metadata__", [])
 
+    @property
+    def is_root(self) -> bool:
+        return self.field_ctx.name == ""
+
 
 ValueSpecExprCreator: TypeAlias = Callable[[ValueSpec], Optional[Expression]]
 

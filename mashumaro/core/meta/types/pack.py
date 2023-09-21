@@ -263,11 +263,12 @@ def pack_union(
         f"__pack_{prefix}_{spec.builder.cls.__name__}_{spec.field_ctx.name}__"
         f"{random_hex()}"
     )
+    method_args = "value" if spec.is_root else "self, value"
     default_kwargs = spec.builder.get_pack_method_default_flag_values()
     if default_kwargs:
-        lines.append(f"def {method_name}(self, value, {default_kwargs}):")
+        lines.append(f"def {method_name}({method_args}, {default_kwargs}):")
     else:
-        lines.append(f"def {method_name}(self, value):")
+        lines.append(f"def {method_name}({method_args}):")
     with lines.indent():
         for packer in (
             PackerRegistry.get(spec.copy(type=type_arg, expression="value"))
@@ -304,11 +305,12 @@ def pack_literal(spec: ValueSpec) -> Expression:
         f"__pack_literal_{spec.builder.cls.__name__}_{spec.field_ctx.name}__"
         f"{random_hex()}"
     )
+    method_args = "value" if spec.is_root else "self, value"
     default_kwargs = spec.builder.get_pack_method_default_flag_values()
     if default_kwargs:
-        lines.append(f"def {method_name}(self, value, {default_kwargs}):")
+        lines.append(f"def {method_name}({method_args}, {default_kwargs}):")
     else:
-        lines.append(f"def {method_name}(self, value):")
+        lines.append(f"def {method_name}({method_args}):")
     resolved_type_params = spec.builder.get_field_resolved_type_params(
         spec.field_ctx.name
     )
@@ -606,11 +608,12 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
         f"__pack_typed_dict_{spec.builder.cls.__name__}_"
         f"{spec.field_ctx.name}__{random_hex()}"
     )
+    method_args = "value" if spec.is_root else "self, value"
     default_kwargs = spec.builder.get_pack_method_default_flag_values()
     if default_kwargs:
-        lines.append(f"def {method_name}(self, value, {default_kwargs}):")
+        lines.append(f"def {method_name}({method_args}, {default_kwargs}):")
     else:
-        lines.append(f"def {method_name}(self, value):")
+        lines.append(f"def {method_name}({method_args}):")
     with lines.indent():
         lines.append("d = {}")
         for key in sorted(required_keys, key=all_keys.index):

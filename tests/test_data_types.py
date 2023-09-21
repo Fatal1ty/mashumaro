@@ -43,6 +43,7 @@ import pytest
 from typing_extensions import Final, LiteralString
 
 from mashumaro import DataClassDictMixin
+from mashumaro.codecs import Decoder, Encoder, decode, encode
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
 from mashumaro.exceptions import (
@@ -1462,3 +1463,19 @@ def test_dataclass_with_default_nan_and_inf_with_omit_default():
         "b": float("-inf"),
         "c": float("+inf"),
     }
+
+
+@pytest.mark.parametrize("value_info", inner_values)
+def test_decoder(value_info):
+    x_type, x_value, x_value_dumped = value_info
+    decoder = Decoder(x_type)
+    assert decoder.decode(x_value_dumped) == x_value
+    assert decode(x_value_dumped, x_type) == x_value
+
+
+@pytest.mark.parametrize("value_info", inner_values)
+def test_encoder(value_info):
+    x_type, x_value, x_value_dumped = value_info
+    encoder = Encoder(x_type)
+    assert encoder.encode(x_value) == x_value_dumped
+    assert encode(x_value, x_type) == x_value_dumped
