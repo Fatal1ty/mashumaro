@@ -17,12 +17,12 @@ def test_field_options_helper():
     }
 
     def serialize(x):
-        return x  # pragma no cover
+        return x  # pragma: no cover
 
     def deserialize(x):
-        return x  # pragma no cover
+        return x  # pragma: no cover
 
-    class TestSerializationStrategy(SerializationStrategy):  # pragma no cover
+    class TestSerializationStrategy(SerializationStrategy):  # pragma: no cover
         def deserialize(self, value):
             return value
 

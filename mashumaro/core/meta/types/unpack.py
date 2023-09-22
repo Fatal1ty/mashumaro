@@ -90,11 +90,11 @@ if PY_39_MIN:
 
 try:
     import ciso8601
-except ImportError:  # pragma no cover
+except ImportError:  # pragma: no cover
     ciso8601: Optional[types.ModuleType] = None  # type: ignore
 try:
     import pendulum
-except ImportError:  # pragma no cover
+except ImportError:  # pragma: no cover
     pendulum: Optional[types.ModuleType] = None  # type: ignore
 
 
@@ -757,7 +757,7 @@ def unpack_date_objects(spec: ValueSpec) -> Optional[Expression]:
                 else:
                     raise ThirdPartyModuleNotFoundError(
                         "ciso8601", spec.field_ctx.name, spec.builder.cls
-                    )  # pragma no cover
+                    )  # pragma: no cover
             elif deserialize_option == "pendulum":
                 if pendulum:
                     spec.builder.ensure_module_imported(pendulum)
@@ -765,7 +765,7 @@ def unpack_date_objects(spec: ValueSpec) -> Optional[Expression]:
                 else:
                     raise ThirdPartyModuleNotFoundError(
                         "pendulum", spec.field_ctx.name, spec.builder.cls
-                    )  # pragma no cover
+                    )  # pragma: no cover
             else:
                 raise UnsupportedDeserializationEngine(
                     spec.field_ctx.name,

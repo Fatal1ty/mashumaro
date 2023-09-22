@@ -28,7 +28,7 @@ from mashumaro.core.meta.helpers import (
 )
 from mashumaro.exceptions import UnserializableField
 
-if TYPE_CHECKING:  # pragma no cover
+if TYPE_CHECKING:  # pragma: no cover
     from mashumaro.core.meta.code.builder import CodeBuilder
 else:
     CodeBuilder = Any

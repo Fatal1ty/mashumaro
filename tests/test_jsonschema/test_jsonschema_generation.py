@@ -114,7 +114,7 @@ Ts = TypeVarTuple("Ts")
 
 
 def dummy_serialize_as_str(_: Any) -> str:
-    return "dummy"  # pragma no cover
+    return "dummy"  # pragma: no cover
 
 
 class ThirdPartyType:
@@ -515,14 +515,14 @@ def test_jsonschema_for_named_tuple_as_list():
 
 
 def test_jsonschema_for_named_tuple_with_overridden_serialization_method():
-    class MySerializationStrategy(SerializationStrategy):  # pragma no cover
+    class MySerializationStrategy(SerializationStrategy):  # pragma: no cover
         def serialize(self, value: Any) -> MyNamedTuple:
             pass
 
         def deserialize(self, value: Any) -> Any:
             pass
 
-    class MyAnySerializationStrategy(SerializationStrategy):  # pragma no cover
+    class MyAnySerializationStrategy(SerializationStrategy):  # pragma: no cover
         def serialize(self, value: Any) -> Any:
             pass
 
@@ -948,7 +948,7 @@ def test_overridden_serialization_method_without_signature():
 
 
 def test_overridden_serialization_method_without_return_annotation():
-    def as_timestamp(dt: datetime.datetime):  # pragma no cover
+    def as_timestamp(dt: datetime.datetime):  # pragma: no cover
         return dt.timestamp()
 
     @dataclass
@@ -967,12 +967,12 @@ def test_overridden_serialization_method_without_return_annotation():
 
 def test_overridden_serialization_method_with_return_annotation():
     def as_timestamp(dt: datetime.datetime) -> float:
-        return dt.timestamp()  # pragma no cover
+        return dt.timestamp()  # pragma: no cover
 
     def first_datetime_as_timestamp(
         seq: List[datetime.datetime],
     ) -> float:
-        return as_timestamp(seq[0])  # pragma no cover
+        return as_timestamp(seq[0])  # pragma: no cover
 
     @dataclass
     class DataClass:
@@ -1051,7 +1051,7 @@ def test_basic_type_as_overridden_serialization_method(
 
 def test_dataclass_overridden_serialization_method():
     def serialize_as_str(value: Any) -> str:
-        return str(value)  # pragma no cover
+        return str(value)  # pragma: no cover
 
     @dataclass
     class Inner:

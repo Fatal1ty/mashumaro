@@ -51,7 +51,7 @@ class Decoder(Generic[T]):
         code_builder.add_decode_method(shape_type, self, pre_decoder_func)
 
     @final
-    def decode(self, data: Any) -> T:
+    def decode(self, data: Any) -> T:  # pragma: no cover
         ...
 
 
@@ -89,7 +89,7 @@ class Encoder(Generic[T]):
         code_builder.add_encode_method(shape_type, self, post_encoder_func)
 
     @final
-    def encode(self, obj: T) -> Any:
+    def encode(self, obj: T) -> Any:  # pragma: no cover
         ...
 
 

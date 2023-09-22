@@ -55,7 +55,7 @@ class ORJSONDecoder(Generic[T]):
         code_builder.add_decode_method(shape_type, self, orjson.loads)
 
     @final
-    def decode(self, data: EncodedData) -> T:
+    def decode(self, data: EncodedData) -> T:  # pragma: no cover
         ...
 
 
@@ -94,7 +94,7 @@ class ORJSONEncoder(Generic[T]):
         code_builder.add_encode_method(shape_type, self, orjson.dumps)
 
     @final
-    def encode(self, obj: T) -> bytes:
+    def encode(self, obj: T) -> bytes:  # pragma: no cover
         ...
 
 

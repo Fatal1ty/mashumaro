@@ -70,7 +70,7 @@ class MessagePackDecoder(Generic[T]):
         code_builder.add_decode_method(shape_type, self, pre_decoder_func)
 
     @final
-    def decode(self, data: EncodedData) -> T:
+    def decode(self, data: EncodedData) -> T:  # pragma: no cover
         ...
 
 
@@ -112,7 +112,7 @@ class MessagePackEncoder(Generic[T]):
         code_builder.add_encode_method(shape_type, self, post_encoder_func)
 
     @final
-    def encode(self, obj: T) -> EncodedData:
+    def encode(self, obj: T) -> EncodedData:  # pragma: no cover
         ...
 
 

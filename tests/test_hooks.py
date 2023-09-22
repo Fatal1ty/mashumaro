@@ -63,7 +63,7 @@ def test_bad_pre_deserialize_hook():
 
             @no_type_check
             def __pre_deserialize__(self, d: Dict[Any, Any]) -> Dict[Any, Any]:
-                pass  # pragma no cover
+                pass  # pragma: no cover
 
 
 def test_bad_post_deserialize_hook():
@@ -74,7 +74,7 @@ def test_bad_post_deserialize_hook():
 
             @no_type_check
             def __post_deserialize__(self, obj: "DataClass") -> "DataClass":
-                pass  # pragma no cover
+                pass  # pragma: no cover
 
 
 def test_pre_deserialize_hook():
@@ -161,17 +161,17 @@ def test_hook_in_parent_class(mocker):
     class A:
         @classmethod
         def __pre_deserialize__(cls, d):
-            return d  # pragma no cover
+            return d  # pragma: no cover
 
         @classmethod
         def __post_deserialize__(cls, obj):
-            return obj  # pragma no cover
+            return obj  # pragma: no cover
 
         def __pre_serialize__(self):
-            return self  # pragma no cover
+            return self  # pragma: no cover
 
         def __post_serialize__(self, d):
-            return d  # pragma no cover
+            return d  # pragma: no cover
 
     @dataclass
     class B(A, DataClassDictMixin):
@@ -210,7 +210,7 @@ def test_post_deserialize_hook_with_empty_dataclass():
     class MyClass(DataClassDictMixin):
         @classmethod
         def __post_deserialize__(cls, obj):
-            return obj  # pragma no cover
+            return obj  # pragma: no cover
 
     assert MyClass.from_dict({}) == MyClass()
 
