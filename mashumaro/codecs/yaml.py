@@ -7,6 +7,7 @@ from typing import (
     TypeVar,
     Union,
     final,
+    overload,
 )
 
 import yaml
@@ -36,6 +37,26 @@ def _default_decoder(data: EncodedData) -> Any:
 
 
 class YAMLDecoder(Generic[T]):
+    @overload
+    def __init__(
+        self,
+        shape_type: Type[T],
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        pre_decoder_func: Optional[PreDecoderFunc] = _default_decoder,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        shape_type: Any,
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        pre_decoder_func: Optional[PreDecoderFunc] = _default_decoder,
+    ):
+        ...
+
     def __init__(
         self,
         shape_type: Union[Type[T], Any],
@@ -54,6 +75,26 @@ class YAMLDecoder(Generic[T]):
 
 
 class YAMLEncoder(Generic[T]):
+    @overload
+    def __init__(
+        self,
+        shape_type: Type[T],
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        post_encoder_func: Optional[PostEncoderFunc] = _default_encoder,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        shape_type: Any,
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        post_encoder_func: Optional[PostEncoderFunc] = _default_encoder,
+    ):
+        ...
+
     def __init__(
         self,
         shape_type: Union[Type[T], Any],

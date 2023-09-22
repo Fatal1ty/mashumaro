@@ -8,6 +8,7 @@ from typing import (
     TypeVar,
     Union,
     final,
+    overload,
 )
 
 from mashumaro.codecs._builder import CodecCodeBuilder
@@ -19,6 +20,26 @@ EncodedData = Union[str, bytes, bytearray]
 
 
 class JSONDecoder(Generic[T]):
+    @overload
+    def __init__(
+        self,
+        shape_type: Type[T],
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        pre_decoder_func: Callable[[EncodedData], Any] = json.loads,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        shape_type: Any,
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        pre_decoder_func: Callable[[EncodedData], Any] = json.loads,
+    ):
+        ...
+
     def __init__(
         self,
         shape_type: Union[Type[T], Any],
@@ -37,6 +58,26 @@ class JSONDecoder(Generic[T]):
 
 
 class JSONEncoder(Generic[T]):
+    @overload
+    def __init__(
+        self,
+        shape_type: Type[T],
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        post_encoder_func: Callable[[Any], str] = json.dumps,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        shape_type: Any,
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        post_encoder_func: Callable[[Any], str] = json.dumps,
+    ):
+        ...
+
     def __init__(
         self,
         shape_type: Union[Type[T], Any],

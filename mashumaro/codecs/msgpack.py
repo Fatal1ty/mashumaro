@@ -7,6 +7,7 @@ from typing import (
     TypeVar,
     Union,
     final,
+    overload,
 )
 
 import msgpack
@@ -32,6 +33,26 @@ def _default_encoder(data: Any) -> EncodedData:
 
 
 class MessagePackDecoder(Generic[T]):
+    @overload
+    def __init__(
+        self,
+        shape_type: Type[T],
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        pre_decoder_func: Optional[PreDecoderFunc] = _default_decoder,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        shape_type: Any,
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        pre_decoder_func: Optional[PreDecoderFunc] = _default_decoder,
+    ):
+        ...
+
     def __init__(
         self,
         shape_type: Union[Type[T], Any],
@@ -54,6 +75,26 @@ class MessagePackDecoder(Generic[T]):
 
 
 class MessagePackEncoder(Generic[T]):
+    @overload
+    def __init__(
+        self,
+        shape_type: Type[T],
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        post_encoder_func: Optional[PostEncoderFunc] = _default_encoder,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        shape_type: Any,
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        post_encoder_func: Optional[PostEncoderFunc] = _default_encoder,
+    ):
+        ...
+
     def __init__(
         self,
         shape_type: Union[Type[T], Any],

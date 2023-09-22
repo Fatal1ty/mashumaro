@@ -7,6 +7,7 @@ from typing import (
     TypeVar,
     Union,
     final,
+    overload,
 )
 
 from mashumaro.codecs._builder import CodecCodeBuilder
@@ -17,6 +18,26 @@ T = TypeVar("T")
 
 
 class Decoder(Generic[T]):
+    @overload
+    def __init__(
+        self,
+        shape_type: Type[T],
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        pre_decoder_func: Optional[Callable[[Any], Any]] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        shape_type: Any,
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        pre_decoder_func: Optional[Callable[[Any], Any]] = None,
+    ):
+        ...
+
     def __init__(
         self,
         shape_type: Union[Type[T], Any],
@@ -35,6 +56,26 @@ class Decoder(Generic[T]):
 
 
 class Encoder(Generic[T]):
+    @overload
+    def __init__(
+        self,
+        shape_type: Type[T],
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        post_encoder_func: Optional[Callable[[Any], Any]] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        shape_type: Any,
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+        post_encoder_func: Optional[Callable[[Any], Any]] = None,
+    ):
+        ...
+
     def __init__(
         self,
         shape_type: Union[Type[T], Any],

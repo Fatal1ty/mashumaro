@@ -1,4 +1,13 @@
-from typing import Any, Generic, Optional, Type, TypeVar, Union, final
+from typing import (
+    Any,
+    Generic,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    final,
+    overload,
+)
 
 import orjson
 
@@ -12,6 +21,24 @@ EncodedData = Union[str, bytes, bytearray]
 
 
 class ORJSONDecoder(Generic[T]):
+    @overload
+    def __init__(
+        self,
+        shape_type: Type[T],
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        shape_type: Any,
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+    ):
+        ...
+
     def __init__(
         self,
         shape_type: Union[Type[T], Any],
@@ -33,6 +60,24 @@ class ORJSONDecoder(Generic[T]):
 
 
 class ORJSONEncoder(Generic[T]):
+    @overload
+    def __init__(
+        self,
+        shape_type: Type[T],
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        shape_type: Any,
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+    ):
+        ...
+
     def __init__(
         self,
         shape_type: Union[Type[T], Any],

@@ -1,4 +1,13 @@
-from typing import Any, Generic, Optional, Type, TypeVar, Union, final
+from typing import (
+    Any,
+    Generic,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    final,
+    overload,
+)
 
 import tomli_w
 
@@ -17,6 +26,24 @@ EncodedData = str
 
 
 class TOMLDecoder(Generic[T]):
+    @overload
+    def __init__(
+        self,
+        shape_type: Type[T],
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        shape_type: Any,
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+    ):
+        ...
+
     def __init__(
         self,
         shape_type: Union[Type[T], Any],
@@ -38,6 +65,24 @@ class TOMLDecoder(Generic[T]):
 
 
 class TOMLEncoder(Generic[T]):
+    @overload
+    def __init__(
+        self,
+        shape_type: Type[T],
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
+        shape_type: Any,
+        *,
+        default_dialect: Optional[Type[Dialect]] = None,
+    ):
+        ...
+
     def __init__(
         self,
         shape_type: Union[Type[T], Any],
