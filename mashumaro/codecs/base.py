@@ -10,6 +10,7 @@ from typing import (
 )
 
 from mashumaro.codecs._builder import CodecCodeBuilder
+from mashumaro.core.meta.helpers import get_args
 from mashumaro.dialect import Dialect
 
 T = TypeVar("T")
@@ -23,7 +24,9 @@ class Decoder(Generic[T]):
         default_dialect: Optional[Type[Dialect]] = None,
         pre_decoder_func: Optional[Callable[[Any], Any]] = None,
     ):
-        code_builder = CodecCodeBuilder.new(default_dialect=default_dialect)
+        code_builder = CodecCodeBuilder.new(
+            type_args=get_args(shape_type), default_dialect=default_dialect
+        )
         code_builder.add_decode_method(shape_type, self, pre_decoder_func)
 
     @final
@@ -39,7 +42,9 @@ class Encoder(Generic[T]):
         default_dialect: Optional[Type[Dialect]] = None,
         post_encoder_func: Optional[Callable[[Any], Any]] = None,
     ):
-        code_builder = CodecCodeBuilder.new(default_dialect=default_dialect)
+        code_builder = CodecCodeBuilder.new(
+            type_args=get_args(shape_type), default_dialect=default_dialect
+        )
         code_builder.add_encode_method(shape_type, self, post_encoder_func)
 
     @final

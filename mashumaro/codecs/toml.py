@@ -3,6 +3,7 @@ from typing import Any, Generic, Optional, Type, TypeVar, Union, final
 import tomli_w
 
 from mashumaro.codecs._builder import CodecCodeBuilder
+from mashumaro.core.meta.helpers import get_args
 from mashumaro.dialect import Dialect
 from mashumaro.mixins.toml import TOMLDialect
 
@@ -26,7 +27,9 @@ class TOMLDecoder(Generic[T]):
             default_dialect = TOMLDialect.merge(default_dialect)
         else:
             default_dialect = TOMLDialect
-        code_builder = CodecCodeBuilder.new(default_dialect=default_dialect)
+        code_builder = CodecCodeBuilder.new(
+            type_args=get_args(shape_type), default_dialect=default_dialect
+        )
         code_builder.add_decode_method(shape_type, self, tomllib.loads)
 
     @final
@@ -45,7 +48,9 @@ class TOMLEncoder(Generic[T]):
             default_dialect = TOMLDialect.merge(default_dialect)
         else:
             default_dialect = TOMLDialect
-        code_builder = CodecCodeBuilder.new(default_dialect=default_dialect)
+        code_builder = CodecCodeBuilder.new(
+            type_args=get_args(shape_type), default_dialect=default_dialect
+        )
         code_builder.add_encode_method(shape_type, self, tomli_w.dumps)
 
     @final
@@ -53,17 +58,23 @@ class TOMLEncoder(Generic[T]):
         ...
 
 
-def decode(data: EncodedData, shape_type: Type[T]) -> T:
+def toml_decode(data: EncodedData, shape_type: Type[T]) -> T:
     return TOMLDecoder(shape_type).decode(data)
 
 
-def encode(obj: T, shape_type: Union[Type[T], Any]) -> bytes:
+def toml_encode(obj: T, shape_type: Union[Type[T], Any]) -> bytes:
     return TOMLEncoder[T](shape_type).encode(obj)
+
+
+decode = toml_decode
+encode = toml_encode
 
 
 __all__ = [
     "TOMLDecoder",
     "TOMLEncoder",
+    "toml_decode",
+    "toml_encode",
     "decode",
     "encode",
 ]

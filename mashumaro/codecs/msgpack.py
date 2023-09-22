@@ -12,11 +12,11 @@ from typing import (
 import msgpack
 
 from mashumaro.codecs._builder import CodecCodeBuilder
+from mashumaro.core.meta.helpers import get_args
 from mashumaro.dialect import Dialect
 from mashumaro.mixins.msgpack import MessagePackDialect
 
 T = TypeVar("T")
-
 
 EncodedData = bytes
 PostEncoderFunc = Callable[[Any], EncodedData]
@@ -43,7 +43,9 @@ class MessagePackDecoder(Generic[T]):
             default_dialect = MessagePackDialect.merge(default_dialect)
         else:
             default_dialect = MessagePackDialect
-        code_builder = CodecCodeBuilder.new(default_dialect=default_dialect)
+        code_builder = CodecCodeBuilder.new(
+            type_args=get_args(shape_type), default_dialect=default_dialect
+        )
         code_builder.add_decode_method(shape_type, self, pre_decoder_func)
 
     @final
@@ -63,7 +65,9 @@ class MessagePackEncoder(Generic[T]):
             default_dialect = MessagePackDialect.merge(default_dialect)
         else:
             default_dialect = MessagePackDialect
-        code_builder = CodecCodeBuilder.new(default_dialect=default_dialect)
+        code_builder = CodecCodeBuilder.new(
+            type_args=get_args(shape_type), default_dialect=default_dialect
+        )
         code_builder.add_encode_method(shape_type, self, post_encoder_func)
 
     @final
@@ -71,17 +75,23 @@ class MessagePackEncoder(Generic[T]):
         ...
 
 
-def decode(data: EncodedData, shape_type: Union[Type[T], Any]) -> T:
+def msgpack_decode(data: EncodedData, shape_type: Union[Type[T], Any]) -> T:
     return MessagePackDecoder(shape_type).decode(data)
 
 
-def encode(obj: T, shape_type: Union[Type[T], Any]) -> EncodedData:
+def msgpack_encode(obj: T, shape_type: Union[Type[T], Any]) -> EncodedData:
     return MessagePackEncoder[T](shape_type).encode(obj)
+
+
+decode = msgpack_decode
+encode = msgpack_encode
 
 
 __all__ = [
     "MessagePackDecoder",
     "MessagePackEncoder",
+    "msgpack_decode",
+    "msgpack_encode",
     "decode",
     "encode",
 ]

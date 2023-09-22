@@ -12,6 +12,7 @@ from typing import (
 import yaml
 
 from mashumaro.codecs._builder import CodecCodeBuilder
+from mashumaro.core.meta.helpers import get_args
 from mashumaro.dialect import Dialect
 
 T = TypeVar("T")
@@ -42,7 +43,9 @@ class YAMLDecoder(Generic[T]):
         default_dialect: Optional[Type[Dialect]] = None,
         pre_decoder_func: Optional[PreDecoderFunc] = _default_decoder,
     ):
-        code_builder = CodecCodeBuilder.new(default_dialect=default_dialect)
+        code_builder = CodecCodeBuilder.new(
+            type_args=get_args(shape_type), default_dialect=default_dialect
+        )
         code_builder.add_decode_method(shape_type, self, pre_decoder_func)
 
     @final
@@ -58,7 +61,9 @@ class YAMLEncoder(Generic[T]):
         default_dialect: Optional[Type[Dialect]] = None,
         post_encoder_func: Optional[PostEncoderFunc] = _default_encoder,
     ):
-        code_builder = CodecCodeBuilder.new(default_dialect=default_dialect)
+        code_builder = CodecCodeBuilder.new(
+            type_args=get_args(shape_type), default_dialect=default_dialect
+        )
         code_builder.add_encode_method(shape_type, self, post_encoder_func)
 
     @final
@@ -66,17 +71,23 @@ class YAMLEncoder(Generic[T]):
         ...
 
 
-def decode(data: EncodedData, shape_type: Union[Type[T], Any]) -> T:
+def yaml_decode(data: EncodedData, shape_type: Union[Type[T], Any]) -> T:
     return YAMLDecoder(shape_type).decode(data)
 
 
-def encode(obj: T, shape_type: Union[Type[T], Any]) -> EncodedData:
+def yaml_encode(obj: T, shape_type: Union[Type[T], Any]) -> EncodedData:
     return YAMLEncoder[T](shape_type).encode(obj)
+
+
+decode = yaml_decode
+encode = yaml_encode
 
 
 __all__ = [
     "YAMLDecoder",
     "YAMLEncoder",
+    "yaml_decode",
+    "yaml_encode",
     "decode",
     "encode",
 ]

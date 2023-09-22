@@ -2,15 +2,20 @@ from types import new_class
 from typing import Any, Callable, Dict, Optional, Type
 
 from mashumaro.core.meta.code.builder import CodeBuilder
+from mashumaro.core.meta.helpers import substitute_type_params
 from mashumaro.core.meta.types.common import FieldContext, ValueSpec
 from mashumaro.core.meta.types.pack import PackerRegistry
 from mashumaro.core.meta.types.unpack import UnpackerRegistry
 
 
+class NameSpace:
+    pass
+
+
 class CodecCodeBuilder(CodeBuilder):
     @classmethod
     def new(cls, **kwargs: Any) -> "CodecCodeBuilder":
-        return cls(new_class("ns"), **kwargs)
+        return cls(new_class("ns", bases=(NameSpace,)), **kwargs)
 
     def get_field_resolved_type_params(
         self, field_name: str
@@ -18,7 +23,12 @@ class CodecCodeBuilder(CodeBuilder):
         return {}
 
     def _get_real_type(self, field_name: str, field_type: Type) -> Type:
-        return field_type
+        if issubclass(self.cls, NameSpace):
+            return field_type
+        cls = self._get_field_class(field_name)
+        return substitute_type_params(
+            field_type, self.resolved_type_params[cls]
+        )
 
     def add_decode_method(
         self,

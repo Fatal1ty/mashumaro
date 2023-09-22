@@ -3,6 +3,7 @@ from typing import Any, Generic, Optional, Type, TypeVar, Union, final
 import orjson
 
 from mashumaro.codecs._builder import CodecCodeBuilder
+from mashumaro.core.meta.helpers import get_args
 from mashumaro.dialect import Dialect
 from mashumaro.mixins.orjson import OrjsonDialect
 
@@ -21,7 +22,9 @@ class ORJSONDecoder(Generic[T]):
             default_dialect = OrjsonDialect.merge(default_dialect)
         else:
             default_dialect = OrjsonDialect
-        code_builder = CodecCodeBuilder.new(default_dialect=default_dialect)
+        code_builder = CodecCodeBuilder.new(
+            type_args=get_args(shape_type), default_dialect=default_dialect
+        )
         code_builder.add_decode_method(shape_type, self, orjson.loads)
 
     @final
@@ -40,7 +43,9 @@ class ORJSONEncoder(Generic[T]):
             default_dialect = OrjsonDialect.merge(default_dialect)
         else:
             default_dialect = OrjsonDialect
-        code_builder = CodecCodeBuilder.new(default_dialect=default_dialect)
+        code_builder = CodecCodeBuilder.new(
+            type_args=get_args(shape_type), default_dialect=default_dialect
+        )
         code_builder.add_encode_method(shape_type, self, orjson.dumps)
 
     @final
@@ -48,17 +53,23 @@ class ORJSONEncoder(Generic[T]):
         ...
 
 
-def decode(data: EncodedData, shape_type: Type[T]) -> T:
+def json_decode(data: EncodedData, shape_type: Type[T]) -> T:
     return ORJSONDecoder(shape_type).decode(data)
 
 
-def encode(obj: T, shape_type: Union[Type[T], Any]) -> bytes:
+def json_encode(obj: T, shape_type: Union[Type[T], Any]) -> bytes:
     return ORJSONEncoder[T](shape_type).encode(obj)
+
+
+decode = json_decode
+encode = json_encode
 
 
 __all__ = [
     "ORJSONDecoder",
     "ORJSONEncoder",
+    "json_decode",
+    "json_encode",
     "decode",
     "encode",
 ]
