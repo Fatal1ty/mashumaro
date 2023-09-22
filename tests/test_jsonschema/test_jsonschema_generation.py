@@ -522,7 +522,9 @@ def test_jsonschema_for_named_tuple_with_overridden_serialization_method():
         def deserialize(self, value: Any) -> Any:
             pass
 
-    class MyAnySerializationStrategy(SerializationStrategy):  # pragma: no cover
+    class MyAnySerializationStrategy(
+        SerializationStrategy
+    ):  # pragma: no cover
         def serialize(self, value: Any) -> Any:
             pass
 
