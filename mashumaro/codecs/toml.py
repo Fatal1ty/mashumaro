@@ -108,7 +108,7 @@ def toml_decode(data: EncodedData, shape_type: Type[T]) -> T:
 
 
 def toml_encode(obj: T, shape_type: Union[Type[T], Any]) -> bytes:
-    return TOMLEncoder[T](shape_type).encode(obj)
+    return TOMLEncoder(shape_type).encode(obj)
 
 
 decode = toml_decode

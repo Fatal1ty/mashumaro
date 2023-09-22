@@ -110,9 +110,9 @@ def json_encode(
     shape_type: Union[Type[T], Any],
     post_encoder_func: Callable[[Any], str] = json.dumps,
 ) -> str:
-    return JSONEncoder[T](
-        shape_type, post_encoder_func=post_encoder_func
-    ).encode(obj)
+    return JSONEncoder(shape_type, post_encoder_func=post_encoder_func).encode(
+        obj
+    )
 
 
 decode = json_decode

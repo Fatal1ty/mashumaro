@@ -103,7 +103,7 @@ def json_decode(data: EncodedData, shape_type: Type[T]) -> T:
 
 
 def json_encode(obj: T, shape_type: Union[Type[T], Any]) -> bytes:
-    return ORJSONEncoder[T](shape_type).encode(obj)
+    return ORJSONEncoder(shape_type).encode(obj)
 
 
 decode = json_decode

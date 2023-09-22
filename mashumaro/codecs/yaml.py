@@ -117,7 +117,7 @@ def yaml_decode(data: EncodedData, shape_type: Union[Type[T], Any]) -> T:
 
 
 def yaml_encode(obj: T, shape_type: Union[Type[T], Any]) -> EncodedData:
-    return YAMLEncoder[T](shape_type).encode(obj)
+    return YAMLEncoder(shape_type).encode(obj)
 
 
 decode = yaml_decode

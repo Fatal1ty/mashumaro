@@ -121,7 +121,7 @@ def msgpack_decode(data: EncodedData, shape_type: Union[Type[T], Any]) -> T:
 
 
 def msgpack_encode(obj: T, shape_type: Union[Type[T], Any]) -> EncodedData:
-    return MessagePackEncoder[T](shape_type).encode(obj)
+    return MessagePackEncoder(shape_type).encode(obj)
 
 
 decode = msgpack_decode

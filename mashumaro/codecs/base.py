@@ -98,7 +98,7 @@ def decode(data: Any, shape_type: Union[Type[T], Any]) -> T:
 
 
 def encode(obj: T, shape_type: Union[Type[T], Any]) -> Any:
-    return Encoder[T](shape_type).encode(obj)
+    return Encoder(shape_type).encode(obj)
 
 
 __all__ = [
