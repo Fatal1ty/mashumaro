@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Generic, List, TypeVar, Union
+from typing import Generic, List, Optional, TypeVar, Union
 
 import pytest
 from typing_extensions import Literal
@@ -59,6 +59,8 @@ class GenericDataClass(Generic[T]):
             ["42", "2023-09-23"],
             [42, date(2023, 9, 23)],
         ],
+        [Optional[date], "2023-09-23", date(2023, 9, 23)],
+        [Optional[date], None, None],
     ],
 )
 def test_decode(shape_type, encoded, decoded):
@@ -93,6 +95,8 @@ def test_decode(shape_type, encoded, decoded):
             GenericDataClass(date(2023, 9, 23), [date(2023, 9, 23)]),
         ],
         [List[Union[int, date]], [42, "2023-09-23"], [42, date(2023, 9, 23)]],
+        [Optional[date], "2023-09-23", date(2023, 9, 23)],
+        [Optional[date], None, None],
     ],
 )
 def test_encode(shape_type, encoded, decoded):

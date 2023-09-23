@@ -2,6 +2,7 @@ from types import new_class
 from typing import Any, Callable, Optional, Type
 
 from mashumaro.core.meta.code.builder import CodeBuilder
+from mashumaro.core.meta.helpers import is_optional, is_type_var_any
 from mashumaro.core.meta.types.common import FieldContext, ValueSpec
 from mashumaro.core.meta.types.pack import PackerRegistry
 from mashumaro.core.meta.types.unpack import UnpackerRegistry
@@ -27,13 +28,20 @@ class CodecCodeBuilder(CodeBuilder):
             if pre_decoder_func:
                 self.ensure_object_imported(pre_decoder_func, "decoder")
                 self.add_line("value = decoder(value)")
+            could_be_none = (
+                shape_type in (Any, type(None), None)
+                or is_type_var_any(self._get_real_type("", shape_type))
+                or is_optional(
+                    shape_type, self.get_field_resolved_type_params("")
+                )
+            )
             unpacked_value = UnpackerRegistry.get(
                 ValueSpec(
                     type=shape_type,
                     expression="value",
                     builder=self,
                     field_ctx=FieldContext(name="", metadata={}),
-                    could_be_none=False,
+                    could_be_none=could_be_none,
                     is_root=True,
                 )
             )
@@ -51,13 +59,20 @@ class CodecCodeBuilder(CodeBuilder):
     ) -> None:
         self.reset()
         with self.indent("def encode(value):"):
+            could_be_none = (
+                shape_type in (Any, type(None), None)
+                or is_type_var_any(self._get_real_type("", shape_type))
+                or is_optional(
+                    shape_type, self.get_field_resolved_type_params("")
+                )
+            )
             packed_value = PackerRegistry.get(
                 ValueSpec(
                     type=shape_type,
                     expression="value",
                     builder=self,
                     field_ctx=FieldContext(name="", metadata={}),
-                    could_be_none=False,
+                    could_be_none=could_be_none,
                     no_copy_collections=self._get_dialect_or_config_option(
                         "no_copy_collections", ()
                     ),
