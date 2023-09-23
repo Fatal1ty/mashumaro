@@ -1,7 +1,8 @@
+from datetime import date
+from typing import List
+
 from mashumaro.codecs import Decoder, Encoder, decode, encode
 from mashumaro.dialect import Dialect
-from typing import List
-from datetime import date
 
 
 class MyDialect(Dialect):

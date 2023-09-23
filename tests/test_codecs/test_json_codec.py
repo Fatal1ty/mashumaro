@@ -1,13 +1,14 @@
+import json
+from datetime import date
+from typing import List
+
 from mashumaro.codecs.json import (
     JSONDecoder,
     JSONEncoder,
-    json_encode,
     json_decode,
+    json_encode,
 )
 from mashumaro.dialect import Dialect
-from typing import List
-from datetime import date
-import json
 
 
 class MyDialect(Dialect):
