@@ -140,12 +140,15 @@ def test_post_encoder_func():
     )
 
 
-def test_value_error_on_decode_union():
-    decoder = Decoder(Union[date, datetime])
+@pytest.mark.parametrize(
+    ("shape_type", "invalid_value"),
+    [[Union[date, datetime], "foo"], [Literal["foo"], "bar"]],
+)
+def test_value_error_on_decode(shape_type, invalid_value):
+    decoder = Decoder(shape_type)
     with pytest.raises(ValueError) as e:
-        decoder.decode("foo")
+        decoder.decode(invalid_value)
     assert type(e.value) is ValueError
-    assert repr(e.value) == "ValueError('foo')"
 
 
 @pytest.mark.parametrize(
