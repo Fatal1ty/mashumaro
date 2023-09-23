@@ -1,8 +1,7 @@
 from types import new_class
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, Optional, Type
 
 from mashumaro.core.meta.code.builder import CodeBuilder
-from mashumaro.core.meta.helpers import substitute_type_params
 from mashumaro.core.meta.types.common import FieldContext, ValueSpec
 from mashumaro.core.meta.types.pack import PackerRegistry
 from mashumaro.core.meta.types.unpack import UnpackerRegistry
