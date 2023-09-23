@@ -206,10 +206,13 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
                 spec.field_ctx.name
             ),
         )
-        lines.append(
-            f"raise InvalidFieldValue('{spec.field_ctx.name}',{field_type},"
-            f"value,cls)"
-        )
+        if spec.is_root:
+            lines.append("raise ValueError(value)")
+        else:
+            lines.append(
+                f"raise InvalidFieldValue('{spec.field_ctx.name}',{field_type},"
+                f"value,cls)"
+            )
 
 
 class TypeVarUnpackerBuilder(UnionUnpackerBuilder):

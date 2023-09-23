@@ -283,10 +283,13 @@ def pack_union(
                 spec.field_ctx.name
             ),
         )
-        lines.append(
-            f"raise InvalidFieldValue('{spec.field_ctx.name}',{field_type},"
-            f"value,type(self))"
-        )
+        if spec.is_root:
+            lines.append("raise ValueError(value)")
+        else:
+            lines.append(
+                f"raise InvalidFieldValue("
+                f"'{spec.field_ctx.name}',{field_type},value,type(self))"
+            )
     lines.append(f"setattr(cls, '{method_name}', {method_name})")
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
@@ -339,10 +342,13 @@ def pack_literal(spec: ValueSpec) -> Expression:
             typ=spec.type,
             resolved_type_params=resolved_type_params,
         )
-        lines.append(
-            f"raise InvalidFieldValue('{spec.field_ctx.name}',"
-            f"{field_type},value,type(self))"
-        )
+        if spec.is_root:
+            lines.append("raise ValueError(value)")
+        else:
+            lines.append(
+                f"raise InvalidFieldValue('{spec.field_ctx.name}',"
+                f"{field_type},value,type(self))"
+            )
     lines.append(f"setattr(cls, '{method_name}', {method_name})")
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")

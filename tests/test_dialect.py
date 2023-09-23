@@ -1200,3 +1200,52 @@ def test_dialect_no_copy():
     assert data["e"] is not obj.e
     assert data["f"] is obj.f
     assert data["g"] is not obj.g
+
+
+def test_dialect_merge():
+    class DialectA(Dialect):
+        omit_none = True
+        omit_default = True
+        no_copy_collections = [set, dict]
+        serialization_strategy = {
+            date: {
+                "serialize": date.toordinal,
+                "deserialize": date.fromordinal,
+            },
+            int: HexSerializationStrategy(),
+            float: {
+                "serialize": pass_through,
+                "deserialize": float,
+            },
+        }
+
+    class DialectB(Dialect):
+        omit_none = False
+        omit_default = False
+        no_copy_collections = [list]
+        serialization_strategy = {
+            date: pass_through,
+            int: {
+                "serialize": int,
+                "deserialize": int,
+            },
+            float: {
+                "serialize": float,
+            },
+        }
+
+    DialectC = DialectA.merge(DialectB)
+    assert DialectC.omit_none is False
+    assert DialectC.omit_default is False
+    assert DialectC.no_copy_collections == [list]
+    assert DialectC.serialization_strategy == {
+        date: pass_through,
+        int: {
+            "serialize": int,
+            "deserialize": int,
+        },
+        float: {
+            "serialize": float,
+            "deserialize": float,
+        },
+    }

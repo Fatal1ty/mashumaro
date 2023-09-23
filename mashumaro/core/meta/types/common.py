@@ -80,6 +80,7 @@ class ValueSpec:
     annotated_type: Optional[Type] = None
     owner: Optional[Type] = None
     no_copy_collections: Sequence = tuple()
+    is_root: bool = False
 
     def __setattr__(self, key: str, value: Any) -> None:
         if key == "type":
@@ -92,10 +93,6 @@ class ValueSpec:
     @cached_property
     def annotations(self) -> Sequence[str]:
         return getattr(self.annotated_type, "__metadata__", [])
-
-    @property
-    def is_root(self) -> bool:
-        return self.field_ctx.name == ""
 
 
 ValueSpecExprCreator: TypeAlias = Callable[[ValueSpec], Optional[Expression]]

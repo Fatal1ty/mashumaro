@@ -15,20 +15,7 @@ class NameSpace:
 class CodecCodeBuilder(CodeBuilder):
     @classmethod
     def new(cls, **kwargs: Any) -> "CodecCodeBuilder":
-        return cls(new_class("ns", bases=(NameSpace,)), **kwargs)
-
-    def get_field_resolved_type_params(
-        self, field_name: str
-    ) -> Dict[Type, Type]:
-        return {}
-
-    def _get_real_type(self, field_name: str, field_type: Type) -> Type:
-        if issubclass(self.cls, NameSpace):
-            return field_type
-        cls = self._get_field_class(field_name)
-        return substitute_type_params(
-            field_type, self.resolved_type_params[cls]
-        )
+        return cls(new_class("root", bases=(NameSpace,)), **kwargs)
 
     def add_decode_method(
         self,
@@ -48,6 +35,7 @@ class CodecCodeBuilder(CodeBuilder):
                     builder=self,
                     field_ctx=FieldContext(name="", metadata={}),
                     could_be_none=False,
+                    is_root=True,
                 )
             )
             self.add_line(f"return {unpacked_value}")
@@ -74,6 +62,7 @@ class CodecCodeBuilder(CodeBuilder):
                     no_copy_collections=self._get_dialect_or_config_option(
                         "no_copy_collections", ()
                     ),
+                    is_root=True,
                 )
             )
             if post_encoder_func:
