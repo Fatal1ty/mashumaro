@@ -1533,7 +1533,7 @@ class Entity(DataClassDictMixin):
 
 By default, a field of `date` type serializes to a string in ISO 8601 format,
 so the serialized entity will look like `{'dt': '2021-12-31'}`. But what if we
-have, for example, two sensitive legacy Ethiopian and Japanese APIs that use
+have, for example, two sensitive legacy Ethiopian and Chinese APIs that use
 two different formats for dates — `dd/mm/yyyy` and `yyyy年mm月dd日`? Instead of
 creating two similar dataclasses we can have one dataclass and two dialects:
 ```python
@@ -1559,7 +1559,7 @@ class EthiopianDialect(Dialect):
         date: DateTimeSerializationStrategy("%d/%m/%Y")
     }
 
-class JapaneseDialect(Dialect):
+class ChineseDialect(Dialect):
     serialization_strategy = {
         date: DateTimeSerializationStrategy("%Y年%m月%d日")
     }
@@ -1573,8 +1573,8 @@ class Entity(DataClassDictMixin):
 
 entity = Entity(date(2021, 12, 31))
 entity.to_dict(dialect=EthiopianDialect)  # {'dt': '31/12/2021'}
-entity.to_dict(dialect=JapaneseDialect)   # {'dt': '2021年12月31日'}
-Entity.from_dict({'dt': '2021年12月31日'}, dialect=JapaneseDialect)
+entity.to_dict(dialect=ChineseDialect)   # {'dt': '2021年12月31日'}
+Entity.from_dict({'dt': '2021年12月31日'}, dialect=ChineseDialect)
 ```
 
 #### `serialization_strategy` dialect option
@@ -1654,7 +1654,7 @@ class Entity(DataClassDictMixin):
     dt: date
 
     class Config:
-        dialect = JapaneseDialect
+        dialect = ChineseDialect
 
 entity = Entity(date(2021, 12, 31))
 entity.to_dict()  # {'dt': '2021年12月31日'}
