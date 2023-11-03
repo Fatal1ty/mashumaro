@@ -580,7 +580,8 @@ class CodeBuilder:
                 packed_value = "value"
             else:
                 self.add_line(
-                    f"__{fname} = d.get('{alias or fname}', MISSING)")
+                    f"__{fname} = d.get('{alias or fname}', MISSING)"
+                )
                 packed_value = f"__{fname}"
                 unpacked_value = packed_value
         if not has_default:
