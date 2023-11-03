@@ -183,6 +183,7 @@ def test_by_field_with_loose_deserialize():
     class DataClass(DataClassDictMixin):
         a: int = field(metadata={"alias": "alias_a"})
         b: Optional[int] = field(metadata={"alias": "alias_b"})
+        c: Optional[str] = field(metadata={"alias": "alias_c"}, default="789")
 
         class Config(BaseConfig):
             serialize_by_alias = True
@@ -191,5 +192,9 @@ def test_by_field_with_loose_deserialize():
 
     instance = DataClass(a=123, b=456)
     assert DataClass.from_dict({"a": 123, "alias_b": 456}) == instance
-    assert instance.to_dict() == {"alias_a": 123, "alias_b": 456}
-    assert instance.to_dict(by_alias=False) == {"a": 123, "b": 456}
+    assert instance.to_dict() == {
+        "alias_a": 123,
+        "alias_b": 456,
+        "alias_c": "789",
+    }
+    assert instance.to_dict(by_alias=False) == {"a": 123, "b": 456, "c": "789"}
