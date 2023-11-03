@@ -187,7 +187,7 @@ def test_by_field_with_loose_deserialize():
         class Config(BaseConfig):
             serialize_by_alias = True
             code_generation_options = [TO_DICT_ADD_BY_ALIAS_FLAG]
-            loose_deserialization = True
+            allow_deserialization_not_by_alias = True
 
     instance = DataClass(a=123, b=456)
     assert DataClass.from_dict({"a": 123, "alias_b": 456}) == instance

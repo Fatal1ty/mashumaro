@@ -554,7 +554,7 @@ class CodeBuilder:
                 could_be_none=False if could_be_none else True,
             )
         )
-        if self.get_config().loose_deserialization:
+        if self.get_config().allow_deserialization_not_by_alias:
             if unpacked_value != "value":
                 self.add_line(f"value = d.get('{alias}', MISSING)")
                 with self.indent("if value is MISSING:"):
