@@ -67,6 +67,7 @@ Table of contents
         * [`discriminator` config option](#discriminator-config-option)
         * [`lazy_compilation` config option](#lazy_compilation-config-option)
         * [`sort_keys` config option](#sort_keys-config-option)
+        * [`loose_deserialization` config option](#loose_deserialization-config-option)
     * [Passing field values as is](#passing-field-values-as-is)
     * [Extending existing types](#extending-existing-types)
     * [Dialects](#dialects)
@@ -1389,6 +1390,36 @@ class SortedDataClass(DataClassDictMixin):
 
 t = SortedDataClass(1, 2)
 assert t.to_dict() == {"bar": 2, "foo": 1}
+```
+
+#### `loose_deserialization` config option
+
+When using aliases, the deserializer defaults to requiring the keys to match
+what is defined as the alias in the metadata.
+If the flexibility to deserialize aliased and unaliased keys is required then
+the config option `loose_deserialization = True` can be set to enable the
+feature.
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig, TO_DICT_ADD_BY_ALIAS_FLAG
+
+@dataclass
+class AliasedDataClass(DataClassDictMixin):
+    foo: int = field(metadata={"alias": "alias_foo"})
+    bar: int = field(metadata={"alias": "alias_bar"})
+
+    class Config(BaseConfig):
+        serialize_by_alias = True
+        loose_deserialization = True
+        code_generation_options = [TO_DICT_ADD_BY_ALIAS_FLAG]
+
+no_alias_dict = {"bar": 2, "foo": 1}
+# Will raise `mashumaro.exceptions.MissingField` if loose_deserialization is
+# False
+t = AliasedDataClass.from_dict(no_alias_dict)
+assert t.to_dict(by_alias=False) == {"bar": 2, "foo": 1}
 ```
 
 ### Passing field values as is

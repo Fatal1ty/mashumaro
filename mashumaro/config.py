@@ -49,3 +49,5 @@ class BaseConfig:
     discriminator: Optional[Discriminator] = None
     lazy_compilation: bool = False
     sort_keys: bool = False
+    loose_deserialization: bool = False
+
