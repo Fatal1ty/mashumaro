@@ -556,13 +556,19 @@ class CodeBuilder:
         )
         if self.get_config().loose_deserialization:
             if unpacked_value != "value":
-                self.add_line(f"value = d.get('{alias}', d.get('{fname}', MISSING))")
+                self.add_line(
+                    f"value = d.get('{alias}', d.get('{fname}', MISSING))"
+                )
                 packed_value = "value"
             elif has_default:
-                self.add_line(f"value = d.get('{alias}', d.get('{fname}', MISSING))")
+                self.add_line(
+                    f"value = d.get('{alias}', d.get('{fname}', MISSING))"
+                )
                 packed_value = "value"
             else:
-                self.add_line(f"__{fname} = d.get('{alias}', d.get('{fname}', MISSING))")
+                self.add_line(
+                    f"__{fname} = d.get('{alias}', d.get('{fname}', MISSING))"
+                )
                 packed_value = f"__{fname}"
                 unpacked_value = packed_value
         else:

@@ -193,4 +193,3 @@ def test_by_field_with_loose_deserialize():
     assert DataClass.from_dict({"a": 123, "alias_b": 456}) == instance
     assert instance.to_dict() == {"alias_a": 123, "alias_b": 456}
     assert instance.to_dict(by_alias=False) == {"a": 123, "b": 456}
-
