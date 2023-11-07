@@ -43,7 +43,7 @@ import pytest
 from typing_extensions import Final, LiteralString
 
 from mashumaro import DataClassDictMixin
-from mashumaro.config import BaseConfig
+from mashumaro.config import BaseConfig, TO_DICT_ADD_BY_ALIAS_FLAG
 from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
 from mashumaro.exceptions import (
     InvalidFieldValue,
@@ -510,6 +510,29 @@ def test_one_level(value_info):
     instance = DataClass(x_value)
     dumped = {"x": x_value_dumped}
     instance_dumped = instance.to_dict()
+    instance_loaded = DataClass.from_dict(dumped)
+    assert instance_dumped == dumped
+    assert instance_loaded == instance
+    assert same_types(instance_dumped, dumped)
+    assert same_types(instance_loaded.x, x_value)
+
+
+@pytest.mark.parametrize("value_info", inner_values)
+@pytest.mark.parametrize("use_alias", [False, True])
+def test_level_one_with_aliased_unaliased_fields(value_info, use_alias):
+    x_type, x_value, x_value_dumped = value_info
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: x_type = field(metadata={"alias": "alias_x"})
+
+        class Config(BaseConfig):
+            allow_deserialization_not_by_alias = True
+            code_generation_options = [TO_DICT_ADD_BY_ALIAS_FLAG]
+
+    instance = DataClass(x_value)
+    dumped = {"alias_x" if use_alias else "x": x_value_dumped}
+    instance_dumped = instance.to_dict(by_alias=use_alias)
     instance_loaded = DataClass.from_dict(dumped)
     assert instance_dumped == dumped
     assert instance_loaded == instance
