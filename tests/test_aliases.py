@@ -176,3 +176,50 @@ def test_no_serialize_by_alias_with_serialize_by_alias_and_optional():
 
     assert DataClass(x=123).to_dict() == {"alias": 123}
     assert DataClass(x=None).to_dict() == {"alias": None}
+
+
+def test_by_field_with_loose_deserialize():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        a: int = field(metadata={"alias": "alias_a"})
+        b: Optional[int] = field(metadata={"alias": "alias_b"})
+        c: Optional[str] = field(metadata={"alias": "alias_c"})
+        d: int = field(metadata={"alias": "alias_d"}, default=4)
+        e: Optional[int] = field(metadata={"alias": "alias_e"}, default=5)
+        f: Optional[str] = field(metadata={"alias": "alias_f"}, default="6")
+
+        class Config(BaseConfig):
+            serialize_by_alias = True
+            code_generation_options = [TO_DICT_ADD_BY_ALIAS_FLAG]
+            allow_deserialization_not_by_alias = True
+
+    instance = DataClass(a=1, b=2, c="3")
+    assert (
+        DataClass.from_dict(
+            {
+                "a": 1,
+                "alias_b": 2,
+                "c": "3",
+                "alias_d": 4,
+                "e": 5,
+                "alias_f": "6",
+            }
+        )
+        == instance
+    )
+    assert instance.to_dict() == {
+        "alias_a": 1,
+        "alias_b": 2,
+        "alias_c": "3",
+        "alias_d": 4,
+        "alias_e": 5,
+        "alias_f": "6",
+    }
+    assert instance.to_dict(by_alias=False) == {
+        "a": 1,
+        "b": 2,
+        "c": "3",
+        "d": 4,
+        "e": 5,
+        "f": "6",
+    }

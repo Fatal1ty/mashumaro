@@ -43,7 +43,7 @@ import pytest
 from typing_extensions import Final, LiteralString
 
 from mashumaro import DataClassDictMixin
-from mashumaro.config import BaseConfig
+from mashumaro.config import BaseConfig, TO_DICT_ADD_BY_ALIAS_FLAG
 from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
 from mashumaro.exceptions import (
     InvalidFieldValue,
