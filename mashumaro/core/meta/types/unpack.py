@@ -181,8 +181,8 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
         )
         if spec.builder.is_nailed:
             lines.append(
-                f"raise InvalidFieldValue('{spec.field_ctx.name}',{field_type},"
-                f"value,cls)"
+                f"raise InvalidFieldValue("
+                f"'{spec.field_ctx.name}',{field_type},value,cls)"
             )
         else:
             lines.append("raise ValueError(value)")

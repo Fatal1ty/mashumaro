@@ -670,9 +670,11 @@ def test_by_supertypes_and_subtypes():
             unannotated=UnannotatedVariantDateSubtype(DT_DATE),
             class_var=ClassVarVariantDateSubtype(DT_DATE),
             literal=LiteralVariantStr(DT_STR),
-            # using final without field discriminator can lead to unexpected result
+            # using final without field discriminator
+            # can lead to unexpected result
             final=FinalVariantDateSubtype(DT_DATE, type=VariantType.STR),
-            # using enum without field discriminator can lead to unexpected result
+            # using enum without field discriminator
+            # can lead to unexpected result
             enum=EnumVariantDateSubtype(DT_DATE, type=VariantType.STR),
         )
 
