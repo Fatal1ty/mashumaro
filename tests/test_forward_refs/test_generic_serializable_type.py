@@ -26,9 +26,6 @@ class Foo(Generic[T], SerializableType, use_annotations=True):
     def __eq__(self, other: Foo) -> bool:
         return self.a == other.a
 
-    def __repr__(self):
-        return f"Foo(a={self.a})"
-
 
 @dataclass
 class Bar(DataClassDictMixin):

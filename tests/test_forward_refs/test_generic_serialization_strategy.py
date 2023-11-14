@@ -20,9 +20,6 @@ class Foo(Generic[T]):
     def __eq__(self, other: Foo) -> bool:
         return self.a == other.a
 
-    def __repr__(self):
-        return f"Foo(a={self.a})"
-
 
 class FooStrategy(Generic[T], SerializationStrategy):
     def deserialize(self, value: Dict[str, T]) -> Foo[T]:
