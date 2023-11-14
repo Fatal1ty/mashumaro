@@ -168,8 +168,8 @@ class Instance:
         for f_name, f_type in self._self_builder.get_field_types(
             include_extras=True
         ).items():
-            f = self._self_builder.dataclass_fields.get(f_name)  # type: ignore
-            if f and not f.init:
+            f = self._self_builder.dataclass_fields.get(f_name)
+            if not f or f and not f.init:
                 continue
             f_default = f.default
             if f_default is MISSING:
