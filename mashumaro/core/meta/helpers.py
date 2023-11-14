@@ -680,6 +680,8 @@ def get_function_arg_annotation(
     annotation = parameter.annotation
     if annotation is inspect.Signature.empty:
         raise ValueError(f"Argument {arg_name} doesn't have annotation")
+    if isinstance(annotation, str):
+        annotation = ForwardRef(annotation, module=inspect.getmodule(function))
     return annotation
 
 
@@ -689,6 +691,8 @@ def get_function_return_annotation(
     annotation = inspect.signature(function).return_annotation
     if annotation is inspect.Signature.empty:
         raise ValueError("Function doesn't have return annotation")
+    if isinstance(annotation, str):
+        annotation = ForwardRef(annotation, module=inspect.getmodule(function))
     return annotation
 
 
