@@ -155,7 +155,9 @@ class AbstractMethodBuilder(ABC):
     def get_method_prefix(self) -> str:  # pragma: no cover
         raise NotImplementedError
 
-    def _generate_method_name(self, spec: ValueSpec) -> str:
+    def _generate_method_name(
+        self, spec: ValueSpec
+    ) -> str:  # pragma: no cover
         prefix = self.get_method_prefix()
         if prefix:
             prefix = f"{prefix}_"
