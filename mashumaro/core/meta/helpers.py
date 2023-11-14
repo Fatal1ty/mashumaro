@@ -681,6 +681,10 @@ def get_function_arg_annotation(
     annotation = parameter.annotation
     if annotation is inspect.Signature.empty:
         raise ValueError(f"Argument {arg_name} doesn't have annotation")
+    if isinstance(annotation, str):
+        annotation = str_to_forward_ref(
+            annotation, inspect.getmodule(function)
+        )
     return annotation
 
 
@@ -690,6 +694,10 @@ def get_function_return_annotation(
     annotation = inspect.signature(function).return_annotation
     if annotation is inspect.Signature.empty:
         raise ValueError("Function doesn't have return annotation")
+    if isinstance(annotation, str):
+        annotation = str_to_forward_ref(
+            annotation, inspect.getmodule(function)
+        )
     return annotation
 
 
@@ -739,18 +747,21 @@ def is_hashable_type(typ: Any) -> bool:
         return True
 
 
-if PY_39_MIN:
+def str_to_forward_ref(
+    annotation: str, module: Optional[types.ModuleType] = None
+) -> ForwardRef:
+    if PY_39_MIN:
+        return ForwardRef(annotation, module=module)  # type: ignore
+    else:
+        return ForwardRef(annotation)
 
-    def evaluate_forward_ref(
-        typ: ForwardRef, globalns: Any, localns: Any
-    ) -> Optional[Type]:
+
+def evaluate_forward_ref(
+    typ: ForwardRef, globalns: Any, localns: Any
+) -> Optional[Type]:
+    if PY_39_MIN:
         return typ._evaluate(
             globalns, localns, frozenset()
         )  # type: ignore[call-arg]
-
-else:
-
-    def evaluate_forward_ref(
-        typ: ForwardRef, globalns: Any, localns: Any
-    ) -> Optional[Type]:
+    else:
         return typ._evaluate(globalns, localns)  # type: ignore[call-arg]

@@ -310,7 +310,8 @@ class CodeBuilder:
         typ: typing.ForwardRef,
         owner: typing.Optional[typing.Type],
     ) -> typing.Optional[typing.Type]:
-        if not getattr(typ, "__forward_module__", None) and owner:
+        forward_module = getattr(typ, "__forward_module__", None)
+        if not forward_module and owner:
             # We can't get the module in which ForwardRef's value is defined on
             # Python < 3.10, ForwardRef evaluation might not work properly
             # without this information, so we will consider the namespace of
@@ -321,7 +322,7 @@ class CodeBuilder:
                 self.globals,
             )
         else:
-            globalns = self.globals
+            globalns = getattr(forward_module, "__dict__", self.globals)
         return evaluate_forward_ref(typ, globalns, self.__dict__)
 
     def get_declared_hook(self, method_name: str) -> typing.Any:
