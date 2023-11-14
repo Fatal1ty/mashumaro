@@ -178,7 +178,7 @@ def test_no_serialize_by_alias_with_serialize_by_alias_and_optional():
     assert DataClass(x=None).to_dict() == {"alias": None}
 
 
-def test_by_field_with_loose_deserialize():
+def test_by_field_with_allow_deserialization_not_by_alias():
     @dataclass
     class DataClass(DataClassDictMixin):
         a: int = field(metadata={"alias": "alias_a"})
