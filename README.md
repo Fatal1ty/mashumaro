@@ -58,6 +58,7 @@ Table of contents
         * [`serialization_strategy` config option](#serialization_strategy-config-option)
         * [`aliases` config option](#aliases-config-option)
         * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
+        * [`allow_deserialization_not_by_alias` config option](#allow_deserialization_not_by_alias-config-option)
         * [`omit_none` config option](#omit_none-config-option)
         * [`omit_default` config option](#omit_default-config-option)
         * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
@@ -67,7 +68,6 @@ Table of contents
         * [`discriminator` config option](#discriminator-config-option)
         * [`lazy_compilation` config option](#lazy_compilation-config-option)
         * [`sort_keys` config option](#sort_keys-config-option)
-        * [`allow_deserialization_not_by_alias` config option](#allow_deserialization_not_by_alias-config-option)
     * [Passing field values as is](#passing-field-values-as-is)
     * [Extending existing types](#extending-existing-types)
     * [Dialects](#dialects)
@@ -973,8 +973,12 @@ x = DataClass.from_dict({"FieldA": 1, "#invalid": 2})  # DataClass(a=1, b=2)
 x.to_dict()  # {"a": 1, "b": 2}  # no aliases on serialization by default
 ```
 
-If you want to write all the field aliases in one place there is
-[such a config option](#aliases-config-option).
+If you want to write all the field aliases in one place, there is
+[a config option](#aliases-config-option) for that.
+
+If you want to deserialize all the fields by its names along with aliases,
+there is [a config option](#allow_deserialization_not_by_alias-config-option)
+for that.
 
 If you want to serialize all the fields by aliases you have two options to do so:
 * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
@@ -1157,6 +1161,39 @@ class DataClass(DataClassDictMixin):
         serialize_by_alias = True
 
 DataClass(field_a=1).to_dict()  # {'FieldA': 1}
+```
+
+#### `allow_deserialization_not_by_alias` config option
+
+When using aliases, the deserializer defaults to requiring the keys to match
+what is defined as the alias.
+If the flexibility to deserialize aliased and unaliased keys is required then
+the config option `allow_deserialization_not_by_alias = True` can be set to
+enable the feature.
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+
+
+@dataclass
+class AliasedDataClass(DataClassDictMixin):
+    foo: int = field(metadata={"alias": "alias_foo"})
+    bar: int = field(metadata={"alias": "alias_bar"})
+
+    class Config(BaseConfig):
+        allow_deserialization_not_by_alias = True
+
+
+alias_dict = {"alias_foo": 1, "alias_bar": 2}
+t1 = AliasedDataClass.from_dict(alias_dict)
+
+no_alias_dict = {"foo": 1, "bar": 2}
+# This would raise `mashumaro.exceptions.MissingField`
+# if allow_deserialization_not_by_alias was False
+t2 = AliasedDataClass.from_dict(no_alias_dict)
+assert t1 == t2
 ```
 
 #### `omit_none` config option
@@ -1390,39 +1427,6 @@ class SortedDataClass(DataClassDictMixin):
 
 t = SortedDataClass(1, 2)
 assert t.to_dict() == {"bar": 2, "foo": 1}
-```
-
-#### `allow_deserialization_not_by_alias` config option
-
-When using aliases, the deserializer defaults to requiring the keys to match
-what is defined as the alias.
-If the flexibility to deserialize aliased and unaliased keys is required then
-the config option `allow_deserialization_not_by_alias = True` can be set to
-enable the feature.
-
-```python
-from dataclasses import dataclass, field
-from mashumaro import DataClassDictMixin
-from mashumaro.config import BaseConfig
-
-
-@dataclass
-class AliasedDataClass(DataClassDictMixin):
-    foo: int = field(metadata={"alias": "alias_foo"})
-    bar: int = field(metadata={"alias": "alias_bar"})
-
-    class Config(BaseConfig):
-        allow_deserialization_not_by_alias = True
-
-
-alias_dict = {"alias_foo": 1, "alias_bar": 2}
-t1 = AliasedDataClass.from_dict(alias_dict)
-
-no_alias_dict = {"foo": 1, "bar": 2}
-# This would raise `mashumaro.exceptions.MissingField`
-# if allow_deserialization_not_by_alias was False
-t2 = AliasedDataClass.from_dict(no_alias_dict)
-assert t1 == t2
 ```
 
 ### Passing field values as is
