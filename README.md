@@ -1395,7 +1395,7 @@ assert t.to_dict() == {"bar": 2, "foo": 1}
 #### `allow_deserialization_not_by_alias` config option
 
 When using aliases, the deserializer defaults to requiring the keys to match
-what is defined as the alias in the metadata.
+what is defined as the alias.
 If the flexibility to deserialize aliased and unaliased keys is required then
 the config option `allow_deserialization_not_by_alias = True` can be set to
 enable the feature.
@@ -1403,7 +1403,7 @@ enable the feature.
 ```python
 from dataclasses import dataclass, field
 from mashumaro import DataClassDictMixin
-from mashumaro.config import BaseConfig, TO_DICT_ADD_BY_ALIAS_FLAG
+from mashumaro.config import BaseConfig
 
 
 @dataclass
@@ -1412,16 +1412,17 @@ class AliasedDataClass(DataClassDictMixin):
     bar: int = field(metadata={"alias": "alias_bar"})
 
     class Config(BaseConfig):
-        serialize_by_alias = True
         allow_deserialization_not_by_alias = True
-        code_generation_options = [TO_DICT_ADD_BY_ALIAS_FLAG]
 
 
-no_alias_dict = {"bar": 2, "foo": 1}
-# Will raise `mashumaro.exceptions.MissingField` if allow_deserialization_not_by_alias is
-# False
-t = AliasedDataClass.from_dict(no_alias_dict)
-assert t.to_dict(by_alias=False) == {"bar": 2, "foo": 1}
+alias_dict = {"alias_foo": 1, "alias_bar": 2}
+t1 = AliasedDataClass.from_dict(alias_dict)
+
+no_alias_dict = {"foo": 1, "bar": 2}
+# This would raise `mashumaro.exceptions.MissingField`
+# if allow_deserialization_not_by_alias was False
+t2 = AliasedDataClass.from_dict(no_alias_dict)
+assert t1 == t2
 ```
 
 ### Passing field values as is
