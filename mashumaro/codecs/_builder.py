@@ -1,5 +1,4 @@
 from dataclasses import is_dataclass
-from types import new_class
 from typing import Any, Callable, Optional, Type
 
 from mashumaro.core.meta.code.builder import CodeBuilder
