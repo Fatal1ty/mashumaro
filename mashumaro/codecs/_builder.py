@@ -1,21 +1,24 @@
+from dataclasses import is_dataclass
 from types import new_class
 from typing import Any, Callable, Optional, Type
 
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import is_optional, is_type_var_any
-from mashumaro.core.meta.types.common import FieldContext, ValueSpec
+from mashumaro.core.meta.types.common import (
+    AttrsHolder,
+    FieldContext,
+    ValueSpec,
+)
 from mashumaro.core.meta.types.pack import PackerRegistry
 from mashumaro.core.meta.types.unpack import UnpackerRegistry
-
-
-class NameSpace:
-    pass
 
 
 class CodecCodeBuilder(CodeBuilder):
     @classmethod
     def new(cls, **kwargs: Any) -> "CodecCodeBuilder":
-        return cls(new_class("root", bases=(NameSpace,)), **kwargs)
+        if "attrs" not in kwargs:
+            kwargs["attrs"] = AttrsHolder()
+        return cls(AttrsHolder("__root__"), **kwargs)
 
     def add_decode_method(
         self,
@@ -42,11 +45,14 @@ class CodecCodeBuilder(CodeBuilder):
                     builder=self,
                     field_ctx=FieldContext(name="", metadata={}),
                     could_be_none=could_be_none,
-                    is_root=True,
                 )
             )
             self.add_line(f"return {unpacked_value}")
         self.add_line("setattr(decoder_obj, 'decode', decode)")
+        if pre_decoder_func is None and is_dataclass(shape_type):
+            method_name = unpacked_value.partition("(")[0]
+            self.lines.reset()
+            self.add_line(f"setattr(decoder_obj, 'decode', {method_name})")
         self.ensure_object_imported(decoder_obj, "decoder_obj")
         self.ensure_object_imported(self.cls, "cls")
         self.compile()
@@ -76,7 +82,6 @@ class CodecCodeBuilder(CodeBuilder):
                     no_copy_collections=self._get_dialect_or_config_option(
                         "no_copy_collections", ()
                     ),
-                    is_root=True,
                 )
             )
             if post_encoder_func:
@@ -85,6 +90,10 @@ class CodecCodeBuilder(CodeBuilder):
             else:
                 self.add_line(f"return {packed_value}")
         self.add_line("setattr(encoder_obj, 'encode', encode)")
+        if post_encoder_func is None and is_dataclass(shape_type):
+            method_name = packed_value.partition("(")[0]
+            self.lines.reset()
+            self.add_line(f"setattr(encoder_obj, 'encode', {method_name})")
         self.ensure_object_imported(encoder_obj, "encoder_obj")
         self.ensure_object_imported(self.cls, "cls")
         self.ensure_object_imported(self.cls, "self")

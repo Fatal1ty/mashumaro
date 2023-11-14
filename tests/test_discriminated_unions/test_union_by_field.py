@@ -7,6 +7,7 @@ import pytest
 from typing_extensions import Annotated, Final, Literal
 
 from mashumaro import DataClassDictMixin
+from mashumaro.codecs import Decoder
 from mashumaro.exceptions import InvalidFieldValue
 from mashumaro.types import Discriminator
 
@@ -25,61 +26,61 @@ class VariantType(str, Enum):
 
 
 @dataclass
-class UnannotatedVariantStr(DataClassDictMixin):
+class UnannotatedVariantStr:
     x: str
     type = "str"
 
 
 @dataclass
-class ClassVarVariantStr(DataClassDictMixin):
+class ClassVarVariantStr:
     x: str
     type: ClassVar[str] = "str"
 
 
 @dataclass
-class FinalVariantStr(DataClassDictMixin):
+class FinalVariantStr:
     x: str
     type: Final[str] = "str"
 
 
 @dataclass
-class LiteralVariantStr(DataClassDictMixin):
+class LiteralVariantStr:
     x: str
     type: Literal["str"] = "str"
 
 
 @dataclass
-class EnumVariantStr(DataClassDictMixin):
+class EnumVariantStr:
     x: str
     type: VariantType = VariantType.STR
 
 
 @dataclass
-class UnannotatedVariantDate(DataClassDictMixin):
+class UnannotatedVariantDate:
     x: date
     type = "date"
 
 
 @dataclass
-class ClassVarVariantDate(DataClassDictMixin):
+class ClassVarVariantDate:
     x: date
     type: ClassVar[str] = "date"
 
 
 @dataclass
-class FinalVariantDate(DataClassDictMixin):
+class FinalVariantDate:
     x: date
     type: Final[str] = "date"
 
 
 @dataclass
-class LiteralVariantDate(DataClassDictMixin):
+class LiteralVariantDate:
     x: date
     type: Literal["date"] = "date"
 
 
 @dataclass
-class EnumVariantDate(DataClassDictMixin):
+class EnumVariantDate:
     x: date
     type: VariantType = VariantType.DATE
 
@@ -115,7 +116,7 @@ class EnumVariantDateSubtype(EnumVariantDate):
 
 
 @dataclass
-class ByFieldWithSupertypes(DataClassDictMixin):
+class _ByFieldWithSupertypes:
     unannotated: Annotated[
         Union[UnannotatedVariantStr, UnannotatedVariantDate],
         Discriminator("type", include_supertypes=True),
@@ -139,7 +140,12 @@ class ByFieldWithSupertypes(DataClassDictMixin):
 
 
 @dataclass
-class ByFieldWithSubtypes(DataClassDictMixin):
+class ByFieldWithSupertypes(_ByFieldWithSupertypes, DataClassDictMixin):
+    pass
+
+
+@dataclass
+class _ByFieldWithSubtypes:
     unannotated: Annotated[
         Union[UnannotatedVariantStr, UnannotatedVariantDate],
         Discriminator("type", include_subtypes=True),
@@ -163,7 +169,12 @@ class ByFieldWithSubtypes(DataClassDictMixin):
 
 
 @dataclass
-class BySupertypes(DataClassDictMixin):
+class ByFieldWithSubtypes(_ByFieldWithSubtypes, DataClassDictMixin):
+    pass
+
+
+@dataclass
+class _BySupertypes:
     unannotated: Annotated[
         Union[UnannotatedVariantStr, UnannotatedVariantDate],
         Discriminator(include_supertypes=True),
@@ -187,7 +198,12 @@ class BySupertypes(DataClassDictMixin):
 
 
 @dataclass
-class BySubtypes(DataClassDictMixin):
+class BySupertypes(_BySupertypes, DataClassDictMixin):
+    pass
+
+
+@dataclass
+class _BySubtypes:
     unannotated: Annotated[
         Union[UnannotatedVariantStr, UnannotatedVariantDate],
         Discriminator(include_subtypes=True),
@@ -211,7 +227,12 @@ class BySubtypes(DataClassDictMixin):
 
 
 @dataclass
-class BySupertypesAndSubtypes(DataClassDictMixin):
+class BySubtypes(_BySubtypes, DataClassDictMixin):
+    pass
+
+
+@dataclass
+class _BySupertypesAndSubtypes:
     unannotated: Annotated[
         Union[UnannotatedVariantStr, UnannotatedVariantDate],
         Discriminator(include_supertypes=True, include_subtypes=True),
@@ -235,7 +256,12 @@ class BySupertypesAndSubtypes(DataClassDictMixin):
 
 
 @dataclass
-class ByFieldWithSupertypesAndSubtypes(DataClassDictMixin):
+class BySupertypesAndSubtypes(_BySupertypesAndSubtypes, DataClassDictMixin):
+    pass
+
+
+@dataclass
+class _ByFieldWithSupertypesAndSubtypes:
     unannotated: Annotated[
         Union[UnannotatedVariantStr, UnannotatedVariantDate],
         Discriminator("type", include_supertypes=True, include_subtypes=True),
@@ -259,7 +285,14 @@ class ByFieldWithSupertypesAndSubtypes(DataClassDictMixin):
 
 
 @dataclass
-class ByFieldAndByFieldWithSubtypesInOneField(DataClassDictMixin):
+class ByFieldWithSupertypesAndSubtypes(
+    _ByFieldWithSupertypesAndSubtypes, DataClassDictMixin
+):
+    pass
+
+
+@dataclass
+class _ByFieldAndByFieldWithSubtypesInOneField:
     x: Tuple[
         Annotated[
             Union[UnannotatedVariantStr, UnannotatedVariantDate],
@@ -273,6 +306,13 @@ class ByFieldAndByFieldWithSubtypesInOneField(DataClassDictMixin):
 
 
 @dataclass
+class ByFieldAndByFieldWithSubtypesInOneField(
+    _ByFieldAndByFieldWithSubtypesInOneField, DataClassDictMixin
+):
+    pass
+
+
+@dataclass
 class VariantWitCustomTagger1:
     pass
 
@@ -283,7 +323,7 @@ class VariantWitCustomTagger2:
 
 
 @dataclass
-class VariantWitCustomTaggerOwner(DataClassDictMixin):
+class _VariantWitCustomTaggerOwner:
     x: Annotated[
         Union[VariantWitCustomTagger1, VariantWitCustomTagger2],
         Discriminator(
@@ -294,65 +334,21 @@ class VariantWitCustomTaggerOwner(DataClassDictMixin):
     ]
 
 
+@dataclass
+class VariantWitCustomTaggerOwner(
+    _VariantWitCustomTaggerOwner, DataClassDictMixin
+):
+    pass
+
+
 def test_by_field_with_supertypes():
-    assert ByFieldWithSupertypes.from_dict(
-        {
-            "unannotated": X_STR,
-            "class_var": X_STR,
-            "literal": X_STR,
-            "final": X_STR,
-            "enum": X_STR,
-        }
-    ) == ByFieldWithSupertypes(
-        unannotated=UnannotatedVariantStr(DT_STR),
-        class_var=ClassVarVariantStr(DT_STR),
-        literal=LiteralVariantStr(DT_STR),
-        final=FinalVariantStr(DT_STR),
-        enum=EnumVariantStr(DT_STR),
-    )
+    decoder = Decoder(_ByFieldWithSupertypes)
 
-    assert ByFieldWithSupertypes.from_dict(
-        {
-            "unannotated": X_DATE,
-            "class_var": X_DATE,
-            "literal": X_DATE,
-            "final": X_DATE,
-            "enum": X_DATE,
-        }
-    ) == ByFieldWithSupertypes(
-        unannotated=UnannotatedVariantDate(DT_DATE),
-        class_var=ClassVarVariantDate(DT_DATE),
-        literal=LiteralVariantDate(DT_DATE),
-        final=FinalVariantDate(DT_DATE),
-        enum=EnumVariantDate(DT_DATE),
-    )
-
-    with pytest.raises(InvalidFieldValue) as exc_info:
-        ByFieldWithSupertypes.from_dict(
-            {"unannotated": {"x": "2023-05-30", "type": "date_subtype"}}
-        )
-    assert exc_info.value.field_name == "unannotated"
-
-
-def test_by_field_with_subtypes():
-    assert ByFieldWithSubtypes.from_dict(
-        {
-            "unannotated": X_DATE_SUBTYPE,
-            "class_var": X_DATE_SUBTYPE,
-            "literal": X_DATE_SUBTYPE,
-            "final": X_DATE_SUBTYPE,
-            "enum": X_DATE_SUBTYPE,
-        }
-    ) == ByFieldWithSubtypes(
-        unannotated=UnannotatedVariantDateSubtype(DT_DATE),
-        class_var=ClassVarVariantDateSubtype(DT_DATE),
-        literal=LiteralVariantDateSubtype(DT_DATE),
-        final=FinalVariantDateSubtype(DT_DATE),
-        enum=EnumVariantDateSubtype(DT_DATE),
-    )
-
-    with pytest.raises(InvalidFieldValue) as exc_info:
-        ByFieldWithSubtypes.from_dict(
+    for func, cls in (
+        (ByFieldWithSupertypes.from_dict, ByFieldWithSupertypes),
+        (decoder.decode, _ByFieldWithSupertypes),
+    ):
+        assert func(
             {
                 "unannotated": X_STR,
                 "class_var": X_STR,
@@ -360,11 +356,19 @@ def test_by_field_with_subtypes():
                 "final": X_STR,
                 "enum": X_STR,
             }
+        ) == cls(
+            unannotated=UnannotatedVariantStr(DT_STR),
+            class_var=ClassVarVariantStr(DT_STR),
+            literal=LiteralVariantStr(DT_STR),
+            final=FinalVariantStr(DT_STR),
+            enum=EnumVariantStr(DT_STR),
         )
-    assert exc_info.value.field_name == "unannotated"
 
-    with pytest.raises(InvalidFieldValue) as exc_info:
-        ByFieldWithSubtypes.from_dict(
+    for func, cls in (
+        (ByFieldWithSupertypes.from_dict, ByFieldWithSupertypes),
+        (decoder.decode, _ByFieldWithSupertypes),
+    ):
+        assert func(
             {
                 "unannotated": X_DATE,
                 "class_var": X_DATE,
@@ -372,97 +376,28 @@ def test_by_field_with_subtypes():
                 "final": X_DATE,
                 "enum": X_DATE,
             }
+        ) == cls(
+            unannotated=UnannotatedVariantDate(DT_DATE),
+            class_var=ClassVarVariantDate(DT_DATE),
+            literal=LiteralVariantDate(DT_DATE),
+            final=FinalVariantDate(DT_DATE),
+            enum=EnumVariantDate(DT_DATE),
         )
-    assert exc_info.value.field_name == "unannotated"
+
+    for func in (ByFieldWithSupertypes.from_dict, decoder.decode):
+        with pytest.raises(InvalidFieldValue) as exc_info:
+            func({"unannotated": {"x": "2023-05-30", "type": "date_subtype"}})
+        assert exc_info.value.field_name == "unannotated"
 
 
-def test_by_field_with_supertypes_and_subtypes():
-    assert ByFieldWithSupertypesAndSubtypes.from_dict(
-        {
-            "unannotated": X_STR,
-            "class_var": X_STR,
-            "literal": X_STR,
-            "final": X_STR,
-            "enum": X_STR,
-        }
-    ) == ByFieldWithSupertypesAndSubtypes(
-        unannotated=UnannotatedVariantStr(DT_STR),
-        class_var=ClassVarVariantStr(DT_STR),
-        literal=LiteralVariantStr(DT_STR),
-        final=FinalVariantStr(DT_STR),
-        enum=EnumVariantStr(DT_STR),
-    )
+def test_by_field_with_subtypes():
+    decoder = Decoder(_ByFieldWithSubtypes)
 
-    assert ByFieldWithSupertypesAndSubtypes.from_dict(
-        {
-            "unannotated": X_DATE,
-            "class_var": X_DATE,
-            "literal": X_DATE,
-            "final": X_DATE,
-            "enum": X_DATE,
-        }
-    ) == ByFieldWithSupertypesAndSubtypes(
-        unannotated=UnannotatedVariantDate(DT_DATE),
-        class_var=ClassVarVariantDate(DT_DATE),
-        literal=LiteralVariantDate(DT_DATE),
-        final=FinalVariantDate(DT_DATE),
-        enum=EnumVariantDate(DT_DATE),
-    )
-
-    assert ByFieldWithSupertypesAndSubtypes.from_dict(
-        {
-            "unannotated": X_DATE_SUBTYPE,
-            "class_var": X_DATE_SUBTYPE,
-            "literal": X_DATE_SUBTYPE,
-            "final": X_DATE_SUBTYPE,
-            "enum": X_DATE_SUBTYPE,
-        }
-    ) == ByFieldWithSupertypesAndSubtypes(
-        unannotated=UnannotatedVariantDateSubtype(DT_DATE),
-        class_var=ClassVarVariantDateSubtype(DT_DATE),
-        literal=LiteralVariantDateSubtype(DT_DATE),
-        final=FinalVariantDateSubtype(DT_DATE),
-        enum=EnumVariantDateSubtype(DT_DATE),
-    )
-
-
-def test_by_supertypes():
-    assert BySupertypes.from_dict(
-        {
-            "unannotated": X_STR,
-            "class_var": X_STR,
-            "literal": X_STR,
-            "final": X_STR,
-            "enum": X_STR,
-        }
-    ) == BySupertypes(
-        unannotated=UnannotatedVariantStr(DT_STR),
-        class_var=ClassVarVariantStr(DT_STR),
-        literal=LiteralVariantStr(DT_STR),
-        final=FinalVariantStr(DT_STR),
-        enum=EnumVariantStr(DT_STR),
-    )
-
-    assert BySupertypes.from_dict(
-        {
-            "unannotated": X_DATE,
-            "class_var": X_DATE,
-            "literal": X_DATE,
-            "final": X_DATE,
-            "enum": X_DATE,
-        }
-    ) == BySupertypes(
-        unannotated=UnannotatedVariantStr(DT_STR),
-        class_var=ClassVarVariantStr(DT_STR),
-        literal=LiteralVariantDate(DT_DATE),
-        # using final without field discriminator can lead to unexpected result
-        final=FinalVariantStr(DT_STR, type=VariantType.DATE),
-        # using enum without field discriminator can lead to unexpected result
-        enum=EnumVariantStr(DT_STR, type=VariantType.DATE),
-    )
-
-    with pytest.raises(InvalidFieldValue) as exc_info:
-        BySupertypes.from_dict(
+    for func, cls in (
+        (ByFieldWithSubtypes.from_dict, ByFieldWithSubtypes),
+        (decoder.decode, _ByFieldWithSubtypes),
+    ):
+        assert func(
             {
                 "unannotated": X_DATE_SUBTYPE,
                 "class_var": X_DATE_SUBTYPE,
@@ -470,47 +405,52 @@ def test_by_supertypes():
                 "final": X_DATE_SUBTYPE,
                 "enum": X_DATE_SUBTYPE,
             }
+        ) == cls(
+            unannotated=UnannotatedVariantDateSubtype(DT_DATE),
+            class_var=ClassVarVariantDateSubtype(DT_DATE),
+            literal=LiteralVariantDateSubtype(DT_DATE),
+            final=FinalVariantDateSubtype(DT_DATE),
+            enum=EnumVariantDateSubtype(DT_DATE),
         )
-    assert exc_info.value.field_name == "literal"
+
+    for func in (ByFieldWithSubtypes.from_dict, decoder.decode):
+        with pytest.raises(InvalidFieldValue) as exc_info:
+            func(
+                {
+                    "unannotated": X_STR,
+                    "class_var": X_STR,
+                    "literal": X_STR,
+                    "final": X_STR,
+                    "enum": X_STR,
+                }
+            )
+        assert exc_info.value.field_name == "unannotated"
+
+    for func in (ByFieldWithSubtypes.from_dict, decoder.decode):
+        with pytest.raises(InvalidFieldValue) as exc_info:
+            func(
+                {
+                    "unannotated": X_DATE,
+                    "class_var": X_DATE,
+                    "literal": X_DATE,
+                    "final": X_DATE,
+                    "enum": X_DATE,
+                }
+            )
+        assert exc_info.value.field_name == "unannotated"
 
 
-def test_by_subtypes():
-    assert BySubtypes.from_dict(
-        {
-            "unannotated": X_DATE_SUBTYPE,
-            "class_var": X_DATE_SUBTYPE,
-            "literal": X_DATE_SUBTYPE,
-            "final": X_DATE_SUBTYPE,
-            "enum": X_DATE_SUBTYPE,
-        }
-    ) == BySubtypes(
-        unannotated=UnannotatedVariantDateSubtype(DT_DATE),
-        class_var=ClassVarVariantDateSubtype(DT_DATE),
-        literal=LiteralVariantDateSubtype(DT_DATE),
-        final=FinalVariantDateSubtype(DT_DATE),
-        enum=EnumVariantDateSubtype(DT_DATE),
-    )
+def test_by_field_with_supertypes_and_subtypes():
+    decoder = Decoder(_ByFieldWithSupertypesAndSubtypes)
 
-    assert BySubtypes.from_dict(
-        {
-            "unannotated": X_DATE,
-            "class_var": X_DATE,
-            "literal": X_DATE_SUBTYPE,
-            "final": X_DATE,
-            "enum": X_DATE,
-        }
-    ) == BySubtypes(
-        unannotated=UnannotatedVariantDateSubtype(DT_DATE),
-        class_var=ClassVarVariantDateSubtype(DT_DATE),
-        literal=LiteralVariantDateSubtype(DT_DATE),
-        # using final without field discriminator can lead to unexpected result
-        final=FinalVariantDateSubtype(DT_DATE, type=VariantType.DATE),
-        # using enum without field discriminator can lead to unexpected result
-        enum=EnumVariantDateSubtype(DT_DATE, type=VariantType.DATE),
-    )
-
-    with pytest.raises(InvalidFieldValue) as exc_info:
-        BySubtypes.from_dict(
+    for func, cls in (
+        (
+            ByFieldWithSupertypesAndSubtypes.from_dict,
+            ByFieldWithSupertypesAndSubtypes,
+        ),
+        (decoder.decode, _ByFieldWithSupertypesAndSubtypes),
+    ):
+        assert func(
             {
                 "unannotated": X_STR,
                 "class_var": X_STR,
@@ -518,91 +458,291 @@ def test_by_subtypes():
                 "final": X_STR,
                 "enum": X_STR,
             }
+        ) == cls(
+            unannotated=UnannotatedVariantStr(DT_STR),
+            class_var=ClassVarVariantStr(DT_STR),
+            literal=LiteralVariantStr(DT_STR),
+            final=FinalVariantStr(DT_STR),
+            enum=EnumVariantStr(DT_STR),
         )
-    assert exc_info.value.field_name == "literal"
+
+    for func, cls in (
+        (
+            ByFieldWithSupertypesAndSubtypes.from_dict,
+            ByFieldWithSupertypesAndSubtypes,
+        ),
+        (decoder.decode, _ByFieldWithSupertypesAndSubtypes),
+    ):
+        assert func(
+            {
+                "unannotated": X_DATE,
+                "class_var": X_DATE,
+                "literal": X_DATE,
+                "final": X_DATE,
+                "enum": X_DATE,
+            }
+        ) == cls(
+            unannotated=UnannotatedVariantDate(DT_DATE),
+            class_var=ClassVarVariantDate(DT_DATE),
+            literal=LiteralVariantDate(DT_DATE),
+            final=FinalVariantDate(DT_DATE),
+            enum=EnumVariantDate(DT_DATE),
+        )
+
+    for func, cls in (
+        (
+            ByFieldWithSupertypesAndSubtypes.from_dict,
+            ByFieldWithSupertypesAndSubtypes,
+        ),
+        (decoder.decode, _ByFieldWithSupertypesAndSubtypes),
+    ):
+        assert func(
+            {
+                "unannotated": X_DATE_SUBTYPE,
+                "class_var": X_DATE_SUBTYPE,
+                "literal": X_DATE_SUBTYPE,
+                "final": X_DATE_SUBTYPE,
+                "enum": X_DATE_SUBTYPE,
+            }
+        ) == cls(
+            unannotated=UnannotatedVariantDateSubtype(DT_DATE),
+            class_var=ClassVarVariantDateSubtype(DT_DATE),
+            literal=LiteralVariantDateSubtype(DT_DATE),
+            final=FinalVariantDateSubtype(DT_DATE),
+            enum=EnumVariantDateSubtype(DT_DATE),
+        )
+
+
+def test_by_supertypes():
+    decoder = Decoder(_BySupertypes)
+
+    for func, cls in (
+        (BySupertypes.from_dict, BySupertypes),
+        (decoder.decode, _BySupertypes),
+    ):
+        assert func(
+            {
+                "unannotated": X_STR,
+                "class_var": X_STR,
+                "literal": X_STR,
+                "final": X_STR,
+                "enum": X_STR,
+            }
+        ) == cls(
+            unannotated=UnannotatedVariantStr(DT_STR),
+            class_var=ClassVarVariantStr(DT_STR),
+            literal=LiteralVariantStr(DT_STR),
+            final=FinalVariantStr(DT_STR),
+            enum=EnumVariantStr(DT_STR),
+        )
+
+    for func, cls in (
+        (BySupertypes.from_dict, BySupertypes),
+        (decoder.decode, _BySupertypes),
+    ):
+        assert func(
+            {
+                "unannotated": X_DATE,
+                "class_var": X_DATE,
+                "literal": X_DATE,
+                "final": X_DATE,
+                "enum": X_DATE,
+            }
+        ) == cls(
+            unannotated=UnannotatedVariantStr(DT_STR),
+            class_var=ClassVarVariantStr(DT_STR),
+            literal=LiteralVariantDate(DT_DATE),
+            # final without field discriminator can lead to unexpected result
+            final=FinalVariantStr(DT_STR, type=VariantType.DATE),
+            # enum without field discriminator can lead to unexpected result
+            enum=EnumVariantStr(DT_STR, type=VariantType.DATE),
+        )
+
+    for func in (BySupertypes.from_dict, decoder.decode):
+        with pytest.raises(InvalidFieldValue) as exc_info:
+            func(
+                {
+                    "unannotated": X_DATE_SUBTYPE,
+                    "class_var": X_DATE_SUBTYPE,
+                    "literal": X_DATE_SUBTYPE,
+                    "final": X_DATE_SUBTYPE,
+                    "enum": X_DATE_SUBTYPE,
+                }
+            )
+        assert exc_info.value.field_name == "literal"
+
+
+def test_by_subtypes():
+    decoder = Decoder(_BySubtypes)
+
+    for func, cls in (
+        (BySubtypes.from_dict, BySubtypes),
+        (decoder.decode, _BySubtypes),
+    ):
+        assert func(
+            {
+                "unannotated": X_DATE_SUBTYPE,
+                "class_var": X_DATE_SUBTYPE,
+                "literal": X_DATE_SUBTYPE,
+                "final": X_DATE_SUBTYPE,
+                "enum": X_DATE_SUBTYPE,
+            }
+        ) == cls(
+            unannotated=UnannotatedVariantDateSubtype(DT_DATE),
+            class_var=ClassVarVariantDateSubtype(DT_DATE),
+            literal=LiteralVariantDateSubtype(DT_DATE),
+            final=FinalVariantDateSubtype(DT_DATE),
+            enum=EnumVariantDateSubtype(DT_DATE),
+        )
+
+    for func, cls in (
+        (BySubtypes.from_dict, BySubtypes),
+        (decoder.decode, _BySubtypes),
+    ):
+        assert func(
+            {
+                "unannotated": X_DATE,
+                "class_var": X_DATE,
+                "literal": X_DATE_SUBTYPE,
+                "final": X_DATE,
+                "enum": X_DATE,
+            }
+        ) == cls(
+            unannotated=UnannotatedVariantDateSubtype(DT_DATE),
+            class_var=ClassVarVariantDateSubtype(DT_DATE),
+            literal=LiteralVariantDateSubtype(DT_DATE),
+            # final without field discriminator can lead to unexpected result
+            final=FinalVariantDateSubtype(DT_DATE, type=VariantType.DATE),
+            # enum without field discriminator can lead to unexpected result
+            enum=EnumVariantDateSubtype(DT_DATE, type=VariantType.DATE),
+        )
+
+    for func in (BySubtypes.from_dict, decoder.decode):
+        with pytest.raises(InvalidFieldValue) as exc_info:
+            func(
+                {
+                    "unannotated": X_STR,
+                    "class_var": X_STR,
+                    "literal": X_STR,
+                    "final": X_STR,
+                    "enum": X_STR,
+                }
+            )
+        assert exc_info.value.field_name == "literal"
 
 
 def test_by_supertypes_and_subtypes():
-    assert BySupertypesAndSubtypes.from_dict(
-        {
-            "unannotated": X_DATE_SUBTYPE,
-            "class_var": X_DATE_SUBTYPE,
-            "literal": X_DATE_SUBTYPE,
-            "final": X_DATE_SUBTYPE,
-            "enum": X_DATE_SUBTYPE,
-        }
-    ) == BySupertypesAndSubtypes(
-        unannotated=UnannotatedVariantDateSubtype(DT_DATE),
-        class_var=ClassVarVariantDateSubtype(DT_DATE),
-        literal=LiteralVariantDateSubtype(DT_DATE),
-        final=FinalVariantDateSubtype(DT_DATE),
-        enum=EnumVariantDateSubtype(DT_DATE),
-    )
+    decoder = Decoder(_BySupertypesAndSubtypes)
 
-    assert BySupertypesAndSubtypes.from_dict(
-        {
-            "unannotated": X_STR,
-            "class_var": X_STR,
-            "literal": X_STR,
-            "final": X_STR,
-            "enum": X_STR,
-        }
-    ) == BySupertypesAndSubtypes(
-        unannotated=UnannotatedVariantDateSubtype(DT_DATE),
-        class_var=ClassVarVariantDateSubtype(DT_DATE),
-        literal=LiteralVariantStr(DT_STR),
-        # using final without field discriminator can lead to unexpected result
-        final=FinalVariantDateSubtype(DT_DATE, type=VariantType.STR),
-        # using enum without field discriminator can lead to unexpected result
-        enum=EnumVariantDateSubtype(DT_DATE, type=VariantType.STR),
-    )
+    for func, cls in (
+        (BySupertypesAndSubtypes.from_dict, BySupertypesAndSubtypes),
+        (decoder.decode, _BySupertypesAndSubtypes),
+    ):
+        assert func(
+            {
+                "unannotated": X_DATE_SUBTYPE,
+                "class_var": X_DATE_SUBTYPE,
+                "literal": X_DATE_SUBTYPE,
+                "final": X_DATE_SUBTYPE,
+                "enum": X_DATE_SUBTYPE,
+            }
+        ) == cls(
+            unannotated=UnannotatedVariantDateSubtype(DT_DATE),
+            class_var=ClassVarVariantDateSubtype(DT_DATE),
+            literal=LiteralVariantDateSubtype(DT_DATE),
+            final=FinalVariantDateSubtype(DT_DATE),
+            enum=EnumVariantDateSubtype(DT_DATE),
+        )
 
-    assert BySupertypesAndSubtypes.from_dict(
-        {
-            "unannotated": X_DATE,
-            "class_var": X_DATE,
-            "literal": X_DATE,
-            "final": X_DATE,
-            "enum": X_DATE,
-        }
-    ) == BySupertypesAndSubtypes(
-        unannotated=UnannotatedVariantDateSubtype(DT_DATE),
-        class_var=ClassVarVariantDateSubtype(DT_DATE),
-        literal=LiteralVariantDate(DT_DATE),
-        # using final without field discriminator can lead to unexpected result
-        final=FinalVariantDateSubtype(DT_DATE, type=VariantType.DATE),
-        # using enum without field discriminator can lead to unexpected result
-        enum=EnumVariantDateSubtype(DT_DATE, type=VariantType.DATE),
-    )
+    for func, cls in (
+        (BySupertypesAndSubtypes.from_dict, BySupertypesAndSubtypes),
+        (decoder.decode, _BySupertypesAndSubtypes),
+    ):
+        assert func(
+            {
+                "unannotated": X_STR,
+                "class_var": X_STR,
+                "literal": X_STR,
+                "final": X_STR,
+                "enum": X_STR,
+            }
+        ) == cls(
+            unannotated=UnannotatedVariantDateSubtype(DT_DATE),
+            class_var=ClassVarVariantDateSubtype(DT_DATE),
+            literal=LiteralVariantStr(DT_STR),
+            # using final without field discriminator can lead to unexpected result
+            final=FinalVariantDateSubtype(DT_DATE, type=VariantType.STR),
+            # using enum without field discriminator can lead to unexpected result
+            enum=EnumVariantDateSubtype(DT_DATE, type=VariantType.STR),
+        )
+
+    for func, cls in (
+        (BySupertypesAndSubtypes.from_dict, BySupertypesAndSubtypes),
+        (decoder.decode, _BySupertypesAndSubtypes),
+    ):
+        assert func(
+            {
+                "unannotated": X_DATE,
+                "class_var": X_DATE,
+                "literal": X_DATE,
+                "final": X_DATE,
+                "enum": X_DATE,
+            }
+        ) == cls(
+            unannotated=UnannotatedVariantDateSubtype(DT_DATE),
+            class_var=ClassVarVariantDateSubtype(DT_DATE),
+            literal=LiteralVariantDate(DT_DATE),
+            # final without field discriminator can lead to unexpected result
+            final=FinalVariantDateSubtype(DT_DATE, type=VariantType.DATE),
+            # enum without field discriminator can lead to unexpected result
+            enum=EnumVariantDateSubtype(DT_DATE, type=VariantType.DATE),
+        )
 
 
 def test_tuple_with_discriminated_elements():
-    assert ByFieldAndByFieldWithSubtypesInOneField.from_dict(
-        {"x": [X_STR, X_DATE_SUBTYPE]}
-    ) == ByFieldAndByFieldWithSubtypesInOneField(
+    decoder = Decoder(_ByFieldAndByFieldWithSubtypesInOneField)
+
+    for func, cls in (
         (
-            UnannotatedVariantStr(DT_STR),
-            UnannotatedVariantDateSubtype(DT_DATE),
+            ByFieldAndByFieldWithSubtypesInOneField.from_dict,
+            ByFieldAndByFieldWithSubtypesInOneField,
         ),
-    )
-
-    with pytest.raises(InvalidFieldValue):
-        ByFieldAndByFieldWithSubtypesInOneField.from_dict(
-            {"x": [X_DATE_SUBTYPE, X_DATE_SUBTYPE]}
+        (decoder.decode, _ByFieldAndByFieldWithSubtypesInOneField),
+    ):
+        assert func({"x": [X_STR, X_DATE_SUBTYPE]}) == cls(
+            (
+                UnannotatedVariantStr(DT_STR),
+                UnannotatedVariantDateSubtype(DT_DATE),
+            ),
         )
 
-    with pytest.raises(InvalidFieldValue):
-        ByFieldAndByFieldWithSubtypesInOneField.from_dict(
-            {"x": [X_STR, X_STR]}
-        )
+    for func in (
+        ByFieldAndByFieldWithSubtypesInOneField.from_dict,
+        decoder.decode,
+    ):
+        with pytest.raises(InvalidFieldValue):
+            func({"x": [X_DATE_SUBTYPE, X_DATE_SUBTYPE]})
+
+    for func in (
+        ByFieldAndByFieldWithSubtypesInOneField.from_dict,
+        decoder.decode,
+    ):
+        with pytest.raises(InvalidFieldValue):
+            func({"x": [X_STR, X_STR]})
 
 
 def test_by_field_with_subtypes_with_custom_variant_tagger():
-    assert VariantWitCustomTaggerOwner.from_dict(
-        {"x": {"type": "variantwitcustomtagger1"}}
-    ) == VariantWitCustomTaggerOwner(VariantWitCustomTagger1())
-    assert VariantWitCustomTaggerOwner.from_dict(
-        {"x": {"type": "variantwitcustomtagger2"}}
-    ) == VariantWitCustomTaggerOwner(VariantWitCustomTagger2())
-    with pytest.raises(InvalidFieldValue):
-        VariantWitCustomTaggerOwner.from_dict({"x": {"type": "unknown"}})
+    decoder = Decoder(_VariantWitCustomTaggerOwner)
+
+    for func, cls in (
+        (VariantWitCustomTaggerOwner.from_dict, VariantWitCustomTaggerOwner),
+        (decoder.decode, _VariantWitCustomTaggerOwner),
+    ):
+        assert func({"x": {"type": "variantwitcustomtagger1"}}) == cls(
+            VariantWitCustomTagger1()
+        )
+        assert func({"x": {"type": "variantwitcustomtagger2"}}) == cls(
+            VariantWitCustomTagger2()
+        )
+        with pytest.raises(InvalidFieldValue):
+            func({"x": {"type": "unknown"}})

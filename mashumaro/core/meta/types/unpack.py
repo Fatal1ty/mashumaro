@@ -8,7 +8,7 @@ import pathlib
 import types
 import typing
 import uuid
-from abc import ABC, abstractmethod
+from abc import ABC
 from base64 import decodebytes
 from contextlib import suppress
 from dataclasses import is_dataclass
@@ -59,6 +59,8 @@ from mashumaro.core.meta.helpers import (
     type_name,
 )
 from mashumaro.core.meta.types.common import (
+    AbstractMethodBuilder,
+    AttrsHolder,
     Expression,
     ExpressionWrapper,
     NoneType,
@@ -105,11 +107,7 @@ UnpackerRegistry = Registry()
 register = UnpackerRegistry.register
 
 
-class AbstractUnpackerBuilder(ABC):
-    @abstractmethod
-    def get_method_prefix(self) -> str:  # pragma: no cover
-        raise NotImplementedError
-
+class AbstractUnpackerBuilder(AbstractMethodBuilder, ABC):
     def _generate_method_name(self, spec: ValueSpec) -> str:
         prefix = self.get_method_prefix()
         if prefix:
@@ -126,7 +124,7 @@ class AbstractUnpackerBuilder(ABC):
     def _add_definition(self, spec: ValueSpec, lines: CodeLines) -> str:
         method_name = self._generate_method_name(spec)
         method_args = self._generate_method_args(spec)
-        if not spec.is_root:
+        if spec.builder.is_nailed:
             lines.append("@classmethod")
         lines.append(f"def {method_name}({method_args}):")
         return method_name
@@ -141,27 +139,15 @@ class AbstractUnpackerBuilder(ABC):
             extra_args_str = f", {', '.join(extra_args)}"
         else:
             extra_args_str = ""
-        first_args = "value" if spec.is_root else "cls, value"
+        if spec.builder.is_nailed:
+            first_args = "cls, value"
+        else:
+            first_args = "value"
         if default_kwargs:
             return f"{first_args}{extra_args_str}, {default_kwargs}"
         else:  # pragma: no cover
             # we shouldn't be here because there will be default_kwargs
             return f"{first_args}{extra_args_str}"
-
-    @abstractmethod
-    def _add_body(
-        self, spec: ValueSpec, lines: CodeLines
-    ) -> None:  # pragma: no cover
-        raise NotImplementedError
-
-    def _add_setattr(self, method_name: str, lines: CodeLines) -> None:
-        lines.append(f"setattr(cls, '{method_name}', {method_name})")
-
-    def _compile(self, spec: ValueSpec, lines: CodeLines) -> None:
-        if spec.builder.get_config().debug:
-            print(f"{type_name(spec.builder.cls)}:")
-            print(lines.as_text())
-        exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
 
     def _get_call_expr(self, spec: ValueSpec, method_name: str) -> str:
         method_args = ", ".join(
@@ -169,20 +155,7 @@ class AbstractUnpackerBuilder(ABC):
                 None, (spec.expression, spec.builder.get_unpack_method_flags())
             )
         )
-        return f"cls.{method_name}({method_args})"
-
-    def _before_build(self, spec: ValueSpec) -> None:
-        pass
-
-    def build(self, spec: ValueSpec) -> str:
-        self._before_build(spec)
-        lines = CodeLines()
-        method_name = self._add_definition(spec, lines)
-        with lines.indent():
-            self._add_body(spec, lines)
-        self._add_setattr(method_name, lines)
-        self._compile(spec, lines)
-        return self._get_call_expr(spec, method_name)
+        return f"{spec.cls_attrs_name}.{method_name}({method_args})"
 
 
 class UnionUnpackerBuilder(AbstractUnpackerBuilder):
@@ -206,13 +179,13 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
                 spec.field_ctx.name
             ),
         )
-        if spec.is_root:
-            lines.append("raise ValueError(value)")
-        else:
+        if spec.builder.is_nailed:
             lines.append(
                 f"raise InvalidFieldValue('{spec.field_ctx.name}',{field_type},"
                 f"value,cls)"
             )
+        else:
+            lines.append("raise ValueError(value)")
 
 
 class TypeVarUnpackerBuilder(UnionUnpackerBuilder):
@@ -279,7 +252,10 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
 
     def _get_variants_map(self, spec: ValueSpec) -> str:
         variants_attr = self._get_variants_attr(spec)
-        return f"{type_name(spec.builder.cls)}.{variants_attr}"
+        if spec.builder.is_nailed:
+            return f"{type_name(spec.builder.cls)}.{variants_attr}"
+        else:
+            return f"{spec.cls_attrs_name}.{variants_attr}"
 
     def _get_variant_names(self, spec: ValueSpec) -> List[str]:
         base_variants = self.base_variants or (spec.origin_type,)
@@ -305,7 +281,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
 
     @staticmethod
     def _get_variants_attr_holder(spec: ValueSpec) -> Type:
-        return spec.builder.cls
+        return spec.attrs
 
     @staticmethod
     def _get_variant_method_call(method_name: str, spec: ValueSpec) -> str:
@@ -361,7 +337,13 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                     f" from None"
                 )
             with lines.indent("try:"):
-                lines.append(f"return {chosen_cls}.{variant_method_call}")
+                if spec.builder.is_nailed:
+                    lines.append(f"return {chosen_cls}.{variant_method_call}")
+                else:
+                    lines.append(
+                        f"return {spec.attrs_registry_name}"
+                        f"[{chosen_cls}].{variant_method_call}"
+                    )
             with lines.indent("except (KeyError, AttributeError):"):
                 lines.append(f"variants_map = {variants_map}")
                 with lines.indent(f"for variant in {variants}:"):
@@ -371,29 +353,21 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                         )
                     with lines.indent("except KeyError:"):
                         lines.append("continue")
-                    spec.builder.ensure_object_imported(
-                        get_class_that_defines_method
+                    self._add_build_variant_unpacker(
+                        spec, lines, variant_method_name, variant_method_call
                     )
-                    lines.append(
-                        f"if get_class_that_defines_method("
-                        f"'{variant_method_name}',variant) != variant:"
-                    )
-                    with lines.indent():
-                        spec.builder.ensure_object_imported(
-                            spec.builder.__class__
-                        )
-                        lines.append(
-                            f"CodeBuilder(variant, "
-                            f"dialect=_dialect, "
-                            f"format_name={repr(spec.builder.format_name)}, "
-                            f"default_dialect=_default_dialect)"
-                            f".add_unpack_method()"
-                        )
                 with lines.indent("try:"):
-                    lines.append(
-                        f"return variants_map[discriminator]"
-                        f".{variant_method_call}"
-                    )
+                    if spec.builder.is_nailed:
+                        lines.append(
+                            f"return variants_map[discriminator]"
+                            f".{variant_method_call}"
+                        )
+                    else:
+                        lines.append(
+                            f"return {spec.attrs_registry_name}["
+                            f"variants_map[discriminator]]"
+                            f".{variant_method_call}"
+                        )
                 with lines.indent("except KeyError:"):
                     lines.append(
                         f"raise SuitableVariantNotFoundError("
@@ -403,31 +377,21 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         else:
             with lines.indent(f"for variant in {variants}:"):
                 with lines.indent("try:"):
-                    lines.append(f"return variant.{variant_method_call}")
-                with lines.indent("except AttributeError:"):
-                    spec.builder.ensure_object_imported(
-                        get_class_that_defines_method
-                    )
-                    lines.append(
-                        f"if get_class_that_defines_method("
-                        f"'{variant_method_name}',variant) != variant:"
-                    )
-                    with lines.indent():
-                        spec.builder.ensure_object_imported(
-                            spec.builder.__class__
-                        )
+                    if spec.builder.is_nailed:
+                        lines.append(f"return variant.{variant_method_call}")
+                    else:
                         lines.append(
-                            f"CodeBuilder(variant, "
-                            f"dialect=_dialect, "
-                            f"format_name={repr(spec.builder.format_name)}, "
-                            f"default_dialect=_default_dialect)"
-                            f".add_unpack_method()"
+                            f"return {spec.attrs_registry_name}"
+                            f"[variant].{variant_method_call}"
                         )
-                        with lines.indent("try:"):
-                            lines.append(
-                                f"return variant.{variant_method_call}"
-                            )
-                        lines.append("except Exception: pass")
+                if spec.builder.is_nailed:
+                    exc_to_catch = "AttributeError"
+                else:
+                    exc_to_catch = "(KeyError, AttributeError)"
+                with lines.indent(f"except {exc_to_catch}:"):
+                    self._add_build_variant_unpacker(
+                        spec, lines, variant_method_name, variant_method_call
+                    )
                 lines.append("except Exception: pass")
             lines.append(
                 f"raise SuitableVariantNotFoundError({variants_type_expr}) "
@@ -446,7 +410,52 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                 ),
             )
         )
-        return f"cls.{method_name}({method_args})"
+        return f"{spec.cls_attrs_name}.{method_name}({method_args})"
+
+    def _add_build_variant_unpacker(
+        self,
+        spec: ValueSpec,
+        lines: CodeLines,
+        variant_method_name: str,
+        variant_method_call: str,
+    ) -> None:
+        if spec.builder.is_nailed:
+            spec.builder.ensure_object_imported(get_class_that_defines_method)
+            lines.append(
+                f"if get_class_that_defines_method("
+                f"'{variant_method_name}',variant) != variant:"
+            )
+            with lines.indent():
+                spec.builder.ensure_object_imported(spec.builder.__class__)
+                lines.append(
+                    f"CodeBuilder(variant, "
+                    f"dialect=_dialect, "
+                    f"format_name={repr(spec.builder.format_name)}, "
+                    f"default_dialect=_default_dialect)"
+                    f".add_unpack_method()"
+                )
+                if not self.discriminator.field:
+                    with lines.indent("try:"):
+                        lines.append(f"return variant.{variant_method_call}")
+                    lines.append("except Exception: pass")
+        else:
+            spec.builder.ensure_object_imported(AttrsHolder)
+            attrs = f"attrs_{random_hex()}"
+            lines.append(f"{attrs} = AttrsHolder('{attrs}')")
+            lines.append(f"{spec.attrs_registry_name}[variant] = {attrs}")
+            lines.append(
+                f"CodeBuilder(variant, "
+                f"dialect=_dialect, "
+                f"format_name={repr(spec.builder.format_name)}, "
+                f"default_dialect=_default_dialect,"
+                f"attrs={attrs},"
+                f"attrs_registry={spec.attrs_registry_name})"
+                f".add_unpack_method()"
+            )
+            if not self.discriminator.field:
+                with lines.indent("try:"):
+                    lines.append(f"return {attrs}.{variant_method_call}")
+                lines.append("except Exception: pass")
 
 
 class SubtypeUnpackerBuilder(DiscriminatedUnionUnpackerBuilder):
@@ -455,10 +464,6 @@ class SubtypeUnpackerBuilder(DiscriminatedUnionUnpackerBuilder):
             assert self.discriminator.include_subtypes
             self._variants_attr = "__mashumaro_subtype_variants__"
         return self._variants_attr
-
-    def _get_variants_map(self, spec: ValueSpec) -> str:
-        variants_attr = self._get_variants_attr(spec)
-        return f"{type_name(spec.origin_type)}.{variants_attr}"
 
 
 def _unpack_with_annotated_serialization_strategy(
@@ -477,9 +482,9 @@ def _unpack_with_annotated_serialization_strategy(
         resolve_type_params(strategy_type, get_args(spec.type))[strategy_type],
     )
     overridden_fn = f"__{spec.field_ctx.name}_deserialize_{random_hex()}"
-    setattr(spec.builder.cls, overridden_fn, strategy.deserialize)
+    setattr(spec.attrs, overridden_fn, strategy.deserialize)
     unpacker = UnpackerRegistry.get(spec.copy(type=value_type))
-    return f"cls.{overridden_fn}({unpacker})"
+    return f"{spec.cls_attrs_name}.{overridden_fn}({unpacker})"
 
 
 def get_overridden_deserialization_method(
@@ -523,8 +528,8 @@ def unpack_type_with_overridden_deserialization(
         return deserialization_method.expression
     elif callable(deserialization_method):
         overridden_fn = f"__{spec.field_ctx.name}_deserialize_{random_hex()}"
-        setattr(spec.builder.cls, overridden_fn, deserialization_method)
-        return f"cls.{overridden_fn}({spec.expression})"
+        setattr(spec.attrs, overridden_fn, deserialization_method)
+        return f"{spec.cls_attrs_name}.{overridden_fn}({spec.expression})"
 
 
 def _unpack_annotated_serializable_type(
@@ -593,9 +598,10 @@ def unpack_dataclass(spec: ValueSpec) -> Optional[Expression]:
         method_name = spec.builder.get_unpack_method_name(
             type_args, spec.builder.format_name
         )
+        method_loc = spec.origin_type if spec.builder.is_nailed else spec.attrs
         if get_class_that_defines_method(
-            method_name, spec.origin_type
-        ) != spec.origin_type and (
+            method_name, method_loc
+        ) != method_loc and (
             spec.origin_type != spec.builder.cls
             or spec.builder.get_unpack_method_name(
                 type_args=type_args,
@@ -610,6 +616,10 @@ def unpack_dataclass(spec: ValueSpec) -> Optional[Expression]:
                 dialect=spec.builder.dialect,
                 format_name=spec.builder.format_name,
                 default_dialect=spec.builder.default_dialect,
+                attrs=method_loc,
+                attrs_registry=(
+                    spec.attrs_registry if not spec.builder.is_nailed else None
+                ),
             )
             builder.add_unpack_method()
         method_args = ", ".join(
@@ -622,8 +632,16 @@ def unpack_dataclass(spec: ValueSpec) -> Optional[Expression]:
             )
         )
         cls_alias = clean_id(type_name(spec.origin_type))
-        spec.builder.ensure_object_imported(spec.origin_type, cls_alias)
-        return f"{cls_alias}.{method_name}({method_args})"
+        if spec.builder.is_nailed:
+            spec.builder.ensure_object_imported(spec.origin_type, cls_alias)
+            return f"{cls_alias}.{method_name}({method_args})"
+        else:
+            method_name_alias = f"{cls_alias}_{method_name}"
+            spec.builder.ensure_object_imported(
+                getattr(spec.attrs, method_name),
+                method_name_alias,
+            )
+            return f"{method_name_alias}({method_args})"
 
 
 @register
@@ -686,9 +704,12 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             method_name = spec.builder.get_unpack_method_name(
                 format_name=spec.builder.format_name
             )
+            method_loc = (
+                spec.builder.cls if spec.builder.is_nailed else spec.attrs
+            )
             if (
-                get_class_that_defines_method(method_name, spec.builder.cls)
-                != spec.builder.cls
+                get_class_that_defines_method(method_name, method_loc)
+                != method_loc
                 # not hasattr(spec.builder.cls, method_name)
                 and spec.builder.get_unpack_method_name(
                     format_name=spec.builder.format_name,
@@ -701,6 +722,12 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
                     dialect=spec.builder.dialect,
                     format_name=spec.builder.format_name,
                     default_dialect=spec.builder.default_dialect,
+                    attrs=method_loc,
+                    attrs_registry=(
+                        spec.attrs_registry
+                        if not spec.builder.is_nailed
+                        else None
+                    ),
                 )
                 builder.add_unpack_method()
             method_args = ", ".join(
@@ -712,10 +739,14 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
                     ),
                 )
             )
-            spec.builder.add_type_modules(spec.builder.cls)
-            return (
-                f"{type_name(spec.builder.cls)}.{method_name}({method_args})"
-            )
+            if spec.builder.is_nailed:
+                spec.builder.add_type_modules(spec.builder.cls)
+                return (
+                    f"{type_name(spec.builder.cls)}.{method_name}"
+                    f"({method_args})"
+                )
+            else:
+                return f"_cls.{method_name}({method_args})"
         elif is_required(spec.type) or is_not_required(spec.type):
             return UnpackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
         elif is_unpack(spec.type):
@@ -956,10 +987,12 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
         f"__unpack_named_tuple_{spec.builder.cls.__name__}_"
         f"{spec.field_ctx.name}__{random_hex()}"
     )
-    method_args = "value" if spec.is_root else "cls, value"
     default_kwargs = spec.builder.get_unpack_method_default_flag_values()
-    if not spec.is_root:
+    if spec.builder.is_nailed:
         lines.append("@classmethod")
+        method_args = "cls, value"
+    else:
+        method_args = "value"
     if default_kwargs:
         lines.append(f"def {method_name}({method_args}, {default_kwargs}):")
     else:  # pragma: no cover
@@ -973,7 +1006,9 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
         with lines.indent("except IndexError:"):
             lines.append("pass")
         lines.append(f"return {type_name(spec.type)}(*fields)")
-    lines.append(f"setattr(cls, '{method_name}', {method_name})")
+    lines.append(
+        f"setattr({spec.cls_attrs_name}, '{method_name}', {method_name})"
+    )
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
@@ -981,7 +1016,7 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_unpack_method_flags()))
     )
-    return f"cls.{method_name}({method_args})"
+    return f"{spec.cls_attrs_name}.{method_name}({method_args})"
 
 
 def unpack_typed_dict(spec: ValueSpec) -> Expression:
@@ -1000,10 +1035,12 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
         f"__unpack_typed_dict_{spec.builder.cls.__name__}_"
         f"{spec.field_ctx.name}__{random_hex()}"
     )
-    method_args = "value" if spec.is_root else "cls, value"
     default_kwargs = spec.builder.get_unpack_method_default_flag_values()
-    if not spec.is_root:
+    if spec.builder.is_nailed:
         lines.append("@classmethod")
+        method_args = "cls, value"
+    else:
+        method_args = "value"
     if default_kwargs:
         lines.append(f"def {method_name}({method_args}, {default_kwargs}):")
     else:  # pragma: no cover
@@ -1034,7 +1071,9 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
                 )
                 lines.append(f"d['{key}'] = {unpacker}")
         lines.append("return d")
-    lines.append(f"setattr(cls, '{method_name}', {method_name})")
+    lines.append(
+        f"setattr({spec.cls_attrs_name}, '{method_name}', {method_name})"
+    )
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
@@ -1042,7 +1081,7 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_unpack_method_flags()))
     )
-    return f"cls.{method_name}({method_args})"
+    return f"{spec.cls_attrs_name}.{method_name}({method_args})"
 
 
 @register

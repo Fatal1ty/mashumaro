@@ -38,7 +38,7 @@ class BaseConfig:
     code_generation_options: List[CodeGenerationOption] = []  # type: ignore
     serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
     aliases: Dict[str, str] = {}
-    serialize_by_alias: bool = False
+    serialize_by_alias: bool = Sentinel.MISSING
     namedtuple_as_dict: bool = False
     allow_postponed_evaluation: bool = True
     dialect: Optional[Type[Dialect]] = None

@@ -1,7 +1,9 @@
 import collections.abc
 import uuid
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, replace
 from functools import cached_property
+from types import new_class
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -18,12 +20,14 @@ from typing import (
 from typing_extensions import ParamSpec, TypeAlias
 
 from mashumaro.core.const import PEP_585_COMPATIBLE
+from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
     get_args,
     get_type_origin,
     is_annotated,
     is_generic,
     is_hashable_type,
+    is_self,
     type_name,
 )
 from mashumaro.exceptions import UnserializableField
@@ -39,6 +43,16 @@ Expression: TypeAlias = str
 
 P = ParamSpec("P")
 T = TypeVar("T")
+
+
+class AttrsHolder:
+    def __new__(cls, name: Optional[str] = None, *args, **kwargs):
+        ah = new_class("AttrsHolder")
+        ah_id = id(ah)
+        if not name:
+            name = f"attrs_{ah_id}"
+        ah.__name__ = ah.__qualname__ = name
+        return ah
 
 
 class ExpressionWrapper:
@@ -80,7 +94,6 @@ class ValueSpec:
     annotated_type: Optional[Type] = None
     owner: Optional[Type] = None
     no_copy_collections: Sequence = tuple()
-    is_root: bool = False
 
     def __setattr__(self, key: str, value: Any) -> None:
         if key == "type":
@@ -93,6 +106,109 @@ class ValueSpec:
     @cached_property
     def annotations(self) -> Sequence[str]:
         return getattr(self.annotated_type, "__metadata__", [])
+
+    @cached_property
+    def attrs(self) -> Type:
+        if self.builder.is_nailed:
+            return self.builder.attrs
+        if is_self(self.type):
+            typ = self.builder.cls
+        else:
+            typ = self.origin_type
+        attrs = self.attrs_registry.get(typ)
+        if attrs is None:
+            attrs = AttrsHolder()
+            self.attrs_registry[typ] = attrs
+        return attrs
+
+    @cached_property
+    def cls_attrs_name(self) -> str:
+        if self.builder.is_nailed:
+            return "cls"
+        else:
+            self.builder.ensure_object_imported(self.attrs)
+            return self.attrs.__name__
+
+    @cached_property
+    def self_attrs_name(self) -> str:
+        if self.builder.is_nailed:
+            return "self"
+        else:
+            self.builder.ensure_object_imported(self.attrs)
+            return self.attrs.__name__
+
+    @cached_property
+    def attrs_registry(self) -> Dict[Any, Any]:
+        return self.builder.attrs_registry
+
+    @cached_property
+    def attrs_registry_name(self) -> str:
+        name = f"attrs_registry_{id(self.attrs_registry)}"
+        self.builder.ensure_object_imported(self.attrs_registry, name)
+        return name
+
+
+class AbstractMethodBuilder(ABC):
+    @abstractmethod
+    def get_method_prefix(self) -> str:  # pragma: no cover
+        raise NotImplementedError
+
+    def _generate_method_name(self, spec: ValueSpec) -> str:
+        prefix = self.get_method_prefix()
+        if prefix:
+            prefix = f"{prefix}_"
+        if spec.field_ctx.name:
+            suffix = f"_{spec.field_ctx.name}"
+        else:
+            suffix = ""
+        return (
+            f"__{prefix}{spec.builder.cls.__name__}{suffix}"
+            f"__{random_hex()}"
+        )
+
+    @abstractmethod
+    def _add_definition(self, spec: ValueSpec, lines: CodeLines) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _generate_method_args(self, spec: ValueSpec) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _add_body(
+        self, spec: ValueSpec, lines: CodeLines
+    ) -> None:  # pragma: no cover
+        raise NotImplementedError
+
+    def _add_setattr(
+        self, spec: ValueSpec, method_name: str, lines: CodeLines
+    ) -> None:
+        lines.append(
+            f"setattr({spec.cls_attrs_name}, '{method_name}', {method_name})"
+        )
+
+    def _compile(self, spec: ValueSpec, lines: CodeLines) -> None:
+        if spec.builder.get_config().debug:
+            print(f"{type_name(spec.builder.cls)}:")
+            print(lines.as_text())
+        exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+
+    @abstractmethod
+    def _get_call_expr(self, spec: ValueSpec, method_name: str) -> str:
+        raise NotImplementedError
+
+    def _before_build(self, spec: ValueSpec) -> None:
+        pass
+
+    def build(self, spec: ValueSpec) -> str:
+        self._before_build(spec)
+        lines = CodeLines()
+        method_name = self._add_definition(spec, lines)
+        with lines.indent():
+            self._add_body(spec, lines)
+        self._add_setattr(spec, method_name, lines)
+        self._compile(spec, lines)
+        return self._get_call_expr(spec, method_name)
 
 
 ValueSpecExprCreator: TypeAlias = Callable[[ValueSpec], Optional[Expression]]
@@ -184,4 +300,6 @@ def random_hex() -> str:
 
 
 def clean_id(value: str) -> str:
-    return value.replace(".", "_")
+    for c in ".<>":
+        value = value.replace(c, "_")
+    return value
