@@ -101,7 +101,7 @@ def _pack_with_annotated_serialization_strategy(
             value_type, spec.origin_type
         )
     value_type = substitute_type_params(
-        value_type,
+        value_type,  # type: ignore
         resolve_type_params(strategy_type, get_args(spec.type))[strategy_type],
     )
     overridden_fn = f"__{spec.field_ctx.name}_serialize_{random_hex()}"
