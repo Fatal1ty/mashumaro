@@ -750,7 +750,7 @@ def str_to_forward_ref(
     annotation: str, module: Optional[types.ModuleType] = None
 ) -> ForwardRef:
     if PY_39_MIN:
-        return ForwardRef(annotation, module=module)
+        return ForwardRef(annotation, module=module)  # type: ignore
     else:
         return ForwardRef(annotation)
 
