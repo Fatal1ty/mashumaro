@@ -46,7 +46,9 @@ T = TypeVar("T")
 
 
 class AttrsHolder:
-    def __new__(cls, name: Optional[str] = None, *args, **kwargs):
+    def __new__(
+        cls, name: Optional[str] = None, *args: Any, **kwargs: Any
+    ) -> Any:
         ah = new_class("AttrsHolder")
         ah_id = id(ah)
         if not name:
@@ -108,7 +110,7 @@ class ValueSpec:
         return getattr(self.annotated_type, "__metadata__", [])
 
     @cached_property
-    def attrs(self) -> Type:
+    def attrs(self) -> Any:
         if self.builder.is_nailed:
             return self.builder.attrs
         if is_self(self.type):

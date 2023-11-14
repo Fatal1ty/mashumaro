@@ -17,7 +17,7 @@ class CodecCodeBuilder(CodeBuilder):
     def new(cls, **kwargs: Any) -> "CodecCodeBuilder":
         if "attrs" not in kwargs:
             kwargs["attrs"] = AttrsHolder()
-        return cls(AttrsHolder("__root__"), **kwargs)
+        return cls(AttrsHolder("__root__"), **kwargs)  # type: ignore
 
     def add_decode_method(
         self,
