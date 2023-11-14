@@ -96,6 +96,10 @@ def _pack_with_annotated_serialization_strategy(
         )
     except (KeyError, ValueError):
         value_type = Any
+    if isinstance(value_type, ForwardRef):
+        value_type = spec.builder.evaluate_forward_ref(
+            value_type, spec.origin_type
+        )
     value_type = substitute_type_params(
         value_type,
         resolve_type_params(strategy_type, get_args(spec.type))[strategy_type],
@@ -176,6 +180,10 @@ def _pack_annotated_serializable_type(
         ) from None
     if is_self(value_type):
         return f"{spec.expression}._serialize()"
+    if isinstance(value_type, ForwardRef):
+        value_type = spec.builder.evaluate_forward_ref(
+            value_type, spec.origin_type
+        )
     value_type = substitute_type_params(
         value_type,
         resolve_type_params(spec.origin_type, get_args(spec.type))[
