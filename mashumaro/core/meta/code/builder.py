@@ -453,7 +453,7 @@ class CodeBuilder:
                         self._unpack_method_set_value(
                             fname, ftype, metadata, alias=alias
                         )
-                with self.indent("except TypeError:"):
+                with self.indent("except AttributeError:"):
                     with self.indent("if not isinstance(d, dict):"):
                         self.add_line(
                             f"raise ValueError('Argument for "
