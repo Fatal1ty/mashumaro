@@ -7,9 +7,24 @@ from typing_extensions import Literal
 
 from mashumaro.codecs import Decoder, Encoder, decode, encode
 from mashumaro.dialect import Dialect
-from tests.entities import DataClassWithoutMixin
+from tests.entities import (
+    DataClassWithoutMixin,
+    GenericNamedTuple,
+    GenericTypedDict,
+    MyGenericDataClass,
+)
 
 T = TypeVar("T")
+
+
+@dataclass
+class Foo:
+    foo: str
+
+
+@dataclass
+class Bar:
+    bar: str
 
 
 class MyDialect(Dialect):
@@ -160,3 +175,72 @@ def test_value_error_on_encode(shape_type, invalid_value):
     with pytest.raises(ValueError) as e:
         encoder.encode(invalid_value)
     assert type(e.value) is ValueError
+
+
+def test_with_fields_with_generated_methods():
+    @dataclass
+    class MyClass:
+        td1: GenericTypedDict[str]
+        td2: GenericTypedDict[date]
+        nt1: GenericNamedTuple[str]
+        nt2: GenericNamedTuple[date]
+        u1: List[Union[int, str]]
+        u2: List[Union[int, date]]
+        l1: Literal["l1"]
+        l2: Literal["l2"]
+
+    decoder = Decoder(MyClass)
+    encoder = Encoder(MyClass)
+    data = {
+        "td1": {"x": "2023-11-15", "y": 1},
+        "td2": {"x": "2023-11-15", "y": 2},
+        "nt1": ["2023-11-15", 3],
+        "nt2": ["2023-11-15", 4],
+        "u1": [5, "2023-11-15"],
+        "u2": [6, "2023-11-15"],
+        "l1": "l1",
+        "l2": "l2",
+    }
+    obj = MyClass(
+        td1={"x": "2023-11-15", "y": 1},
+        td2={"x": date(2023, 11, 15), "y": 2},
+        nt1=GenericNamedTuple("2023-11-15", 3),
+        nt2=GenericNamedTuple(date(2023, 11, 15), 4),
+        u1=[5, "2023-11-15"],
+        u2=[6, date(2023, 11, 15)],
+        l1="l1",
+        l2="l2",
+    )
+    assert decoder.decode(data) == obj
+    assert encoder.encode(obj) == data
+
+
+def test_with_two_dataclass_fields():
+    @dataclass
+    class MyClass:
+        x1: Foo
+        x2: Bar
+
+    decoder = Decoder(MyClass)
+    encoder = Encoder(MyClass)
+    data = {"x1": {"foo": "foo"}, "x2": {"bar": "bar"}}
+    obj = MyClass(x1=Foo("foo"), x2=Bar("bar"))
+    assert decoder.decode(data) == obj
+    assert encoder.encode(obj) == data
+
+
+def test_with_two_generic_dataclass_fields():
+    @dataclass
+    class MyClass:
+        x1: MyGenericDataClass[str]
+        x2: MyGenericDataClass[date]
+
+    decoder = Decoder(MyClass)
+    encoder = Encoder(MyClass)
+    data = {"x1": {"x": "2023-11-15"}, "x2": {"x": "2023-11-15"}}
+    obj = MyClass(
+        x1=MyGenericDataClass("2023-11-15"),
+        x2=MyGenericDataClass(date(2023, 11, 15)),
+    )
+    assert decoder.decode(data) == obj
+    assert encoder.encode(obj) == data
