@@ -853,7 +853,7 @@ with. At this moment there are next serialization engines to choose from:
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict` | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine. |
 | `Any`                      | `omit`               | Skip the field during serialization                                                                                                                                                                          |
 
-> [!NOTE]\
+> [!TIP]\
 > You can pass a field value as is without changes on serialization using
 [`pass_through`](#passing-field-values-as-is).
 
@@ -898,7 +898,7 @@ with. At this moment there are next deserialization engines to choose from:
 | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict`                                                                                                                | How to unpack named tuples. By default `as_list` engine is used that means your named tuple class instance will be created from a list of its values. You can unpack it from a dictionary using `as_dict` engine.                                                                                       |
 
-> [!NOTE]\
+> [!TIP]\
 > You can pass a field value as is without changes on deserialization using
 [`pass_through`](#passing-field-values-as-is).
 
@@ -947,7 +947,7 @@ for a dataclass field depending on some defined parameters using a reusable
 serialization scheme. You can find an example in the
 [`SerializationStrategy`](#serializationstrategy) chapter.
 
-> [!NOTE]\
+> [!TIP]\
 > You can pass a field value as is without changes on
 > serialization / deserialization using
 [`pass_through`](#passing-field-values-as-is).
@@ -1397,7 +1397,7 @@ be deferred until they are called first time. This will reduce the import time
 and, in certain instances, may enhance the speed of deserialization
 by leveraging the data that is accessible after the class has been created.
 
-> [!Warning]\
+> [!CAUTION]\
 > If you need to save a reference to `from_*` or `to_*` method, you should
 > do it after the method is compiled. To be safe, you can always use lambda
 > function:
