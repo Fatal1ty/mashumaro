@@ -352,7 +352,11 @@ class CodeBuilder:
 
     def _add_unpack_method_lines(self, method_name: str) -> None:
         config = self.get_config()
-        if config.lazy_compilation and self.allow_postponed_evaluation:
+        if (
+            config.lazy_compilation
+            and self.allow_postponed_evaluation
+            and self.is_nailed
+        ):
             self._add_unpack_method_lines_lazy(method_name)
             return
         try:
@@ -848,7 +852,11 @@ class CodeBuilder:
 
     def _add_pack_method_lines(self, method_name: str) -> None:
         config = self.get_config()
-        if config.lazy_compilation and self.allow_postponed_evaluation:
+        if (
+            config.lazy_compilation
+            and self.allow_postponed_evaluation
+            and self.is_nailed
+        ):
             self._add_pack_method_lines_lazy(method_name)
             return
         try:
