@@ -1,4 +1,4 @@
-from dataclasses import is_dataclass
+import re
 from typing import Any, Callable, Optional, Type
 
 from mashumaro.core.meta.code.builder import CodeBuilder
@@ -10,6 +10,8 @@ from mashumaro.core.meta.types.common import (
 )
 from mashumaro.core.meta.types.pack import PackerRegistry
 from mashumaro.core.meta.types.unpack import UnpackerRegistry
+
+CALL_EXPR = re.compile(r"^([^ ]+)\(value\)$")
 
 
 class CodecCodeBuilder(CodeBuilder):
@@ -48,10 +50,12 @@ class CodecCodeBuilder(CodeBuilder):
             )
             self.add_line(f"return {unpacked_value}")
         self.add_line("setattr(decoder_obj, 'decode', decode)")
-        if pre_decoder_func is None and is_dataclass(shape_type):
-            method_name = unpacked_value.partition("(")[0]
-            self.lines.reset()
-            self.add_line(f"setattr(decoder_obj, 'decode', {method_name})")
+        if pre_decoder_func is None:
+            m = CALL_EXPR.match(unpacked_value)
+            if m:
+                method_name = m.group(1)
+                self.lines.reset()
+                self.add_line(f"setattr(decoder_obj, 'decode', {method_name})")
         self.ensure_object_imported(decoder_obj, "decoder_obj")
         self.ensure_object_imported(self.cls, "cls")
         self.compile()
@@ -89,10 +93,12 @@ class CodecCodeBuilder(CodeBuilder):
             else:
                 self.add_line(f"return {packed_value}")
         self.add_line("setattr(encoder_obj, 'encode', encode)")
-        if post_encoder_func is None and is_dataclass(shape_type):
-            method_name = packed_value.partition("(")[0]
-            self.lines.reset()
-            self.add_line(f"setattr(encoder_obj, 'encode', {method_name})")
+        if post_encoder_func is None:
+            m = CALL_EXPR.match(packed_value)
+            if m:
+                method_name = m.group(1)
+                self.lines.reset()
+                self.add_line(f"setattr(encoder_obj, 'encode', {method_name})")
         self.ensure_object_imported(encoder_obj, "encoder_obj")
         self.ensure_object_imported(self.cls, "cls")
         self.ensure_object_imported(self.cls, "self")
