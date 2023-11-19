@@ -43,7 +43,8 @@ import pytest
 from typing_extensions import Final, LiteralString
 
 from mashumaro import DataClassDictMixin
-from mashumaro.codecs import Decoder, Encoder, decode, encode
+from mashumaro.codecs import BasicDecoder, BasicEncoder
+from mashumaro.codecs.basic import decode, encode
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
 from mashumaro.exceptions import (
@@ -1223,8 +1224,8 @@ def test_dataclass_with_named_tuple():
     assert DataClass.from_dict({"x": ["1", "2.0"]}) == obj
     assert obj.to_dict() == {"x": [1, 2.0]}
 
-    decoder = Decoder(DataClass)
-    encoder = Encoder(DataClass)
+    decoder = BasicDecoder(DataClass)
+    encoder = BasicEncoder(DataClass)
     assert decoder.decode({"x": ["1", "2.0"]}) == obj
     assert encoder.encode(obj) == {"x": [1, 2.0]}
 
@@ -1238,8 +1239,8 @@ def test_dataclass_with_named_tuple_with_defaults():
     assert DataClass.from_dict({"x": ["1"]}) == obj
     assert obj.to_dict() == {"x": [1, 2.0]}
 
-    decoder = Decoder(DataClass)
-    encoder = Encoder(DataClass)
+    decoder = BasicDecoder(DataClass)
+    encoder = BasicEncoder(DataClass)
     assert decoder.decode({"x": ["1"]}) == obj
     assert encoder.encode(obj) == {"x": [1, 2.0]}
 
@@ -1253,8 +1254,8 @@ def test_dataclass_with_untyped_named_tuple():
     assert DataClass.from_dict({"x": ["1", "2.0"]}) == obj
     assert obj.to_dict() == {"x": ["1", "2.0"]}
 
-    decoder = Decoder(DataClass)
-    encoder = Encoder(DataClass)
+    decoder = BasicDecoder(DataClass)
+    encoder = BasicEncoder(DataClass)
     assert decoder.decode({"x": ["1", "2.0"]}) == obj
     assert encoder.encode(obj) == {"x": ["1", "2.0"]}
 
@@ -1380,8 +1381,8 @@ def test_typed_dict_required_keys_with_optional():
     assert DataClass.from_dict({"x": {"x": 33, "y": 42}}) == obj
     assert obj.to_dict() == {"x": {"x": 33, "y": 42}}
 
-    decoder = Decoder(DataClass)
-    encoder = Encoder(DataClass)
+    decoder = BasicDecoder(DataClass)
+    encoder = BasicEncoder(DataClass)
     assert decoder.decode({"x": {"x": 33, "y": 42}}) == obj
     assert encoder.encode(obj) == {"x": {"x": 33, "y": 42}}
 
@@ -1399,8 +1400,8 @@ def test_typed_dict_optional_keys_with_optional():
     assert DataClass.from_dict({"x": {"x": 33, "y": 42}}) == obj
     assert obj.to_dict() == {"x": {"x": 33, "y": 42}}
 
-    decoder = Decoder(DataClass)
-    encoder = Encoder(DataClass)
+    decoder = BasicDecoder(DataClass)
+    encoder = BasicEncoder(DataClass)
     assert decoder.decode({"x": {"x": 33, "y": 42}}) == obj
     assert encoder.encode(obj) == {"x": {"x": 33, "y": 42}}
 
@@ -1414,8 +1415,8 @@ def test_unbound_generic_typed_dict():
     assert DataClass.from_dict({"x": {"x": "2023-01-22", "y": "42"}}) == obj
     assert obj.to_dict() == {"x": {"x": "2023-01-22", "y": 42}}
 
-    decoder = Decoder(DataClass)
-    encoder = Encoder(DataClass)
+    decoder = BasicDecoder(DataClass)
+    encoder = BasicEncoder(DataClass)
     assert decoder.decode({"x": {"x": "2023-01-22", "y": "42"}}) == obj
     assert encoder.encode(obj) == {"x": {"x": "2023-01-22", "y": 42}}
 
@@ -1429,8 +1430,8 @@ def test_bound_generic_typed_dict():
     assert DataClass.from_dict({"x": {"x": "2023-01-22", "y": "42"}}) == obj
     assert obj.to_dict() == {"x": {"x": "2023-01-22", "y": 42}}
 
-    decoder = Decoder(DataClass)
-    encoder = Encoder(DataClass)
+    decoder = BasicDecoder(DataClass)
+    encoder = BasicEncoder(DataClass)
     assert decoder.decode({"x": {"x": "2023-01-22", "y": "42"}}) == obj
     assert encoder.encode(obj) == {"x": {"x": "2023-01-22", "y": 42}}
 
@@ -1503,7 +1504,7 @@ def test_dataclass_with_default_nan_and_inf_with_omit_default():
 @pytest.mark.parametrize("value_info", inner_values)
 def test_decoder(value_info):
     x_type, x_value, x_value_dumped = value_info
-    decoder = Decoder(x_type)
+    decoder = BasicDecoder(x_type)
     assert decoder.decode(x_value_dumped) == x_value
     assert decode(x_value_dumped, x_type) == x_value
 
@@ -1511,6 +1512,6 @@ def test_decoder(value_info):
 @pytest.mark.parametrize("value_info", inner_values)
 def test_encoder(value_info):
     x_type, x_value, x_value_dumped = value_info
-    encoder = Encoder(x_type)
+    encoder = BasicEncoder(x_type)
     assert encoder.encode(x_value) == x_value_dumped
     assert encode(x_value, x_type) == x_value_dumped

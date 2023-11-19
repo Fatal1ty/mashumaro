@@ -7,7 +7,7 @@ import pytest
 from typing_extensions import Annotated, Final, Literal
 
 from mashumaro import DataClassDictMixin
-from mashumaro.codecs import Decoder
+from mashumaro.codecs import BasicDecoder
 from mashumaro.exceptions import InvalidFieldValue
 from mashumaro.types import Discriminator
 
@@ -342,7 +342,7 @@ class VariantWitCustomTaggerOwner(
 
 
 def test_by_field_with_supertypes():
-    decoder = Decoder(_ByFieldWithSupertypes)
+    decoder = BasicDecoder(_ByFieldWithSupertypes)
 
     for func, cls in (
         (ByFieldWithSupertypes.from_dict, ByFieldWithSupertypes),
@@ -391,7 +391,7 @@ def test_by_field_with_supertypes():
 
 
 def test_by_field_with_subtypes():
-    decoder = Decoder(_ByFieldWithSubtypes)
+    decoder = BasicDecoder(_ByFieldWithSubtypes)
 
     for func, cls in (
         (ByFieldWithSubtypes.from_dict, ByFieldWithSubtypes),
@@ -441,7 +441,7 @@ def test_by_field_with_subtypes():
 
 
 def test_by_field_with_supertypes_and_subtypes():
-    decoder = Decoder(_ByFieldWithSupertypesAndSubtypes)
+    decoder = BasicDecoder(_ByFieldWithSupertypesAndSubtypes)
 
     for func, cls in (
         (
@@ -514,7 +514,7 @@ def test_by_field_with_supertypes_and_subtypes():
 
 
 def test_by_supertypes():
-    decoder = Decoder(_BySupertypes)
+    decoder = BasicDecoder(_BySupertypes)
 
     for func, cls in (
         (BySupertypes.from_dict, BySupertypes),
@@ -573,7 +573,7 @@ def test_by_supertypes():
 
 
 def test_by_subtypes():
-    decoder = Decoder(_BySubtypes)
+    decoder = BasicDecoder(_BySubtypes)
 
     for func, cls in (
         (BySubtypes.from_dict, BySubtypes),
@@ -632,7 +632,7 @@ def test_by_subtypes():
 
 
 def test_by_supertypes_and_subtypes():
-    decoder = Decoder(_BySupertypesAndSubtypes)
+    decoder = BasicDecoder(_BySupertypesAndSubtypes)
 
     for func, cls in (
         (BySupertypesAndSubtypes.from_dict, BySupertypesAndSubtypes),
@@ -702,7 +702,7 @@ def test_by_supertypes_and_subtypes():
 
 
 def test_tuple_with_discriminated_elements():
-    decoder = Decoder(_ByFieldAndByFieldWithSubtypesInOneField)
+    decoder = BasicDecoder(_ByFieldAndByFieldWithSubtypesInOneField)
 
     for func, cls in (
         (
@@ -734,7 +734,7 @@ def test_tuple_with_discriminated_elements():
 
 
 def test_by_field_with_subtypes_with_custom_variant_tagger():
-    decoder = Decoder(_VariantWitCustomTaggerOwner)
+    decoder = BasicDecoder(_VariantWitCustomTaggerOwner)
 
     for func, cls in (
         (VariantWitCustomTaggerOwner.from_dict, VariantWitCustomTaggerOwner),

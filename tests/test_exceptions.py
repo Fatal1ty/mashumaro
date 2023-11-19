@@ -4,7 +4,7 @@ from typing import List, Union
 import pytest
 
 from mashumaro import DataClassDictMixin
-from mashumaro.codecs import Decoder
+from mashumaro.codecs import BasicDecoder
 from mashumaro.core.meta.helpers import type_name
 from mashumaro.exceptions import (
     InvalidFieldValue,
@@ -183,7 +183,7 @@ def test_deserialize_dataclass_from_wrong_value_type():
         f"__mashumaro_from_dict__ method should be a dict instance"
     )
 
-    decoder = Decoder(MyClass)
+    decoder = BasicDecoder(MyClass)
     with pytest.raises(ValueError) as exc_info:
         decoder.decode(42)
     assert str(exc_info.value) == (

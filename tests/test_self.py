@@ -5,7 +5,7 @@ import orjson
 from typing_extensions import Self
 
 from mashumaro import DataClassDictMixin
-from mashumaro.codecs import Decoder, Encoder
+from mashumaro.codecs import BasicDecoder, BasicEncoder
 from mashumaro.codecs.orjson import ORJSONDecoder, ORJSONEncoder
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
@@ -45,8 +45,8 @@ def test_dataclass_dict_with_self():
 
 
 def test_dataclass_dict_with_self_without_mixin():
-    decoder = Decoder(DataClassDictWithoutMixin)
-    encoder = Encoder(DataClassDictWithoutMixin)
+    decoder = BasicDecoder(DataClassDictWithoutMixin)
+    encoder = BasicEncoder(DataClassDictWithoutMixin)
     obj = DataClassDictWithoutMixin(DataClassDictWithoutMixin())
     assert encoder.encode(obj) == {"next": {"next": None}}
     assert decoder.decode({"next": {"next": None}}) == obj

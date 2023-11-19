@@ -5,7 +5,8 @@ from typing import Generic, List, Optional, TypeVar, Union
 import pytest
 from typing_extensions import Literal
 
-from mashumaro.codecs import Decoder, Encoder, decode, encode
+from mashumaro.codecs import BasicDecoder, BasicEncoder
+from mashumaro.codecs.basic import decode, encode
 from mashumaro.dialect import Dialect
 from tests.entities import (
     DataClassWithoutMixin,
@@ -119,7 +120,7 @@ def test_encode(shape_type, encoded, decoded):
 
 
 def test_decoder_with_default_dialect():
-    decoder = Decoder(List[date], default_dialect=MyDialect)
+    decoder = BasicDecoder(List[date], default_dialect=MyDialect)
     assert decoder.decode([738785, 738786]) == [
         date(2023, 9, 22),
         date(2023, 9, 23),
@@ -127,7 +128,7 @@ def test_decoder_with_default_dialect():
 
 
 def test_encoder_with_default_dialect():
-    encoder = Encoder(List[date], default_dialect=MyDialect)
+    encoder = BasicEncoder(List[date], default_dialect=MyDialect)
     assert encoder.encode([date(2023, 9, 22), date(2023, 9, 23)]) == [
         738785,
         738786,
@@ -135,7 +136,7 @@ def test_encoder_with_default_dialect():
 
 
 def test_pre_decoder_func():
-    decoder = Decoder(List[date], pre_decoder_func=lambda v: v.split(","))
+    decoder = BasicDecoder(List[date], pre_decoder_func=lambda v: v.split(","))
     assert decoder.decode("2023-09-22,2023-09-23") == [
         date(2023, 9, 22),
         date(2023, 9, 23),
@@ -143,7 +144,7 @@ def test_pre_decoder_func():
 
 
 def test_post_encoder_func():
-    encoder = Encoder(List[date], post_encoder_func=lambda v: ",".join(v))
+    encoder = BasicEncoder(List[date], post_encoder_func=lambda v: ",".join(v))
     assert (
         encoder.encode(
             [
@@ -160,7 +161,7 @@ def test_post_encoder_func():
     [[Union[date, datetime], "foo"], [Literal["foo"], "bar"]],
 )
 def test_value_error_on_decode(shape_type, invalid_value):
-    decoder = Decoder(shape_type)
+    decoder = BasicDecoder(shape_type)
     with pytest.raises(ValueError) as e:
         decoder.decode(invalid_value)
     assert type(e.value) is ValueError
@@ -171,7 +172,7 @@ def test_value_error_on_decode(shape_type, invalid_value):
     [[Union[date, datetime], "foo"], [Literal["foo"], "bar"]],
 )
 def test_value_error_on_encode(shape_type, invalid_value):
-    encoder = Encoder(shape_type)
+    encoder = BasicEncoder(shape_type)
     with pytest.raises(ValueError) as e:
         encoder.encode(invalid_value)
     assert type(e.value) is ValueError
@@ -189,8 +190,8 @@ def test_with_fields_with_generated_methods():
         l1: Literal["l1"]
         l2: Literal["l2"]
 
-    decoder = Decoder(MyClass)
-    encoder = Encoder(MyClass)
+    decoder = BasicDecoder(MyClass)
+    encoder = BasicEncoder(MyClass)
     data = {
         "td1": {"x": "2023-11-15", "y": 1},
         "td2": {"x": "2023-11-15", "y": 2},
@@ -221,8 +222,8 @@ def test_with_two_dataclass_fields():
         x1: Foo
         x2: Bar
 
-    decoder = Decoder(MyClass)
-    encoder = Encoder(MyClass)
+    decoder = BasicDecoder(MyClass)
+    encoder = BasicEncoder(MyClass)
     data = {"x1": {"foo": "foo"}, "x2": {"bar": "bar"}}
     obj = MyClass(x1=Foo("foo"), x2=Bar("bar"))
     assert decoder.decode(data) == obj
@@ -235,8 +236,8 @@ def test_with_two_generic_dataclass_fields():
         x1: MyGenericDataClass[str]
         x2: MyGenericDataClass[date]
 
-    decoder = Decoder(MyClass)
-    encoder = Encoder(MyClass)
+    decoder = BasicDecoder(MyClass)
+    encoder = BasicEncoder(MyClass)
     data = {"x1": {"x": "2023-11-15"}, "x2": {"x": "2023-11-15"}}
     obj = MyClass(
         x1=MyGenericDataClass("2023-11-15"),

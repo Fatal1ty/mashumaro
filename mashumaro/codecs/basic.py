@@ -17,7 +17,7 @@ from mashumaro.dialect import Dialect
 T = TypeVar("T")
 
 
-class Decoder(Generic[T]):
+class BasicDecoder(Generic[T]):
     @overload
     def __init__(
         self,
@@ -55,7 +55,7 @@ class Decoder(Generic[T]):
         ...
 
 
-class Encoder(Generic[T]):
+class BasicEncoder(Generic[T]):
     @overload
     def __init__(
         self,
@@ -94,16 +94,16 @@ class Encoder(Generic[T]):
 
 
 def decode(data: Any, shape_type: Union[Type[T], Any]) -> T:
-    return Decoder(shape_type).decode(data)
+    return BasicDecoder(shape_type).decode(data)
 
 
 def encode(obj: T, shape_type: Union[Type[T], Any]) -> Any:
-    return Encoder(shape_type).encode(obj)
+    return BasicEncoder(shape_type).encode(obj)
 
 
 __all__ = [
-    "Decoder",
-    "Encoder",
+    "BasicDecoder",
+    "BasicEncoder",
     "decode",
     "encode",
 ]

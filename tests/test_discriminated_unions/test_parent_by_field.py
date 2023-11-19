@@ -5,7 +5,7 @@ import pytest
 from typing_extensions import Annotated, Literal
 
 from mashumaro import DataClassDictMixin
-from mashumaro.codecs import decode
+from mashumaro.codecs.basic import decode
 from mashumaro.exceptions import InvalidFieldValue
 from mashumaro.types import Discriminator
 

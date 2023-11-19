@@ -6,7 +6,7 @@ import pytest
 from typing_extensions import Literal
 
 from mashumaro import DataClassDictMixin
-from mashumaro.codecs import decode, encode
+from mashumaro.codecs.basic import decode
 from mashumaro.config import BaseConfig
 from mashumaro.exceptions import (
     InvalidFieldValue,

@@ -1,8 +1,6 @@
-from .base import Decoder, Encoder, decode, encode
+from .basic import BasicDecoder, BasicEncoder
 
 __all__ = [
-    "Decoder",
-    "Encoder",
-    "decode",
-    "encode",
+    "BasicDecoder",
+    "BasicEncoder",
 ]
