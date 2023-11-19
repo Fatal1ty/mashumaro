@@ -37,8 +37,6 @@ Table of contents
 * [Supported serialization formats](#supported-serialization-formats)
   * [Basic form](#basic-form)
   * [JSON](#json)
-    * [json library](#json-library)
-    * [orjson library](#orjson-library)
   * [YAML](#yaml)
   * [TOML](#toml)
   * [MessagePack](#messagepack)
@@ -409,10 +407,10 @@ Efficient decoder and encoder can be used as:
 from mashumaro.codecs import BasicDecoder, BasicEncoder
 # or from mashumaro.codecs.basic import BasicDecoder, BasicEncoder
 
-decoder = BasicDecoder(<shape_type>)
+decoder = BasicDecoder(<shape_type>, ...)
 decoder.decode(...)
 
-encoder = BasicEncoder(<shape_type>)
+encoder = BasicEncoder(<shape_type>, ...)
 encoder.encode(...)
 ```
 
@@ -455,10 +453,10 @@ Efficient decoder and encoder can be used as:
 ```python
 from mashumaro.codecs.json import JSONDecoder, JSONEncoder
 
-decoder = JSONDecoder(<shape_type>)
+decoder = JSONDecoder(<shape_type>, ...)
 decoder.decode(...)
 
-encoder = JSONEncoder(<shape_type>)
+encoder = JSONEncoder(<shape_type>, ...)
 encoder.encode(...)
 ```
 
@@ -510,10 +508,10 @@ Efficient decoder and encoder can be used as:
 ```python
 from mashumaro.codecs.orjson import ORJSONDecoder, ORJSONEncoder
 
-decoder = ORJSONDecoder(<shape_type>)
+decoder = ORJSONDecoder(<shape_type>, ...)
 decoder.decode(...)
 
-encoder = ORJSONEncoder(<shape_type>)
+encoder = ORJSONEncoder(<shape_type>, ...)
 encoder.encode(...)
 ```
 
@@ -561,10 +559,10 @@ Efficient decoder and encoder can be used as:
 ```python
 from mashumaro.codecs.yaml import YAMLDecoder, YAMLEncoder
 
-decoder = YAMLDecoder(<shape_type>)
+decoder = YAMLDecoder(<shape_type>, ...)
 decoder.decode(...)
 
-encoder = YAMLEncoder(<shape_type>)
+encoder = YAMLEncoder(<shape_type>, ...)
 encoder.encode(...)
 ```
 
@@ -624,10 +622,10 @@ Efficient decoder and encoder can be used as:
 ```python
 from mashumaro.codecs.toml import TOMLDecoder, TOMLEncoder
 
-decoder = TOMLDecoder(<shape_type>)
+decoder = TOMLDecoder(<shape_type>, ...)
 decoder.decode(...)
 
-encoder = TOMLEncoder(<shape_type>)
+encoder = TOMLEncoder(<shape_type>, ...)
 encoder.encode(...)
 ```
 
@@ -679,10 +677,10 @@ Efficient decoder and encoder can be used as:
 ```python
 from mashumaro.codecs.msgpack import MessagePackDecoder, MessagePackEncoder
 
-decoder = MessagePackDecoder(<shape_type>)
+decoder = MessagePackDecoder(<shape_type>, ...)
 decoder.decode(...)
 
-encoder = MessagePackEncoder(<shape_type>)
+encoder = MessagePackEncoder(<shape_type>, ...)
 encoder.encode(...)
 ```
 
