@@ -384,10 +384,10 @@ This library has built-in support for multiple popular formats:
 
 There are preconfigured codecs and mixin classes. As for codecs, you are
 offered to choose between convenience and efficiency. When you need to decode
-or encode structured data more than once, then it's preferable to create
-a decoder or encoder specifically for that structure. For one-time use with
-default settings it may be convenient to use global functions that create
-a disposable decoder or encoder under the hood.
+or encode structured data more than once, it's preferable to create a decoder
+or encoder specifically for that structure. For one-time use with default
+settings it may be convenient to use global functions that create a disposable
+decoder or encoder under the hood.
 
 ### Basic form
 
