@@ -406,7 +406,7 @@ supported by most serialization formats. These types are:
 This is also a starting point you can play with for a comprehensive
 transformation of your data.
 
-Efficient decoder and encoder can be used as:
+Efficient decoder and encoder can be used as follows:
 
 ```python
 from mashumaro.codecs import BasicDecoder, BasicEncoder
@@ -419,7 +419,7 @@ encoder = BasicEncoder(<shape_type>, ...)
 encoder.encode(...)
 ```
 
-Convenient functions are recommended to be used as:
+Convenient functions are recommended to be used as follows:
 ```python
 import mashumaro.codecs.basic as basic_codec
 
@@ -427,7 +427,7 @@ basic_codec.decode(..., <shape_type>)
 basic_codec.encode(..., <shape_type>)
 ```
 
-Mixin can be used as:
+Mixin can be used as follows:
 ```python
 from mashumaro import DataClassDictMixin
 # or from mashumaro.mixins.dict import DataClassDictMixin
@@ -454,7 +454,7 @@ performance.
 
 #### json library
 
-Efficient decoder and encoder can be used as:
+Efficient decoder and encoder can be used as follows:
 ```python
 from mashumaro.codecs.json import JSONDecoder, JSONEncoder
 
@@ -465,7 +465,7 @@ encoder = JSONEncoder(<shape_type>, ...)
 encoder.encode(...)
 ```
 
-Convenient functions can be used as :
+Convenient functions can be used as follows:
 ```python
 from mashumaro.codecs.json import json_decode, json_encode
 
@@ -473,7 +473,7 @@ json_decode(..., <shape_type>)
 json_encode(..., <shape_type>)
 ```
 
-Convenient function aliases are recommended to be used as:
+Convenient function aliases are recommended to be used as follows:
 ```python
 import mashumaro.codecs.json as json_codec
 
@@ -481,7 +481,7 @@ json_codec.decode(...<shape_type>)
 json_codec.encode(..., <shape_type>)
 ```
 
-Mixin can be used as:
+Mixin can be used as follows:
 ```python
 from mashumaro.mixins.json import DataClassJSONMixin
 
@@ -509,7 +509,7 @@ The following data types will be handled by
 * [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
 * [`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)
 
-Efficient decoder and encoder can be used as:
+Efficient decoder and encoder can be used as follows:
 ```python
 from mashumaro.codecs.orjson import ORJSONDecoder, ORJSONEncoder
 
@@ -520,7 +520,7 @@ encoder = ORJSONEncoder(<shape_type>, ...)
 encoder.encode(...)
 ```
 
-Convenient functions can be used as :
+Convenient functions can be used as follows:
 ```python
 from mashumaro.codecs.orjson import json_decode, json_encode
 
@@ -528,7 +528,7 @@ json_decode(..., <shape_type>)
 json_encode(..., <shape_type>)
 ```
 
-Convenient function aliases are recommended to be used as:
+Convenient function aliases are recommended to be used as follows:
 ```python
 import mashumaro.codecs.orjson as json_codec
 
@@ -536,7 +536,7 @@ json_codec.decode(...<shape_type>)
 json_codec.encode(..., <shape_type>)
 ```
 
-Mixin can be used as:
+Mixin can be used as follows:
 ```python
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
@@ -560,7 +560,7 @@ You can install it manually or using an extra option for `mashumaro`:
 pip install mashumaro[yaml]
 ```
 
-Efficient decoder and encoder can be used as:
+Efficient decoder and encoder can be used as follows:
 ```python
 from mashumaro.codecs.yaml import YAMLDecoder, YAMLEncoder
 
@@ -571,7 +571,7 @@ encoder = YAMLEncoder(<shape_type>, ...)
 encoder.encode(...)
 ```
 
-Convenient functions can be used as :
+Convenient functions can be used as follows:
 ```python
 from mashumaro.codecs.yaml import yaml_decode, yaml_encode
 
@@ -579,7 +579,7 @@ yaml_decode(..., <shape_type>)
 yaml_encode(..., <shape_type>)
 ```
 
-Convenient function aliases are recommended to be used as:
+Convenient function aliases are recommended to be used as follows:
 ```python
 import mashumaro.codecs.yaml as yaml_codec
 
@@ -587,7 +587,7 @@ yaml_codec.decode(...<shape_type>)
 yaml_codec.encode(..., <shape_type>)
 ```
 
-Mixin can be used as:
+Mixin can be used as follows:
 ```python
 from mashumaro.mixins.yaml import DataClassYAMLMixin
 
@@ -621,9 +621,10 @@ The following data types will be handled by
 * [`date`](https://docs.python.org/3/library/datetime.html#datetime.date)
 * [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
 
-Fields with value `None` will be omitted on serialization because TOML doesn't support null values.
+Fields with value `None` will be omitted on serialization because TOML
+doesn't support null values.
 
-Efficient decoder and encoder can be used as:
+Efficient decoder and encoder can be used as follows:
 ```python
 from mashumaro.codecs.toml import TOMLDecoder, TOMLEncoder
 
@@ -634,7 +635,7 @@ encoder = TOMLEncoder(<shape_type>, ...)
 encoder.encode(...)
 ```
 
-Convenient functions can be used as :
+Convenient functions can be used as follows:
 ```python
 from mashumaro.codecs.toml import toml_decode, toml_encode
 
@@ -642,7 +643,7 @@ toml_decode(..., <shape_type>)
 toml_encode(..., <shape_type>)
 ```
 
-Convenient function aliases are recommended to be used as:
+Convenient function aliases are recommended to be used as follows:
 ```python
 import mashumaro.codecs.toml as toml_codec
 
@@ -650,7 +651,7 @@ toml_codec.decode(...<shape_type>)
 toml_codec.encode(..., <shape_type>)
 ```
 
-Mixin can be used as:
+Mixin can be used as follows:
 ```python
 from mashumaro.mixins.toml import DataClassTOMLMixin
 
@@ -678,7 +679,7 @@ The following data types will be handled by
 * [`bytes`](https://docs.python.org/3/library/stdtypes.html#bytes)
 * [`bytearray`](https://docs.python.org/3/library/stdtypes.html#bytearray)
 
-Efficient decoder and encoder can be used as:
+Efficient decoder and encoder can be used as follows:
 ```python
 from mashumaro.codecs.msgpack import MessagePackDecoder, MessagePackEncoder
 
@@ -689,7 +690,7 @@ encoder = MessagePackEncoder(<shape_type>, ...)
 encoder.encode(...)
 ```
 
-Convenient functions can be used as :
+Convenient functions can be used as follows:
 ```python
 from mashumaro.codecs.msgpack import msgpack_decode, msgpack_encode
 
@@ -697,7 +698,7 @@ msgpack_decode(..., <shape_type>)
 msgpack_encode(..., <shape_type>)
 ```
 
-Convenient function aliases are recommended to be used as:
+Convenient function aliases are recommended to be used as follows:
 ```python
 import mashumaro.codecs.msgpack as msgpack_codec
 
@@ -705,7 +706,7 @@ msgpack_codec.decode(...<shape_type>)
 msgpack_codec.encode(..., <shape_type>)
 ```
 
-Mixin can be used as:
+Mixin can be used as follows:
 ```python
 from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 
