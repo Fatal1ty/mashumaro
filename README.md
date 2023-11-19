@@ -380,12 +380,17 @@ This library has built-in support for multiple popular formats:
 * [TOML](https://toml.io)
 * [MessagePack](https://msgpack.org)
 
-There are preconfigured codecs and mixin classes. As for codecs, you are
-offered to choose between convenience and efficiency. When you need to decode
-or encode structured data more than once, it's preferable to create a decoder
-or encoder specifically for that structure. For one-time use with default
-settings it may be convenient to use global functions that create a disposable
-decoder or encoder under the hood.
+There are preconfigured codecs and mixin classes. However, you're free
+to override some settings if necessary.
+
+> [!IMPORTANT]\
+> As for codecs, you are
+> offered to choose between convenience and efficiency. When you need to decode
+> or encode structured data more than once, it's highly recommended to create
+> a decoder or encoder specifically for that structure. For one-time use with
+> default settings it may be convenient to use global functions that create
+> a disposable decoder or encoder under the hood. Be aware not to use these
+> convenient global functions in performance-critical code!
 
 ### Basic form
 
