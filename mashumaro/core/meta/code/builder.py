@@ -107,6 +107,10 @@ class CodeBuilder:
         encoder: typing.Optional[typing.Any] = None,
         encoder_kwargs: typing.Optional[typing.Dict[str, typing.Any]] = None,
         default_dialect: typing.Optional[typing.Type[Dialect]] = None,
+        attrs: typing.Any = None,
+        attrs_registry: typing.Optional[
+            typing.Dict[typing.Any, typing.Any]
+        ] = None,
     ):
         self.cls = cls
         self.lines: CodeLines = CodeLines()
@@ -129,6 +133,15 @@ class CodeBuilder:
         self.encoder = encoder
         self.encoder_kwargs = encoder_kwargs or {}
 
+        if attrs is not None:
+            self.attrs = attrs
+        else:
+            self.attrs = cls
+        if attrs_registry is not None:
+            self.attrs_registry = attrs_registry
+        else:
+            self.attrs_registry = {}
+
     def reset(self) -> None:
         self.lines.reset()
         self.globals = globals().copy()
@@ -144,6 +157,10 @@ class CodeBuilder:
     @property
     def annotations(self) -> typing.Dict[str, typing.Any]:
         return self.namespace.get("__annotations__", {})
+
+    @property
+    def is_nailed(self) -> bool:
+        return self.attrs is self.cls
 
     def __get_field_types(
         self, recursive: bool = True, include_extras: bool = False
@@ -335,7 +352,11 @@ class CodeBuilder:
 
     def _add_unpack_method_lines(self, method_name: str) -> None:
         config = self.get_config()
-        if config.lazy_compilation and self.allow_postponed_evaluation:
+        if (
+            config.lazy_compilation
+            and self.allow_postponed_evaluation
+            and self.is_nailed
+        ):
             self._add_unpack_method_lines_lazy(method_name)
             return
         try:
@@ -432,7 +453,7 @@ class CodeBuilder:
                         self._unpack_method_set_value(
                             fname, ftype, metadata, alias=alias
                         )
-                with self.indent("except TypeError:"):
+                with self.indent("except AttributeError:"):
                     with self.indent("if not isinstance(d, dict):"):
                         self.add_line(
                             f"raise ValueError('Argument for "
@@ -493,7 +514,7 @@ class CodeBuilder:
             with self.indent(f"if not '{cache_name}' in cls.__dict__:"):
                 self.add_line(f"cls.{cache_name} = {{}}")
 
-        if self.dialect is None:
+        if self.dialect is None and self.is_nailed:
             self.add_line("@classmethod")
         self._add_unpack_method_definition(method_name)
         with self.indent():
@@ -504,14 +525,7 @@ class CodeBuilder:
                     self._add_unpack_method_with_dialect_lines(method_name)
             else:
                 self._add_unpack_method_lines(method_name)
-        if self.dialect is None:
-            self.add_line(f"setattr(cls, '{method_name}', {method_name})")
-            if is_dataclass_dict_mixin_subclass(self.cls):
-                self.add_line(
-                    f"setattr(cls, '{method_name.public}', {method_name})"
-                )
-        else:
-            self.add_line(f"cls.{cache_name}[dialect] = {method_name}")
+        self._add_setattr_method(method_name, cache_name)
         self.compile()
 
     def _add_unpack_method_definition(self, method_name: str) -> None:
@@ -521,7 +535,11 @@ class CodeBuilder:
         )
         if default_kwargs:
             kwargs += f", {default_kwargs}"
-        self.add_line(f"def {method_name}(cls, d{kwargs}):")
+
+        if self.is_nailed:
+            self.add_line(f"def {method_name}(cls, d{kwargs}):")
+        else:
+            self.add_line(f"def {method_name}(d{kwargs}):")
 
     def _unpack_method_set_value(
         self,
@@ -721,7 +739,7 @@ class CodeBuilder:
             TO_DICT_ADD_OMIT_NONE_FLAG, cls
         )
         if omit_none_feature:
-            omit_none = self._get_dialect_or_config_option("omit_none", False)
+            omit_none = self.get_dialect_or_config_option("omit_none", False)
             kw_param_names.append("omit_none")
             kw_param_values.append("True" if omit_none else "False")
 
@@ -729,7 +747,9 @@ class CodeBuilder:
             TO_DICT_ADD_BY_ALIAS_FLAG, cls
         )
         if by_alias_feature:
-            serialize_by_alias = self.get_config(cls).serialize_by_alias
+            serialize_by_alias = self.get_dialect_or_config_option(
+                "serialize_by_alias", False, cls
+            )
             kw_param_names.append("by_alias")
             kw_param_values.append("True" if serialize_by_alias else "False")
 
@@ -852,7 +872,11 @@ class CodeBuilder:
 
     def _add_pack_method_lines(self, method_name: str) -> None:
         config = self.get_config()
-        if config.lazy_compilation and self.allow_postponed_evaluation:
+        if (
+            config.lazy_compilation
+            and self.allow_postponed_evaluation
+            and self.is_nailed
+        ):
             self._add_pack_method_lines_lazy(method_name)
             return
         try:
@@ -882,9 +906,11 @@ class CodeBuilder:
             omit_none_feature = self.is_code_generation_option_enabled(
                 TO_DICT_ADD_OMIT_NONE_FLAG
             )
-            serialize_by_alias = self.get_config().serialize_by_alias
-            omit_none = self._get_dialect_or_config_option("omit_none", False)
-            omit_default = self._get_dialect_or_config_option(
+            serialize_by_alias = self.get_dialect_or_config_option(
+                "serialize_by_alias", False
+            )
+            omit_none = self.get_dialect_or_config_option("omit_none", False)
+            omit_default = self.get_dialect_or_config_option(
                 "omit_default", False
             )
             force_value = omit_default
@@ -1074,7 +1100,9 @@ class CodeBuilder:
             with self.indent("else:"):
                 self.add_line(f"kwargs['{fname}'] = {packed_value}")
         else:
-            serialize_by_alias = self.get_config().serialize_by_alias
+            serialize_by_alias = self.get_dialect_or_config_option(
+                "serialize_by_alias", False
+            )
             if serialize_by_alias and alias is not None:
                 fname_or_alias = alias
             else:
@@ -1157,15 +1185,25 @@ class CodeBuilder:
                     self._add_pack_method_with_dialect_lines(method_name)
             else:
                 self._add_pack_method_lines(method_name)
+        self._add_setattr_method(method_name, cache_name)
+        self.compile()
+
+    def _add_setattr_method(
+        self, method_name: InternalMethodName, cache_name: str
+    ) -> None:
         if self.dialect is None:
-            self.add_line(f"setattr(cls, '{method_name}', {method_name})")
-            if is_dataclass_dict_mixin_subclass(self.cls):
-                self.add_line(
-                    f"setattr(cls, '{method_name.public}', {method_name})"
-                )
+            if not self.is_nailed:
+                self.ensure_object_imported(self.attrs, "_cls")
+                self.ensure_object_imported(self.cls, "cls")
+                self.add_line(f"setattr(_cls, '{method_name}', {method_name})")
+            else:
+                self.add_line(f"setattr(cls, '{method_name}', {method_name})")
+                if is_dataclass_dict_mixin_subclass(self.cls):
+                    self.add_line(
+                        f"setattr(cls, '{method_name.public}', {method_name})"
+                    )
         else:
             self.add_line(f"cls.{cache_name}[dialect] = {method_name}")
-        self.compile()
 
     def _get_field_packer(
         self,
@@ -1195,7 +1233,7 @@ class CodeBuilder:
                     metadata=metadata,
                 ),
                 could_be_none=False,
-                no_copy_collections=self._get_dialect_or_config_option(
+                no_copy_collections=self.get_dialect_or_config_option(
                     "no_copy_collections", ()
                 ),
             )
@@ -1228,7 +1266,7 @@ class CodeBuilder:
         if self.default_dialect is not None:
             yield self.default_dialect.serialization_strategy.get(ftype)
 
-    def _get_dialect_or_config_option(
+    def get_dialect_or_config_option(
         self,
         option: str,
         default: typing.Any,

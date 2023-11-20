@@ -2,7 +2,7 @@
 
 <img alt="logo" width="175" src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/ac2f924591d488dbd9a776a6b1ae7dede2d8c73e/img/logo.svg">
 
-###### Fast and well tested serialization library on top of dataclasses
+###### Fast and well tested serialization library
 
 [![Build Status](https://github.com/Fatal1ty/mashumaro/workflows/tests/badge.svg)](https://github.com/Fatal1ty/mashumaro/actions)
 [![Coverage Status](https://coveralls.io/repos/github/Fatal1ty/mashumaro/badge.svg?branch=master)](https://coveralls.io/github/Fatal1ty/mashumaro?branch=master)
@@ -11,35 +11,35 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 </div>
 
-When using dataclasses, you often need to dump and load objects based on the
-schema you have. Mashumaro not only lets you save and load things in different
-ways, but it also does it _super quick_.
+In Python, you often need to dump and load objects based on the schema you
+have. It can be a dataclass model, a list of third-party generic classes or
+whatever. Mashumaro not only lets you save and load things in different ways,
+but it also does it _super quick_.
 
 **Key features**
 * 🚀 One of the fastest libraries
 * ☝️ Mature and time-tested
 * 👶 Easy to use out of the box
 * ⚙️ Highly customizable
-* 🎉 Built-in support for JSON, YAML, MessagePack, TOML
+* 🎉 Built-in support for JSON, YAML, TOML, MessagePack
 * 📦 Built-in support for almost all Python types including typing-extensions
 * 📝 JSON Schema generation
 
 Table of contents
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+* [Introduction](#introduction)
 * [Installation](#installation)
 * [Changelog](#changelog)
-* [Supported serialization formats](#supported-serialization-formats)
 * [Supported data types](#supported-data-types)
 * [Usage example](#usage-example)
 * [How does it work?](#how-does-it-work)
 * [Benchmark](#benchmark)
-* [Serialization mixins](#serialization-mixins)
-  * [`DataClassDictMixin`](#dataclassdictmixin)
-  * [`DataClassJSONMixin`](#dataclassjsonmixin)
-  * [`DataClassORJSONMixin`](#dataclassorjsonmixin)
-  * [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
-  * [`DataClassYAMLMixin`](#dataclassyamlmixin)
-  * [`DataClassTOMLMixin`](#dataclasstomlmixin)
+* [Supported serialization formats](#supported-serialization-formats)
+  * [Basic form](#basic-form)
+  * [JSON](#json)
+  * [YAML](#yaml)
+  * [TOML](#toml)
+  * [MessagePack](#messagepack)
 * [Customization](#customization)
     * [`SerializableType` interface](#serializabletype-interface)
       * [User-defined types](#user-defined-types)
@@ -72,8 +72,10 @@ Table of contents
     * [Extending existing types](#extending-existing-types)
     * [Dialects](#dialects)
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
+      * [`serialize_by_alias` dialect option](#serialize_by_alias-dialect-option)
       * [`omit_none` dialect option](#omit_none-dialect-option)
       * [`omit_default` dialect option](#omit_default-dialect-option)
+      * [`named_tuple_as_dict` dialect option](#namedtuple_as_dict-dialect-option)
       * [`no_copy_collections` dialect option](#no_copy_collections-dialect-option)
       * [Changing the default dialect](#changing-the-default-dialect)
     * [Discriminator](#discriminator)
@@ -102,8 +104,34 @@ Table of contents
     * [Extending JSON Schema](#extending-json-schema)
     * [JSON Schema and custom serialization methods](#json-schema-and-custom-serialization-methods)
 
+Introduction
+-------------------------------------------------------------------------------
+
+This library provides two fundamentally different approaches to converting
+your data to and from various formats. Each of them is useful in different
+situations:
+
+* Codecs
+* Mixins
+
+Codecs are represented by a set of decoder / encoder classes and
+decode / encode functions for each supported format. You can use them
+to convert data of any python built-in and third-party type to JSON, YAML,
+TOML, MessagePack or a basic form accepted by other serialization formats.
+For example, you can convert a list of datetime objects to JSON array
+containing string-represented datetimes and vice versa.
+
+Mixins are primarily for dataclass models. They are represented by mixin
+classes that add methods for converting to and from JSON, YAML, TOML,
+MessagePack or a basic form accepted by other serialization formats.
+If you have a root dataclass model, then it will be the easiest way to make it
+serializable. All you have to do is inherit a particular mixin class.
+
+In addition to serialization functionality, this library also provides JSON
+Schema builder that can be used in places where interoperability matters.
+
 Installation
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 Use pip to install:
 ```shell
@@ -127,30 +155,13 @@ of Python.
 
 
 Changelog
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 This project follows the principles of [Semantic Versioning](https://semver.org).
 Changelog is available on [GitHub Releases page](https://github.com/Fatal1ty/mashumaro/releases).
 
-Supported serialization formats
---------------------------------------------------------------------------------
-
-This library adds methods for dumping to and loading from the
-following formats:
-
-* [plain dict](https://docs.python.org/3/library/stdtypes.html#mapping-types-dict)
-* [JSON](https://www.json.org)
-* [YAML](https://yaml.org)
-* [MessagePack](https://msgpack.org)
-* [TOML](https://toml.io)
-
-Plain dict can be useful when you need to pass a dict object to a
-third-party library, such as a client for MongoDB.
-
-You can find the documentation for the specific serialization format [below](#serialization-mixins).
-
 Supported data types
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 There is support for generic types from the standard [`typing`](https://docs.python.org/3/library/typing.html) module:
 * [`List`](https://docs.python.org/3/library/typing.html#typing.List)
@@ -266,35 +277,49 @@ for arbitrary types:
 * [third-party generic types](#third-party-generic-types)
 
 Usage example
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+Suppose we're developing a financial application and we operate with currencies
+and stocks:
 
 ```python
-from enum import Enum
-from typing import List
 from dataclasses import dataclass
-from mashumaro.mixins.json import DataClassJSONMixin
+from enum import Enum
 
 class Currency(Enum):
     USD = "USD"
     EUR = "EUR"
 
 @dataclass
-class CurrencyPosition(DataClassJSONMixin):
+class CurrencyPosition:
     currency: Currency
     balance: float
 
 @dataclass
-class StockPosition(DataClassJSONMixin):
+class StockPosition:
     ticker: str
     name: str
     balance: int
+```
+
+Now we want a dataclass for portfolio that will be serialized to and from JSON.
+We inherit `DataClassJSONMixin` that adds this functionality:
+
+```python
+from mashumaro.mixins.json import DataClassJSONMixin
+
+...
 
 @dataclass
 class Portfolio(DataClassJSONMixin):
-    currencies: List[CurrencyPosition]
-    stocks: List[StockPosition]
+    currencies: list[CurrencyPosition]
+    stocks: list[StockPosition]
+```
 
-my_portfolio = Portfolio(
+Let's create a portfolio instance and check methods `from_json` and `to_json`:
+
+```python
+portfolio = Portfolio(
     currencies=[
         CurrencyPosition(Currency.USD, 238.67),
         CurrencyPosition(Currency.EUR, 361.84),
@@ -305,26 +330,48 @@ my_portfolio = Portfolio(
     ]
 )
 
-json_string = my_portfolio.to_json()
-Portfolio.from_json(json_string)  # same as my_portfolio
+portfolio_json = portfolio.to_json()
+assert Portfolio.from_json(portfolio_json) == portfolio
+```
+
+If we need to serialize something different from a root dataclass,
+we can use codecs. In the following example we create a JSON decoder and encoder
+for a list of currencies:
+
+```python
+from mashumaro.codecs.json import JSONDecoder, JSONEncoder
+
+...
+
+decoder = JSONDecoder(list[CurrencyPosition])
+encoder = JSONEncoder(list[CurrencyPosition])
+
+currencies = [
+    CurrencyPosition(Currency.USD, 238.67),
+    CurrencyPosition(Currency.EUR, 361.84),
+]
+currencies_json = encoder.encode(currencies)
+assert decoder.decode(currencies_json) == currencies
+
 ```
 
 How does it work?
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 This library works by taking the schema of the data and generating a
-specific parser and builder for exactly that schema, taking into account the
-specifics of the serialization format. This is much faster than inspection of
-field types on every call of parsing or building at runtime.
+specific decoder and encoder for exactly that schema, taking into account the
+specifics of serialization format. This is much faster than inspection of
+data types on every call of decoding or encoding at runtime.
 
-These specific parsers and builders are presented by the corresponding
-`from_*` and `to_*` methods. They are compiled during import time (or at
-runtime in some cases) and are set as attributes to your dataclasses.
-To minimize the import time, you can explicitly enable
+These specific decoders and encoders are generated by
+[codecs and mixins](#supported-serialization-formats). When using serialization
+mixins, these methods are compiled during import time (or at runtime in some
+cases) and are set as attributes to your dataclasses. To minimize the import
+time, you can explicitly enable
 [lazy compilation](#lazy_compilation-config-option).
 
 Benchmark
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 * macOS 13.3.1 Ventura
 * Apple M1
@@ -362,136 +409,356 @@ pip install -r requirements-dev.txt
 ./benchmark/run.sh
 ```
 
-Serialization mixins
---------------------------------------------------------------------------------
+Supported serialization formats
+-------------------------------------------------------------------------------
 
-`mashumaro` provides mixins for each serialization format.
+This library has built-in support for multiple popular formats:
 
-#### [`DataClassDictMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L14)
+* [JSON](https://www.json.org)
+* [YAML](https://yaml.org)
+* [TOML](https://toml.io)
+* [MessagePack](https://msgpack.org)
 
-Can be imported in two ways:
+There are preconfigured codecs and mixin classes. However, you're free
+to override some settings if necessary.
+
+> [!IMPORTANT]\
+> As for codecs, you are
+> offered to choose between convenience and efficiency. When you need to decode
+> or encode structured data more than once, it's highly recommended to create
+> and reuse a decoder or encoder specifically for that structure. For one-time
+> use with default settings it may be convenient to use global functions that
+> create a disposable decoder or encoder under the hood. Be aware not to use
+> these convenient global functions multiple times for the same structure.
+
+### Basic form
+
+Basic form denotes a python object consisting only of basic data types
+supported by most serialization formats. These types are:
+[`str`](https://docs.python.org/3/library/stdtypes.html#str),
+[`int`](https://docs.python.org/3/library/functions.html#int),
+[`float`](https://docs.python.org/3/library/functions.html#float),
+[`bool`](https://docs.python.org/3/library/stdtypes.html#bltin-boolean-values),
+[`list`](https://docs.python.org/3/library/stdtypes.html#list),
+[`dict`](https://docs.python.org/3/library/stdtypes.html#dict).
+
+This is also a starting point you can play with for a comprehensive
+transformation of your data.
+
+Efficient decoder and encoder can be used as follows:
+
+```python
+from mashumaro.codecs import BasicDecoder, BasicEncoder
+# or from mashumaro.codecs.basic import BasicDecoder, BasicEncoder
+
+decoder = BasicDecoder(<shape_type>, ...)
+decoder.decode(...)
+
+encoder = BasicEncoder(<shape_type>, ...)
+encoder.encode(...)
+```
+
+Convenient functions are recommended to be used as follows:
+```python
+import mashumaro.codecs.basic as basic_codec
+
+basic_codec.decode(..., <shape_type>)
+basic_codec.encode(..., <shape_type>)
+```
+
+Mixin can be used as follows:
 ```python
 from mashumaro import DataClassDictMixin
-from mashumaro.mixins.dict import DataClassDictMixin
+# or from mashumaro.mixins.dict import DataClassDictMixin
+
+@dataclass
+class MyModel(DataClassDictMixin):
+    ...
+
+MyModel.from_dict(...)
+MyModel(...).to_dict()
 ```
 
-The core mixin that adds serialization functionality to a dataclass.
-This mixin is a base class for all other serialization format mixins.
-It adds methods [`from_dict`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L38-L47)
-and [`to_dict`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/dict.py#L27-L36).
+> [!TIP]\
+> You don't need to inherit `DataClassDictMixin` along with other serialization
+> mixins because it's a base class for them.
 
-#### [`DataClassJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L14)
+### JSON
 
-Can be imported as:
+[JSON](https://www.json.org) is a lightweight data-interchange format. You can
+choose between standard library
+[json](https://docs.python.org/3/library/json.html) for compatibility and
+third-party dependency [orjson](https://pypi.org/project/orjson/) for better
+performance.
+
+#### json library
+
+Efficient decoder and encoder can be used as follows:
+```python
+from mashumaro.codecs.json import JSONDecoder, JSONEncoder
+
+decoder = JSONDecoder(<shape_type>, ...)
+decoder.decode(...)
+
+encoder = JSONEncoder(<shape_type>, ...)
+encoder.encode(...)
+```
+
+Convenient functions can be used as follows:
+```python
+from mashumaro.codecs.json import json_decode, json_encode
+
+json_decode(..., <shape_type>)
+json_encode(..., <shape_type>)
+```
+
+Convenient function aliases are recommended to be used as follows:
+```python
+import mashumaro.codecs.json as json_codec
+
+json_codec.decode(...<shape_type>)
+json_codec.encode(..., <shape_type>)
+```
+
+Mixin can be used as follows:
 ```python
 from mashumaro.mixins.json import DataClassJSONMixin
+
+@dataclass
+class MyModel(DataClassJSONMixin):
+    ...
+
+MyModel.from_json(...)
+MyModel(...).to_json()
 ```
 
-This mixin adds json serialization functionality to a dataclass.
-It adds methods [`from_json`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L24-L31)
-and [`to_json`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/json.py#L17-L22).
+#### orjson library
 
-#### [`DataClassORJSONMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/orjson.py#L30)
-
-Can be imported as:
-```python
-from mashumaro.mixins.orjson import DataClassORJSONMixin
-```
-
-This mixin adds json serialization functionality to a dataclass using
-a third-party [`orjson`](https://pypi.org/project/orjson/) library.
-It adds methods [`from_json`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/orjson.pyi#L33-L39),
-[`to_jsonb`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/orjson.pyi#L19-L25),
-[`to_json`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/orjson.pyi#L26-L32).
-
-In order to use this mixin, the [`orjson`](https://pypi.org/project/orjson/) package must be installed.
-You can install it manually or using an extra option for `mashumaro`:
+In order to use [`orjson`](https://pypi.org/project/orjson/) library, it must
+be installed manually or using an extra option for `mashumaro`:
 
 ```shell
 pip install mashumaro[orjson]
 ```
 
-Using this mixin the following data types will be handled by
+The following data types will be handled by
 [`orjson`](https://pypi.org/project/orjson/) library by default:
 * [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime)
 * [`date`](https://docs.python.org/3/library/datetime.html#datetime.date)
 * [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
 * [`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)
 
-#### [`DataClassMessagePackMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L36)
-
-Can be imported as:
+Efficient decoder and encoder can be used as follows:
 ```python
-from mashumaro.mixins.msgpack import DataClassMessagePackMixin
+from mashumaro.codecs.orjson import ORJSONDecoder, ORJSONEncoder
+
+decoder = ORJSONDecoder(<shape_type>, ...)
+decoder.decode(...)
+
+encoder = ORJSONEncoder(<shape_type>, ...)
+encoder.encode(...)
 ```
 
-This mixin adds MessagePack serialization functionality to a dataclass.
-It adds methods [`from_msgpack`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L59-L66)
-and [`to_msgpack`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/msgpack.py#L52-L57).
-
-In order to use this mixin, the [`msgpack`](https://pypi.org/project/msgpack/) package must be installed.
-You can install it manually or using an extra option for `mashumaro`:
-
-```shell
-pip install mashumaro[msgpack]
-```
-
-Using this mixin the following data types will be handled by
-[`msgpack`](https://pypi.org/project/msgpack/) library by default:
-* [`bytes`](https://docs.python.org/3/library/stdtypes.html#bytes)
-* [`bytearray`](https://docs.python.org/3/library/stdtypes.html#bytearray)
-
-#### [`DataClassYAMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L27)
-
-Can be imported as:
+Convenient functions can be used as follows:
 ```python
-from mashumaro.mixins.yaml import DataClassYAMLMixin
+from mashumaro.codecs.orjson import json_decode, json_encode
+
+json_decode(..., <shape_type>)
+json_encode(..., <shape_type>)
 ```
 
-This mixin adds YAML serialization functionality to a dataclass.
-It adds methods [`from_yaml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L37-L44)
-and [`to_yaml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/yaml.py#L30-L35).
+Convenient function aliases are recommended to be used as follows:
+```python
+import mashumaro.codecs.orjson as json_codec
 
-In order to use this mixin, the [`pyyaml`](https://pypi.org/project/PyYAML/) package must be installed.
+json_codec.decode(...<shape_type>)
+json_codec.encode(..., <shape_type>)
+```
+
+Mixin can be used as follows:
+```python
+from mashumaro.mixins.orjson import DataClassORJSONMixin
+
+@dataclass
+class MyModel(DataClassORJSONMixin):
+    ...
+
+MyModel.from_json(...)
+MyModel(...).to_json()
+MyModel(...).to_jsonb()
+```
+
+### YAML
+
+[YAML](https://yaml.org) is a human-friendly data serialization language for
+all programming languages. In order to use this format, the
+[`pyyaml`](https://pypi.org/project/PyYAML/) package must be installed.
 You can install it manually or using an extra option for `mashumaro`:
 
 ```shell
 pip install mashumaro[yaml]
 ```
 
-#### [`DataClassTOMLMixin`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L33)
-
-Can be imported as:
+Efficient decoder and encoder can be used as follows:
 ```python
-from mashumaro.mixins.toml import DataClassTOMLMixin
+from mashumaro.codecs.yaml import YAMLDecoder, YAMLEncoder
+
+decoder = YAMLDecoder(<shape_type>, ...)
+decoder.decode(...)
+
+encoder = YAMLEncoder(<shape_type>, ...)
+encoder.encode(...)
 ```
 
-This mixin adds TOML serialization functionality to a dataclass.
-It adds methods [`from_toml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L56-L63)
-and [`to_toml`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/mixins/toml.py#L49-L54).
+Convenient functions can be used as follows:
+```python
+from mashumaro.codecs.yaml import yaml_decode, yaml_encode
 
-In order to use this mixin, the [`tomli`](https://pypi.org/project/tomli/) and
+yaml_decode(..., <shape_type>)
+yaml_encode(..., <shape_type>)
+```
+
+Convenient function aliases are recommended to be used as follows:
+```python
+import mashumaro.codecs.yaml as yaml_codec
+
+yaml_codec.decode(...<shape_type>)
+yaml_codec.encode(..., <shape_type>)
+```
+
+Mixin can be used as follows:
+```python
+from mashumaro.mixins.yaml import DataClassYAMLMixin
+
+@dataclass
+class MyModel(DataClassYAMLMixin):
+    ...
+
+MyModel.from_yaml(...)
+MyModel(...).to_yaml()
+```
+
+### TOML
+
+[TOML](https://toml.io) is config file format for humans.
+In order to use this format, the [`tomli`](https://pypi.org/project/tomli/) and
 [`tomli-w`](https://pypi.org/project/tomli-w/) packages must be installed.
 In Python 3.11+, `tomli` is included as
 [`tomlib`](https://docs.python.org/3/library/tomllib.html) standard library
-module and can be used my this mixin.
-You can install the missing packages manually or using an extra option for `mashumaro`:
+module and is used for this format. You can install the missing packages
+manually or using an extra option
+for `mashumaro`:
 
 ```shell
 pip install mashumaro[toml]
 ```
 
-Using this mixin the following data types will be handled by
+The following data types will be handled by
 [`tomli`](https://pypi.org/project/tomli/)/
 [`tomli-w`](https://pypi.org/project/tomli-w/) library by default:
 * [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime)
 * [`date`](https://docs.python.org/3/library/datetime.html#datetime.date)
 * [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
 
-Fields with value `None` will be omitted on serialization because TOML doesn't support null values.
+Fields with value `None` will be omitted on serialization because TOML
+doesn't support null values.
+
+Efficient decoder and encoder can be used as follows:
+```python
+from mashumaro.codecs.toml import TOMLDecoder, TOMLEncoder
+
+decoder = TOMLDecoder(<shape_type>, ...)
+decoder.decode(...)
+
+encoder = TOMLEncoder(<shape_type>, ...)
+encoder.encode(...)
+```
+
+Convenient functions can be used as follows:
+```python
+from mashumaro.codecs.toml import toml_decode, toml_encode
+
+toml_decode(..., <shape_type>)
+toml_encode(..., <shape_type>)
+```
+
+Convenient function aliases are recommended to be used as follows:
+```python
+import mashumaro.codecs.toml as toml_codec
+
+toml_codec.decode(...<shape_type>)
+toml_codec.encode(..., <shape_type>)
+```
+
+Mixin can be used as follows:
+```python
+from mashumaro.mixins.toml import DataClassTOMLMixin
+
+@dataclass
+class MyModel(DataClassTOMLMixin):
+    ...
+
+MyModel.from_toml(...)
+MyModel(...).to_toml()
+```
+
+### MessagePack
+
+[MessagePack](https://msgpack.org) is an efficient binary serialization format.
+In order to use this mixin, the [`msgpack`](https://pypi.org/project/msgpack/)
+package must be installed. You can install it manually or using an extra
+option for `mashumaro`:
+
+```shell
+pip install mashumaro[msgpack]
+```
+
+The following data types will be handled by
+[`msgpack`](https://pypi.org/project/msgpack/) library by default:
+* [`bytes`](https://docs.python.org/3/library/stdtypes.html#bytes)
+* [`bytearray`](https://docs.python.org/3/library/stdtypes.html#bytearray)
+
+Efficient decoder and encoder can be used as follows:
+```python
+from mashumaro.codecs.msgpack import MessagePackDecoder, MessagePackEncoder
+
+decoder = MessagePackDecoder(<shape_type>, ...)
+decoder.decode(...)
+
+encoder = MessagePackEncoder(<shape_type>, ...)
+encoder.encode(...)
+```
+
+Convenient functions can be used as follows:
+```python
+from mashumaro.codecs.msgpack import msgpack_decode, msgpack_encode
+
+msgpack_decode(..., <shape_type>)
+msgpack_encode(..., <shape_type>)
+```
+
+Convenient function aliases are recommended to be used as follows:
+```python
+import mashumaro.codecs.msgpack as msgpack_codec
+
+msgpack_codec.decode(...<shape_type>)
+msgpack_codec.encode(..., <shape_type>)
+```
+
+Mixin can be used as follows:
+```python
+from mashumaro.mixins.msgpack import DataClassMessagePackMixin
+
+@dataclass
+class MyModel(DataClassMessagePackMixin):
+    ...
+
+MyModel.from_msgpack(...)
+MyModel(...).to_msgpack()
+```
 
 Customization
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 Customization options of `mashumaro` are extensive and will most likely cover your needs.
 When it comes to non-standard data types and non-standard serialization support, you can do the following:
@@ -1622,6 +1889,12 @@ This dialect option has the same meaning as the
 but for the dialect scope. You can register custom [`SerializationStrategy`](#serializationstrategy),
 `serialize` and `deserialize` methods for the specific types.
 
+#### `serialize_by_alias` dialect option
+
+This dialect option has the same meaning as the
+[similar config option](#serialize_by_alias-config-option)
+but for the dialect scope.
+
 #### `omit_none` dialect option
 
 This dialect option has the same meaning as the
@@ -1631,6 +1904,12 @@ This dialect option has the same meaning as the
 
 This dialect option has the same meaning as the
 [similar config option](#omitdefault-config-option) but for the dialect scope.
+
+#### `namedtuple_as_dict` dialect option
+
+This dialect option has the same meaning as the
+[similar config option](#namedtuple_as_dict-config-option)
+but for the dialect scope.
 
 #### `no_copy_collections` dialect option
 
@@ -2526,7 +2805,7 @@ Note that you can add an additional `context` argument using the
 [corresponding](#add-context-keyword-argument) code generation option.
 
 JSON Schema
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 You can build JSON Schema not only for dataclasses but also for any other
 [supported](#supported-data-types) data

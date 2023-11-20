@@ -1,4 +1,4 @@
-from typing import Any, Dict, Mapping, Type, TypeVar
+from typing import Any, Dict, Mapping, Type, TypeVar, final
 
 from mashumaro.core.meta.mixin import (
     compile_mixin_packer,
@@ -24,6 +24,7 @@ class DataClassDictMixin:
                 compile_mixin_unpacker(cls, **builder_params["unpacker"])
                 compile_mixin_packer(cls, **builder_params["packer"])
 
+    @final
     def to_dict(
         self: T,
         # *
@@ -36,6 +37,7 @@ class DataClassDictMixin:
         ...
 
     @classmethod
+    @final
     def from_dict(
         cls: Type[T],
         d: Mapping,

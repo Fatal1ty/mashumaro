@@ -56,6 +56,7 @@ from mashumaro.core.meta.types.common import (
     NoneType,
     Registry,
     ValueSpec,
+    clean_id,
     ensure_generic_collection,
     ensure_generic_collection_subclass,
     ensure_generic_mapping,
@@ -105,11 +106,13 @@ def _pack_with_annotated_serialization_strategy(
         resolve_type_params(strategy_type, get_args(spec.type))[strategy_type],
     )
     overridden_fn = f"__{spec.field_ctx.name}_serialize_{random_hex()}"
-    setattr(spec.builder.cls, overridden_fn, strategy.serialize)
+    setattr(spec.attrs, overridden_fn, strategy.serialize)
     return PackerRegistry.get(
         spec.copy(
             type=value_type,
-            expression=f"self.{overridden_fn}({spec.expression})",
+            expression=(
+                f"{spec.self_attrs_name}.{overridden_fn}({spec.expression})"
+            ),
         )
     )
 
@@ -156,10 +159,8 @@ def pack_type_with_overridden_serialization(
         return serialization_method.expression
     elif callable(serialization_method):
         overridden_fn = f"__{spec.field_ctx.name}_serialize_{random_hex()}"
-        setattr(
-            spec.builder.cls, overridden_fn, staticmethod(serialization_method)
-        )
-        return f"self.{overridden_fn}({spec.expression})"
+        setattr(spec.attrs, overridden_fn, staticmethod(serialization_method))
+        return f"{spec.self_attrs_name}.{overridden_fn}({spec.expression})"
 
 
 def _pack_annotated_serializable_type(
@@ -228,9 +229,10 @@ def pack_dataclass(spec: ValueSpec) -> Optional[Expression]:
         method_name = spec.builder.get_pack_method_name(
             type_args, spec.builder.format_name
         )
+        method_loc = spec.origin_type if spec.builder.is_nailed else spec.attrs
         if get_class_that_defines_method(
-            method_name, spec.origin_type
-        ) != spec.origin_type and (
+            method_name, method_loc
+        ) != method_loc and (
             spec.origin_type != spec.builder.cls
             or spec.builder.get_pack_method_name(
                 type_args=type_args,
@@ -245,10 +247,23 @@ def pack_dataclass(spec: ValueSpec) -> Optional[Expression]:
                 dialect=spec.builder.dialect,
                 format_name=spec.builder.format_name,
                 default_dialect=spec.builder.default_dialect,
+                attrs=method_loc,
+                attrs_registry=(
+                    spec.attrs_registry if not spec.builder.is_nailed else None
+                ),
             )
             builder.add_pack_method()
         flags = spec.builder.get_pack_method_flags(spec.type)
-        return f"{spec.expression}.{method_name}({flags})"
+        if spec.builder.is_nailed:
+            return f"{spec.expression}.{method_name}({flags})"
+        else:
+            cls_alias = clean_id(type_name(spec.origin_type))
+            method_name_alias = f"{cls_alias}_{method_name}"
+            spec.builder.ensure_object_imported(
+                getattr(spec.attrs, method_name), method_name_alias
+            )
+            method_args = spec.expression
+            return f"{method_name_alias}({method_args})"
 
 
 @register
@@ -271,11 +286,12 @@ def pack_union(
         f"__pack_{prefix}_{spec.builder.cls.__name__}_{spec.field_ctx.name}__"
         f"{random_hex()}"
     )
+    method_args = "self, value" if spec.builder.is_nailed else "value"
     default_kwargs = spec.builder.get_pack_method_default_flag_values()
     if default_kwargs:
-        lines.append(f"def {method_name}(self, value, {default_kwargs}):")
+        lines.append(f"def {method_name}({method_args}, {default_kwargs}):")
     else:
-        lines.append(f"def {method_name}(self, value):")
+        lines.append(f"def {method_name}({method_args}):")
     with lines.indent():
         for packer in (
             PackerRegistry.get(spec.copy(type=type_arg, expression="value"))
@@ -290,11 +306,16 @@ def pack_union(
                 spec.field_ctx.name
             ),
         )
-        lines.append(
-            f"raise InvalidFieldValue('{spec.field_ctx.name}',{field_type},"
-            f"value,type(self))"
-        )
-    lines.append(f"setattr(cls, '{method_name}', {method_name})")
+        if spec.builder.is_nailed:
+            lines.append(
+                f"raise InvalidFieldValue("
+                f"'{spec.field_ctx.name}',{field_type},value,type(self))"
+            )
+        else:
+            lines.append("raise ValueError(value)")
+    lines.append(
+        f"setattr({spec.cls_attrs_name}, '{method_name}', {method_name})"
+    )
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
@@ -302,7 +323,13 @@ def pack_union(
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_pack_method_flags()))
     )
-    return f"self.{method_name}({method_args})"
+    if spec.builder.is_nailed:
+        return f"{spec.self_attrs_name}.{method_name}({method_args})"
+    else:
+        spec.builder.ensure_object_imported(
+            getattr(spec.attrs, method_name), method_name
+        )
+        return f"{method_name}({method_args})"
 
 
 def pack_literal(spec: ValueSpec) -> Expression:
@@ -312,11 +339,12 @@ def pack_literal(spec: ValueSpec) -> Expression:
         f"__pack_literal_{spec.builder.cls.__name__}_{spec.field_ctx.name}__"
         f"{random_hex()}"
     )
+    method_args = "self, value" if spec.builder.is_nailed else "value"
     default_kwargs = spec.builder.get_pack_method_default_flag_values()
     if default_kwargs:
-        lines.append(f"def {method_name}(self, value, {default_kwargs}):")
+        lines.append(f"def {method_name}({method_args}, {default_kwargs}):")
     else:
-        lines.append(f"def {method_name}(self, value):")
+        lines.append(f"def {method_name}({method_args}):")
     resolved_type_params = spec.builder.get_field_resolved_type_params(
         spec.field_ctx.name
     )
@@ -345,11 +373,16 @@ def pack_literal(spec: ValueSpec) -> Expression:
             typ=spec.type,
             resolved_type_params=resolved_type_params,
         )
-        lines.append(
-            f"raise InvalidFieldValue('{spec.field_ctx.name}',"
-            f"{field_type},value,type(self))"
-        )
-    lines.append(f"setattr(cls, '{method_name}', {method_name})")
+        if spec.builder.is_nailed:
+            lines.append(
+                f"raise InvalidFieldValue('{spec.field_ctx.name}',"
+                f"{field_type},value,type(self))"
+            )
+        else:
+            lines.append("raise ValueError(value)")
+    lines.append(
+        f"setattr({spec.cls_attrs_name}, '{method_name}', {method_name})"
+    )
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
@@ -357,7 +390,7 @@ def pack_literal(spec: ValueSpec) -> Expression:
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_pack_method_flags()))
     )
-    return f"self.{method_name}({method_args})"
+    return f"{spec.self_attrs_name}.{method_name}({method_args})"
 
 
 @register
@@ -400,9 +433,12 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             method_name = spec.builder.get_pack_method_name(
                 format_name=spec.builder.format_name
             )
+            method_loc = (
+                spec.builder.cls if spec.builder.is_nailed else spec.attrs
+            )
             if (
-                get_class_that_defines_method(method_name, spec.builder.cls)
-                != spec.builder.cls
+                get_class_that_defines_method(method_name, method_loc)
+                != method_loc
                 # not hasattr(self.cls, method_name)
                 and spec.builder.get_pack_method_name(
                     format_name=spec.builder.format_name,
@@ -415,10 +451,20 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
                     dialect=spec.builder.dialect,
                     format_name=spec.builder.format_name,
                     default_dialect=spec.builder.default_dialect,
+                    attrs=method_loc,
+                    attrs_registry=(
+                        spec.attrs_registry
+                        if not spec.builder.is_nailed
+                        else None
+                    ),
                 )
                 builder.add_pack_method()
             flags = spec.builder.get_pack_method_flags(spec.builder.cls)
-            return f"{spec.expression}.{method_name}({flags})"
+            if spec.builder.is_nailed:
+                return f"{spec.expression}.{method_name}({flags})"
+            else:
+                method_args = spec.expression
+                return f"_cls.{method_name}({method_args})"
         elif is_required(spec.type) or is_not_required(spec.type):
             return PackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
         elif is_unpack(spec.type):
@@ -568,7 +614,9 @@ def pack_named_tuple(spec: ValueSpec) -> Expression:
     }
     fields = getattr(spec.type, "_fields", ())
     packers = []
-    as_dict = spec.builder.get_config().namedtuple_as_dict
+    as_dict = spec.builder.get_dialect_or_config_option(
+        "namedtuple_as_dict", False
+    )
     serialize_option = get_overridden_serialization_method(spec)
     if serialize_option is not None:
         if serialize_option == "as_dict":
@@ -614,11 +662,12 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
         f"__pack_typed_dict_{spec.builder.cls.__name__}_"
         f"{spec.field_ctx.name}__{random_hex()}"
     )
+    method_args = "self, value" if spec.builder.is_nailed else "value"
     default_kwargs = spec.builder.get_pack_method_default_flag_values()
     if default_kwargs:
-        lines.append(f"def {method_name}(self, value, {default_kwargs}):")
+        lines.append(f"def {method_name}({method_args}, {default_kwargs}):")
     else:
-        lines.append(f"def {method_name}(self, value):")
+        lines.append(f"def {method_name}({method_args}):")
     with lines.indent():
         lines.append("d = {}")
         for key in sorted(required_keys, key=all_keys.index):
@@ -644,7 +693,9 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
                 )
                 lines.append(f"d['{key}'] = {packer}")
         lines.append("return d")
-    lines.append(f"setattr(cls, '{method_name}', {method_name})")
+    lines.append(
+        f"setattr({spec.cls_attrs_name}, '{method_name}', {method_name})"
+    )
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
@@ -652,7 +703,7 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_pack_method_flags()))
     )
-    return f"self.{method_name}({method_args})"
+    return f"{spec.self_attrs_name}.{method_name}({method_args})"
 
 
 @register

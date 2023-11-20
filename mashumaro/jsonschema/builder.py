@@ -9,7 +9,7 @@ try:
     from mashumaro.mixins.orjson import (
         DataClassORJSONMixin as DataClassJSONMixin,
     )
-except ImportError:  # pragma no cover
+except ImportError:  # pragma: no cover
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
 

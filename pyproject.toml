@@ -8,6 +8,7 @@ module = [
     'mashumaro.mixins.dict',
     'mashumaro.mixins.msgpack',
     'mashumaro.mixins.toml',
+    'mashumaro.codecs.*',
 ]
 disable_error_code = 'empty-body'
 
@@ -29,3 +30,12 @@ ensure_newline_before_comments = true
 [tool.black]
 line-length = 79
 target-version = ['py38', 'py39', 'py310', 'py311']
+
+[tool.ruff]
+line-length = 79
+
+[tool.coverage.run]
+omit = ["setup.py"]
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "@overload", "@abstractmethod"]

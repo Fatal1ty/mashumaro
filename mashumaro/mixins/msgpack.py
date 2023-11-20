@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Type, TypeVar
+from typing import Any, Callable, Dict, Type, TypeVar, final
 
 import msgpack
 
@@ -49,6 +49,7 @@ class DataClassMessagePackMixin(DataClassDictMixin):
         },
     }
 
+    @final
     def to_msgpack(
         self: T,
         encoder: Encoder = default_encoder,
@@ -57,6 +58,7 @@ class DataClassMessagePackMixin(DataClassDictMixin):
         ...
 
     @classmethod
+    @final
     def from_msgpack(
         cls: Type[T],
         data: EncodedData,

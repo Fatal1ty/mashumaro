@@ -1,5 +1,11 @@
+from dataclasses import dataclass
 from typing import List, Union
 
+import pytest
+
+from mashumaro import DataClassDictMixin
+from mashumaro.codecs import BasicDecoder
+from mashumaro.core.meta.helpers import type_name
 from mashumaro.exceptions import (
     InvalidFieldValue,
     MissingDiscriminatorError,
@@ -163,3 +169,24 @@ def test_suitable_variant_not_found_error():
     assert exc.variants_type == Union[str, int]
     assert exc.discriminator_name == "type"
     assert str(exc) == "typing.Union[str, int] has no suitable subtype"
+
+
+def test_deserialize_dataclass_from_wrong_value_type():
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: str
+
+    with pytest.raises(ValueError) as exc_info:
+        MyClass.from_dict(42)
+    assert str(exc_info.value) == (
+        f"Argument for {type_name(MyClass)}."
+        f"__mashumaro_from_dict__ method should be a dict instance"
+    )
+
+    decoder = BasicDecoder(MyClass)
+    with pytest.raises(ValueError) as exc_info:
+        decoder.decode(42)
+    assert str(exc_info.value) == (
+        f"Argument for {type_name(MyClass)}."
+        f"__mashumaro_from_dict__ method should be a dict instance"
+    )

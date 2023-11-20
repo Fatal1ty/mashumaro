@@ -5,6 +5,8 @@ import orjson
 from typing_extensions import Self
 
 from mashumaro import DataClassDictMixin
+from mashumaro.codecs import BasicDecoder, BasicEncoder
+from mashumaro.codecs.orjson import ORJSONDecoder, ORJSONEncoder
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
 
@@ -16,6 +18,11 @@ class DataClassDict(DataClassDictMixin):
 @dataclass
 class DataClassDictChild(DataClassDict):
     x: int = 42
+
+
+@dataclass
+class DataClassDictWithoutMixin:
+    next: Optional[Self] = None
 
 
 @dataclass
@@ -35,6 +42,17 @@ def test_dataclass_dict_with_self():
     assert DataClassDict().to_dict() == {"next": None}
     assert DataClassDict.from_dict({"next": None}) == DataClassDict()
     assert DataClassDict.from_dict({}) == DataClassDict()
+
+
+def test_dataclass_dict_with_self_without_mixin():
+    decoder = BasicDecoder(DataClassDictWithoutMixin)
+    encoder = BasicEncoder(DataClassDictWithoutMixin)
+    obj = DataClassDictWithoutMixin(DataClassDictWithoutMixin())
+    assert encoder.encode(obj) == {"next": {"next": None}}
+    assert decoder.decode({"next": {"next": None}}) == obj
+    assert encoder.encode(DataClassDictWithoutMixin()) == {"next": None}
+    assert decoder.decode({"next": None}) == DataClassDictWithoutMixin()
+    assert decoder.decode({}) == DataClassDictWithoutMixin()
 
 
 def test_dataclass_dict_child_with_self():
@@ -61,6 +79,19 @@ def test_dataclass_orjson_with_self():
     assert DataClassOrjson().to_jsonb() == dump
     assert DataClassOrjson.from_json(dump) == DataClassOrjson()
     assert DataClassOrjson.from_json(b"{}") == DataClassOrjson()
+
+
+def test_dataclass_orjson_with_self_without_mixin():
+    decoder = ORJSONDecoder(DataClassDictWithoutMixin)
+    encoder = ORJSONEncoder(DataClassDictWithoutMixin)
+    obj = DataClassDictWithoutMixin(DataClassDictWithoutMixin())
+    dump = orjson.dumps({"next": {"next": None}})
+    assert encoder.encode(obj) == dump
+    assert decoder.decode(dump) == obj
+    dump = orjson.dumps({"next": None})
+    assert encoder.encode(DataClassDictWithoutMixin()) == dump
+    assert decoder.decode(dump) == DataClassDictWithoutMixin()
+    assert decoder.decode(b"{}") == DataClassDictWithoutMixin()
 
 
 def test_dataclass_orjson_child_with_self():

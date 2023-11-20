@@ -7,7 +7,7 @@ from typing import Any, Generic, List, NewType, Optional, TypeVar, Union
 
 try:
     from enum import StrEnum
-except ImportError:  # pragma no cover
+except ImportError:  # pragma: no cover
 
     class StrEnum(str, Enum):
         pass

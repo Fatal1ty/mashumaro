@@ -80,6 +80,7 @@ __all__ = [
     "hash_type_args",
     "iter_all_subclasses",
     "is_hashable",
+    "is_hashable_type",
     "evaluate_forward_ref",
 ]
 
@@ -167,7 +168,7 @@ def _get_literal_values_str(typ: Type, short: bool) -> str:
     for value in get_literal_values(typ):
         if isinstance(value, enum.Enum):
             values_str.append(f"{type_name(type(value), short)}.{value.name}")
-        elif isinstance(  # type: ignore
+        elif isinstance(
             value, (int, str, bytes, bool, NoneType)  # type: ignore
         ):
             values_str.append(repr(value))

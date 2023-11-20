@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Type, TypeVar, Union, final
 
 import orjson
 
@@ -16,6 +16,7 @@ class OrjsonDialect(Dialect):
 
 class DataClassORJSONMixin(DataClassDictMixin):
     __slots__ = ()
+    @final
     def to_jsonb(
         self: T,
         encoder: Encoder = orjson.dumps,
@@ -31,6 +32,7 @@ class DataClassORJSONMixin(DataClassDictMixin):
         **to_dict_kwargs: Any,
     ) -> bytes: ...
     @classmethod
+    @final
     def from_json(
         cls: Type[T],
         data: EncodedData,

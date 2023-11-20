@@ -1,5 +1,5 @@
 from datetime import date, datetime, time
-from typing import Any, Callable, Dict, Type, TypeVar
+from typing import Any, Callable, Dict, Type, TypeVar, final
 
 import tomli_w
 
@@ -46,6 +46,7 @@ class DataClassTOMLMixin(DataClassDictMixin):
         },
     }
 
+    @final
     def to_toml(
         self: T,
         encoder: Encoder = tomli_w.dumps,
@@ -54,6 +55,7 @@ class DataClassTOMLMixin(DataClassDictMixin):
         ...
 
     @classmethod
+    @final
     def from_toml(
         cls: Type[T],
         data: EncodedData,
