@@ -954,7 +954,9 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
     fields = getattr(spec.type, "_fields", ())
     defaults = getattr(spec.type, "_field_defaults", {})
     unpackers = []
-    as_dict = spec.builder.get_config().namedtuple_as_dict
+    as_dict = spec.builder.get_dialect_or_config_option(
+        "namedtuple_as_dict", False
+    )
     deserialize_option = get_overridden_deserialization_method(spec)
     if deserialize_option is not None:
         if deserialize_option == "as_dict":

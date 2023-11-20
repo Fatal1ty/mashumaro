@@ -16,6 +16,12 @@ SerializationStrategyValueType = Union[
 
 class Dialect:
     serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
+    serialize_by_alias: Union[
+        bool, Literal[Sentinel.MISSING]
+    ] = Sentinel.MISSING
+    namedtuple_as_dict: Union[
+        bool, Literal[Sentinel.MISSING]
+    ] = Sentinel.MISSING
     omit_none: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
     omit_default: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
     no_copy_collections: Union[

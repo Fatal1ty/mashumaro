@@ -387,10 +387,10 @@ to override some settings if necessary.
 > As for codecs, you are
 > offered to choose between convenience and efficiency. When you need to decode
 > or encode structured data more than once, it's highly recommended to create
-> a decoder or encoder specifically for that structure. For one-time use with
-> default settings it may be convenient to use global functions that create
-> a disposable decoder or encoder under the hood. Be aware not to use these
-> convenient global functions in performance-critical code!
+> and reuse a decoder or encoder specifically for that structure. For one-time
+> use with default settings it may be convenient to use global functions that
+> create a disposable decoder or encoder under the hood. Be aware not to use
+> these convenient global functions multiple times for the same structure.
 
 ### Basic form
 

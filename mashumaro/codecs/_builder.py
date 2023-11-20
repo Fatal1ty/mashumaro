@@ -82,7 +82,7 @@ class CodecCodeBuilder(CodeBuilder):
                     builder=self,
                     field_ctx=FieldContext(name="", metadata={}),
                     could_be_none=could_be_none,
-                    no_copy_collections=self._get_dialect_or_config_option(
+                    no_copy_collections=self.get_dialect_or_config_option(
                         "no_copy_collections", ()
                     ),
                 )

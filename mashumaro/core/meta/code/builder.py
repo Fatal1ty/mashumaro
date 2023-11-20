@@ -719,7 +719,7 @@ class CodeBuilder:
             TO_DICT_ADD_OMIT_NONE_FLAG, cls
         )
         if omit_none_feature:
-            omit_none = self._get_dialect_or_config_option("omit_none", False)
+            omit_none = self.get_dialect_or_config_option("omit_none", False)
             kw_param_names.append("omit_none")
             kw_param_values.append("True" if omit_none else "False")
 
@@ -727,7 +727,7 @@ class CodeBuilder:
             TO_DICT_ADD_BY_ALIAS_FLAG, cls
         )
         if by_alias_feature:
-            serialize_by_alias = self._get_dialect_or_config_option(
+            serialize_by_alias = self.get_dialect_or_config_option(
                 "serialize_by_alias", False, cls
             )
             kw_param_names.append("by_alias")
@@ -886,11 +886,11 @@ class CodeBuilder:
             omit_none_feature = self.is_code_generation_option_enabled(
                 TO_DICT_ADD_OMIT_NONE_FLAG
             )
-            serialize_by_alias = self._get_dialect_or_config_option(
+            serialize_by_alias = self.get_dialect_or_config_option(
                 "serialize_by_alias", False
             )
-            omit_none = self._get_dialect_or_config_option("omit_none", False)
-            omit_default = self._get_dialect_or_config_option(
+            omit_none = self.get_dialect_or_config_option("omit_none", False)
+            omit_default = self.get_dialect_or_config_option(
                 "omit_default", False
             )
             force_value = omit_default
@@ -1080,7 +1080,7 @@ class CodeBuilder:
             with self.indent("else:"):
                 self.add_line(f"kwargs['{fname}'] = {packed_value}")
         else:
-            serialize_by_alias = self._get_dialect_or_config_option(
+            serialize_by_alias = self.get_dialect_or_config_option(
                 "serialize_by_alias", False
             )
             if serialize_by_alias and alias is not None:
@@ -1213,7 +1213,7 @@ class CodeBuilder:
                     metadata=metadata,
                 ),
                 could_be_none=False,
-                no_copy_collections=self._get_dialect_or_config_option(
+                no_copy_collections=self.get_dialect_or_config_option(
                     "no_copy_collections", ()
                 ),
             )
@@ -1246,7 +1246,7 @@ class CodeBuilder:
         if self.default_dialect is not None:
             yield self.default_dialect.serialization_strategy.get(ftype)
 
-    def _get_dialect_or_config_option(
+    def get_dialect_or_config_option(
         self,
         option: str,
         default: typing.Any,

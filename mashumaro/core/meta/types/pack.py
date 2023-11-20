@@ -614,7 +614,9 @@ def pack_named_tuple(spec: ValueSpec) -> Expression:
     }
     fields = getattr(spec.type, "_fields", ())
     packers = []
-    as_dict = spec.builder.get_config().namedtuple_as_dict
+    as_dict = spec.builder.get_dialect_or_config_option(
+        "namedtuple_as_dict", False
+    )
     serialize_option = get_overridden_serialization_method(spec)
     if serialize_option is not None:
         if serialize_option == "as_dict":

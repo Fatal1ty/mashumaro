@@ -41,7 +41,9 @@ class BaseConfig:
     serialize_by_alias: Union[
         bool, Literal[Sentinel.MISSING]
     ] = Sentinel.MISSING
-    namedtuple_as_dict: bool = False
+    namedtuple_as_dict: Union[
+        bool, Literal[Sentinel.MISSING]
+    ] = Sentinel.MISSING
     allow_postponed_evaluation: bool = True
     dialect: Optional[Type[Dialect]] = None
     omit_none: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING

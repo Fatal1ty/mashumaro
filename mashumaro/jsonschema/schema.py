@@ -212,6 +212,16 @@ class Instance:
         else:
             return BaseConfig
 
+    def get_owner_dialect_or_config_option(
+        self, option: str, default: Any
+    ) -> Any:
+        if self.__owner_builder:
+            return self.__owner_builder.get_dialect_or_config_option(
+                option, default
+            )
+        else:
+            return default
+
     def get_self_config(self) -> Type[BaseConfig]:
         if self.__self_builder:
             return self.__self_builder.get_config()
@@ -606,7 +616,9 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
     }
     fields = getattr(instance.type, "_fields", ())
     defaults = getattr(instance.type, "_field_defaults", {})
-    as_dict = instance.get_owner_config().namedtuple_as_dict
+    as_dict = instance.get_owner_dialect_or_config_option(
+        "namedtuple_as_dict", False
+    )
     serialize_option = instance.get_overridden_serialization_method()
     if serialize_option == "as_dict":
         as_dict = True
