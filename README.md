@@ -71,8 +71,10 @@ Table of contents
     * [Extending existing types](#extending-existing-types)
     * [Dialects](#dialects)
       * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
+      * [`serialize_by_alias` dialect option](#serialize_by_alias-dialect-option)
       * [`omit_none` dialect option](#omit_none-dialect-option)
       * [`omit_default` dialect option](#omit_default-dialect-option)
+      * [`named_tuple_as_dict`](#namedtuple_as_dict-dialect-option)
       * [`no_copy_collections` dialect option](#no_copy_collections-dialect-option)
       * [Changing the default dialect](#changing-the-default-dialect)
     * [Discriminator](#discriminator)
@@ -1813,6 +1815,12 @@ This dialect option has the same meaning as the
 but for the dialect scope. You can register custom [`SerializationStrategy`](#serializationstrategy),
 `serialize` and `deserialize` methods for the specific types.
 
+#### `serialize_by_alias` dialect option
+
+This dialect option has the same meaning as the
+[similar config option](#serialize_by_alias-config-option)
+but for the dialect scope.
+
 #### `omit_none` dialect option
 
 This dialect option has the same meaning as the
@@ -1822,6 +1830,12 @@ This dialect option has the same meaning as the
 
 This dialect option has the same meaning as the
 [similar config option](#omitdefault-config-option) but for the dialect scope.
+
+#### `namedtuple_as_dict` dialect option
+
+This dialect option has the same meaning as the
+[similar config option](#namedtuple_as_dict-config-option)
+but for the dialect scope.
 
 #### `no_copy_collections` dialect option
 
