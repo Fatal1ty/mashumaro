@@ -573,16 +573,36 @@ class CodeBuilder:
                 could_be_none=False if could_be_none else True,
             )
         )
-        if unpacked_value != "value":
-            self.add_line(f"value = d.get('{alias or fname}', MISSING)")
-            packed_value = "value"
-        elif has_default:
-            self.add_line(f"value = d.get('{alias or fname}', MISSING)")
-            packed_value = "value"
+        if self.get_config().allow_deserialization_not_by_alias:
+            if unpacked_value != "value":
+                self.add_line(f"value = d.get('{alias}', MISSING)")
+                with self.indent("if value is MISSING:"):
+                    self.add_line(f"value = d.get('{fname}', MISSING)")
+                packed_value = "value"
+            elif has_default:
+                self.add_line(f"value = d.get('{alias}', MISSING)")
+                with self.indent("if value is MISSING:"):
+                    self.add_line(f"value = d.get('{fname}', MISSING)")
+                packed_value = "value"
+            else:
+                self.add_line(f"__{fname} = d.get('{alias}', MISSING)")
+                with self.indent(f"if __{fname} is MISSING:"):
+                    self.add_line(f"__{fname} = d.get('{fname}', MISSING)")
+                packed_value = f"__{fname}"
+                unpacked_value = packed_value
         else:
-            self.add_line(f"__{fname} = d.get('{alias or fname}', MISSING)")
-            packed_value = f"__{fname}"
-            unpacked_value = packed_value
+            if unpacked_value != "value":
+                self.add_line(f"value = d.get('{alias or fname}', MISSING)")
+                packed_value = "value"
+            elif has_default:
+                self.add_line(f"value = d.get('{alias or fname}', MISSING)")
+                packed_value = "value"
+            else:
+                self.add_line(
+                    f"__{fname} = d.get('{alias or fname}', MISSING)"
+                )
+                packed_value = f"__{fname}"
+                unpacked_value = packed_value
         if not has_default:
             with self.indent(f"if {packed_value} is MISSING:"):
                 self.add_line(

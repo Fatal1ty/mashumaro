@@ -58,6 +58,7 @@ Table of contents
         * [`serialization_strategy` config option](#serialization_strategy-config-option)
         * [`aliases` config option](#aliases-config-option)
         * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
+        * [`allow_deserialization_not_by_alias` config option](#allow_deserialization_not_by_alias-config-option)
         * [`omit_none` config option](#omit_none-config-option)
         * [`omit_default` config option](#omit_default-config-option)
         * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
@@ -1119,7 +1120,7 @@ with. At this moment there are next serialization engines to choose from:
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict` | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine. |
 | `Any`                      | `omit`               | Skip the field during serialization                                                                                                                                                                          |
 
-> [!NOTE]\
+> [!TIP]\
 > You can pass a field value as is without changes on serialization using
 [`pass_through`](#passing-field-values-as-is).
 
@@ -1164,7 +1165,7 @@ with. At this moment there are next deserialization engines to choose from:
 | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict`                                                                                                                | How to unpack named tuples. By default `as_list` engine is used that means your named tuple class instance will be created from a list of its values. You can unpack it from a dictionary using `as_dict` engine.                                                                                       |
 
-> [!NOTE]\
+> [!TIP]\
 > You can pass a field value as is without changes on deserialization using
 [`pass_through`](#passing-field-values-as-is).
 
@@ -1213,7 +1214,7 @@ for a dataclass field depending on some defined parameters using a reusable
 serialization scheme. You can find an example in the
 [`SerializationStrategy`](#serializationstrategy) chapter.
 
-> [!NOTE]\
+> [!TIP]\
 > You can pass a field value as is without changes on
 > serialization / deserialization using
 [`pass_through`](#passing-field-values-as-is).
@@ -1239,8 +1240,12 @@ x = DataClass.from_dict({"FieldA": 1, "#invalid": 2})  # DataClass(a=1, b=2)
 x.to_dict()  # {"a": 1, "b": 2}  # no aliases on serialization by default
 ```
 
-If you want to write all the field aliases in one place there is
-[such a config option](#aliases-config-option).
+If you want to write all the field aliases in one place, there is
+[a config option](#aliases-config-option) for that.
+
+If you want to deserialize all the fields by its names along with aliases,
+there is [a config option](#allow_deserialization_not_by_alias-config-option)
+for that.
 
 If you want to serialize all the fields by aliases you have two options to do so:
 * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
@@ -1423,6 +1428,39 @@ class DataClass(DataClassDictMixin):
         serialize_by_alias = True
 
 DataClass(field_a=1).to_dict()  # {'FieldA': 1}
+```
+
+#### `allow_deserialization_not_by_alias` config option
+
+When using aliases, the deserializer defaults to requiring the keys to match
+what is defined as the alias.
+If the flexibility to deserialize aliased and unaliased keys is required then
+the config option `allow_deserialization_not_by_alias = True` can be set to
+enable the feature.
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+
+
+@dataclass
+class AliasedDataClass(DataClassDictMixin):
+    foo: int = field(metadata={"alias": "alias_foo"})
+    bar: int = field(metadata={"alias": "alias_bar"})
+
+    class Config(BaseConfig):
+        allow_deserialization_not_by_alias = True
+
+
+alias_dict = {"alias_foo": 1, "alias_bar": 2}
+t1 = AliasedDataClass.from_dict(alias_dict)
+
+no_alias_dict = {"foo": 1, "bar": 2}
+# This would raise `mashumaro.exceptions.MissingField`
+# if allow_deserialization_not_by_alias was False
+t2 = AliasedDataClass.from_dict(no_alias_dict)
+assert t1 == t2
 ```
 
 #### `omit_none` config option
@@ -1626,7 +1664,7 @@ be deferred until they are called first time. This will reduce the import time
 and, in certain instances, may enhance the speed of deserialization
 by leveraging the data that is accessible after the class has been created.
 
-> [!Warning]\
+> [!CAUTION]\
 > If you need to save a reference to `from_*` or `to_*` method, you should
 > do it after the method is compiled. To be safe, you can always use lambda
 > function:
