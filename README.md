@@ -1249,6 +1249,7 @@ for that.
 
 If you want to serialize all the fields by aliases you have two options to do so:
 * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
+* [`serialize_by_alias` dialect option](#serialize_by_alias-dialect-option)
 * [`by_alias` keyword argument in `to_*` methods](#add-by_alias-keyword-argument)
 
 It's hard to imagine when it might be necessary to serialize only specific
@@ -1950,20 +1951,19 @@ assert data["simple_dict"] is obj.simple_dict
 assert data["simple_set"] is obj.simple_set
 ```
 
-This option is enabled for `list` and `dict` in the dialects that are used
-within the following mixins:
-* [`DataClassORJSONMixin`](#dataclassorjsonmixin)
-* [`DataClassMessagePackMixin`](#dataclassmessagepackmixin)
-* [`DataClassTOMLMixin`](#dataclasstomlmixin)
+This option is enabled for `list` and `dict` in the default dialects that
+belong to mixins and codecs for the following formats:
+* [JSON (orjson library)](#orjson-library)
+* [TOML](#toml)
+* [MessagePack](#messagepack)
 
 #### Changing the default dialect
 
-You can change the default serialization and deserialization methods for
-a dataclass not only in the
-[`serialization_strategy`](#serialization_strategy-config-option) config option
-but using the `dialect` config option. If you have multiple dataclasses without
-a common parent class the default dialect can help you to reduce the number of
-code lines written:
+You can change the default serialization and deserialization methods not only
+in the [`serialization_strategy`](#serialization_strategy-config-option) config
+option but also using the `dialect` config option. If you have multiple
+dataclasses without a common parent class the default dialect can help you
+to reduce the number of code lines written:
 
 ```python
 @dataclass
@@ -1976,6 +1976,22 @@ class Entity(DataClassDictMixin):
 entity = Entity(date(2021, 12, 31))
 entity.to_dict()  # {'dt': '2021年12月31日'}
 assert Entity.from_dict({'dt': '2021年12月31日'}) == entity
+```
+
+Default dialect can also be set when using codecs:
+```python
+from mashumaro.codecs import BasicDecoder, BasicEncoder
+
+@dataclass
+class Entity:
+    dt: date
+
+decoder = BasicDecoder(Entity, default_dialect=JapaneseDialect)
+encoder = BasicEncoder(Entity, default_dialect=JapaneseDialect)
+
+entity = Entity(date(2021, 12, 31))
+encoder.encode(entity) # {'dt': '2021年12月31日'}
+assert decoder.decode({'dt': '2021年12月31日'}) == entity
 ```
 
 ### Discriminator
