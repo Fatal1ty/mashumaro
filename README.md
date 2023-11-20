@@ -278,33 +278,47 @@ for arbitrary types:
 Usage example
 -------------------------------------------------------------------------------
 
+Suppose we're developing a financial application and we operate with currencies
+and stocks:
+
 ```python
-from enum import Enum
-from typing import List
 from dataclasses import dataclass
-from mashumaro.mixins.json import DataClassJSONMixin
+from enum import Enum
 
 class Currency(Enum):
     USD = "USD"
     EUR = "EUR"
 
 @dataclass
-class CurrencyPosition(DataClassJSONMixin):
+class CurrencyPosition:
     currency: Currency
     balance: float
 
 @dataclass
-class StockPosition(DataClassJSONMixin):
+class StockPosition:
     ticker: str
     name: str
     balance: int
+```
+
+Now we want a dataclass for portfolio that will be serialized to and from JSON.
+We inherit `DataClassJSONMixin` that adds this functionality:
+
+```python
+from mashumaro.mixins.json import DataClassJSONMixin
+
+...
 
 @dataclass
 class Portfolio(DataClassJSONMixin):
-    currencies: List[CurrencyPosition]
-    stocks: List[StockPosition]
+    currencies: list[CurrencyPosition]
+    stocks: list[StockPosition]
+```
 
-my_portfolio = Portfolio(
+Let's create a portfolio instance and check methods `from_json` and `to_json`:
+
+```python
+portfolio = Portfolio(
     currencies=[
         CurrencyPosition(Currency.USD, 238.67),
         CurrencyPosition(Currency.EUR, 361.84),
@@ -315,8 +329,29 @@ my_portfolio = Portfolio(
     ]
 )
 
-json_string = my_portfolio.to_json()
-Portfolio.from_json(json_string)  # same as my_portfolio
+portfolio_json = portfolio.to_json()
+assert Portfolio.from_json(portfolio_json) == portfolio
+```
+
+If we need to serialize something different from a root dataclass,
+we can use codecs. In the following example we create a JSON decoder and encoder
+for a list of currencies:
+
+```python
+from mashumaro.codecs.json import JSONDecoder, JSONEncoder
+
+...
+
+decoder = JSONDecoder(list[CurrencyPosition])
+encoder = JSONEncoder(list[CurrencyPosition])
+
+currencies = [
+    CurrencyPosition(Currency.USD, 238.67),
+    CurrencyPosition(Currency.EUR, 361.84),
+]
+currencies_json = encoder.encode(currencies)
+assert decoder.decode(currencies_json) == currencies
+
 ```
 
 How does it work?
