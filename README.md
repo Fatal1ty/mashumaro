@@ -74,7 +74,7 @@ Table of contents
       * [`serialize_by_alias` dialect option](#serialize_by_alias-dialect-option)
       * [`omit_none` dialect option](#omit_none-dialect-option)
       * [`omit_default` dialect option](#omit_default-dialect-option)
-      * [`named_tuple_as_dict`](#namedtuple_as_dict-dialect-option)
+      * [`named_tuple_as_dict` dialect option](#namedtuple_as_dict-dialect-option)
       * [`no_copy_collections` dialect option](#no_copy_collections-dialect-option)
       * [Changing the default dialect](#changing-the-default-dialect)
     * [Discriminator](#discriminator)
