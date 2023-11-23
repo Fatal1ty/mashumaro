@@ -373,24 +373,24 @@ time, you can explicitly enable
 Benchmark
 -------------------------------------------------------------------------------
 
-* macOS 13.3.1 Ventura
+* macOS 14.0 Sonoma
 * Apple M1
 * 16GB RAM
-* Python 3.11.4
+* Python 3.12.0
 
 Benchmark using [pyperf](https://github.com/psf/pyperf) with GitHub Issue model. Please note that the
 following charts use logarithmic scale, as it is convenient for displaying
 very large ranges of values.
 
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/load_light.svg">
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/load_dark.svg">
-  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/load_light.svg" width="604">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/d5f98a2bea64b8ed57c07db408beee5709969c4c/benchmark/charts/load_light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/d5f98a2bea64b8ed57c07db408beee5709969c4c/benchmark/charts/load_dark.svg">
+  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/d5f98a2bea64b8ed57c07db408beee5709969c4c/benchmark/charts/load_light.svg" width="604">
 </picture>
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/dump_light.svg">
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/dump_dark.svg">
-  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/381306ea92808c256354fe890bb5aa60cd3bb787/benchmark/charts/dump_light.svg" width="604">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/d5f98a2bea64b8ed57c07db408beee5709969c4c/benchmark/charts/dump_light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/d5f98a2bea64b8ed57c07db408beee5709969c4c/benchmark/charts/dump_dark.svg">
+  <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/d5f98a2bea64b8ed57c07db408beee5709969c4c/benchmark/charts/dump_light.svg" width="604">
 </picture>
 
 > [!NOTE]\
