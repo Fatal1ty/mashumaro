@@ -4,8 +4,8 @@ from setuptools import find_packages, setup
 
 setup(
     name="mashumaro",
-    version="3.10",
-    description="Fast serialization library on top of dataclasses",
+    version="3.11",
+    description="Fast and well tested serialization library",
     long_description=open("README.md", encoding="utf8").read(),
     long_description_content_type="text/markdown",
     platforms="all",
