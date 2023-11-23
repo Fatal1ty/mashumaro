@@ -24,11 +24,11 @@ pendulum>=2.1.2;python_version<'3.12'
 pyperf>=2.6.1
 termtables>=0.2.3
 pytablewriter[html]>=0.58.0
-cattrs==23.1.2
-pydantic==2.1.1
+cattrs==23.2.2
+pydantic==2.5.1
 dacite==1.7.0  # see https://github.com/konradhalas/dacite/issues/236#issuecomment-1613987368
 marshmallow>=3.19.0
-dataclasses-json==0.5.14
+dataclasses-json==0.6.2
 
 # library stubs
 types-backports

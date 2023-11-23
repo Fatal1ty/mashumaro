@@ -1,9 +1,7 @@
-import argparse
-import gc
 import json
 import pathlib
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Literal, Type
+from abc import ABC
+from typing import Any, Dict, Literal, Type
 
 import pyperf
 

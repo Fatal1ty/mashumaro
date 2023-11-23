@@ -6,18 +6,17 @@ from typing import Optional, Union
 import pyperf
 
 from benchmark.common import AbstractBenchmark
-from mashumaro import DataClassDictMixin, field_options, pass_through
-from mashumaro.config import BaseConfig
+from mashumaro import field_options, pass_through
+from mashumaro.codecs import BasicDecoder, BasicEncoder
+from mashumaro.dialect import Dialect
 
 
-class BaseModel(DataClassDictMixin):
-    class Config(BaseConfig):
-        lazy_compilation = True
-        serialize_by_alias = True
-        serialization_strategy = {
-            str: {"deserialize": str, "serialize": pass_through},
-            int: {"serialize": pass_through},
-        }
+class DefaultDialect(Dialect):
+    serialize_by_alias = True
+    serialization_strategy = {
+        str: {"deserialize": str, "serialize": pass_through},
+        int: {"serialize": pass_through},
+    }
 
 
 class IssueState(Enum):
@@ -48,7 +47,7 @@ class AuthorAssociation(Enum):
 
 
 @dataclass(slots=True)
-class User(BaseModel):
+class User:
     login: str
     id: int
     node_id: str
@@ -73,7 +72,7 @@ class User(BaseModel):
 
 
 @dataclass(slots=True)
-class IssueLabel(BaseModel):
+class IssueLabel:
     id: int
     node_id: str
     url: str
@@ -84,7 +83,7 @@ class IssueLabel(BaseModel):
 
 
 @dataclass(slots=True)
-class Milestone(BaseModel):
+class Milestone:
     url: str
     html_url: str
     labels_url: str
@@ -104,7 +103,7 @@ class Milestone(BaseModel):
 
 
 @dataclass(slots=True)
-class Reactions(BaseModel):
+class Reactions:
     url: str
     total_count: int
     plus_one: int = field(metadata=field_options(alias="+1"))
@@ -118,7 +117,7 @@ class Reactions(BaseModel):
 
 
 @dataclass(slots=True)
-class Issue(BaseModel):
+class Issue:
     id: int
     node_id: str
     url: str
@@ -155,12 +154,17 @@ class Issue(BaseModel):
 class Benchmark(AbstractBenchmark):
     LIBRARY = "mashumaro"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.decoder = BasicDecoder(Issue, default_dialect=DefaultDialect)
+        self.encoder = BasicEncoder(Issue, default_dialect=DefaultDialect)
+
     def warmup(self, data) -> None:
-        Issue.from_dict(data).to_dict()
+        self.encoder.encode(self.decoder.decode(data))
 
     def run_loader(self, data) -> pyperf.Benchmark:
-        return self._bench_loader_func(Issue.from_dict, data)
+        return self._bench_loader_func(self.decoder.decode, data)
 
     def run_dumper(self, data) -> pyperf.Benchmark:
-        obj = Issue.from_dict(data)
-        return self._bench_dumper_func(obj.to_dict)
+        obj = self.decoder.decode(data)
+        return self._bench_dumper_func(self.encoder.encode, obj)
