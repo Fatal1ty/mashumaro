@@ -52,7 +52,12 @@ from mashumaro.core.meta.helpers import (
     substitute_type_params,
     type_name,
 )
-from mashumaro.core.meta.types.common import FieldContext, NoneType, ValueSpec
+from mashumaro.core.meta.types.common import (
+    FieldContext,
+    NoneType,
+    ValueSpec,
+    clean_id,
+)
 from mashumaro.core.meta.types.pack import PackerRegistry
 from mashumaro.core.meta.types.unpack import (
     SubtypeUnpackerBuilder,
@@ -555,6 +560,9 @@ class CodeBuilder:
             ftype,
             resolved_type_params=self.get_field_resolved_type_params(fname),
         )
+        if "<locals>" in field_type:
+            field_type = clean_id(field_type)
+            self.ensure_object_imported(ftype, field_type)
         could_be_none = (
             ftype in (typing.Any, type(None), None)
             or is_type_var_any(self._get_real_type(fname, ftype))
