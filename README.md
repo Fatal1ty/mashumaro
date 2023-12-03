@@ -1377,7 +1377,10 @@ see [Extending existing types](#extending-existing-types) for details.
 
 It's also possible to define a generic (de)serialization method for a generic
 type by registering a method for its
-[origin](https://docs.python.org/3/library/typing.html#typing.get_origin) type:
+[origin](https://docs.python.org/3/library/typing.html#typing.get_origin) type.
+Although this technique is widely used when working with [third-party generic
+types](#third-party-generic-types) using generic strategies, it can also be
+applied in simple scenarios:
 
 ```python
 from dataclasses import dataclass
