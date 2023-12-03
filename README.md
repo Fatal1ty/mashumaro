@@ -64,7 +64,7 @@ Table of contents
         * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
         * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
         * [`dialect` config option](#dialect-config-option)
-        * [`orjson_options`](#orjson_options-config-option)
+        * [`orjson_options` config option](#orjson_options-config-option)
         * [`discriminator` config option](#discriminator-config-option)
         * [`lazy_compilation` config option](#lazy_compilation-config-option)
         * [`sort_keys` config option](#sort_keys-config-option)
@@ -1452,7 +1452,7 @@ DataClass(field_a=1).to_dict()  # {'FieldA': 1}
 When using aliases, the deserializer defaults to requiring the keys to match
 what is defined as the alias.
 If the flexibility to deserialize aliased and unaliased keys is required then
-the config option `allow_deserialization_not_by_alias = True` can be set to
+the config option `allow_deserialization_not_by_alias ` can be set to
 enable the feature.
 
 ```python
