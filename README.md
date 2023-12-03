@@ -1096,10 +1096,21 @@ assert Example.from_dict(example.to_dict()) == example
 
 In some cases creating a new class just for one little thing could be
 excessive. Moreover, you may need to deal with third party classes that you are
-not allowed to change. You can use[`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field)
-function as a default field value to configure some serialization aspects
-through its `metadata` parameter. Next section describes all supported options
-to use in `metadata` mapping.
+not allowed to change. You can use [`dataclasses.field`](https://docs.python.org/3/library/dataclasses.html#dataclasses.field) function to
+configure some serialization aspects through its `metadata` parameter. Next
+section describes all supported options to use in `metadata` mapping.
+
+If you don't want to remember the names of the options you can use
+`field_options` helper function:
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import field_options
+
+@dataclass
+class A:
+    x: int = field(metadata=field_options(...))
+```
 
 #### `serialize` option
 
@@ -1256,27 +1267,6 @@ It's hard to imagine when it might be necessary to serialize only specific
 fields by alias, but such functionality is easily added to the library. Open
 the issue if you need it.
 
-If you don't want to remember the names of the options you can use
-`field_options` helper function:
-
-```python
-from dataclasses import dataclass, field
-from mashumaro import DataClassDictMixin, field_options
-
-@dataclass
-class A(DataClassDictMixin):
-    x: int = field(
-        metadata=field_options(
-            serialize=str,
-            deserialize=int,
-            ...
-        )
-    )
-```
-
-More options are on the way. If you know which option would be useful for many,
-please don't hesitate to create an issue or pull request.
-
 ### Config options
 
 If inheritance is not an empty word for you, you'll fall in love with the
@@ -1384,6 +1374,29 @@ dictionary = instance.to_dict()
 Note that you can register different methods for multiple logical types which
 are based on the same type using `NewType` and `Annotated`,
 see [Extending existing types](#extending-existing-types) for details.
+
+It's also possible to define a generic (de)serialization method for a generic
+type by registering a method for its
+[origin](https://docs.python.org/3/library/typing.html#typing.get_origin) type:
+
+```python
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+
+@dataclass
+class C(DataClassDictMixin):
+    ints: list[int]
+    floats: list[float]
+
+    class Config:
+        serialization_strategy = {
+            list: {  # origin type for list[int] and list[float] is list
+                "serialize": lambda x: list(map(str, x)),
+            }
+        }
+
+assert C([1], [2.2]).to_dict() == {'ints': ['1'], 'floats': ['2.2']}
+```
 
 #### `aliases` config option
 
