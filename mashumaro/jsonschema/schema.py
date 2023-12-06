@@ -1,10 +1,18 @@
 import datetime
+import hashlib
 import ipaddress
 import os
 import typing
 import warnings
 from base64 import encodebytes
-from dataclasses import MISSING, dataclass, field, is_dataclass, replace
+from dataclasses import (
+    MISSING,
+    dataclass,
+    field,
+    is_dataclass,
+    make_dataclass,
+    replace,
+)
 from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
@@ -277,15 +285,28 @@ def _get_schema_or_none(
     return schema
 
 
+def _create_unique_class_name(base_name: str, *args) -> str:
+    return f"{base_name}_{hashlib.blake2b(str(args).encode()).hexdigest()}"
+
+
+def _create_and_assign_global_class(
+    f_type: type, f_value: Any, config_cls: type[BaseConfig]
+) -> Any:
+    class_name = _create_unique_class_name('CC', f_type, f_value, config_cls)
+    config_type = type('Config', (config_cls,), {})
+    dynamic_class = make_dataclass(
+        class_name,
+        fields=[('x', f_type)],
+        bases=(DataClassJSONMixin,),
+        namespace={'Config': config_type},
+    )
+    globals().setdefault(class_name, dynamic_class)
+    return dynamic_class
+
+
 def _default(f_type: Type, f_value: Any, config_cls: Type[BaseConfig]) -> Any:
-    @dataclass
-    class CC(DataClassJSONMixin):
-        x: f_type = f_value  # type: ignore
-
-        class Config(config_cls):  # type: ignore
-            pass
-
-    return CC(f_value).to_dict()["x"]
+    cls = _create_and_assign_global_class(f_type, f_value, config_cls)
+    return cls(f_value).to_dict()["x"]
 
 
 Registry = InstanceSchemaCreatorRegistry()
