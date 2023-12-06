@@ -290,7 +290,7 @@ def _create_unique_class_name(base_name: str, *args: Any) -> str:
 
 
 def _create_and_assign_global_class(
-    f_type: type, f_value: Any, config_cls: type[BaseConfig]
+    f_type: Type, f_value: Any, config_cls: Type[BaseConfig]
 ) -> Any:
     class_name = _create_unique_class_name('CC', f_type, f_value, config_cls)
     config_type = type('Config', (config_cls,), {})
