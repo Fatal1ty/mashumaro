@@ -285,7 +285,7 @@ def _get_schema_or_none(
     return schema
 
 
-def _create_unique_class_name(base_name: str, *args) -> str:
+def _create_unique_class_name(base_name: str, *args: Any) -> str:
     return f"{base_name}_{hashlib.blake2b(str(args).encode()).hexdigest()}"
 
 
