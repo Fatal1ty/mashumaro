@@ -1249,6 +1249,7 @@ def test_jsonschema_with_additional_properties_schema():
 class A:
     value = 'a'
 
+
 @dataclass
 class B:
     value = 'b'
