@@ -624,17 +624,29 @@ class CodeBuilder:
         else:
             with self.indent(f"if {packed_value} is not MISSING:"):
                 if could_be_none:
-                    with self.indent(f"if {packed_value} is not None:"):
+                    if unpacked_value != "value":
+                        with self.indent(f"if {packed_value} is not None:"):
+                            self.__unpack_try_set_value(
+                                fname, field_type, unpacked_value, has_default
+                            )
+                        if default is not None:
+                            with self.indent("else:"):
+                                self.__unpack_set_value(
+                                    fname, "None", has_default
+                                )
+                    else:
+                        self.__unpack_set_value(
+                            fname, unpacked_value, has_default
+                        )
+                else:
+                    if unpacked_value != "value":
                         self.__unpack_try_set_value(
                             fname, field_type, unpacked_value, has_default
                         )
-                    if default is not None:
-                        with self.indent("else:"):
-                            self.__unpack_set_value(fname, "None", has_default)
-                else:
-                    self.__unpack_try_set_value(
-                        fname, field_type, unpacked_value, has_default
-                    )
+                    else:
+                        self.__unpack_set_value(
+                            fname, unpacked_value, has_default
+                        )
 
     def __unpack_try_set_value(
         self,
