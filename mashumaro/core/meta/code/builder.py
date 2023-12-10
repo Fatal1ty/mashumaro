@@ -973,7 +973,7 @@ class CodeBuilder:
         if omit_default:
             default = self.get_field_default(fname, call_factory=True)
             if default is not MISSING:
-                default_literal = self._get_field_default_literal(
+                default_literal = self.get_field_default_literal(
                     self.get_field_default(fname, call_factory=True)
                 )
                 # if default is None:
@@ -1187,7 +1187,7 @@ class CodeBuilder:
                 return value
         return default
 
-    def _get_field_default_literal(self, value: typing.Any) -> str:
+    def get_field_default_literal(self, value: typing.Any) -> str:
         if isinstance(value, (str, int, bool, NoneType)):  # type: ignore
             return repr(value)
         elif (
@@ -1318,7 +1318,7 @@ class FieldUnpackerCodeBlockBuilder:
                     and unpacked_value == "value"
                     and not in_kwargs
                 ):
-                    default_literal = self.parent._get_field_default_literal(
+                    default_literal = self.parent.get_field_default_literal(
                         self.parent.get_field_default(fname, call_factory=True)
                     )
                     packed_value = (
