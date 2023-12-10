@@ -87,7 +87,7 @@ __all__ = [
 
 NoneType = type(None)
 DataClassDictMixinPath = (
-    f"{__name__.rsplit('.', 3)[:-3][0]}" f".mixins.dict.DataClassDictMixin"
+    f"{__name__.rsplit('.', 3)[:-3][0]}.mixins.dict.DataClassDictMixin"
 )
 
 
@@ -169,7 +169,8 @@ def _get_literal_values_str(typ: Type, short: bool) -> str:
         if isinstance(value, enum.Enum):
             values_str.append(f"{type_name(type(value), short)}.{value.name}")
         elif isinstance(
-            value, (int, str, bytes, bool, NoneType)  # type: ignore
+            value,
+            (int, str, bytes, bool, NoneType),  # type: ignore
         ):
             values_str.append(repr(value))
     return ", ".join(values_str)
@@ -525,8 +526,7 @@ def _flatten_type_args(
                 if len(type_args) == 1:
                     result.append(())  # type: ignore
             elif (
-                PEP_585_COMPATIBLE
-                and unpacked_type == tuple[()]  # type: ignore
+                PEP_585_COMPATIBLE and unpacked_type == tuple[()]  # type: ignore
             ):
                 if len(type_args) == 1:
                     result.append(())  # type: ignore

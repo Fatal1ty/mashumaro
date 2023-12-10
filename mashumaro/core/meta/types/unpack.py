@@ -181,7 +181,7 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
         )
         if spec.builder.is_nailed:
             lines.append(
-                f"raise InvalidFieldValue("
+                "raise InvalidFieldValue("
                 f"'{spec.field_ctx.name}',{field_type},value,cls)"
             )
         else:
@@ -334,7 +334,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             with lines.indent("except KeyError:"):
                 lines.append(
                     f"raise MissingDiscriminatorError('{discriminator.field}')"
-                    f" from None"
+                    " from None"
                 )
             with lines.indent("try:"):
                 if spec.builder.is_nailed:
@@ -359,20 +359,20 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                 with lines.indent("try:"):
                     if spec.builder.is_nailed:
                         lines.append(
-                            f"return variants_map[discriminator]"
+                            "return variants_map[discriminator]"
                             f".{variant_method_call}"
                         )
                     else:
                         lines.append(
                             f"return {spec.attrs_registry_name}["
-                            f"variants_map[discriminator]]"
+                            "variants_map[discriminator]]"
                             f".{variant_method_call}"
                         )
                 with lines.indent("except KeyError:"):
                     lines.append(
-                        f"raise SuitableVariantNotFoundError("
+                        "raise SuitableVariantNotFoundError("
                         f"{variants_type_expr}, '{discriminator.field}', "
-                        f"discriminator) from None"
+                        "discriminator) from None"
                     )
         else:
             with lines.indent(f"for variant in {variants}:"):
@@ -395,7 +395,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                 lines.append("except Exception: pass")
             lines.append(
                 f"raise SuitableVariantNotFoundError({variants_type_expr}) "
-                f"from None"
+                "from None"
             )
 
     def _get_call_expr(self, spec: ValueSpec, method_name: str) -> str:
@@ -422,17 +422,17 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         if spec.builder.is_nailed:
             spec.builder.ensure_object_imported(get_class_that_defines_method)
             lines.append(
-                f"if get_class_that_defines_method("
+                "if get_class_that_defines_method("
                 f"'{variant_method_name}',variant) != variant:"
             )
             with lines.indent():
                 spec.builder.ensure_object_imported(spec.builder.__class__)
                 lines.append(
-                    f"CodeBuilder(variant, "
-                    f"dialect=_dialect, "
+                    "CodeBuilder(variant, "
+                    "dialect=_dialect, "
                     f"format_name={repr(spec.builder.format_name)}, "
-                    f"default_dialect=_default_dialect)"
-                    f".add_unpack_method()"
+                    "default_dialect=_default_dialect)"
+                    ".add_unpack_method()"
                 )
                 if not self.discriminator.field:
                     with lines.indent("try:"):
@@ -444,13 +444,13 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             lines.append(f"{attrs} = AttrsHolder('{attrs}')")
             lines.append(f"{spec.attrs_registry_name}[variant] = {attrs}")
             lines.append(
-                f"CodeBuilder(variant, "
-                f"dialect=_dialect, "
+                "CodeBuilder(variant, "
+                "dialect=_dialect, "
                 f"format_name={repr(spec.builder.format_name)}, "
-                f"default_dialect=_default_dialect,"
+                "default_dialect=_default_dialect,"
                 f"attrs={attrs},"
                 f"attrs_registry={spec.attrs_registry_name})"
-                f".add_unpack_method()"
+                ".add_unpack_method()"
             )
             if not self.discriminator.field:
                 with lines.indent("try:"):
@@ -1167,7 +1167,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
         default_type = type_name(args[1] if args else None)
         return (
             f"collections.defaultdict({default_type}, "
-            f'{{{inner_expr(0, "key")}: '
+            f"{{{inner_expr(0, 'key')}: "
             f"{inner_expr(1)} for key, value in {spec.expression}.items()}})"
         )
     elif ensure_generic_mapping(spec, args, typing.Counter):

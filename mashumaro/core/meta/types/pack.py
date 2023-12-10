@@ -308,7 +308,7 @@ def pack_union(
         )
         if spec.builder.is_nailed:
             lines.append(
-                f"raise InvalidFieldValue("
+                "raise InvalidFieldValue("
                 f"'{spec.field_ctx.name}',{field_type},value,type(self))"
             )
         else:

@@ -16,7 +16,7 @@ def parse_timezone(s: str) -> datetime.timezone:
     match = UTC_OFFSET_RE.match(s)
     if not match:
         raise ValueError(
-            f"Time zone {s} must be either UTC " f"or in format UTC[+-]hh:mm"
+            f"Time zone {s} must be either UTC or in format UTC[+-]hh:mm"
         )
     if match.group(1):
         hours = int(match.group(2))

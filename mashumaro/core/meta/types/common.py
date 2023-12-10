@@ -165,10 +165,7 @@ class AbstractMethodBuilder(ABC):
             suffix = f"_{spec.field_ctx.name}"
         else:
             suffix = ""
-        return (
-            f"__{prefix}{spec.builder.cls.__name__}{suffix}"
-            f"__{random_hex()}"
-        )
+        return f"__{prefix}{spec.builder.cls.__name__}{suffix}__{random_hex()}"
 
     @abstractmethod
     def _add_definition(self, spec: ValueSpec, lines: CodeLines) -> str:
@@ -228,11 +225,11 @@ class Registry:
 
     def get(self, spec: ValueSpec) -> Expression:
         if is_annotated(spec.type):
-            spec.annotated_type = spec.builder._get_real_type(
+            spec.annotated_type = spec.builder.get_real_type(
                 spec.field_ctx.name, spec.type
             )
             spec.type = get_type_origin(spec.type)
-        spec.type = spec.builder._get_real_type(spec.field_ctx.name, spec.type)
+        spec.type = spec.builder.get_real_type(spec.field_ctx.name, spec.type)
         spec.builder.add_type_modules(spec.type)
         for packer in self._registry:
             expr = packer(spec)

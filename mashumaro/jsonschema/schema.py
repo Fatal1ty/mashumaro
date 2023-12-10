@@ -152,7 +152,7 @@ class Instance:
 
     def update_type(self, new_type: Type) -> None:
         if self.__owner_builder:
-            self.type = self.__owner_builder._get_real_type(
+            self.type = self.__owner_builder.get_real_type(
                 field_name=self.name,  # type: ignore
                 field_type=new_type,
             )
@@ -261,10 +261,8 @@ def get_schema(
                 schema.schema = ctx.dialect.uri
             return schema
     raise NotImplementedError(
-        (
-            f'Type {type_name(instance.type)} of field "{instance.name}" '
-            f"in {type_name(instance.owner_class)} isn't supported"
-        )
+        f'Type {type_name(instance.type)} of field "{instance.name}" '
+        f"in {type_name(instance.owner_class)} isn't supported"
     )
 
 
@@ -745,9 +743,11 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         return apply_array_constraints(
             instance,
             JSONArraySchema(
-                items=_get_schema_or_none(instance.derive(type=args[0]), ctx)
-                if args
-                else None
+                items=(
+                    _get_schema_or_none(instance.derive(type=args[0]), ctx)
+                    if args
+                    else None
+                )
             ),
         )
     elif issubclass(instance.origin_type, Tuple):  # type: ignore
@@ -763,9 +763,11 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         return apply_array_constraints(
             instance,
             JSONArraySchema(
-                items=_get_schema_or_none(instance.derive(type=args[0]), ctx)
-                if args
-                else None,
+                items=(
+                    _get_schema_or_none(instance.derive(type=args[0]), ctx)
+                    if args
+                    else None
+                ),
                 uniqueItems=True,
             ),
         )
@@ -804,16 +806,16 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         instance.origin_type, typing.Mapping
     ):
         schema = JSONObjectSchema(
-            additionalProperties=_get_schema_or_none(
-                instance.derive(type=args[1]), ctx
-            )
-            if args
-            else None,
-            propertyNames=_get_schema_or_none(
-                instance.derive(type=args[0]), ctx
-            )
-            if args
-            else None,
+            additionalProperties=(
+                _get_schema_or_none(instance.derive(type=args[1]), ctx)
+                if args
+                else None
+            ),
+            propertyNames=(
+                _get_schema_or_none(instance.derive(type=args[0]), ctx)
+                if args
+                else None
+            ),
         )
         return apply_object_constraints(instance, schema)
     elif is_generic(instance.type) and issubclass(
@@ -822,9 +824,11 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         return apply_array_constraints(
             instance,
             JSONArraySchema(
-                items=_get_schema_or_none(instance.derive(type=args[0]), ctx)
-                if args
-                else None
+                items=(
+                    _get_schema_or_none(instance.derive(type=args[0]), ctx)
+                    if args
+                    else None
+                )
             ),
         )
 

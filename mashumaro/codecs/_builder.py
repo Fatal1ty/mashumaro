@@ -34,7 +34,7 @@ class CodecCodeBuilder(CodeBuilder):
                 self.add_line("value = decoder(value)")
             could_be_none = (
                 shape_type in (Any, type(None), None)
-                or is_type_var_any(self._get_real_type("", shape_type))
+                or is_type_var_any(self.get_real_type("", shape_type))
                 or is_optional(
                     shape_type, self.get_field_resolved_type_params("")
                 )
@@ -70,7 +70,7 @@ class CodecCodeBuilder(CodeBuilder):
         with self.indent("def encode(value):"):
             could_be_none = (
                 shape_type in (Any, type(None), None)
-                or is_type_var_any(self._get_real_type("", shape_type))
+                or is_type_var_any(self.get_real_type("", shape_type))
                 or is_optional(
                     shape_type, self.get_field_resolved_type_params("")
                 )
