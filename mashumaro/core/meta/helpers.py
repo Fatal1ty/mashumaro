@@ -1,5 +1,6 @@
 import dataclasses
 import enum
+import functools
 import inspect
 import re
 import types
@@ -184,6 +185,20 @@ def _typing_name(
     return typ_name if short else f"{module_name}.{typ_name}"
 
 
+def clean_up_type_name(
+    func: typing.Callable[..., Any],
+) -> typing.Callable[..., Any]:
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> str:
+        result = func(*args, **kwargs)
+        if "<locals>" in result:
+            return clean_id(result)
+        return result
+
+    return wrapper
+
+
+@clean_up_type_name
 def type_name(
     typ: Optional[Type],
     short: bool = False,

@@ -73,7 +73,7 @@ from mashumaro.jsonschema.models import (
     JSONSchemaStringFormat,
 )
 from mashumaro.jsonschema.schema import UTC_OFFSET_PATTERN, EmptyJSONSchema
-from mashumaro.types import SerializationStrategy
+from mashumaro.types import Discriminator, SerializationStrategy
 from tests.entities import (
     CustomPath,
     GenericNamedTuple,
@@ -1243,3 +1243,133 @@ def test_jsonschema_with_additional_properties_schema():
         required=["x"],
     )
     assert build_json_schema(DataClass) == schema
+
+
+def test_jsonschema_with_discriminator() -> None:
+    @dataclass
+    class A:
+        value = 'a'
+
+    @dataclass
+    class B:
+        value = 'b'
+
+    @dataclass
+    class Main:
+        value: Annotated[
+            A | B,
+            Discriminator(field='value', include_supertypes=True)
+        ]
+
+    schema = JSONObjectSchema(
+        title="Main",
+        properties={
+            "value": JSONSchema(
+                anyOf=[
+                    JSONObjectSchema(
+                        type=JSONSchemaInstanceType.OBJECT,
+                        title="A",
+                        additionalProperties=False,
+                    ),
+                    JSONObjectSchema(
+                        type=JSONSchemaInstanceType.OBJECT,
+                        title="B",
+                        additionalProperties=False,
+                    ),
+                ],
+            ),
+        },
+        additionalProperties=False,
+        required=["value"],
+    )
+    assert build_json_schema(Main) == schema
+
+
+def test_jsonschema_with_discriminator_with_default() -> None:
+    @dataclass
+    class A:
+        value = 'a'
+
+    @dataclass
+    class B:
+        value = 'b'
+
+    @dataclass
+    class Main:
+        value: Annotated[
+            A | B | None,
+            Discriminator(field='value', include_supertypes=True)
+        ] = None
+
+    schema = JSONObjectSchema(
+        title="Main",
+        properties={
+            "value": JSONSchema(
+                anyOf=[
+                    JSONObjectSchema(
+                        type=JSONSchemaInstanceType.OBJECT,
+                        title="A",
+                        additionalProperties=False,
+                    ),
+                    JSONObjectSchema(
+                        type=JSONSchemaInstanceType.OBJECT,
+                        title="B",
+                        additionalProperties=False,
+                    ),
+                    JSONSchema(
+                        type=JSONSchemaInstanceType.NULL,
+                    ),
+                ],
+                default=None,
+            ),
+        },
+        additionalProperties=False,
+    )
+    assert build_json_schema(Main) == schema
+
+
+def test_jsonschema_with_optional_discriminator_and_default():
+    @dataclass
+    class A:
+        value = 'a'
+
+    @dataclass
+    class B:
+        value = 'b'
+
+    @dataclass
+    class Main:
+        value: Annotated[
+            A | B,
+            Discriminator(field='value', include_supertypes=True)
+        ] | None = None
+
+    schema = JSONObjectSchema(
+        title="Main",
+        properties={
+            "value": JSONSchema(
+                anyOf=[
+                    JSONSchema(
+                        anyOf=[
+                            JSONObjectSchema(
+                                type=JSONSchemaInstanceType.OBJECT,
+                                title="A",
+                                additionalProperties=False,
+                            ),
+                            JSONObjectSchema(
+                                type=JSONSchemaInstanceType.OBJECT,
+                                title="B",
+                                additionalProperties=False,
+                            ),
+                        ]
+                    ),
+                    JSONSchema(
+                        type=JSONSchemaInstanceType.NULL,
+                    ),
+                ],
+                default=None,
+            ),
+        },
+        additionalProperties=False,
+    )
+    assert build_json_schema(Main) == schema
