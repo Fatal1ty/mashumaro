@@ -25,6 +25,7 @@ import typing_extensions
 from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
+    clean_id,
     get_args,
     get_class_that_defines_method,
     get_function_return_annotation,
@@ -56,7 +57,6 @@ from mashumaro.core.meta.types.common import (
     NoneType,
     Registry,
     ValueSpec,
-    clean_id,
     ensure_generic_collection,
     ensure_generic_collection_subclass,
     ensure_generic_mapping,

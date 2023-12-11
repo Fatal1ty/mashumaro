@@ -298,9 +298,3 @@ def expr_or_maybe_none(spec: ValueSpec, new_expr: Expression) -> Expression:
 
 def random_hex() -> str:
     return str(uuid.uuid4().hex)
-
-
-def clean_id(value: str) -> str:
-    for c in ".<>":
-        value = value.replace(c, "_")
-    return value

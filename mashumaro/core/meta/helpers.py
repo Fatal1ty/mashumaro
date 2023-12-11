@@ -765,3 +765,9 @@ def evaluate_forward_ref(
         )  # type: ignore[call-arg]
     else:
         return typ._evaluate(globalns, localns)  # type: ignore[call-arg]
+
+
+def clean_id(value: str) -> str:
+    for c in ".<>":
+        value = value.replace(c, "_")
+    return value
