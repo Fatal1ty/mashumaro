@@ -1,4 +1,14 @@
-from typing import Any, Callable, Dict, List, Literal, Optional, Type, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Type,
+    TypedDict,
+    Union,
+)
 
 from mashumaro.core.const import Sentinel
 from mashumaro.dialect import Dialect
@@ -28,8 +38,13 @@ CodeGenerationOption = Literal[
 ]
 
 
+class SerializationStrategyDict(TypedDict, total=False):
+    serialize: Union[str, Callable]
+    deserialize: Union[str, Callable]
+
+
 SerializationStrategyValueType = Union[
-    SerializationStrategy, Dict[str, Union[str, Callable]]
+    SerializationStrategy, SerializationStrategyDict
 ]
 
 
