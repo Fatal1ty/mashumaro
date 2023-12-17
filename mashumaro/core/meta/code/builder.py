@@ -45,6 +45,7 @@ from mashumaro.core.meta.helpers import (
     is_hashable,
     is_init_var,
     is_literal,
+    is_local_type,
     is_named_tuple,
     is_optional,
     is_type_var_any,
@@ -52,7 +53,12 @@ from mashumaro.core.meta.helpers import (
     substitute_type_params,
     type_name,
 )
-from mashumaro.core.meta.types.common import FieldContext, NoneType, ValueSpec
+from mashumaro.core.meta.types.common import (
+    FieldContext,
+    NoneType,
+    ValueSpec,
+    clean_id,
+)
 from mashumaro.core.meta.types.pack import PackerRegistry
 from mashumaro.core.meta.types.unpack import (
     SubtypeUnpackerBuilder,
@@ -306,6 +312,7 @@ class CodeBuilder:
             else:
                 print(f"{type_name(self.cls)}:")
             print(code)
+
         exec(code, self.globals, self.__dict__)
 
     def evaluate_forward_ref(
@@ -1256,6 +1263,11 @@ class FieldUnpackerCodeBlockBuilder:
                 fname
             ),
         )
+
+        if is_local_type(ftype):
+            field_type = clean_id(field_type)
+            self.ensure_object_imported(ftype, field_type)
+
         could_be_none = (
             ftype in (typing.Any, type(None), None)
             or is_type_var_any(self.parent.get_real_type(fname, ftype))

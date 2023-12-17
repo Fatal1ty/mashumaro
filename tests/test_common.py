@@ -262,3 +262,17 @@ def test_kw_args_when_pos_arg_is_overridden_with_field():
     assert loaded.pos2 == 2
     assert loaded.pos3 == 3
     assert loaded.kw1 == 4
+
+
+def test_local_type():
+    @dataclass
+    class LocalType:
+        pass
+
+    @dataclass
+    class DataClassWithLocalType(DataClassDictMixin):
+        x: LocalType
+
+    obj = DataClassWithLocalType(LocalType())
+    assert obj.to_dict() == {"x": {}}
+    assert DataClassWithLocalType.from_dict({"x": {}}) == obj
