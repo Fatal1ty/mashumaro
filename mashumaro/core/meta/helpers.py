@@ -389,8 +389,8 @@ def is_literal(typ: Type) -> bool:
     return False
 
 
-def is_local_type(typ: Type) -> bool:
-    return "<locals>" in getattr(typ, "__qualname__", "")
+def is_local_type_name(type_name: str) -> bool:
+    return "<locals>" in type_name
 
 
 def not_none_type_arg(

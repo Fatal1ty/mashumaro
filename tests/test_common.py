@@ -1,5 +1,8 @@
 import dataclasses
 from dataclasses import dataclass, field
+from enum import Enum
+from pathlib import PurePosixPath
+from typing import Any, Literal, NamedTuple
 
 import msgpack
 import pytest
@@ -264,15 +267,81 @@ def test_kw_args_when_pos_arg_is_overridden_with_field():
     assert loaded.kw1 == 4
 
 
-def test_local_type():
+def test_local_types():
     @dataclass
-    class LocalType:
+    class LocalDataclassType:
+        foo: int
+
+    class LocalNamedTupleType(NamedTuple):
+        foo: int
+
+    class LocalPathLike(PurePosixPath):
         pass
+
+    class LocalEnumType(Enum):
+        FOO = "foo"
+
+    class LocalSerializableType(SerializableType):
+        @classmethod
+        def _deserialize(self, value):
+            return LocalSerializableType()
+
+        def _serialize(self) -> Any:
+            return {}
+
+        def __eq__(self, __value: object) -> bool:
+            return isinstance(__value, LocalSerializableType)
+
+    class LocalGenericSerializableType(GenericSerializableType):
+        @classmethod
+        def _deserialize(self, value, types):
+            return LocalGenericSerializableType()
+
+        def _serialize(self, types) -> Any:
+            return {}
+
+        def __eq__(self, __value: object) -> bool:
+            return isinstance(__value, LocalGenericSerializableType)
 
     @dataclass
     class DataClassWithLocalType(DataClassDictMixin):
-        x: LocalType
+        x1: LocalDataclassType
+        x2: LocalNamedTupleType
+        x3: LocalPathLike
+        x4: LocalEnumType
+        x4_1: Literal[LocalEnumType.FOO]
+        x5: LocalSerializableType
+        x6: LocalGenericSerializableType
 
-    obj = DataClassWithLocalType(LocalType())
-    assert obj.to_dict() == {"x": {}}
-    assert DataClassWithLocalType.from_dict({"x": {}}) == obj
+    obj = DataClassWithLocalType(
+        x1=LocalDataclassType(foo=0),
+        x2=LocalNamedTupleType(foo=0),
+        x3=LocalPathLike("path/to/file"),
+        x4=LocalEnumType.FOO,
+        x4_1=LocalEnumType.FOO,
+        x5=LocalSerializableType(),
+        x6=LocalGenericSerializableType(),
+    )
+    assert obj.to_dict() == {
+        "x1": {"foo": 0},
+        "x2": [0],
+        "x3": "path/to/file",
+        "x4": "foo",
+        "x4_1": "foo",
+        "x5": {},
+        "x6": {},
+    }
+    assert (
+        DataClassWithLocalType.from_dict(
+            {
+                "x1": {"foo": 0},
+                "x2": [0],
+                "x3": "path/to/file",
+                "x4": "foo",
+                "x4_1": "foo",
+                "x5": {},
+                "x6": {},
+            }
+        )
+        == obj
+    )

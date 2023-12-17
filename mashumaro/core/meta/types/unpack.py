@@ -39,6 +39,7 @@ from mashumaro.core.meta.helpers import (
     is_final,
     is_generic,
     is_literal,
+    is_local_type_name,
     is_named_tuple,
     is_new_type,
     is_not_required,
@@ -180,6 +181,10 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
             ),
         )
         if spec.builder.is_nailed:
+            if is_local_type_name(field_type):
+                field_type = clean_id(field_type)
+                spec.builder.ensure_object_imported(spec.type, field_type)
+
             lines.append(
                 "raise InvalidFieldValue("
                 f"'{spec.field_ctx.name}',{field_type},value,cls)"
@@ -203,7 +208,15 @@ class LiteralUnpackerBuilder(AbstractUnpackerBuilder):
     def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
         for literal_value in get_literal_values(spec.type):
             if isinstance(literal_value, enum.Enum):
-                enum_type_name = type_name(type(literal_value))
+                lit_type = type(literal_value)
+                enum_type_name = type_name(lit_type)
+
+                if is_local_type_name(enum_type_name):
+                    enum_type_name = clean_id(enum_type_name)
+                    spec.builder.ensure_object_imported(
+                        lit_type, enum_type_name
+                    )
+
                 with lines.indent(
                     f"if value == {enum_type_name}.{literal_value.name}.value:"
                 ):
@@ -299,6 +312,10 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         variants_attr_holder = self._get_variants_attr_holder(spec)
         variants = self._get_variant_names_iterable(spec)
         variants_type_expr = type_name(spec.type)
+
+        if is_local_type_name(variants_type_expr):
+            variants_type_expr = clean_id(variants_type_expr)
+            spec.builder.ensure_object_imported(spec.type, variants_type_expr)
 
         if variants_attr not in variants_attr_holder.__dict__:
             setattr(variants_attr_holder, variants_attr, {})
@@ -565,7 +582,14 @@ def _unpack_annotated_serializable_type(
         ],
     )
     unpacker = UnpackerRegistry.get(spec.copy(type=value_type))
-    return f"{type_name(spec.type)}._deserialize({unpacker})"
+
+    field_type = type_name(spec.type)
+
+    if is_local_type_name(field_type):
+        field_type = clean_id(field_type)
+        spec.builder.ensure_object_imported(spec.type, field_type)
+
+    return f"{field_type}._deserialize({unpacker})"
 
 
 @register
@@ -578,7 +602,12 @@ def unpack_serializable_type(spec: ValueSpec) -> Optional[Expression]:
     if spec.origin_type.__use_annotations__:
         return _unpack_annotated_serializable_type(spec)
     else:
-        return f"{type_name(spec.type)}._deserialize({spec.expression})"
+        field_type = type_name(spec.type)
+        if is_local_type_name(field_type):
+            field_type = clean_id(field_type)
+            spec.builder.ensure_object_imported(spec.type, field_type)
+
+        return f"{field_type}._deserialize({spec.expression})"
 
 
 @register
@@ -588,8 +617,14 @@ def unpack_generic_serializable_type(spec: ValueSpec) -> Optional[Expression]:
             type_arg_names = ", ".join(
                 list(map(type_name, get_args(spec.type)))
             )
+            field_type = type_name(spec.origin_type)
+
+            if is_local_type_name(field_type):
+                field_type = clean_id(field_type)
+                spec.builder.ensure_object_imported(spec.type, field_type)
+
             return (
-                f"{type_name(spec.type)}._deserialize({spec.expression}, "
+                f"{field_type}._deserialize({spec.expression}, "
                 f"[{type_arg_names}])"
             )
 
@@ -990,7 +1025,12 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
         unpackers.append(unpacker)
 
     if not defaults:
-        return f"{type_name(spec.type)}({', '.join(unpackers)})"
+        field_type = type_name(spec.type)
+        if is_local_type_name(field_type):
+            field_type = clean_id(field_type)
+            spec.builder.ensure_object_imported(spec.type, field_type)
+
+        return f"{field_type}({', '.join(unpackers)})"
 
     lines = CodeLines()
     method_name = (
@@ -1015,7 +1055,13 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
                 lines.append(f"fields.append({unpacker})")
         with lines.indent("except IndexError:"):
             lines.append("pass")
-        lines.append(f"return {type_name(spec.type)}(*fields)")
+
+        field_type = type_name(spec.type)
+        if is_local_type_name(field_type):
+            field_type = clean_id(field_type)
+            spec.builder.ensure_object_imported(spec.type, field_type)
+
+        lines.append(f"return {field_type}(*fields)")
     lines.append(
         f"setattr({spec.cls_attrs_name}, '{method_name}', {method_name})"
     )
@@ -1194,10 +1240,22 @@ def unpack_pathlike(spec: ValueSpec) -> Optional[Expression]:
         spec.builder.ensure_module_imported(pathlib)
         return f"{type_name(pathlib.PurePath)}({spec.expression})"
     elif issubclass(spec.origin_type, os.PathLike):
-        return f"{type_name(spec.origin_type)}({spec.expression})"
+        field_type = type_name(spec.origin_type)
+
+        if is_local_type_name(field_type):
+            field_type = clean_id(field_type)
+            spec.builder.ensure_object_imported(spec.type, field_type)
+
+        return f"{field_type}({spec.expression})"
 
 
 @register
 def unpack_enum(spec: ValueSpec) -> Optional[Expression]:
     if issubclass(spec.origin_type, enum.Enum):
-        return f"{type_name(spec.origin_type)}({spec.expression})"
+        field_type = type_name(spec.origin_type)
+
+        if is_local_type_name(field_type):
+            field_type = clean_id(field_type)
+            spec.builder.ensure_object_imported(spec.type, field_type)
+
+        return f"{field_type}({spec.expression})"

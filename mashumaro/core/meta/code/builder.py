@@ -45,7 +45,7 @@ from mashumaro.core.meta.helpers import (
     is_hashable,
     is_init_var,
     is_literal,
-    is_local_type,
+    is_local_type_name,
     is_named_tuple,
     is_optional,
     is_type_var_any,
@@ -1264,9 +1264,9 @@ class FieldUnpackerCodeBlockBuilder:
             ),
         )
 
-        if is_local_type(ftype):
+        if is_local_type_name(field_type):
             field_type = clean_id(field_type)
-            self.ensure_object_imported(ftype, field_type)
+            self.parent.ensure_object_imported(ftype, field_type)
 
         could_be_none = (
             ftype in (typing.Any, type(None), None)

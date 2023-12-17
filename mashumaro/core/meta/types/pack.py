@@ -32,6 +32,7 @@ from mashumaro.core.meta.helpers import (
     is_final,
     is_generic,
     is_literal,
+    is_local_type_name,
     is_named_tuple,
     is_new_type,
     is_not_required,
@@ -306,6 +307,11 @@ def pack_union(
                 spec.field_ctx.name
             ),
         )
+
+        if is_local_type_name(field_type):
+            field_type = clean_id(field_type)
+            spec.builder.ensure_object_imported(spec.type, field_type)
+
         if spec.builder.is_nailed:
             lines.append(
                 "raise InvalidFieldValue("
@@ -359,6 +365,13 @@ def pack_literal(spec: ValueSpec) -> Expression:
                     typ=value_type,
                     resolved_type_params=resolved_type_params,
                 )
+
+                if is_local_type_name(enum_type_name):
+                    enum_type_name = clean_id(enum_type_name)
+                    spec.builder.ensure_object_imported(
+                        value_type, enum_type_name
+                    )
+
                 with lines.indent(
                     f"if value == {enum_type_name}.{literal_value.name}:"
                 ):
@@ -373,6 +386,11 @@ def pack_literal(spec: ValueSpec) -> Expression:
             typ=spec.type,
             resolved_type_params=resolved_type_params,
         )
+
+        if is_local_type_name(field_type):
+            field_type = clean_id(field_type)
+            spec.builder.ensure_object_imported(spec.type, field_type)
+
         if spec.builder.is_nailed:
             lines.append(
                 f"raise InvalidFieldValue('{spec.field_ctx.name}',"
