@@ -1,13 +1,13 @@
 from dataclasses import dataclass, field
 from typing import Optional, Union
-from mashumaro.exceptions import ExtraKeysError
+from mashumaro.exceptions import ExtraKeysError, InvalidFieldValue
 
 import pytest
-from typing_extensions import Literal
+from typing_extensions import Annotated, Literal
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
-from mashumaro.types import SerializationStrategy
+from mashumaro.types import Discriminator, SerializationStrategy
 
 from .entities import (
     MyDataClassWithOptional,
@@ -385,3 +385,50 @@ def test_forbid_extra_keys():
 
     assert exc_info.value.extra_keys == {"baz"}
     assert exc_info.value.target_type == ForbidKeysModel
+
+
+@dataclass
+class _VariantByBase(DataClassDictMixin):
+    class Config(BaseConfig):
+        discriminator = Discriminator(
+            field="__type",
+            include_subtypes=True,
+            variant_tagger_fn=lambda clz: clz.__name__,
+        )
+        forbid_extra_keys = True
+
+
+@dataclass
+class _VariantByField1(_VariantByBase):
+    x: Optional[str] = None
+
+
+@dataclass
+class _VariantByField2(_VariantByBase):
+    x: Optional[str] = None
+
+
+@dataclass
+class ForbidKeysModelWithDiscriminator(DataClassDictMixin):
+    inner: _VariantByBase
+
+    class Config(BaseConfig):
+        forbid_extra_keys = True
+
+
+def test_forbid_extra_keys_with_discriminator():
+    # Test unpacking works
+    assert ForbidKeysModelWithDiscriminator.from_dict(
+        {"inner": {"x": "foo", "__type": "_VariantByField2"}}
+    ) == ForbidKeysModelWithDiscriminator(_VariantByField2(x="foo"))
+
+    # Test extra keys are forbidden
+    with pytest.raises(InvalidFieldValue) as exc_info:
+        ForbidKeysModelWithDiscriminator.from_dict(
+            {"inner": {"x": "foo", "__type": "_VariantByField2", "bar": "baz"}}
+        )
+
+    root_exc = exc_info.value.__context__
+    assert isinstance(root_exc, ExtraKeysError)
+    assert root_exc.extra_keys == {"bar"}
+    assert root_exc.target_type == _VariantByField2
