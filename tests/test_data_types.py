@@ -1009,6 +1009,41 @@ def test_invalid_field_value_deserialization_with_rounded_decimal_with_default()
     with pytest.raises(InvalidFieldValue):
         DataClass.from_dict({"x": "bad_value"})
 
+@dataclass
+class _InnerDeserializeTest(DataClassDictMixin):
+    x: int
+
+@dataclass
+class _MiddleDeserializeTest(DataClassDictMixin):
+    inner: _InnerDeserializeTest
+
+def test_invalid_nested_field_value_deserialization():
+    @dataclass
+    class Outer(DataClassDictMixin):
+        middle: _MiddleDeserializeTest
+
+    with pytest.raises(InvalidFieldValue) as exc_info:
+        Outer.from_dict({"middle": {"inner": {"x": "bad_value"}}})
+
+    assert exc_info.value.field_name == "x"
+    assert exc_info.value.field_type is int
+    assert exc_info.value.holder_class == _InnerDeserializeTest
+    assert exc_info.value.field_value == "bad_value"
+    assert exc_info.value.path == "middle.inner"
+
+def test_missing_nested_field_value_deserialization():
+    @dataclass
+    class Outer(DataClassDictMixin):
+        middle: _MiddleDeserializeTest
+
+    with pytest.raises(MissingField) as exc_info:
+        Outer.from_dict({"middle": {"inner": {}}})
+
+    assert exc_info.value.field_name == "x"
+    assert exc_info.value.field_type is int
+    assert exc_info.value.holder_class == _InnerDeserializeTest
+    assert exc_info.value.path == "middle.inner"
+
 
 @pytest.mark.parametrize(
     "value_info",
