@@ -1225,7 +1225,25 @@ class FieldUnpackerCodeBlockBuilder:
     ) -> None:
         with self.lines.indent("try:"):
             self._set_value(field_name, unpacked_value, in_kwargs)
-        with self.lines.indent("except:"):
+        with self.lines.indent("except MissingField as inner:"):
+            self.lines.append(
+                f"path = '{field_name}' + '.' + inner.path if inner.path else '{field_name}'"
+            )
+            self.lines.append(
+                "raise MissingField("
+                "inner.field_name,inner.field_type,"
+                "inner.holder_class,path) from None"
+            )
+        with self.lines.indent("except InvalidFieldValue as inner:"):
+            self.lines.append(
+                f"path = '{field_name}' + '.' + inner.path if inner.path else '{field_name}'"
+            )
+            self.lines.append(
+                "raise InvalidFieldValue("
+                "inner.field_name,inner.field_type,inner.field_value,"
+                "inner.holder_class,inner.msg,path) from None"
+            )
+        with self.lines.indent("except Exception:"):
             self.lines.append(
                 "raise InvalidFieldValue("
                 f"'{field_name}',{field_type_name},value,cls)"

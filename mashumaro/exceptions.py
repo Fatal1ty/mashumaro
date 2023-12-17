@@ -4,10 +4,17 @@ from mashumaro.core.meta.helpers import type_name
 
 
 class MissingField(LookupError):
-    def __init__(self, field_name: str, field_type: Type, holder_class: Type):
+    def __init__(
+        self,
+        field_name: str,
+        field_type: Type,
+        holder_class: Type,
+        path: Optional[str] = None,
+    ):
         self.field_name = field_name
         self.field_type = field_type
         self.holder_class = holder_class
+        self.path = path
 
     @property
     def field_type_name(self) -> str:
@@ -18,8 +25,9 @@ class MissingField(LookupError):
         return type_name(self.holder_class, short=True)
 
     def __str__(self) -> str:
+        path = f' at path "{self.path}"' if self.path else ""
         return (
-            f'Field "{self.field_name}" of type {self.field_type_name}'
+            f'Field "{self.field_name}"{path} of type {self.field_type_name}'
             f" is missing in {self.holder_class_name} instance"
         )
 
@@ -99,12 +107,14 @@ class InvalidFieldValue(ValueError):
         field_value: Any,
         holder_class: Type,
         msg: Optional[str] = None,
+        path: Optional[str] = None,
     ):
         self.field_name = field_name
         self.field_type = field_type
         self.field_value = field_value
         self.holder_class = holder_class
         self.msg = msg
+        self.path = path
 
     @property
     def field_type_name(self) -> str:
@@ -115,8 +125,9 @@ class InvalidFieldValue(ValueError):
         return type_name(self.holder_class, short=True)
 
     def __str__(self) -> str:
+        path = f' at path "{self.path}"' if self.path else ""
         s = (
-            f'Field "{self.field_name}" of type {self.field_type_name} '
+            f'Field "{self.field_name}"{path} of type {self.field_type_name} '
             f"in {self.holder_class_name} has invalid value "
             f"{repr(self.field_value)}"
         )
