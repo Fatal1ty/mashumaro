@@ -462,7 +462,8 @@ class CodeBuilder:
                     )
                     with self.indent("if forbidden_keys:"):
                         self.add_line(
-                            f"raise ExtraKeysError(forbidden_keys,cls) from None"
+                            "raise ExtraKeysError(forbidden_keys,cls) "
+                            "from None"
                         )
 
                 with self.indent("try:"):
@@ -1248,7 +1249,8 @@ class FieldUnpackerCodeBlockBuilder:
             self._set_value(field_name, unpacked_value, in_kwargs)
         with self.lines.indent("except MissingField as inner:"):
             self.lines.append(
-                f"path = '{field_name}' + '.' + inner.path if inner.path else '{field_name}'"
+                f"path = '{field_name}' + '.' + inner.path "
+                f"if inner.path else '{field_name}'"
             )
             self.lines.append(
                 "raise MissingField("
@@ -1257,7 +1259,8 @@ class FieldUnpackerCodeBlockBuilder:
             )
         with self.lines.indent("except InvalidFieldValue as inner:"):
             self.lines.append(
-                f"path = '{field_name}' + '.' + inner.path if inner.path else '{field_name}'"
+                f"path = '{field_name}' + '.' + inner.path "
+                f"if inner.path else '{field_name}'"
             )
             self.lines.append(
                 "raise InvalidFieldValue("
