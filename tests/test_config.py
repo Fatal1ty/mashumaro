@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional, Union
+from mashumaro.exceptions import ExtraKeysError
 
 import pytest
 from typing_extensions import Literal
@@ -322,3 +323,65 @@ def test_sort_keys_plain_dataclass():
         "{'unsorted_sub': {'foo': 1, 'bar': 2}, "
         "'sorted_sub': {'bar': 2, 'foo': 1}}"
     )
+
+
+def test_forbid_extra_keys():
+    @dataclass
+    class ForbidKeysModel(DataClassDictMixin):
+        foo: int
+
+        class Config(BaseConfig):
+            forbid_extra_keys = True
+
+    # Test unpacking works
+    assert ForbidKeysModel.from_dict({"foo": 1}) == ForbidKeysModel(1)
+
+    # Test extra keys are forbidden
+    with pytest.raises(ExtraKeysError) as exc_info:
+        ForbidKeysModel.from_dict({"foo": 1, "bar": 2, "baz": 3})
+
+    assert exc_info.value.extra_keys == {"bar", "baz"}
+    assert exc_info.value.target_type == ForbidKeysModel
+
+    # Now with alias, but not allow_deserialization_not_by_alias
+    @dataclass
+    class ForbidKeysModel(DataClassDictMixin):
+        foo: int = field(metadata={"alias": "f"})
+        bar: int
+
+        class Config(BaseConfig):
+            forbid_extra_keys = True
+            aliases = {"bar": "b"}
+
+    # Test unpacking works
+    assert ForbidKeysModel.from_dict({"f": 1, "b": 2}) == ForbidKeysModel(1, 2)
+
+    # Test extra keys are forbidden
+    with pytest.raises(ExtraKeysError) as exc_info:
+        ForbidKeysModel.from_dict({"foo": 1, "bar": 2})
+
+    assert exc_info.value.extra_keys == {"foo", "bar"}
+    assert exc_info.value.target_type == ForbidKeysModel
+
+    # Now with alias, but allow_deserialization_not_by_alias
+    @dataclass
+    class ForbidKeysModel(DataClassDictMixin):
+        foo: int = field(metadata={"alias": "f"})
+        bar: int
+
+        class Config(BaseConfig):
+            forbid_extra_keys = True
+            aliases = {"bar": "b"}
+            allow_deserialization_not_by_alias = True
+
+    # Test unpacking works
+    assert ForbidKeysModel.from_dict({"f": 1, "bar": 2}) == ForbidKeysModel(
+        1, 2
+    )
+
+    # Test extra keys are forbidden
+    with pytest.raises(ExtraKeysError) as exc_info:
+        ForbidKeysModel.from_dict({"foo": 1, "b": 2, "baz": 3})
+
+    assert exc_info.value.extra_keys == {"baz"}
+    assert exc_info.value.target_type == ForbidKeysModel

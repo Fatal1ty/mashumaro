@@ -27,82 +27,86 @@ but it also does it _super quick_.
 
 Table of contents
 -------------------------------------------------------------------------------
-* [Introduction](#introduction)
-* [Installation](#installation)
-* [Changelog](#changelog)
-* [Supported data types](#supported-data-types)
-* [Usage example](#usage-example)
-* [How does it work?](#how-does-it-work)
-* [Benchmark](#benchmark)
-* [Supported serialization formats](#supported-serialization-formats)
-  * [Basic form](#basic-form)
-  * [JSON](#json)
-  * [YAML](#yaml)
-  * [TOML](#toml)
-  * [MessagePack](#messagepack)
-* [Customization](#customization)
-    * [`SerializableType` interface](#serializabletype-interface)
-      * [User-defined types](#user-defined-types)
-      * [User-defined generic types](#user-defined-generic-types)
-    * [`SerializationStrategy`](#serializationstrategy)
-      * [Third-party types](#third-party-types)
-      * [Third-party generic types](#third-party-generic-types)
-    * [Field options](#field-options)
-        * [`serialize` option](#serialize-option)
-        * [`deserialize` option](#deserialize-option)
-        * [`serialization_strategy` option](#serialization_strategy-option)
-        * [`alias` option](#alias-option)
-    * [Config options](#config-options)
-        * [`debug` config option](#debug-config-option)
-        * [`code_generation_options` config option](#code_generation_options-config-option)
-        * [`serialization_strategy` config option](#serialization_strategy-config-option)
-        * [`aliases` config option](#aliases-config-option)
-        * [`serialize_by_alias` config option](#serialize_by_alias-config-option)
-        * [`allow_deserialization_not_by_alias` config option](#allow_deserialization_not_by_alias-config-option)
-        * [`omit_none` config option](#omit_none-config-option)
-        * [`omit_default` config option](#omit_default-config-option)
-        * [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
-        * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
-        * [`dialect` config option](#dialect-config-option)
-        * [`orjson_options` config option](#orjson_options-config-option)
-        * [`discriminator` config option](#discriminator-config-option)
-        * [`lazy_compilation` config option](#lazy_compilation-config-option)
-        * [`sort_keys` config option](#sort_keys-config-option)
-    * [Passing field values as is](#passing-field-values-as-is)
-    * [Extending existing types](#extending-existing-types)
-    * [Dialects](#dialects)
-      * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
-      * [`serialize_by_alias` dialect option](#serialize_by_alias-dialect-option)
-      * [`omit_none` dialect option](#omit_none-dialect-option)
-      * [`omit_default` dialect option](#omit_default-dialect-option)
-      * [`named_tuple_as_dict` dialect option](#namedtuple_as_dict-dialect-option)
-      * [`no_copy_collections` dialect option](#no_copy_collections-dialect-option)
-      * [Changing the default dialect](#changing-the-default-dialect)
-    * [Discriminator](#discriminator)
-      * [Subclasses distinguishable by a field](#subclasses-distinguishable-by-a-field)
-      * [Subclasses without a common field](#subclasses-without-a-common-field)
-      * [Class level discriminator](#class-level-discriminator)
-      * [Working with union of classes](#working-with-union-of-classes)
-      * [Using a custom variant tagger function](#using-a-custom-variant-tagger-function)
-    * [Code generation options](#code-generation-options)
-        * [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
-        * [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
-        * [Add `dialect` keyword argument](#add-dialect-keyword-argument)
-        * [Add `context` keyword argument](#add-context-keyword-argument)
-    * [Generic dataclasses](#generic-dataclasses)
-      * [Generic dataclass inheritance](#generic-dataclass-inheritance)
-      * [Generic dataclass in a field type](#generic-dataclass-in-a-field-type)
-    * [`GenericSerializableType` interface](#genericserializabletype-interface)
-    * [Serialization hooks](#serialization-hooks)
-        * [Before deserialization](#before-deserialization)
-        * [After deserialization](#after-deserialization)
-        * [Before serialization](#before-serialization)
-        * [After serialization](#after-serialization)
-* [JSON Schema](#json-schema)
-    * [Building JSON Schema](#building-json-schema)
-    * [JSON Schema constraints](#json-schema-constraints)
-    * [Extending JSON Schema](#extending-json-schema)
-    * [JSON Schema and custom serialization methods](#json-schema-and-custom-serialization-methods)
+- [Table of contents](#table-of-contents)
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Changelog](#changelog)
+- [Supported data types](#supported-data-types)
+- [Usage example](#usage-example)
+- [How does it work?](#how-does-it-work)
+- [Benchmark](#benchmark)
+- [Supported serialization formats](#supported-serialization-formats)
+    - [Basic form](#basic-form)
+    - [JSON](#json)
+        - [json library](#json-library)
+        - [orjson library](#orjson-library)
+    - [YAML](#yaml)
+    - [TOML](#toml)
+    - [MessagePack](#messagepack)
+- [Customization](#customization)
+    - [SerializableType interface](#serializabletype-interface)
+        - [User-defined types](#user-defined-types)
+        - [User-defined generic types](#user-defined-generic-types)
+    - [SerializationStrategy](#serializationstrategy)
+        - [Third-party types](#third-party-types)
+        - [Third-party generic types](#third-party-generic-types)
+    - [Field options](#field-options)
+        - [`serialize` option](#serialize-option)
+        - [`deserialize` option](#deserialize-option)
+        - [`serialization_strategy` option](#serialization_strategy-option)
+        - [`alias` option](#alias-option)
+    - [Config options](#config-options)
+        - [`debug` config option](#debug-config-option)
+        - [`code_generation_options` config option](#code_generation_options-config-option)
+        - [`serialization_strategy` config option](#serialization_strategy-config-option)
+        - [`aliases` config option](#aliases-config-option)
+        - [`serialize_by_alias` config option](#serialize_by_alias-config-option)
+        - [`allow_deserialization_not_by_alias` config option](#allow_deserialization_not_by_alias-config-option)
+        - [`omit_none` config option](#omit_none-config-option)
+        - [`omit_default` config option](#omit_default-config-option)
+        - [`namedtuple_as_dict` config option](#namedtuple_as_dict-config-option)
+        - [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
+        - [`dialect` config option](#dialect-config-option)
+        - [`orjson_options` config option](#orjson_options-config-option)
+        - [`discriminator` config option](#discriminator-config-option)
+        - [`lazy_compilation` config option](#lazy_compilation-config-option)
+        - [`sort_keys` config option](#sort_keys-config-option)
+        - [`forbid_extra_keys` config option](#forbid_extra_keys-config-option)
+    - [Passing field values as is](#passing-field-values-as-is)
+    - [Extending existing types](#extending-existing-types)
+    - [Dialects](#dialects)
+        - [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
+        - [`serialize_by_alias` dialect option](#serialize_by_alias-dialect-option)
+        - [`omit_none` dialect option](#omit_none-dialect-option)
+        - [`omit_default` dialect option](#omit_default-dialect-option)
+        - [`namedtuple_as_dict` dialect option](#namedtuple_as_dict-dialect-option)
+        - [`no_copy_collections` dialect option](#no_copy_collections-dialect-option)
+        - [Changing the default dialect](#changing-the-default-dialect)
+    - [Discriminator](#discriminator)
+        - [Subclasses distinguishable by a field](#subclasses-distinguishable-by-a-field)
+        - [Subclasses without a common field](#subclasses-without-a-common-field)
+        - [Class level discriminator](#class-level-discriminator)
+        - [Working with union of classes](#working-with-union-of-classes)
+        - [Using a custom variant tagger function](#using-a-custom-variant-tagger-function)
+    - [Code generation options](#code-generation-options)
+        - [Add `omit_none` keyword argument](#add-omit_none-keyword-argument)
+        - [Add `by_alias` keyword argument](#add-by_alias-keyword-argument)
+        - [Add `dialect` keyword argument](#add-dialect-keyword-argument)
+        - [Add `context` keyword argument](#add-context-keyword-argument)
+    - [Generic dataclasses](#generic-dataclasses)
+        - [Generic dataclass inheritance](#generic-dataclass-inheritance)
+        - [Generic dataclass in a field type](#generic-dataclass-in-a-field-type)
+    - [GenericSerializableType interface](#genericserializabletype-interface)
+    - [Serialization hooks](#serialization-hooks)
+        - [Before deserialization](#before-deserialization)
+        - [After deserialization](#after-deserialization)
+        - [Before serialization](#before-serialization)
+        - [After serialization](#after-serialization)
+- [JSON Schema](#json-schema)
+    - [Building JSON Schema](#building-json-schema)
+    - [JSON Schema constraints](#json-schema-constraints)
+    - [Extending JSON Schema](#extending-json-schema)
+    - [JSON Schema and custom serialization methods](#json-schema-and-custom-serialization-methods)
 
 Introduction
 -------------------------------------------------------------------------------
@@ -148,8 +152,8 @@ For convenience, there is a table below that outlines the
 last version of `mashumaro` that can be installed on unmaintained versions
 of Python.
 
-| Python Version | Last Version of mashumaro                                        | Python EOL |
-|----------------|--------------------------------------------------------------------|------------|
+| Python Version | Last Version of mashumaro                                          | Python EOL |
+| -------------- | ------------------------------------------------------------------ | ---------- |
 | 3.7            | [3.9.1](https://github.com/Fatal1ty/mashumaro/releases/tag/v3.9.1) | 2023-06-27 |
 | 3.6            | [3.1.1](https://github.com/Fatal1ty/mashumaro/releases/tag/v3.1.1) | 2021-12-23 |
 
@@ -1127,7 +1131,7 @@ that all possible engines depend on the data type that this option is used
 with. At this moment there are next serialization engines to choose from:
 
 | Applicable data types      | Supported engines    | Description                                                                                                                                                                                                  |
-|:---------------------------|:---------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| :------------------------- | :------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict` | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine. |
 | `Any`                      | `omit`               | Skip the field during serialization                                                                                                                                                                          |
 
@@ -1172,7 +1176,7 @@ that all possible engines depend on the data type that this option is used
 with. At this moment there are next deserialization engines to choose from:
 
 | Applicable data types      | Supported engines                                                                                                                   | Description                                                                                                                                                                                                                                                                                             |
-|:---------------------------|:------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| :------------------------- | :---------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict`                                                                                                                | How to unpack named tuples. By default `as_list` engine is used that means your named tuple class instance will be created from a list of its values. You can unpack it from a dictionary using `as_dict` engine.                                                                                       |
 
@@ -1317,7 +1321,7 @@ The following table provides a brief overview of all the available constants
 described below.
 
 | Constant                                                        | Description                                                          |
-|:----------------------------------------------------------------|:---------------------------------------------------------------------|
+| :-------------------------------------------------------------- | :------------------------------------------------------------------- |
 | [`TO_DICT_ADD_OMIT_NONE_FLAG`](#add-omit_none-keyword-argument) | Adds `omit_none` keyword-only argument to `to_*` methods.            |
 | [`TO_DICT_ADD_BY_ALIAS_FLAG`](#add-by_alias-keyword-argument)   | Adds `by_alias` keyword-only argument to `to_*` methods.             |
 | [`ADD_DIALECT_SUPPORT`](#add-dialect-keyword-argument)          | Adds `dialect` keyword-only argument to `from_*` and `to_*` methods. |
@@ -1712,6 +1716,24 @@ class SortedDataClass(DataClassDictMixin):
 t = SortedDataClass(1, 2)
 assert t.to_dict() == {"bar": 2, "foo": 1}
 ```
+
+#### `forbid_extra_keys` config option
+
+When set, the deserialization of dataclasses will fail if the input dictionary contains keys that are not present in the dataclass.
+
+```python
+from dataclasses import dataclass
+
+from mashumaro import DataClassDictMixin
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    a: int
+
+DataClass.from_dict({"a": 1, "b": 2})  # ExtraKeysError: Extra keys: {'b'}
+```
+
+It plays well with `aliases` and `allow_deserialization_not_by_alias` options.
 
 ### Passing field values as is
 
