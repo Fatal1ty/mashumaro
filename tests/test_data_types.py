@@ -1009,13 +1009,16 @@ def test_invalid_field_value_deserialization_with_rounded_decimal_with_default()
     with pytest.raises(InvalidFieldValue):
         DataClass.from_dict({"x": "bad_value"})
 
+
 @dataclass
 class _InnerDeserializeTest(DataClassDictMixin):
     x: int
 
+
 @dataclass
 class _MiddleDeserializeTest(DataClassDictMixin):
     inner: _InnerDeserializeTest
+
 
 def test_invalid_nested_field_value_deserialization():
     @dataclass
@@ -1030,6 +1033,7 @@ def test_invalid_nested_field_value_deserialization():
     assert exc_info.value.holder_class == _InnerDeserializeTest
     assert exc_info.value.field_value == "bad_value"
     assert exc_info.value.path == "middle.inner"
+
 
 def test_missing_nested_field_value_deserialization():
     @dataclass
