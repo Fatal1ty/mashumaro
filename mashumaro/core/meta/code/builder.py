@@ -451,6 +451,13 @@ class CodeBuilder:
                 if config.forbid_extra_keys:
                     allowed_keys = {f[1] or f[0] for f in filtered_fields}
 
+                    # If a discirimator withg a field is set via config,
+                    # we should allow this field to be present in the input
+                    # This will not work for annotated discriminators though...
+                    discr = self.get_config(look_in_parents=True).discriminator
+                    if discr and discr.field:
+                        allowed_keys.add(discr.field)
+
                     if config.allow_deserialization_not_by_alias:
                         allowed_keys |= {f[0] for f in filtered_fields}
 
