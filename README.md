@@ -2467,7 +2467,7 @@ disconnected_event = ClientEvent.from_dict(
 assert disconnected_event == ClientDisconnectedEvent(IPv4Address("10.0.0.42"))
 ```
 
-If we need to associate multiple tags with one variant, we can return
+If we need to associate multiple tags with a single variant, we can return
 a list of tags:
 
 ```python

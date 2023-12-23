@@ -469,9 +469,9 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             lines.append(f"variant_tags = {variant_tagger_expr}")
             with lines.indent("if type(variant_tags) is list:"):
                 with lines.indent("for varint_tag in variant_tags:"):
-                    lines.append(f"variants_map[varint_tag] = variant")
+                    lines.append("variants_map[varint_tag] = variant")
             with lines.indent("else:"):
-                lines.append(f"variants_map[variant_tags] = variant")
+                lines.append("variants_map[variant_tags] = variant")
         else:
             lines.append(f"variants_map[{variant_tagger_expr}] = variant")
 
