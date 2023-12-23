@@ -347,12 +347,17 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             with lines.indent("except (KeyError, AttributeError):"):
                 lines.append(f"variants_map = {variants_map}")
                 with lines.indent(f"for variant in {variants}:"):
-                    with lines.indent("try:"):
-                        lines.append(
-                            f"variants_map[{variant_tagger_expr}] = variant"
+                    if discriminator.variant_tagger_fn is not None:
+                        self._add_register_variant_tags(
+                            lines, variant_tagger_expr
                         )
-                    with lines.indent("except KeyError:"):
-                        lines.append("continue")
+                    else:
+                        with lines.indent("try:"):
+                            self._add_register_variant_tags(
+                                lines, variant_tagger_expr
+                            )
+                        with lines.indent("except KeyError:"):
+                            lines.append("continue")
                     self._add_build_variant_unpacker(
                         spec, lines, variant_method_name, variant_method_call
                     )
@@ -456,6 +461,19 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                 with lines.indent("try:"):
                     lines.append(f"return {attrs}.{variant_method_call}")
                 lines.append("except Exception: pass")
+
+    def _add_register_variant_tags(
+        self, lines: CodeLines, variant_tagger_expr: str
+    ) -> None:
+        if self.discriminator.variant_tagger_fn:
+            lines.append(f"variant_tags = {variant_tagger_expr}")
+            with lines.indent("if type(variant_tags) is list:"):
+                with lines.indent("for varint_tag in variant_tags:"):
+                    lines.append(f"variants_map[varint_tag] = variant")
+            with lines.indent("else:"):
+                lines.append(f"variants_map[variant_tags] = variant")
+        else:
+            lines.append(f"variants_map[{variant_tagger_expr}] = variant")
 
 
 class SubtypeUnpackerBuilder(DiscriminatedUnionUnpackerBuilder):
