@@ -805,12 +805,7 @@ def test_by_subtypes_with_custom_variant_tagger_and_multiple_tags():
             )
     for variant in (_VariantWithMultipleTagsOne, _VariantWithMultipleTagsTwo):
         for tag in (variant.__name__.lower(), variant.__name__.upper()):
-            assert (
-                decode(
-                    {"type": tag}, _VariantWithMultipleTags
-                )
-                == variant()
-            )
+            assert decode({"type": tag}, _VariantWithMultipleTags) == variant()
 
     with pytest.raises(SuitableVariantNotFoundError):
         VariantWithMultipleTags.from_dict({"type": "unknown"})
