@@ -216,6 +216,21 @@ class CodeBuilder:
     ) -> typing.Dict[str, typing.Any]:
         return self.__get_field_types(include_extras=include_extras)
 
+    def get_type_name_identifier(
+        self,
+        typ: typing.Optional[typing.Type],
+        resolved_type_params: typing.Optional[
+            typing.Dict[typing.Type, typing.Type]
+        ] = None,
+    ) -> str:
+        field_type = type_name(typ, resolved_type_params=resolved_type_params)
+
+        if is_local_type_name(field_type):
+            field_type = clean_id(field_type)
+            self.ensure_object_imported(typ, field_type)
+
+        return field_type
+
     @property  # type: ignore
     @lru_cache()
     def dataclass_fields(self) -> typing.Dict[str, Field]:
@@ -1257,16 +1272,12 @@ class FieldUnpackerCodeBlockBuilder:
     ) -> FieldUnpackerCodeBlock:
         default = self.parent.get_field_default(fname)
         has_default = default is not MISSING
-        field_type = type_name(
+        field_type = self.parent.get_type_name_identifier(
             ftype,
             resolved_type_params=self.parent.get_field_resolved_type_params(
                 fname
             ),
         )
-
-        if is_local_type_name(field_type):
-            field_type = clean_id(field_type)
-            self.parent.ensure_object_imported(ftype, field_type)
 
         could_be_none = (
             ftype in (typing.Any, type(None), None)

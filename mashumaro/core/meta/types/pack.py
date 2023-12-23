@@ -32,7 +32,6 @@ from mashumaro.core.meta.helpers import (
     is_final,
     is_generic,
     is_literal,
-    is_local_type_name,
     is_named_tuple,
     is_new_type,
     is_not_required,
@@ -301,16 +300,12 @@ def pack_union(
             with lines.indent("try:"):
                 lines.append(f"return {packer}")
             lines.append("except Exception: pass")
-        field_type = type_name(
+        field_type = spec.builder.get_type_name_identifier(
             spec.type,
             resolved_type_params=spec.builder.get_field_resolved_type_params(
                 spec.field_ctx.name
             ),
         )
-
-        if is_local_type_name(field_type):
-            field_type = clean_id(field_type)
-            spec.builder.ensure_object_imported(spec.type, field_type)
 
         if spec.builder.is_nailed:
             lines.append(
@@ -361,16 +356,10 @@ def pack_literal(spec: ValueSpec) -> Expression:
                 spec.copy(type=value_type, expression="value")
             )
             if isinstance(literal_value, enum.Enum):
-                enum_type_name = type_name(
+                enum_type_name = spec.builder.get_type_name_identifier(
                     typ=value_type,
                     resolved_type_params=resolved_type_params,
                 )
-
-                if is_local_type_name(enum_type_name):
-                    enum_type_name = clean_id(enum_type_name)
-                    spec.builder.ensure_object_imported(
-                        value_type, enum_type_name
-                    )
 
                 with lines.indent(
                     f"if value == {enum_type_name}.{literal_value.name}:"
@@ -382,14 +371,10 @@ def pack_literal(spec: ValueSpec) -> Expression:
             ):
                 with lines.indent(f"if value == {literal_value!r}:"):
                     lines.append(f"return {packer}")
-        field_type = type_name(
+        field_type = spec.builder.get_type_name_identifier(
             typ=spec.type,
             resolved_type_params=resolved_type_params,
         )
-
-        if is_local_type_name(field_type):
-            field_type = clean_id(field_type)
-            spec.builder.ensure_object_imported(spec.type, field_type)
 
         if spec.builder.is_nailed:
             lines.append(
