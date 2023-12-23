@@ -426,6 +426,52 @@ class _VariantWitCustomTaggerSub2(_VariantWitCustomTagger):
     pass
 
 
+@dataclass
+class VariantWithMultipleTags(DataClassDictMixin):
+    class Config(BaseConfig):
+        discriminator = Discriminator(
+            field="type",
+            include_subtypes=True,
+            variant_tagger_fn=lambda cls: [
+                cls.__name__.lower(),
+                cls.__name__.upper(),
+            ],
+        )
+
+
+@dataclass
+class VariantWithMultipleTagsOne(VariantWithMultipleTags):
+    pass
+
+
+@dataclass
+class VariantWithMultipleTagsTwo(VariantWithMultipleTags):
+    pass
+
+
+@dataclass
+class _VariantWithMultipleTags:
+    class Config(BaseConfig):
+        discriminator = Discriminator(
+            field="type",
+            include_subtypes=True,
+            variant_tagger_fn=lambda cls: [
+                cls.__name__.lower(),
+                cls.__name__.upper(),
+            ],
+        )
+
+
+@dataclass
+class _VariantWithMultipleTagsOne(_VariantWithMultipleTags):
+    pass
+
+
+@dataclass
+class _VariantWithMultipleTagsTwo(_VariantWithMultipleTags):
+    pass
+
+
 def test_by_subtypes():
     assert VariantBySubtypes.from_dict(X_1) == VariantBySubtypesSub1(x=DT_STR)
     assert decode(X_1, _VariantBySubtypes) == _VariantBySubtypesSub1(x=DT_STR)
@@ -749,3 +795,19 @@ def test_by_subtypes_with_custom_variant_tagger():
         VariantWitCustomTagger.from_dict({"type": "unknown"})
     with pytest.raises(SuitableVariantNotFoundError):
         decode({"type": "unknown"}, _VariantWitCustomTagger)
+
+
+def test_by_subtypes_with_custom_variant_tagger_and_multiple_tags():
+    for variant in (VariantWithMultipleTagsOne, VariantWithMultipleTagsTwo):
+        for tag in (variant.__name__.lower(), variant.__name__.upper()):
+            assert (
+                VariantWithMultipleTags.from_dict({"type": tag}) == variant()
+            )
+    for variant in (_VariantWithMultipleTagsOne, _VariantWithMultipleTagsTwo):
+        for tag in (variant.__name__.lower(), variant.__name__.upper()):
+            assert decode({"type": tag}, _VariantWithMultipleTags) == variant()
+
+    with pytest.raises(SuitableVariantNotFoundError):
+        VariantWithMultipleTags.from_dict({"type": "unknown"})
+    with pytest.raises(SuitableVariantNotFoundError):
+        decode({"type": "unknown"}, _VariantWithMultipleTags)

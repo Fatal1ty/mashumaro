@@ -2020,7 +2020,7 @@ It has the following parameters that affects class selection rules:
   by which all the variants can be distinguished
 * `include_subtypes` — allow to deserialize subclasses
 * `include_supertypes` — allow to deserialize superclasses
-* `variant_tagger_fn` — a custom function used to generate a tag value
+* `variant_tagger_fn` — a custom function used to generate tag values
   associated with a variant
 
 By default, each variant that you want to discriminate by tags should have a
@@ -2039,10 +2039,11 @@ following forms:
 > processed during serialization.
 
 However, it is possible to use discriminator without the class-level
-attribute. You can provide a custom function that generates a variant tag
-value. This function should take a class as the only argument and return a
-value of the basic type like `str` or `int`. The common practice is to use
-a class name as a tag value:
+attribute. You can provide a custom function that generates one or many variant
+tag values. This function should take a class as the only argument and return
+either a single value of the basic type like `str` or `int` or a list of them
+to associate multiple tags with a variant. The common practice is to use
+a class name as a single tag value:
 
 ```python
 variant_tagger_fn = lambda cls: cls.__name__
@@ -2464,6 +2465,15 @@ disconnected_event = ClientEvent.from_dict(
     {"type": "disconnected", "client_ip": "10.0.0.42"}
 )
 assert disconnected_event == ClientDisconnectedEvent(IPv4Address("10.0.0.42"))
+```
+
+If we need to associate multiple tags with a single variant, we can return
+a list of tags:
+
+```python
+def client_event_tagger(cls):
+    name = cls.__name__[6:-5]
+    return [name.lower(), name.upper()]
 ```
 
 ### Code generation options

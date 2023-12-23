@@ -341,6 +341,28 @@ class VariantWitCustomTaggerOwner(
     pass
 
 
+@dataclass
+class _VariantWitCustomTaggerWithMultipleTagsOwner:
+    x: Annotated[
+        Union[VariantWitCustomTagger1, VariantWitCustomTagger2],
+        Discriminator(
+            field="type",
+            include_supertypes=True,
+            variant_tagger_fn=lambda cls: [
+                cls.__name__.lower(),
+                cls.__name__.upper(),
+            ],
+        ),
+    ]
+
+
+@dataclass
+class VariantWitCustomTaggerWithMultipleTagsOwner(
+    _VariantWitCustomTaggerWithMultipleTagsOwner, DataClassDictMixin
+):
+    pass
+
+
 def test_by_field_with_supertypes():
     decoder = BasicDecoder(_ByFieldWithSupertypes)
 
@@ -744,6 +766,32 @@ def test_by_field_with_subtypes_with_custom_variant_tagger():
             VariantWitCustomTagger1()
         )
         assert func({"x": {"type": "variantwitcustomtagger2"}}) == cls(
+            VariantWitCustomTagger2()
+        )
+        with pytest.raises(InvalidFieldValue):
+            func({"x": {"type": "unknown"}})
+
+
+def test_by_field_with_subtypes_with_custom_variant_tagger_and_multiple_tags():
+    decoder = BasicDecoder(_VariantWitCustomTaggerWithMultipleTagsOwner)
+
+    for func, cls in (
+        (
+            VariantWitCustomTaggerWithMultipleTagsOwner.from_dict,
+            VariantWitCustomTaggerWithMultipleTagsOwner,
+        ),
+        (decoder.decode, _VariantWitCustomTaggerWithMultipleTagsOwner),
+    ):
+        assert func({"x": {"type": "variantwitcustomtagger1"}}) == cls(
+            VariantWitCustomTagger1()
+        )
+        assert func({"x": {"type": "variantwitcustomtagger2"}}) == cls(
+            VariantWitCustomTagger2()
+        )
+        assert func({"x": {"type": "VARIANTWITCUSTOMTAGGER1"}}) == cls(
+            VariantWitCustomTagger1()
+        )
+        assert func({"x": {"type": "VARIANTWITCUSTOMTAGGER2"}}) == cls(
             VariantWitCustomTagger2()
         )
         with pytest.raises(InvalidFieldValue):
