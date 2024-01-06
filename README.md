@@ -1829,12 +1829,13 @@ python -m timeit -s "from typing import NewType; MyInt = NewType('MyInt', int)" 
 50000000 loops, best of 5: 4.35 nsec per loop
 ```
 
-However, when you create dataclass instances using the `from_*` method, there
-will be no performance degradation, because the value won't be enclosed in the
-callable in the generated code. Therefore, if performance is more important
-to you than catching logical errors by type checkers, and you are actively
-creating or changing dataclasses manually, then you should take a closer look
-at using `Annotated`.
+However, when you create dataclass instances using the `from_*` method provided
+by one of the mixins or using one of the decoders, there will be no performance
+degradation, because the value won't be enclosed in the callable in the
+generated code. Therefore, if performance is more important to you than
+catching logical errors by type checkers, and you are actively creating or
+changing dataclasses manually, then you should take a closer look at using
+`Annotated`.
 
 ### Dialects
 
