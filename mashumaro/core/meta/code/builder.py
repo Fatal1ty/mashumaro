@@ -45,6 +45,7 @@ from mashumaro.core.meta.helpers import (
     is_hashable,
     is_init_var,
     is_literal,
+    is_local_type_name,
     is_named_tuple,
     is_optional,
     is_type_var_any,
@@ -52,7 +53,12 @@ from mashumaro.core.meta.helpers import (
     substitute_type_params,
     type_name,
 )
-from mashumaro.core.meta.types.common import FieldContext, NoneType, ValueSpec
+from mashumaro.core.meta.types.common import (
+    FieldContext,
+    NoneType,
+    ValueSpec,
+    clean_id,
+)
 from mashumaro.core.meta.types.pack import PackerRegistry
 from mashumaro.core.meta.types.unpack import (
     SubtypeUnpackerBuilder,
@@ -209,6 +215,21 @@ class CodeBuilder:
         self, include_extras: bool = False
     ) -> typing.Dict[str, typing.Any]:
         return self.__get_field_types(include_extras=include_extras)
+
+    def get_type_name_identifier(
+        self,
+        typ: typing.Optional[typing.Type],
+        resolved_type_params: typing.Optional[
+            typing.Dict[typing.Type, typing.Type]
+        ] = None,
+    ) -> str:
+        field_type = type_name(typ, resolved_type_params=resolved_type_params)
+
+        if is_local_type_name(field_type):
+            field_type = clean_id(field_type)
+            self.ensure_object_imported(typ, field_type)
+
+        return field_type
 
     @property  # type: ignore
     @lru_cache()
@@ -1250,7 +1271,7 @@ class FieldUnpackerCodeBlockBuilder:
     ) -> FieldUnpackerCodeBlock:
         default = self.parent.get_field_default(fname)
         has_default = default is not MISSING
-        field_type = type_name(
+        field_type = self.parent.get_type_name_identifier(
             ftype,
             resolved_type_params=self.parent.get_field_resolved_type_params(
                 fname

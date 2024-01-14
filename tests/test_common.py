@@ -1,5 +1,8 @@
 import dataclasses
 from dataclasses import dataclass, field
+from enum import Enum
+from pathlib import PurePosixPath
+from typing import Any, Literal, NamedTuple, Optional, Self
 
 import msgpack
 import pytest
@@ -262,3 +265,104 @@ def test_kw_args_when_pos_arg_is_overridden_with_field():
     assert loaded.pos2 == 2
     assert loaded.pos3 == 3
     assert loaded.kw1 == 4
+
+
+def test_local_types():
+    @dataclass
+    class LocalDataclassType:
+        foo: int
+
+    class LocalNamedTupleType(NamedTuple):
+        foo: int
+
+    class LocalPathLike(PurePosixPath):
+        pass
+
+    class LocalEnumType(Enum):
+        FOO = "foo"
+
+    class LocalSerializableType(SerializableType):
+        @classmethod
+        def _deserialize(cls, value):
+            return LocalSerializableType()
+
+        def _serialize(self) -> Any:
+            return {}
+
+        def __eq__(self, __value: object) -> bool:
+            return isinstance(__value, LocalSerializableType)
+
+    class LocalGenericSerializableType(GenericSerializableType):
+        @classmethod
+        def _deserialize(cls, value, types):
+            return LocalGenericSerializableType()
+
+        def _serialize(self, types) -> Any:
+            return {}
+
+        def __eq__(self, __value: object) -> bool:
+            return isinstance(__value, LocalGenericSerializableType)
+
+    class LocalSelfSerializableAnnotatedType(
+        SerializableType, use_annotations=True
+    ):
+        @classmethod
+        def _deserialize(cls, value: Self) -> Self:
+            return value
+
+        def _serialize(self) -> Self:
+            return self
+
+        def __eq__(self, __value: object) -> bool:
+            return isinstance(__value, LocalSelfSerializableAnnotatedType)
+
+    @dataclass
+    class DataClassWithLocalType(DataClassDictMixin):
+        x1: LocalDataclassType
+        x2: LocalNamedTupleType
+        x3: LocalPathLike
+        x4: LocalEnumType
+        x4_1: Literal[LocalEnumType.FOO]
+        x5: LocalSerializableType
+        x6: LocalGenericSerializableType
+        x7: Optional[Self]
+        x8: LocalSelfSerializableAnnotatedType
+
+    obj = DataClassWithLocalType(
+        x1=LocalDataclassType(foo=0),
+        x2=LocalNamedTupleType(foo=0),
+        x3=LocalPathLike("path/to/file"),
+        x4=LocalEnumType.FOO,
+        x4_1=LocalEnumType.FOO,
+        x5=LocalSerializableType(),
+        x6=LocalGenericSerializableType(),
+        x7=None,
+        x8=LocalSelfSerializableAnnotatedType(),
+    )
+    assert obj.to_dict() == {
+        "x1": {"foo": 0},
+        "x2": [0],
+        "x3": "path/to/file",
+        "x4": "foo",
+        "x4_1": "foo",
+        "x5": {},
+        "x6": {},
+        "x7": None,
+        "x8": LocalSelfSerializableAnnotatedType(),
+    }
+    assert (
+        DataClassWithLocalType.from_dict(
+            {
+                "x1": {"foo": 0},
+                "x2": [0],
+                "x3": "path/to/file",
+                "x4": "foo",
+                "x4_1": "foo",
+                "x5": {},
+                "x6": {},
+                "x7": None,
+                "x8": LocalSelfSerializableAnnotatedType(),
+            }
+        )
+        == obj
+    )

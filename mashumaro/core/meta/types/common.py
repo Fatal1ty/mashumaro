@@ -1,4 +1,5 @@
 import collections.abc
+import re
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, replace
@@ -43,6 +44,8 @@ Expression: TypeAlias = str
 
 P = ParamSpec("P")
 T = TypeVar("T")
+
+_PY_VALID_ID_RE = re.compile(r"\W|^(?=\d)")
 
 
 class AttrsHolder:
@@ -301,6 +304,7 @@ def random_hex() -> str:
 
 
 def clean_id(value: str) -> str:
-    for c in ".<>":
-        value = value.replace(c, "_")
-    return value
+    if not value:
+        return "_"
+
+    return _PY_VALID_ID_RE.sub("_", value)

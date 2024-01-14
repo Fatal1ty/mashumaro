@@ -389,6 +389,10 @@ def is_literal(typ: Type) -> bool:
     return False
 
 
+def is_local_type_name(typ_name: str) -> bool:
+    return "<locals>" in typ_name
+
+
 def not_none_type_arg(
     type_args: Tuple[Type, ...],
     resolved_type_params: Optional[Dict[Type, Type]] = None,

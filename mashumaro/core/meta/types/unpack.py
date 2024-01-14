@@ -173,8 +173,8 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
             with lines.indent("try:"):
                 lines.append(f"return {unpacker}")
             lines.append("except Exception: pass")
-        field_type = type_name(
-            spec.type,
+        field_type = spec.builder.get_type_name_identifier(
+            typ=spec.type,
             resolved_type_params=spec.builder.get_field_resolved_type_params(
                 spec.field_ctx.name
             ),
@@ -203,7 +203,10 @@ class LiteralUnpackerBuilder(AbstractUnpackerBuilder):
     def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
         for literal_value in get_literal_values(spec.type):
             if isinstance(literal_value, enum.Enum):
-                enum_type_name = type_name(type(literal_value))
+                lit_type = type(literal_value)
+                enum_type_name = spec.builder.get_type_name_identifier(
+                    lit_type
+                )
                 with lines.indent(
                     f"if value == {enum_type_name}.{literal_value.name}.value:"
                 ):
@@ -298,7 +301,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         variants_map = self._get_variants_map(spec)
         variants_attr_holder = self._get_variants_attr_holder(spec)
         variants = self._get_variant_names_iterable(spec)
-        variants_type_expr = type_name(spec.type)
+        variants_type_expr = spec.builder.get_type_name_identifier(spec.type)
 
         if variants_attr not in variants_attr_holder.__dict__:
             setattr(variants_attr_holder, variants_attr, {})
@@ -571,7 +574,10 @@ def _unpack_annotated_serializable_type(
             msg='Method _deserialize must have annotated "value" argument',
         ) from None
     if is_self(value_type):
-        return f"{type_name(spec.type)}._deserialize({spec.expression})"
+        return (
+            f"{spec.builder.get_type_name_identifier(spec.type)}"
+            f"._deserialize({spec.expression})"
+        )
     if isinstance(value_type, ForwardRef):
         value_type = spec.builder.evaluate_forward_ref(
             value_type, spec.origin_type
@@ -583,7 +589,8 @@ def _unpack_annotated_serializable_type(
         ],
     )
     unpacker = UnpackerRegistry.get(spec.copy(type=value_type))
-    return f"{type_name(spec.type)}._deserialize({unpacker})"
+    field_type = spec.builder.get_type_name_identifier(spec.type)
+    return f"{field_type}._deserialize({unpacker})"
 
 
 @register
@@ -596,7 +603,8 @@ def unpack_serializable_type(spec: ValueSpec) -> Optional[Expression]:
     if spec.origin_type.__use_annotations__:
         return _unpack_annotated_serializable_type(spec)
     else:
-        return f"{type_name(spec.type)}._deserialize({spec.expression})"
+        field_type = spec.builder.get_type_name_identifier(spec.type)
+        return f"{field_type}._deserialize({spec.expression})"
 
 
 @register
@@ -606,8 +614,11 @@ def unpack_generic_serializable_type(spec: ValueSpec) -> Optional[Expression]:
             type_arg_names = ", ".join(
                 list(map(type_name, get_args(spec.type)))
             )
+            field_type = spec.builder.get_type_name_identifier(
+                spec.origin_type
+            )
             return (
-                f"{type_name(spec.type)}._deserialize({spec.expression}, "
+                f"{field_type}._deserialize({spec.expression}, "
                 f"[{type_arg_names}])"
             )
 
@@ -767,10 +778,10 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             )
             if spec.builder.is_nailed:
                 spec.builder.add_type_modules(spec.builder.cls)
-                return (
-                    f"{type_name(spec.builder.cls)}.{method_name}"
-                    f"({method_args})"
+                self_cls_name = spec.builder.get_type_name_identifier(
+                    spec.builder.cls
                 )
+                return f"{self_cls_name}.{method_name}({method_args})"
             else:
                 return f"_cls.{method_name}({method_args})"
         elif is_required(spec.type) or is_not_required(spec.type):
@@ -1008,7 +1019,8 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
         unpackers.append(unpacker)
 
     if not defaults:
-        return f"{type_name(spec.type)}({', '.join(unpackers)})"
+        field_type = spec.builder.get_type_name_identifier(spec.type)
+        return f"{field_type}({', '.join(unpackers)})"
 
     lines = CodeLines()
     method_name = (
@@ -1033,7 +1045,8 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
                 lines.append(f"fields.append({unpacker})")
         with lines.indent("except IndexError:"):
             lines.append("pass")
-        lines.append(f"return {type_name(spec.type)}(*fields)")
+        field_type = spec.builder.get_type_name_identifier(spec.type)
+        lines.append(f"return {field_type}(*fields)")
     lines.append(
         f"setattr({spec.cls_attrs_name}, '{method_name}', {method_name})"
     )
@@ -1212,10 +1225,12 @@ def unpack_pathlike(spec: ValueSpec) -> Optional[Expression]:
         spec.builder.ensure_module_imported(pathlib)
         return f"{type_name(pathlib.PurePath)}({spec.expression})"
     elif issubclass(spec.origin_type, os.PathLike):
-        return f"{type_name(spec.origin_type)}({spec.expression})"
+        field_type = spec.builder.get_type_name_identifier(spec.origin_type)
+        return f"{field_type}({spec.expression})"
 
 
 @register
 def unpack_enum(spec: ValueSpec) -> Optional[Expression]:
     if issubclass(spec.origin_type, enum.Enum):
-        return f"{type_name(spec.origin_type)}({spec.expression})"
+        field_type = spec.builder.get_type_name_identifier(spec.origin_type)
+        return f"{field_type}({spec.expression})"
