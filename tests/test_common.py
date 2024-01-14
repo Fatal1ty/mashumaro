@@ -2,10 +2,11 @@ import dataclasses
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import PurePosixPath
-from typing import Any, Literal, NamedTuple, Optional, Self
+from typing import Any, Literal, NamedTuple, Optional
 
 import msgpack
 import pytest
+from typing_extensions import Self
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_310_MIN
