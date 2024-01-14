@@ -301,12 +301,11 @@ def pack_union(
                 lines.append(f"return {packer}")
             lines.append("except Exception: pass")
         field_type = spec.builder.get_type_name_identifier(
-            spec.type,
+            typ=spec.type,
             resolved_type_params=spec.builder.get_field_resolved_type_params(
                 spec.field_ctx.name
             ),
         )
-
         if spec.builder.is_nailed:
             lines.append(
                 "raise InvalidFieldValue("
@@ -360,7 +359,6 @@ def pack_literal(spec: ValueSpec) -> Expression:
                     typ=value_type,
                     resolved_type_params=resolved_type_params,
                 )
-
                 with lines.indent(
                     f"if value == {enum_type_name}.{literal_value.name}:"
                 ):
@@ -375,7 +373,6 @@ def pack_literal(spec: ValueSpec) -> Expression:
             typ=spec.type,
             resolved_type_params=resolved_type_params,
         )
-
         if spec.builder.is_nailed:
             lines.append(
                 f"raise InvalidFieldValue('{spec.field_ctx.name}',"

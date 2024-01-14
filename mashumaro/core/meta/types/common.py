@@ -45,6 +45,8 @@ Expression: TypeAlias = str
 P = ParamSpec("P")
 T = TypeVar("T")
 
+_PY_VALID_ID_RE = re.compile(r"\W|^(?=\d)")
+
 
 class AttrsHolder:
     def __new__(
@@ -299,9 +301,6 @@ def expr_or_maybe_none(spec: ValueSpec, new_expr: Expression) -> Expression:
 
 def random_hex() -> str:
     return str(uuid.uuid4().hex)
-
-
-_PY_VALID_ID_RE = re.compile(r"\W|^(?=\d)")
 
 
 def clean_id(value: str) -> str:

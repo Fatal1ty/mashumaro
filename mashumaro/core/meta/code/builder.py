@@ -327,7 +327,6 @@ class CodeBuilder:
             else:
                 print(f"{type_name(self.cls)}:")
             print(code)
-
         exec(code, self.globals, self.__dict__)
 
     def evaluate_forward_ref(
@@ -1278,7 +1277,6 @@ class FieldUnpackerCodeBlockBuilder:
                 fname
             ),
         )
-
         could_be_none = (
             ftype in (typing.Any, type(None), None)
             or is_type_var_any(self.parent.get_real_type(fname, ftype))
