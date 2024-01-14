@@ -2,7 +2,7 @@ import dataclasses
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import PurePosixPath
-from typing import Any, Literal, NamedTuple
+from typing import Any, Literal, NamedTuple, Optional, Self
 
 import msgpack
 import pytest
@@ -283,7 +283,7 @@ def test_local_types():
 
     class LocalSerializableType(SerializableType):
         @classmethod
-        def _deserialize(self, value):
+        def _deserialize(cls, value):
             return LocalSerializableType()
 
         def _serialize(self) -> Any:
@@ -294,7 +294,7 @@ def test_local_types():
 
     class LocalGenericSerializableType(GenericSerializableType):
         @classmethod
-        def _deserialize(self, value, types):
+        def _deserialize(cls, value, types):
             return LocalGenericSerializableType()
 
         def _serialize(self, types) -> Any:
@@ -302,6 +302,19 @@ def test_local_types():
 
         def __eq__(self, __value: object) -> bool:
             return isinstance(__value, LocalGenericSerializableType)
+
+    class LocalSelfSerializableAnnotatedType(
+        SerializableType, use_annotations=True
+    ):
+        @classmethod
+        def _deserialize(cls, value: Self) -> Self:
+            return value
+
+        def _serialize(self) -> Self:
+            return self
+
+        def __eq__(self, __value: object) -> bool:
+            return isinstance(__value, LocalSelfSerializableAnnotatedType)
 
     @dataclass
     class DataClassWithLocalType(DataClassDictMixin):
@@ -312,6 +325,8 @@ def test_local_types():
         x4_1: Literal[LocalEnumType.FOO]
         x5: LocalSerializableType
         x6: LocalGenericSerializableType
+        x7: Optional[Self]
+        x8: LocalSelfSerializableAnnotatedType
 
     obj = DataClassWithLocalType(
         x1=LocalDataclassType(foo=0),
@@ -321,6 +336,8 @@ def test_local_types():
         x4_1=LocalEnumType.FOO,
         x5=LocalSerializableType(),
         x6=LocalGenericSerializableType(),
+        x7=None,
+        x8=LocalSelfSerializableAnnotatedType(),
     )
     assert obj.to_dict() == {
         "x1": {"foo": 0},
@@ -330,6 +347,8 @@ def test_local_types():
         "x4_1": "foo",
         "x5": {},
         "x6": {},
+        "x7": None,
+        "x8": LocalSelfSerializableAnnotatedType(),
     }
     assert (
         DataClassWithLocalType.from_dict(
@@ -341,6 +360,8 @@ def test_local_types():
                 "x4_1": "foo",
                 "x5": {},
                 "x6": {},
+                "x7": None,
+                "x8": LocalSelfSerializableAnnotatedType(),
             }
         )
         == obj

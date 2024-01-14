@@ -556,7 +556,10 @@ def _unpack_annotated_serializable_type(
             msg='Method _deserialize must have annotated "value" argument',
         ) from None
     if is_self(value_type):
-        return f"{type_name(spec.type)}._deserialize({spec.expression})"
+        return (
+            f"{spec.builder.get_type_name_identifier(spec.type)}"
+            f"._deserialize({spec.expression})"
+        )
     if isinstance(value_type, ForwardRef):
         value_type = spec.builder.evaluate_forward_ref(
             value_type, spec.origin_type
@@ -757,10 +760,10 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             )
             if spec.builder.is_nailed:
                 spec.builder.add_type_modules(spec.builder.cls)
-                return (
-                    f"{type_name(spec.builder.cls)}.{method_name}"
-                    f"({method_args})"
+                self_cls_name = spec.builder.get_type_name_identifier(
+                    spec.builder.cls
                 )
+                return f"{self_cls_name}.{method_name}({method_args})"
             else:
                 return f"_cls.{method_name}({method_args})"
         elif is_required(spec.type) or is_not_required(spec.type):
