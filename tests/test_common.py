@@ -10,6 +10,7 @@ from typing_extensions import Self
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_310_MIN
+from mashumaro.core.meta.types.common import clean_id
 from mashumaro.mixins.dict import DataClassDictMixin
 from mashumaro.mixins.json import DataClassJSONMixin
 from mashumaro.mixins.msgpack import DataClassMessagePackMixin
@@ -367,3 +368,9 @@ def test_local_types():
         )
         == obj
     )
+
+
+def test_clean_id():
+    assert clean_id("") == "_"
+    assert clean_id("foo") == "foo"
+    assert clean_id("foo.<locals>.bar") == "foo__locals__bar"
