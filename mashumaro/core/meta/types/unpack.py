@@ -256,7 +256,8 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
     def _get_variants_map(self, spec: ValueSpec) -> str:
         variants_attr = self._get_variants_attr(spec)
         if spec.builder.is_nailed:
-            return f"{type_name(spec.builder.cls)}.{variants_attr}"
+            typ_name = spec.builder.get_type_name_identifier(spec.builder.cls)
+            return f"{typ_name}.{variants_attr}"
         else:
             return f"{spec.cls_attrs_name}.{variants_attr}"
 
@@ -266,11 +267,14 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         if self.discriminator.include_subtypes:
             spec.builder.ensure_object_imported(iter_all_subclasses)
             variant_names.extend(
-                f"*iter_all_subclasses({type_name(base_variant)})"
+                f"*iter_all_subclasses("
+                f"{spec.builder.get_type_name_identifier(base_variant)})"
                 for base_variant in base_variants
             )
         if self.discriminator.include_supertypes:
-            variant_names.extend(map(type_name, base_variants))
+            variant_names.extend(
+                map(spec.builder.get_type_name_identifier, base_variants)
+            )
         return variant_names
 
     def _get_variant_names_iterable(self, spec: ValueSpec) -> str:
