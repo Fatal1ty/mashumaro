@@ -1503,6 +1503,19 @@ def test_dataclass_with_default_nan_and_inf_with_omit_default():
     }
 
 
+def test_dataclass_with_default_int_flag_omit_default():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        a: MyIntFlag = MyIntFlag.a
+        b: MyIntFlag = MyIntFlag.b
+
+        class Config(BaseConfig):
+            omit_default = True
+
+    assert DataClass().to_dict() == {}
+    assert DataClass(MyIntFlag.a, MyIntFlag.b).to_dict() == {}
+
+
 @pytest.mark.parametrize("value_info", inner_values)
 def test_decoder(value_info):
     x_type, x_value, x_value_dumped = value_info
