@@ -40,8 +40,7 @@ class MessagePackDecoder(Generic[T]):
         *,
         default_dialect: Optional[Type[Dialect]] = None,
         pre_decoder_func: Optional[PreDecoderFunc] = _default_decoder,
-    ):
-        ...
+    ): ...
 
     @overload
     def __init__(
@@ -50,8 +49,7 @@ class MessagePackDecoder(Generic[T]):
         *,
         default_dialect: Optional[Type[Dialect]] = None,
         pre_decoder_func: Optional[PreDecoderFunc] = _default_decoder,
-    ):
-        ...
+    ): ...
 
     def __init__(
         self,
@@ -82,8 +80,7 @@ class MessagePackEncoder(Generic[T]):
         *,
         default_dialect: Optional[Type[Dialect]] = None,
         post_encoder_func: Optional[PostEncoderFunc] = _default_encoder,
-    ):
-        ...
+    ): ...
 
     @overload
     def __init__(
@@ -92,8 +89,7 @@ class MessagePackEncoder(Generic[T]):
         *,
         default_dialect: Optional[Type[Dialect]] = None,
         post_encoder_func: Optional[PostEncoderFunc] = _default_encoder,
-    ):
-        ...
+    ): ...
 
     def __init__(
         self,

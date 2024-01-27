@@ -25,8 +25,7 @@ class BasicDecoder(Generic[T]):
         *,
         default_dialect: Optional[Type[Dialect]] = None,
         pre_decoder_func: Optional[Callable[[Any], Any]] = None,
-    ):
-        ...
+    ): ...
 
     @overload
     def __init__(
@@ -35,8 +34,7 @@ class BasicDecoder(Generic[T]):
         *,
         default_dialect: Optional[Type[Dialect]] = None,
         pre_decoder_func: Optional[Callable[[Any], Any]] = None,
-    ):
-        ...
+    ): ...
 
     def __init__(
         self,
@@ -63,8 +61,7 @@ class BasicEncoder(Generic[T]):
         *,
         default_dialect: Optional[Type[Dialect]] = None,
         post_encoder_func: Optional[Callable[[Any], Any]] = None,
-    ):
-        ...
+    ): ...
 
     @overload
     def __init__(
@@ -73,8 +70,7 @@ class BasicEncoder(Generic[T]):
         *,
         default_dialect: Optional[Type[Dialect]] = None,
         post_encoder_func: Optional[Callable[[Any], Any]] = None,
-    ):
-        ...
+    ): ...
 
     def __init__(
         self,

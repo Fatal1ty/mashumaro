@@ -27,8 +27,7 @@ class ORJSONDecoder(Generic[T]):
         shape_type: Type[T],
         *,
         default_dialect: Optional[Type[Dialect]] = None,
-    ):
-        ...
+    ): ...
 
     @overload
     def __init__(
@@ -36,8 +35,7 @@ class ORJSONDecoder(Generic[T]):
         shape_type: Any,
         *,
         default_dialect: Optional[Type[Dialect]] = None,
-    ):
-        ...
+    ): ...
 
     def __init__(
         self,
@@ -66,8 +64,7 @@ class ORJSONEncoder(Generic[T]):
         shape_type: Type[T],
         *,
         default_dialect: Optional[Type[Dialect]] = None,
-    ):
-        ...
+    ): ...
 
     @overload
     def __init__(
@@ -75,8 +72,7 @@ class ORJSONEncoder(Generic[T]):
         shape_type: Any,
         *,
         default_dialect: Optional[Type[Dialect]] = None,
-    ):
-        ...
+    ): ...
 
     def __init__(
         self,

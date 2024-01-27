@@ -27,8 +27,7 @@ class JSONDecoder(Generic[T]):
         *,
         default_dialect: Optional[Type[Dialect]] = None,
         pre_decoder_func: Callable[[EncodedData], Any] = json.loads,
-    ):
-        ...
+    ): ...
 
     @overload
     def __init__(
@@ -37,8 +36,7 @@ class JSONDecoder(Generic[T]):
         *,
         default_dialect: Optional[Type[Dialect]] = None,
         pre_decoder_func: Callable[[EncodedData], Any] = json.loads,
-    ):
-        ...
+    ): ...
 
     def __init__(
         self,
@@ -65,8 +63,7 @@ class JSONEncoder(Generic[T]):
         *,
         default_dialect: Optional[Type[Dialect]] = None,
         post_encoder_func: Callable[[Any], str] = json.dumps,
-    ):
-        ...
+    ): ...
 
     @overload
     def __init__(
@@ -75,8 +72,7 @@ class JSONEncoder(Generic[T]):
         *,
         default_dialect: Optional[Type[Dialect]] = None,
         post_encoder_func: Callable[[Any], str] = json.dumps,
-    ):
-        ...
+    ): ...
 
     def __init__(
         self,

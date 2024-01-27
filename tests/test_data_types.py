@@ -1026,9 +1026,11 @@ def test_serialize_deserialize_options(value_info):
         x: x_type = field(
             metadata={
                 "serialize": lambda v: Fixture.CUSTOM_SERIALIZE,
-                "deserialize": lambda v: x_value
-                if v == Fixture.CUSTOM_SERIALIZE
-                else f"!{Fixture.CUSTOM_SERIALIZE}",
+                "deserialize": lambda v: (
+                    x_value
+                    if v == Fixture.CUSTOM_SERIALIZE
+                    else f"!{Fixture.CUSTOM_SERIALIZE}"
+                ),
             }
         )
 

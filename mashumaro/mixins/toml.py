@@ -51,8 +51,7 @@ class DataClassTOMLMixin(DataClassDictMixin):
         self: T,
         encoder: Encoder = tomli_w.dumps,
         **to_dict_kwargs: Any,
-    ) -> EncodedData:
-        ...
+    ) -> EncodedData: ...
 
     @classmethod
     @final
@@ -61,5 +60,4 @@ class DataClassTOMLMixin(DataClassDictMixin):
         data: EncodedData,
         decoder: Decoder = tomllib.loads,
         **from_dict_kwargs: Any,
-    ) -> T:
-        ...
+    ) -> T: ...

@@ -53,8 +53,7 @@ class DataClassORJSONMixin(DataClassDictMixin):
         *,
         orjson_options: int = ...,
         **to_dict_kwargs: Any,
-    ) -> bytes:
-        ...
+    ) -> bytes: ...
 
     def to_json(self: T, **kwargs: Any) -> str:
         return self.to_jsonb(**kwargs).decode()
@@ -66,5 +65,4 @@ class DataClassORJSONMixin(DataClassDictMixin):
         data: EncodedData,
         decoder: Decoder = orjson.loads,
         **from_dict_kwargs: Any,
-    ) -> T:
-        ...
+    ) -> T: ...
