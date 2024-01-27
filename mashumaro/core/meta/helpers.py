@@ -2,6 +2,7 @@ import dataclasses
 import enum
 import inspect
 import re
+import sys
 import types
 import typing
 from contextlib import suppress
@@ -82,6 +83,7 @@ __all__ = [
     "is_hashable",
     "is_hashable_type",
     "evaluate_forward_ref",
+    "get_forward_ref_referencing_globals",
 ]
 
 
@@ -670,7 +672,7 @@ def is_not_required(typ: Type) -> bool:
 
 
 def get_function_arg_annotation(
-    function: typing.Callable[[Any], Any],
+    function: typing.Callable[..., Any],
     arg_name: typing.Optional[str] = None,
     arg_pos: typing.Optional[int] = None,
 ) -> typing.Type:
@@ -769,3 +771,25 @@ def evaluate_forward_ref(
         )  # type: ignore[call-arg]
     else:
         return typ._evaluate(globalns, localns)  # type: ignore[call-arg]
+
+
+def get_forward_ref_referencing_globals(
+    referenced_type: typing.ForwardRef,
+    referencing_object: Optional[Any] = None,
+    fallback: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    if fallback is None:
+        fallback = {}
+    forward_module = getattr(referenced_type, "__forward_module__", None)
+    if not forward_module and referencing_object:
+        # We can't get the module in which ForwardRef's value is defined on
+        # Python < 3.10, ForwardRef evaluation might not work properly
+        # without this information, so we will consider the namespace of
+        # the module in which this ForwardRef is used as globalns.
+        return getattr(
+            sys.modules.get(referencing_object.__module__, None),
+            "__dict__",
+            fallback,
+        )
+    else:
+        return getattr(forward_module, "__dict__", fallback)
