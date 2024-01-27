@@ -1,3 +1,4 @@
+import enum
 import importlib
 import inspect
 import math
@@ -1209,7 +1210,9 @@ class CodeBuilder:
         return default
 
     def get_field_default_literal(self, value: typing.Any) -> str:
-        if isinstance(value, (str, int, bool, NoneType)):  # type: ignore
+        if isinstance(value, enum.IntFlag):
+            return str(value.value)
+        elif isinstance(value, (str, int, bool, NoneType)):  # type: ignore
             return repr(value)
         elif (
             isinstance(value, float)
