@@ -672,7 +672,7 @@ def is_not_required(typ: Type) -> bool:
 
 
 def get_function_arg_annotation(
-    function: typing.Callable[[Any, ...], Any],
+    function: typing.Callable[..., Any],
     arg_name: typing.Optional[str] = None,
     arg_pos: typing.Optional[int] = None,
 ) -> typing.Type:
