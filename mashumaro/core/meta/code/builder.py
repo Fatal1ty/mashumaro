@@ -1,7 +1,6 @@
 import importlib
 import inspect
 import math
-import sys
 import types
 import typing
 import uuid
@@ -35,6 +34,7 @@ from mashumaro.core.meta.helpers import (
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
+    get_forward_ref_referencing_globals,
     get_literal_values,
     get_name_error_name,
     hash_type_args,
@@ -334,19 +334,9 @@ class CodeBuilder:
         typ: typing.ForwardRef,
         owner: typing.Optional[typing.Type],
     ) -> typing.Optional[typing.Type]:
-        forward_module = getattr(typ, "__forward_module__", None)
-        if not forward_module and owner:
-            # We can't get the module in which ForwardRef's value is defined on
-            # Python < 3.10, ForwardRef evaluation might not work properly
-            # without this information, so we will consider the namespace of
-            # the module in which this ForwardRef is used as globalns.
-            globalns = getattr(
-                sys.modules.get(owner.__module__, None),
-                "__dict__",
-                self.globals,
-            )
-        else:
-            globalns = getattr(forward_module, "__dict__", self.globals)
+        globalns = get_forward_ref_referencing_globals(
+            typ, owner, self.globals
+        )
         return evaluate_forward_ref(typ, globalns, self.__dict__)
 
     def get_declared_hook(self, method_name: str) -> typing.Any:

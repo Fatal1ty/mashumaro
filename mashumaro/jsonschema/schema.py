@@ -13,6 +13,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    ForwardRef,
     Iterable,
     List,
     Optional,
@@ -28,7 +29,9 @@ from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_39_MIN, PY_311_MIN
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import (
+    evaluate_forward_ref,
     get_args,
+    get_forward_ref_referencing_globals,
     get_function_return_annotation,
     get_literal_values,
     get_type_origin,
@@ -138,6 +141,13 @@ class Instance:
         return None
 
     def derive(self, **changes: Any) -> "Instance":
+        new_type = changes.get("type")
+        if isinstance(new_type, ForwardRef):
+            changes["type"] = evaluate_forward_ref(
+                new_type,
+                get_forward_ref_referencing_globals(new_type, self.type),
+                self.__dict__,
+            )
         new_instance = replace(self, **changes)
         if is_dataclass(self.origin_type):
             new_instance.__owner_builder = self.__self_builder
@@ -437,6 +447,14 @@ def on_special_typing_primitive(
         )
     elif is_type_var_tuple(instance.type):
         return get_schema(instance.derive(type=Tuple[Any, ...]), ctx)
+    elif isinstance(instance.type, ForwardRef):
+        evaluated = evaluate_forward_ref(
+            instance.type,
+            get_forward_ref_referencing_globals(instance.type),
+            None,
+        )
+        if evaluated is not None:
+            return get_schema(instance.derive(type=evaluated), ctx)
 
 
 @register
