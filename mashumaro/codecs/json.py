@@ -51,8 +51,7 @@ class JSONDecoder(Generic[T]):
         code_builder.add_decode_method(shape_type, self, pre_decoder_func)
 
     @final
-    def decode(self, data: EncodedData) -> T:  # pragma: no cover
-        ...
+    def decode(self, data: EncodedData) -> T: ...
 
 
 class JSONEncoder(Generic[T]):
@@ -87,8 +86,7 @@ class JSONEncoder(Generic[T]):
         code_builder.add_encode_method(shape_type, self, post_encoder_func)
 
     @final
-    def encode(self, obj: T) -> str:  # pragma: no cover
-        ...
+    def encode(self, obj: T) -> str: ...
 
 
 def json_decode(

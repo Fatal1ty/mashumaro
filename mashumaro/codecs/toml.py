@@ -58,8 +58,7 @@ class TOMLDecoder(Generic[T]):
         code_builder.add_decode_method(shape_type, self, tomllib.loads)
 
     @final
-    def decode(self, data: EncodedData) -> T:  # pragma: no cover
-        ...
+    def decode(self, data: EncodedData) -> T: ...
 
 
 class TOMLEncoder(Generic[T]):
@@ -95,8 +94,7 @@ class TOMLEncoder(Generic[T]):
         code_builder.add_encode_method(shape_type, self, tomli_w.dumps)
 
     @final
-    def encode(self, obj: T) -> bytes:  # pragma: no cover
-        ...
+    def encode(self, obj: T) -> bytes: ...
 
 
 def toml_decode(data: EncodedData, shape_type: Type[T]) -> T:

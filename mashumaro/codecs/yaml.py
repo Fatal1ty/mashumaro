@@ -68,8 +68,7 @@ class YAMLDecoder(Generic[T]):
         code_builder.add_decode_method(shape_type, self, pre_decoder_func)
 
     @final
-    def decode(self, data: EncodedData) -> T:  # pragma: no cover
-        ...
+    def decode(self, data: EncodedData) -> T: ...
 
 
 class YAMLEncoder(Generic[T]):
@@ -104,8 +103,7 @@ class YAMLEncoder(Generic[T]):
         code_builder.add_encode_method(shape_type, self, post_encoder_func)
 
     @final
-    def encode(self, obj: T) -> EncodedData:  # pragma: no cover
-        ...
+    def encode(self, obj: T) -> EncodedData: ...
 
 
 def yaml_decode(data: EncodedData, shape_type: Union[Type[T], Any]) -> T:

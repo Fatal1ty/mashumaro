@@ -26,8 +26,7 @@ class MyTypedDict(TypedDict):
     ),
 )
 def test_jsonschema_generation_for_forward_refs():
-    def foo(x: int, y: MyTypedDict):
-        pass
+    def foo(x: int, y: MyTypedDict): ...
 
     x_type = get_function_arg_annotation(foo, "x")
     assert isinstance(x_type, ForwardRef)

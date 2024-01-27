@@ -116,19 +116,15 @@ def test_no_code_builder(mocker):
 
 def test_get_class_that_defines_method():
     class A:
-        def foo(self):
-            pass  # pragma: no cover
+        def foo(self): ...
 
         @classmethod
-        def bar(cls):
-            pass  # pragma: no cover
+        def bar(cls): ...
 
-        def foobar(self):
-            pass  # pragma: no cover
+        def foobar(self): ...
 
     class B(A):
-        def foobar(self):
-            pass  # pragma: no cover
+        def foobar(self): ...
 
     assert get_class_that_defines_method("foo", B) == A
     assert get_class_that_defines_method("bar", B) == A
@@ -716,8 +712,7 @@ def test_ensure_mapping_key_type_hashable():
 
 
 def test_get_function_arg_annotation():
-    def foo(x: int, y: Dialect) -> None:
-        pass  # pragma: no cover
+    def foo(x: int, y: Dialect) -> None: ...
 
     assert get_function_arg_annotation(foo, "x") == int
     assert get_function_arg_annotation(foo, "y") == Dialect
@@ -730,8 +725,7 @@ def test_get_function_arg_annotation():
 
 
 def test_get_function_return_annotation():
-    def foo(x: int, y: Dialect) -> Dialect:
-        pass  # pragma: no cover
+    def foo(x: int, y: Dialect) -> Dialect: ...
 
     assert get_function_return_annotation(foo) == Dialect
 

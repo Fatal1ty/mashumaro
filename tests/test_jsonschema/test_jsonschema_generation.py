@@ -515,21 +515,13 @@ def test_jsonschema_for_named_tuple_as_list():
 
 
 def test_jsonschema_for_named_tuple_with_overridden_serialization_method():
-    class MySerializationStrategy(SerializationStrategy):  # pragma: no cover
-        def serialize(self, value: Any) -> MyNamedTuple:
-            pass
+    class MySerializationStrategy(SerializationStrategy):
+        def serialize(self, value: Any) -> MyNamedTuple: ...
+        def deserialize(self, value: Any) -> Any: ...
 
-        def deserialize(self, value: Any) -> Any:
-            pass
-
-    class MyAnySerializationStrategy(
-        SerializationStrategy
-    ):  # pragma: no cover
-        def serialize(self, value: Any) -> Any:
-            pass
-
-        def deserialize(self, value: Any) -> Any:
-            pass
+    class MyAnySerializationStrategy(SerializationStrategy):
+        def serialize(self, value: Any) -> Any: ...
+        def deserialize(self, value: Any) -> Any: ...
 
     @dataclass
     class DataClassA:
