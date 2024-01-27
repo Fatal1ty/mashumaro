@@ -363,7 +363,7 @@ def pack_literal(spec: ValueSpec) -> Expression:
                     f"if value == {enum_type_name}.{literal_value.name}:"
                 ):
                     lines.append(f"return {packer}")
-            elif isinstance(  # type: ignore
+            elif isinstance(
                 literal_value,
                 (int, str, bytes, bool, NoneType),  # type: ignore
             ):

@@ -587,15 +587,15 @@ def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
         items_schema = _get_schema_or_none(instance.derive(type=args[0]), ctx)
         return JSONArraySchema(items=items_schema)
     else:
-        min_items: Optional[int] = 0
-        max_items: Optional[int] = 0
+        min_items = 0
+        max_items = 0
         prefix_items = []
         items: Optional[JSONSchema] = None
         unpack_schema: Optional[JSONSchema] = None
         unpack_idx = 0
         for arg_idx, arg in enumerate(args, start=1):
             if not is_unpack(arg):
-                min_items += 1  # type: ignore
+                min_items += 1
                 if not unpack_schema:
                     prefix_items.append(
                         get_schema(instance.derive(type=arg), ctx)
@@ -605,8 +605,8 @@ def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
                 unpack_idx = arg_idx
         if unpack_schema:
             prefix_items.extend(unpack_schema.prefixItems or [])
-            min_items += unpack_schema.minItems or 0  # type: ignore
-            max_items += unpack_schema.maxItems or 0  # type: ignore
+            min_items += unpack_schema.minItems or 0
+            max_items += unpack_schema.maxItems or 0
             if unpack_idx == len(args):
                 items = unpack_schema.items
         else:
@@ -649,9 +649,7 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
             if isinstance(f_schema, EmptyJSONSchema):
                 f_schema = JSONSchema()
             f_schema.default = _default(
-                f_type,  # type: ignore[arg-type]
-                f_default,
-                instance.get_self_config(),
+                f_type, f_default, instance.get_self_config()
             )
         properties[f_name] = f_schema
     if as_dict:

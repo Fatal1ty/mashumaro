@@ -221,7 +221,7 @@ class LiteralUnpackerBuilder(AbstractUnpackerBuilder):
                     with lines.indent(f"if {unpacker} == {literal_value!r}:"):
                         lines.append(f"return {literal_value!r}")
                 lines.append("except Exception: pass")
-            elif isinstance(  # type: ignore
+            elif isinstance(
                 literal_value,
                 (int, str, bool, NoneType),  # type: ignore
             ):

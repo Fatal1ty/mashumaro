@@ -232,7 +232,7 @@ class CodeBuilder:
 
         return field_type
 
-    @property  # type: ignore
+    @property
     @lru_cache()
     def dataclass_fields(self) -> typing.Dict[str, Field]:
         d = {}
@@ -256,16 +256,14 @@ class CodeBuilder:
     def metadatas(self) -> typing.Dict[str, typing.Mapping[str, typing.Any]]:
         return {
             name: field.metadata
-            for name, field in self.dataclass_fields.items()  # type: ignore
-            # https://github.com/python/mypy/issues/1362
+            for name, field in self.dataclass_fields.items()
         }
 
     @lru_cache(None)
     def get_field_default(
         self, name: str, call_factory: bool = False
     ) -> typing.Any:
-        field = self.dataclass_fields.get(name)  # type: ignore
-        # https://github.com/python/mypy/issues/1362
+        field = self.dataclass_fields.get(name)
         if field:
             if field.default is not MISSING:
                 return field.default
@@ -354,7 +352,7 @@ class CodeBuilder:
             f"first_method='{method_name}',"
             f"allow_postponed_evaluation=False,"
             f"format_name='{self.format_name}',"
-            f"decoder={type_name(self.decoder)},"  # type: ignore
+            f"decoder={type_name(self.decoder)},"
             f"default_dialect={type_name(self.default_dialect)}"
             f").add_unpack_method()"
         )
@@ -435,8 +433,7 @@ class CodeBuilder:
             kw_only_fields = set()
             field_blocks = []
             for fname, ftype in field_types.items():
-                field = self.dataclass_fields.get(fname)  # type: ignore
-                # https://github.com/python/mypy/issues/1362
+                field = self.dataclass_fields.get(fname)
                 if field and not field.init:
                     continue
                 if missing_kw_only:

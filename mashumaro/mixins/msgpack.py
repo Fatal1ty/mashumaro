@@ -17,7 +17,7 @@ Decoder = Callable[[EncodedData], Dict[Any, Any]]
 class MessagePackDialect(Dialect):
     no_copy_collections = (list, dict)
     serialization_strategy = {
-        bytes: pass_through,  # type: ignore
+        bytes: pass_through,
         bytearray: {
             "deserialize": bytearray,
             "serialize": pass_through,

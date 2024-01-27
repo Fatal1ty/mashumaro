@@ -50,7 +50,7 @@ SerializationStrategyValueType = Union[
 
 class BaseConfig:
     debug: bool = False
-    code_generation_options: List[CodeGenerationOption] = []  # type: ignore
+    code_generation_options: List[CodeGenerationOption] = []
     serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
     aliases: Dict[str, str] = {}
     serialize_by_alias: Union[bool, Literal[Sentinel.MISSING]] = (
