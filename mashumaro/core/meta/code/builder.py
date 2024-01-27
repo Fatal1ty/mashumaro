@@ -464,7 +464,6 @@ class CodeBuilder:
                             ftype=ftype,
                             metadata=metadata,
                             alias=alias,
-                            forbid_pos_default_arg=add_kwargs,
                         )
                         if field_block.in_kwargs:
                             add_kwargs = True
@@ -1257,7 +1256,6 @@ class FieldUnpackerCodeBlockBuilder:
         metadata: typing.Mapping,
         *,
         alias: typing.Optional[str] = None,
-        forbid_pos_default_arg: bool = False,
     ) -> FieldUnpackerCodeBlock:
         default = self.parent.get_field_default(fname)
         has_default = default is not MISSING
@@ -1287,15 +1285,6 @@ class FieldUnpackerCodeBlockBuilder:
                 could_be_none=False if could_be_none else True,
             )
         )
-        if has_default:
-            if unpacked_value == "value" and isinstance(
-                default, SIMPLE_TYPES  # type: ignore
-            ):
-                in_kwargs = forbid_pos_default_arg
-            else:
-                in_kwargs = True
-        else:
-            in_kwargs = False
         if self.parent.get_config().allow_deserialization_not_by_alias:
             if unpacked_value != "value":
                 self.add_line(f"value = d.get('{alias}', MISSING)")
@@ -1318,28 +1307,8 @@ class FieldUnpackerCodeBlockBuilder:
                 self.add_line(f"value = d.get('{alias or fname}', MISSING)")
                 packed_value = "value"
             elif has_default:
-                if (
-                    default is None
-                    and unpacked_value == "value"
-                    and not in_kwargs
-                ):
-                    packed_value = f"d.get('{alias or fname}')"
-                elif (
-                    isinstance(default, SIMPLE_TYPES)  # type: ignore
-                    and unpacked_value == "value"
-                    and not in_kwargs
-                ):
-                    default_literal = self.parent.get_field_default_literal(
-                        self.parent.get_field_default(fname, call_factory=True)
-                    )
-                    packed_value = (
-                        f"d.get('{alias or fname}', {default_literal})"
-                    )
-                else:
-                    self.add_line(
-                        f"value = d.get('{alias or fname}', MISSING)"
-                    )
-                    packed_value = "value"
+                self.add_line(f"value = d.get('{alias or fname}', MISSING)")
+                packed_value = "value"
             else:
                 self.add_line(
                     f"__{fname} = d.get('{alias or fname}', MISSING)"
@@ -1355,37 +1324,35 @@ class FieldUnpackerCodeBlockBuilder:
                 if could_be_none:
                     with self.indent(f"if {packed_value} is not None:"):
                         self._try_set_value(
-                            fname, field_type, unpacked_value, in_kwargs
+                            fname, field_type, unpacked_value, has_default
                         )
                     with self.indent("else:"):
-                        self._set_value(fname, "None", in_kwargs)
+                        self._set_value(fname, "None", has_default)
                 else:
                     self._try_set_value(
-                        fname, field_type, unpacked_value, in_kwargs
+                        fname, field_type, unpacked_value, has_default
                     )
-        elif not in_kwargs:
-            self._set_value(fname, packed_value, in_kwargs)
         else:
             with self.indent(f"if {packed_value} is not MISSING:"):
                 if could_be_none:
                     if unpacked_value != "value":
                         with self.indent(f"if {packed_value} is not None:"):
                             self._try_set_value(
-                                fname, field_type, unpacked_value, in_kwargs
+                                fname, field_type, unpacked_value, has_default
                             )
                         if default is not None:
                             with self.indent("else:"):
-                                self._set_value(fname, "None", in_kwargs)
+                                self._set_value(fname, "None", has_default)
                     else:
-                        self._set_value(fname, unpacked_value, in_kwargs)
+                        self._set_value(fname, unpacked_value, has_default)
                 else:
                     if unpacked_value != "value":
                         self._try_set_value(
-                            fname, field_type, unpacked_value, in_kwargs
+                            fname, field_type, unpacked_value, has_default
                         )
                     else:
-                        self._set_value(fname, unpacked_value, in_kwargs)
-        return FieldUnpackerCodeBlock(self.lines, fname, in_kwargs)
+                        self._set_value(fname, unpacked_value, has_default)
+        return FieldUnpackerCodeBlock(self.lines, fname, has_default)
 
     def add_line(self, line: str) -> None:
         self.lines.append(line)
