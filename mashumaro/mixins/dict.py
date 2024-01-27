@@ -33,8 +33,7 @@ class DataClassDictMixin:
         # by_alias: bool = False
         # dialect: Type[Dialect] = None
         **kwargs: Any,
-    ) -> Dict[Any, Any]:
-        ...
+    ) -> Dict[Any, Any]: ...
 
     @classmethod
     @final
@@ -45,26 +44,23 @@ class DataClassDictMixin:
         # keyword-only arguments that exist with the code generation options:
         # dialect: Type[Dialect] = None
         **kwargs: Any,
-    ) -> T:
-        ...
+    ) -> T: ...
 
     @classmethod
-    def __pre_deserialize__(cls: Type[T], d: Dict[Any, Any]) -> Dict[Any, Any]:
-        ...
+    def __pre_deserialize__(
+        cls: Type[T], d: Dict[Any, Any]
+    ) -> Dict[Any, Any]: ...
 
     @classmethod
-    def __post_deserialize__(cls: Type[T], obj: T) -> T:
-        ...
+    def __post_deserialize__(cls: Type[T], obj: T) -> T: ...
 
     def __pre_serialize__(
         self: T,
         # context: Any = None,  # added with ADD_SERIALIZATION_CONTEXT option
-    ) -> T:
-        ...
+    ) -> T: ...
 
     def __post_serialize__(
         self: T,
         d: Dict[Any, Any],
         # context: Any = None,  # added with ADD_SERIALIZATION_CONTEXT option
-    ) -> Dict[Any, Any]:
-        ...
+    ) -> Dict[Any, Any]: ...

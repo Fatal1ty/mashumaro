@@ -15,8 +15,7 @@ class Foo(Generic[T], DataClassJSONMixin):
 
 
 @dataclass
-class Bar(Foo):
-    ...
+class Bar(Foo): ...
 
 
 def test_self_referenced_generic_no_max_recursion_error():

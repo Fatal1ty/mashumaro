@@ -54,8 +54,7 @@ class DataClassMessagePackMixin(DataClassDictMixin):
         self: T,
         encoder: Encoder = default_encoder,
         **to_dict_kwargs: Any,
-    ) -> EncodedData:
-        ...
+    ) -> EncodedData: ...
 
     @classmethod
     @final
@@ -64,5 +63,4 @@ class DataClassMessagePackMixin(DataClassDictMixin):
         data: EncodedData,
         decoder: Decoder = default_decoder,
         **from_dict_kwargs: Any,
-    ) -> T:
-        ...
+    ) -> T: ...
