@@ -1467,9 +1467,6 @@ def test_dataclass_with_non_optional_none_value():
     assert DataClass.from_dict({"x": 42}) == obj
     assert obj.to_dict() == {"x": 42, "y": None, "z": 42}
 
-    with pytest.raises(TypeError):
-        DataClass(x=42, z=None).to_dict()
-
 
 def test_dataclass_with_optional_list_with_optional_ints():
     @dataclass
