@@ -40,7 +40,6 @@ def test_union(test_case):
 def test_union_encoding():
     for variants in permutations((int, float, str, bool)):
         for value in (1, 2.0, 3.1, "4", "5.0", True, False):
-            encoded = encode(value, Union[*variants])
+            encoded = encode(value, Union[variants])
             assert value == encoded
             assert same_types(value, encoded)
-            print(value)
