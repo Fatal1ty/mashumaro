@@ -32,7 +32,7 @@ def test_debug_true_option(mocker):
 
     @dataclass
     class _(DataClassDictMixin):
-        union: Union[int, str]
+        union: Union[int, str, MyNamedTuple]
         typed_dict: TypedDictRequiredKeys
         named_tuple: MyNamedTupleWithDefaults
         literal: Literal[1, 2, 3]

@@ -12,6 +12,7 @@ from fractions import Fraction
 from typing import (
     Any,
     Callable,
+    Dict,
     ForwardRef,
     List,
     Optional,
@@ -29,6 +30,7 @@ from mashumaro.core.meta.helpers import (
     get_class_that_defines_method,
     get_function_return_annotation,
     get_literal_values,
+    get_type_origin,
     is_final,
     is_generic,
     is_literal,
@@ -292,14 +294,50 @@ def pack_union(
         lines.append(f"def {method_name}({method_args}, {default_kwargs}):")
     else:
         lines.append(f"def {method_name}({method_args}):")
+    packers: List[str] = []
+    packer_arg_types: Dict[str, List[Type]] = {}
+    for type_arg in args:
+        packer = PackerRegistry.get(
+            spec.copy(type=type_arg, expression="value")
+        )
+        if packer not in packers:
+            if packer == "value":
+                packers.insert(0, packer)
+            else:
+                packers.append(packer)
+        packer_arg_types.setdefault(packer, []).append(type_arg)
+
+    if len(packers) == 1 and packers[0] == "value":
+        return spec.expression
+
     with lines.indent():
-        for packer in (
-            PackerRegistry.get(spec.copy(type=type_arg, expression="value"))
-            for type_arg in args
-        ):
-            with lines.indent("try:"):
-                lines.append(f"return {packer}")
-            lines.append("except Exception: pass")
+        for packer in packers:
+            packer_arg_type_names = []
+            for packer_arg_type in packer_arg_types[packer]:
+                if is_generic(packer_arg_type):
+                    packer_arg_type = get_type_origin(packer_arg_type)
+                packer_arg_type_name = clean_id(type_name(packer_arg_type))
+                spec.builder.ensure_object_imported(
+                    packer_arg_type, packer_arg_type_name
+                )
+                if packer_arg_type_name not in packer_arg_type_names:
+                    packer_arg_type_names.append(packer_arg_type_name)
+            if len(packer_arg_type_names) > 1:
+                packer_arg_type_check = (
+                    f"in ({', '.join(packer_arg_type_names)})"
+                )
+            else:
+                packer_arg_type_check = f"is {packer_arg_type_names[0]}"
+            if packer == "value":
+                with lines.indent(
+                    f"if value.__class__ {packer_arg_type_check}:"
+                ):
+                    lines.append(f"return {packer}")
+            else:
+                with lines.indent("try:"):
+                    lines.append(f"return {packer}")
+                with lines.indent("except Exception:"):
+                    lines.append("pass")
         field_type = spec.builder.get_type_name_identifier(
             typ=spec.type,
             resolved_type_params=spec.builder.get_field_resolved_type_params(
@@ -484,14 +522,8 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def pack_number(spec: ValueSpec) -> Optional[Expression]:
-    if spec.origin_type in (int, float):
-        return f"{type_name(spec.origin_type)}({spec.expression})"
-
-
-@register
-def pack_bool_and_none(spec: ValueSpec) -> Optional[Expression]:
-    if spec.origin_type in (bool, NoneType, None):
+def pack_number_and_bool_and_none(spec: ValueSpec) -> Optional[Expression]:
+    if spec.origin_type in (int, float, bool, NoneType, None):
         return spec.expression
 
 

@@ -1,9 +1,12 @@
 from dataclasses import dataclass
+from itertools import permutations
 from typing import Any, Dict, List, Union
 
 import pytest
 
 from mashumaro import DataClassDictMixin
+from mashumaro.codecs.basic import encode
+from tests.utils import same_types
 
 
 @dataclass
@@ -32,3 +35,11 @@ def test_union(test_case):
     instance = DataClass(x=test_case.loaded)
     assert DataClass.from_dict({"x": test_case.dumped}) == instance
     assert instance.to_dict() == {"x": test_case.dumped}
+
+
+def test_union_encoding():
+    for variants in permutations((int, float, str, bool)):
+        for value in (1, 2.0, 3.1, "4", "5.0", True, False):
+            encoded = encode(value, Union[variants])
+            assert value == encoded
+            assert same_types(value, encoded)
