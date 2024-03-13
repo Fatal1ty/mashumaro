@@ -469,7 +469,8 @@ class CodeBuilder:
                     )
                     with self.indent("if forbidden_keys:"):
                         self.add_line(
-                            f"raise ExtraKeysError(forbidden_keys,cls) from None"
+                            "raise ExtraKeysError(forbidden_keys,cls) "
+                            "from None"
                         )
 
                 with self.indent("try:"):

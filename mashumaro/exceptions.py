@@ -35,7 +35,10 @@ class ExtraKeysError(ValueError):
 
     def __str__(self) -> str:
         extra_keys_str = ", ".join(k for k in self.extra_keys)
-        return f"Serialized dict has keys that are not defined in {self.target_class_name}: {extra_keys_str}"
+        return (
+            "Serialized dict has keys that are not defined in "
+            f"{self.target_class_name}: {extra_keys_str}"
+        )
 
 
 class UnserializableDataError(TypeError):
