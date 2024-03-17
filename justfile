@@ -1,3 +1,5 @@
+default: build lint
+
 build:
     pip install -r requirements-dev.txt
     pip install -e .
@@ -16,3 +18,6 @@ test:
 
 test-with-coverage:
     pytest --cov . tests
+
+benchmark:
+    ./benchmark/run.sh
