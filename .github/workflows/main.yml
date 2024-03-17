@@ -34,7 +34,7 @@ jobs:
       - name: Run black
         run: black --check .
       - name: Run codespell
-        run: codespell mashumaro tests README.md
+        run: codespell mashumaro tests README.md .github/*.md
   test-posix:
     name: Tests on Posix
     needs:
