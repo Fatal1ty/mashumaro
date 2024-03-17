@@ -8,7 +8,7 @@ lint:
     ruff mashumaro
     black --check mashumaro
     mypy mashumaro
-    codespell mashumaro tests README.md
+    codespell mashumaro tests README.md .github/*.md
 
 format:
     black mashumaro
