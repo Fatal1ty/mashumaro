@@ -12,7 +12,7 @@ pytest>=6.2.1
 pytest-mock>=3.5.1
 pytest-cov>=2.10.1
 coveralls>=3.0.0
-black==24.1.0
+black==24.3.0
 ruff>=0.0.285
 codespell>=2.2.2
 
