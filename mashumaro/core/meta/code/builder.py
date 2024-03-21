@@ -72,6 +72,7 @@ from mashumaro.exceptions import (  # noqa
     InvalidFieldValue,
     MissingDiscriminatorError,
     MissingField,
+    ExtraKeysError,
     SuitableVariantNotFoundError,
     ThirdPartyModuleNotFoundError,
     UnresolvedTypeReferenceError,
@@ -448,15 +449,43 @@ class CodeBuilder:
                 else:
                     missing_kw_only = True
                     kw_only_fields.add(fname)
-                filtered_fields.append((fname, ftype))
+
+                metadata = self.metadatas.get(fname, {})
+                alias = metadata.get("alias")
+                if alias is None:
+                    alias = config.aliases.get(fname)
+
+                filtered_fields.append((fname, alias, ftype))
             if filtered_fields:
+                if config.forbid_extra_keys:
+                    allowed_keys = {f[1] or f[0] for f in filtered_fields}
+
+                    # If a discirimator withg a field is set via config,
+                    # we should allow this field to be present in the input
+                    # This will not work for annotated discriminators though...
+                    discr = self.get_config(look_in_parents=True).discriminator
+                    if discr and discr.field:
+                        allowed_keys.add(discr.field)
+
+                    if config.allow_deserialization_not_by_alias:
+                        allowed_keys |= {f[0] for f in filtered_fields}
+
+                    allowed_keys_str = "'" + "', '".join(allowed_keys) + "'"
+
+                    self.add_line("d_keys = set(d.keys())")
+                    self.add_line(
+                        f"forbidden_keys = d_keys - {{{allowed_keys_str}}}"
+                    )
+                    with self.indent("if forbidden_keys:"):
+                        self.add_line(
+                            "raise ExtraKeysError(forbidden_keys,cls) "
+                            "from None"
+                        )
+
                 with self.indent("try:"):
-                    for fname, ftype in filtered_fields:
+                    for fname, alias, ftype in filtered_fields:
                         self.add_type_modules(ftype)
                         metadata = self.metadatas.get(fname, {})
-                        alias = metadata.get("alias")
-                        if alias is None:
-                            alias = config.aliases.get(fname)
                         field_block = FieldUnpackerCodeBlockBuilder(
                             self, self.lines.branch_off()
                         ).build(

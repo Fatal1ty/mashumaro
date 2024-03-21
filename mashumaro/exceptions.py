@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type
+from typing import Any, Optional, Set, Type
 
 from mashumaro.core.meta.helpers import type_name
 
@@ -21,6 +21,23 @@ class MissingField(LookupError):
         return (
             f'Field "{self.field_name}" of type {self.field_type_name}'
             f" is missing in {self.holder_class_name} instance"
+        )
+
+
+class ExtraKeysError(ValueError):
+    def __init__(self, extra_keys: Set[str], target_type: Type):
+        self.extra_keys = extra_keys
+        self.target_type = target_type
+
+    @property
+    def target_class_name(self) -> str:
+        return type_name(self.target_type, short=True)
+
+    def __str__(self) -> str:
+        extra_keys_str = ", ".join(k for k in self.extra_keys)
+        return (
+            "Serialized dict has keys that are not defined in "
+            f"{self.target_class_name}: {extra_keys_str}"
         )
 
 
