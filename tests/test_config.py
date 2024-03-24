@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field
 from typing import Optional, Union
+from mashumaro.exceptions import ExtraKeysError, InvalidFieldValue
 
 import pytest
-from typing_extensions import Literal
+from typing_extensions import Annotated, Literal
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
-from mashumaro.types import SerializationStrategy
+from mashumaro.types import Discriminator, SerializationStrategy
 
 from .entities import (
     MyDataClassWithOptional,
@@ -322,3 +323,112 @@ def test_sort_keys_plain_dataclass():
         "{'unsorted_sub': {'foo': 1, 'bar': 2}, "
         "'sorted_sub': {'bar': 2, 'foo': 1}}"
     )
+
+
+def test_forbid_extra_keys():
+    @dataclass
+    class ForbidKeysModel(DataClassDictMixin):
+        foo: int
+
+        class Config(BaseConfig):
+            forbid_extra_keys = True
+
+    # Test unpacking works
+    assert ForbidKeysModel.from_dict({"foo": 1}) == ForbidKeysModel(1)
+
+    # Test extra keys are forbidden
+    with pytest.raises(ExtraKeysError) as exc_info:
+        ForbidKeysModel.from_dict({"foo": 1, "bar": 2, "baz": 3})
+
+    assert exc_info.value.extra_keys == {"bar", "baz"}
+    assert exc_info.value.target_type == ForbidKeysModel
+
+    # Now with alias, but not allow_deserialization_not_by_alias
+    @dataclass
+    class ForbidKeysModel(DataClassDictMixin):
+        foo: int = field(metadata={"alias": "f"})
+        bar: int
+
+        class Config(BaseConfig):
+            forbid_extra_keys = True
+            aliases = {"bar": "b"}
+
+    # Test unpacking works
+    assert ForbidKeysModel.from_dict({"f": 1, "b": 2}) == ForbidKeysModel(1, 2)
+
+    # Test extra keys are forbidden
+    with pytest.raises(ExtraKeysError) as exc_info:
+        ForbidKeysModel.from_dict({"foo": 1, "bar": 2})
+
+    assert exc_info.value.extra_keys == {"foo", "bar"}
+    assert exc_info.value.target_type == ForbidKeysModel
+
+    # Now with alias, but allow_deserialization_not_by_alias
+    @dataclass
+    class ForbidKeysModel(DataClassDictMixin):
+        foo: int = field(metadata={"alias": "f"})
+        bar: int
+
+        class Config(BaseConfig):
+            forbid_extra_keys = True
+            aliases = {"bar": "b"}
+            allow_deserialization_not_by_alias = True
+
+    # Test unpacking works
+    assert ForbidKeysModel.from_dict({"f": 1, "bar": 2}) == ForbidKeysModel(
+        1, 2
+    )
+
+    # Test extra keys are forbidden
+    with pytest.raises(ExtraKeysError) as exc_info:
+        ForbidKeysModel.from_dict({"foo": 1, "b": 2, "baz": 3})
+
+    assert exc_info.value.extra_keys == {"baz"}
+    assert exc_info.value.target_type == ForbidKeysModel
+
+
+@dataclass
+class _VariantByBase(DataClassDictMixin):
+    class Config(BaseConfig):
+        discriminator = Discriminator(
+            field="__type",
+            include_subtypes=True,
+            variant_tagger_fn=lambda clz: clz.__name__,
+        )
+        forbid_extra_keys = True
+
+
+@dataclass
+class _VariantByField1(_VariantByBase):
+    x: Optional[str] = None
+
+
+@dataclass
+class _VariantByField2(_VariantByBase):
+    x: Optional[str] = None
+
+
+@dataclass
+class ForbidKeysModelWithDiscriminator(DataClassDictMixin):
+    inner: _VariantByBase
+
+    class Config(BaseConfig):
+        forbid_extra_keys = True
+
+
+def test_forbid_extra_keys_with_discriminator():
+    # Test unpacking works
+    assert ForbidKeysModelWithDiscriminator.from_dict(
+        {"inner": {"x": "foo", "__type": "_VariantByField2"}}
+    ) == ForbidKeysModelWithDiscriminator(_VariantByField2(x="foo"))
+
+    # Test extra keys are forbidden
+    with pytest.raises(InvalidFieldValue) as exc_info:
+        ForbidKeysModelWithDiscriminator.from_dict(
+            {"inner": {"x": "foo", "__type": "_VariantByField2", "bar": "baz"}}
+        )
+
+    root_exc = exc_info.value.__context__
+    assert isinstance(root_exc, ExtraKeysError)
+    assert root_exc.extra_keys == {"bar"}
+    assert root_exc.target_type == _VariantByField2

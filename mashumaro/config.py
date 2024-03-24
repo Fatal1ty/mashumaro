@@ -69,3 +69,4 @@ class BaseConfig:
     lazy_compilation: bool = False
     sort_keys: bool = False
     allow_deserialization_not_by_alias: bool = False
+    forbid_extra_keys: bool = False
