@@ -1198,7 +1198,7 @@ class CodeBuilder:
     def get_field_default_literal(self, value: typing.Any) -> str:
         if isinstance(value, enum.IntFlag):
             return str(value.value)
-        elif isinstance(value, (str, int, bool, NoneType)):  # type: ignore
+        elif type(value) in (str, int, bool, NoneType):  # type: ignore
             return repr(value)
         elif (
             isinstance(value, float)
