@@ -456,3 +456,8 @@ def test_forbid_extra_keys_with_discriminator_for_subclass():
     assert _VariantByBase.from_dict(
         {"x": "foo", "__type": "_VariantByField4"}
     ) == _VariantByField4("foo")
+    with pytest.raises(ExtraKeysError) as exc_info:
+        _VariantByBase.from_dict(
+            {"x": "foo", "__type": "_VariantByField4", "y": "bar"}
+        )
+    assert exc_info.value.extra_keys == {"y"}
