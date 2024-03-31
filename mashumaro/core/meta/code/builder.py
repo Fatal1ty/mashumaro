@@ -627,13 +627,14 @@ class CodeBuilder:
         if look_in_parents:
             classes = self.cls.__mro__
         else:
-            classes = [self.cls]
+            classes = (self.cls,)
         for cls in classes:
             discriminator = self.get_config(
                 cls, look_in_parents=False
             ).discriminator
             if discriminator:
                 return discriminator
+        return None
 
     def get_pack_method_flags(
         self,
