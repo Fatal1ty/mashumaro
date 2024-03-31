@@ -70,6 +70,7 @@ __all__ = [
     "is_annotated",
     "get_type_annotations",
     "is_literal",
+    "is_local_type_name",
     "get_literal_values",
     "is_self",
     "is_required",

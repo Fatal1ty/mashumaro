@@ -409,6 +409,24 @@ class _VariantByField2(_VariantByBase):
 
 
 @dataclass
+class _VariantByField3(_VariantByBase):
+    x: Optional[str] = None
+
+    class Config(BaseConfig):
+        # add intermediate config to check if we're looking for the
+        # discriminator in the base class _VariantByBase to add the
+        # discriminator field to the list of allowed keys for _VariantByField4
+        # deserializable via _VariantByBase.from_dict
+        omit_none = True
+
+
+@dataclass
+class _VariantByField4(_VariantByField3):
+    class Config(BaseConfig):
+        forbid_extra_keys = True
+
+
+@dataclass
 class ForbidKeysModelWithDiscriminator(DataClassDictMixin):
     inner: _VariantByBase
 
@@ -432,3 +450,9 @@ def test_forbid_extra_keys_with_discriminator():
     assert isinstance(root_exc, ExtraKeysError)
     assert root_exc.extra_keys == {"bar"}
     assert root_exc.target_type == _VariantByField2
+
+
+def test_forbid_extra_keys_with_discriminator_for_subclass():
+    assert _VariantByBase.from_dict(
+        {"x": "foo", "__type": "_VariantByField4"}
+    ) == _VariantByField4("foo")

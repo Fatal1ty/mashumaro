@@ -460,10 +460,10 @@ class CodeBuilder:
                 if config.forbid_extra_keys:
                     allowed_keys = {f[1] or f[0] for f in filtered_fields}
 
-                    # If a discirimator withg a field is set via config,
+                    # If a discriminator with a field is set via config,
                     # we should allow this field to be present in the input
                     # This will not work for annotated discriminators though...
-                    discr = self.get_config(look_in_parents=True).discriminator
+                    discr = self.get_discriminator(look_in_parents=True)
                     if discr and discr.field:
                         allowed_keys.add(discr.field)
 
@@ -612,7 +612,7 @@ class CodeBuilder:
         if look_in_parents:
             config_cls = getattr(cls, "Config", BaseConfig)
         else:
-            config_cls = self.namespace.get("Config", BaseConfig)
+            config_cls = cls.__dict__.get("Config", BaseConfig)
         if not issubclass(config_cls, BaseConfig):
             config_cls = type(
                 "Config",
@@ -621,8 +621,19 @@ class CodeBuilder:
             )
         return config_cls
 
-    def get_discriminator(self) -> typing.Optional[Discriminator]:
-        return self.get_config(look_in_parents=False).discriminator
+    def get_discriminator(
+        self, look_in_parents: bool = False
+    ) -> typing.Optional[Discriminator]:
+        if look_in_parents:
+            classes = self.cls.__mro__
+        else:
+            classes = [self.cls]
+        for cls in classes:
+            discriminator = self.get_config(
+                cls, look_in_parents=False
+            ).discriminator
+            if discriminator:
+                return discriminator
 
     def get_pack_method_flags(
         self,
