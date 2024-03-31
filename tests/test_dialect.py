@@ -1,4 +1,5 @@
 import collections
+import enum
 import typing
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -279,6 +280,11 @@ class DataClassWithOptionalAndDialectSupport(DataClassDictMixin):
         code_generation_options = [ADD_DIALECT_SUPPORT]
 
 
+class MyStrEnum(str, enum.Enum):
+    VAL1 = "val1"
+    VAL2 = "val2"
+
+
 @dataclass
 class DataClassWithDefaultAndOmitDefaultDialect(DataClassDictMixin):
     a: int = 42
@@ -295,6 +301,7 @@ class DataClassWithDefaultAndOmitDefaultDialect(DataClassDictMixin):
     l: Set[int] = field(default_factory=lambda: {1, 2, 3})
     m: FrozenSet[int] = field(default_factory=frozenset)
     n: FrozenSet[int] = field(default_factory=lambda: frozenset({1, 2, 3}))
+    o: str = MyStrEnum.VAL1
 
     class Config(BaseConfig):
         dialect = OmitDefaultDialect
@@ -318,6 +325,7 @@ class DataClassWithDefaultAndOmitDefaultDialectAndOmitDefaultFalse(
     l: Set[int] = field(default_factory=lambda: {1, 2, 3})
     m: FrozenSet[int] = field(default_factory=frozenset)
     n: FrozenSet[int] = field(default_factory=lambda: frozenset({1, 2, 3}))
+    o: str = MyStrEnum.VAL1
 
     class Config(BaseConfig):
         dialect = OmitDefaultDialect
@@ -342,6 +350,7 @@ class DataClassWithDefaultAndNotOmitDefaultDialectAndOmitDefaultTrue(
     l: Set[int] = field(default_factory=lambda: {1, 2, 3})
     m: FrozenSet[int] = field(default_factory=frozenset)
     n: FrozenSet[int] = field(default_factory=lambda: frozenset({1, 2, 3}))
+    o: str = MyStrEnum.VAL1
 
     class Config(BaseConfig):
         dialect = NotOmitDefaultDialect
@@ -364,6 +373,7 @@ class DataClassWithDefaultAndEmptyDialect(DataClassDictMixin):
     l: Set[int] = field(default_factory=lambda: {1, 2, 3})
     m: FrozenSet[int] = field(default_factory=frozenset)
     n: FrozenSet[int] = field(default_factory=lambda: frozenset({1, 2, 3}))
+    o: str = MyStrEnum.VAL1
 
     class Config(BaseConfig):
         dialect = EmptyDialect
@@ -386,6 +396,7 @@ class DataClassWithDefaultAndDialectSupport(DataClassDictMixin):
     l: Set[int] = field(default_factory=lambda: {1, 2, 3})
     m: FrozenSet[int] = field(default_factory=frozenset)
     n: FrozenSet[int] = field(default_factory=lambda: frozenset({1, 2, 3}))
+    o: str = MyStrEnum.VAL1
 
     class Config(BaseConfig):
         code_generation_options = [ADD_DIALECT_SUPPORT]
@@ -1135,6 +1146,7 @@ def test_dataclass_omit_default_dialects():
         "l": [1, 2, 3],
         "m": [],
         "n": [1, 2, 3],
+        "o": MyStrEnum.VAL1,
     }
     assert DataClassWithDefaultAndOmitDefaultDialect().to_dict() == {}
     assert (
