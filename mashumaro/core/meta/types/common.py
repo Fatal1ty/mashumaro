@@ -209,7 +209,15 @@ class AbstractMethodBuilder(ABC):
         lines = CodeLines()
         method_name = self._add_definition(spec, lines)
         with lines.indent():
-            self._add_body(spec, lines)
+            body_lines = lines.branch_off()
+            self._add_body(spec, body_lines)
+            if body_lines.len() == 1:
+                body_line = body_lines.as_text().strip()
+                if body_line.startswith("return ") and not expr_can_fail(
+                    body_line[7:], spec.expression
+                ):
+                    return spec.expression
+            lines.extend(body_lines)
         self._add_setattr(spec, method_name, lines)
         self._compile(spec, lines)
         return self._get_call_expr(spec, method_name)
@@ -308,3 +316,7 @@ def clean_id(value: str) -> str:
         return "_"
 
     return _PY_VALID_ID_RE.sub("_", value)
+
+
+def expr_can_fail(expr: str, value: str) -> bool:
+    return expr not in (value, f"str({value})", f"bool({value})")

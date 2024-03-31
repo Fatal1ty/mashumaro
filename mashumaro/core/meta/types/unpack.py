@@ -72,6 +72,7 @@ from mashumaro.core.meta.types.common import (
     ensure_generic_mapping,
     expr_or_maybe_none,
     random_hex,
+    expr_can_fail,
 )
 from mashumaro.exceptions import (
     ThirdPartyModuleNotFoundError,
@@ -166,13 +167,27 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
         return "union"
 
     def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
-        for unpacker in (
-            UnpackerRegistry.get(spec.copy(type=type_arg, expression="value"))
-            for type_arg in self.union_args
-        ):
+        complex_unpackers = []
+        simple_unpackers = []
+        for type_arg in self.union_args:
+            unpacker = UnpackerRegistry.get(
+                spec.copy(type=type_arg, expression="value")
+            )
+            if expr_can_fail(unpacker, spec.expression):
+                if unpacker not in complex_unpackers:
+                    complex_unpackers.append(unpacker)
+            elif unpacker not in simple_unpackers:
+                simple_unpackers.append(unpacker)
+
+        for unpacker in complex_unpackers:
             with lines.indent("try:"):
                 lines.append(f"return {unpacker}")
-            lines.append("except Exception: pass")
+            with lines.indent("except Exception:"):
+                lines.append("pass")
+        if simple_unpackers:
+            lines.append(f"return {simple_unpackers[0]}")
+            return
+
         field_type = spec.builder.get_type_name_identifier(
             typ=spec.type,
             resolved_type_params=spec.builder.get_field_resolved_type_params(
@@ -220,7 +235,8 @@ class LiteralUnpackerBuilder(AbstractUnpackerBuilder):
                 with lines.indent("try:"):
                     with lines.indent(f"if {unpacker} == {literal_value!r}:"):
                         lines.append(f"return {literal_value!r}")
-                lines.append("except Exception: pass")
+                with lines.indent("except Exception:"):
+                    lines.append("pass")
             elif isinstance(
                 literal_value,
                 (int, str, bool, NoneType),  # type: ignore
@@ -404,7 +420,8 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                     self._add_build_variant_unpacker(
                         spec, lines, variant_method_name, variant_method_call
                     )
-                lines.append("except Exception: pass")
+                with lines.indent("except Exception:"):
+                    lines.append("pass")
             lines.append(
                 f"raise SuitableVariantNotFoundError({variants_type_expr}) "
                 "from None"
@@ -449,7 +466,8 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                 if not self.discriminator.field:
                     with lines.indent("try:"):
                         lines.append(f"return variant.{variant_method_call}")
-                    lines.append("except Exception: pass")
+                    with lines.indent("except Exception:"):
+                        lines.append("pass")
         else:
             spec.builder.ensure_object_imported(AttrsHolder)
             attrs = f"attrs_{random_hex()}"
@@ -467,7 +485,8 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             if not self.discriminator.field:
                 with lines.indent("try:"):
                     lines.append(f"return {attrs}.{variant_method_call}")
-                lines.append("except Exception: pass")
+                with lines.indent("except Exception:"):
+                    lines.append("pass")
 
     def _add_register_variant_tags(
         self, lines: CodeLines, variant_tagger_expr: str
@@ -815,8 +834,14 @@ def unpack_number(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def unpack_bool_and_none(spec: ValueSpec) -> Optional[Expression]:
-    if spec.origin_type in (bool, NoneType, None):
+def unpack_bool(spec: ValueSpec) -> Optional[Expression]:
+    if spec.origin_type is bool:
+        return f"bool({spec.expression})"
+
+
+@register
+def unpack_none(spec: ValueSpec) -> Optional[Expression]:
+    if spec.origin_type in (NoneType, None):
         return spec.expression
 
 
@@ -1167,7 +1192,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
             spec.builder.ensure_object_imported(decodebytes)
             return f"bytearray(decodebytes({spec.expression}.encode()))"
     elif issubclass(spec.origin_type, str):
-        return spec.expression
+        return f"str({spec.expression})"
     elif ensure_generic_collection_subclass(spec, List):
         return f"[{inner_expr()} for value in {spec.expression}]"
     elif ensure_generic_collection_subclass(spec, typing.Deque):

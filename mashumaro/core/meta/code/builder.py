@@ -59,6 +59,7 @@ from mashumaro.core.meta.types.common import (
     NoneType,
     ValueSpec,
     clean_id,
+    expr_can_fail,
 )
 from mashumaro.core.meta.types.pack import PackerRegistry
 from mashumaro.core.meta.types.unpack import (
@@ -1274,13 +1275,16 @@ class FieldUnpackerCodeBlockBuilder:
         unpacked_value: str,
         in_kwargs: bool,
     ) -> None:
-        with self.lines.indent("try:"):
+        if expr_can_fail(unpacked_value, "value") or False:
+            with self.lines.indent("try:"):
+                self._set_value(field_name, unpacked_value, in_kwargs)
+            with self.lines.indent("except:"):
+                self.lines.append(
+                    "raise InvalidFieldValue("
+                    f"'{field_name}',{field_type_name},value,cls)"
+                )
+        else:
             self._set_value(field_name, unpacked_value, in_kwargs)
-        with self.lines.indent("except:"):
-            self.lines.append(
-                "raise InvalidFieldValue("
-                f"'{field_name}',{field_type_name},value,cls)"
-            )
 
     def _set_value(
         self, fname: str, unpacked_value: str, in_kwargs: bool = False
