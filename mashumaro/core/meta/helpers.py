@@ -681,7 +681,6 @@ def get_function_arg_annotation(
     if arg_name is not None:
         parameter = parameters[arg_name]
     elif arg_pos is not None:
-        parameters.keys()
         parameter = parameters[list(parameters.keys())[arg_pos]]
     else:
         raise ValueError("arg_name or arg_pos must be passed")
