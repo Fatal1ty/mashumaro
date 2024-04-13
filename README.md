@@ -1727,12 +1727,15 @@ When set, the deserialization of dataclasses will fail if the input dictionary c
 
 ```python
 from dataclasses import dataclass
-
 from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
 
 @dataclass
 class DataClass(DataClassDictMixin):
     a: int
+
+    class Config(BaseConfig):
+        forbid_extra_keys = True
 
 DataClass.from_dict({"a": 1, "b": 2})  # ExtraKeysError: Extra keys: {'b'}
 ```
