@@ -28,7 +28,7 @@ jobs:
           pip install .
           pip install -r requirements-dev.txt
       - name: Run ruff
-        run: ruff mashumaro
+        run: ruff check mashumaro
       - name: Run mypy
         run: mypy mashumaro
       - name: Run black
