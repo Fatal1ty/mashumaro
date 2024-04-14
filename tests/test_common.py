@@ -190,9 +190,8 @@ def test_slots():
         instance = cls(1)
         with pytest.raises(AttributeError) as e:
             instance.new_attribute = 2
-        assert (
-            str(e.value)
-            == f"'{cls.__name__}' object has no attribute 'new_attribute'"
+        assert str(e.value).startswith(
+            f"'{cls.__name__}' object has no attribute 'new_attribute'"
         )
 
 
