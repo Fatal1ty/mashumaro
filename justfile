@@ -5,7 +5,7 @@ build:
     pip install -e .
 
 lint:
-    ruff mashumaro
+    ruff check mashumaro
     black --check mashumaro
     mypy mashumaro
     codespell mashumaro tests README.md .github/*.md
