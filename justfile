@@ -21,3 +21,8 @@ test-with-coverage:
 
 benchmark:
     ./benchmark/run.sh
+
+clean:
+    rm -rf benchmark/data/results
+    rm benchmark/data/spec_dump.json
+    rm benchmark/data/spec_load.json
