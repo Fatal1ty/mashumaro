@@ -7,7 +7,7 @@ import ciso8601
 import pytest
 
 from mashumaro import DataClassDictMixin
-from mashumaro.core.const import PY_312_MIN
+from mashumaro.core.const import PY_312_MIN, PY_313_MIN
 from mashumaro.exceptions import (
     UnserializableField,
     UnsupportedDeserializationEngine,
@@ -58,6 +58,7 @@ def test_ciso8601_time_parser():
     assert instance == should_be
 
 
+@pytest.mark.skipif(PY_313_MIN, reason="pendulum doesn't install on 3.13")
 def test_pendulum_datetime_parser():
     @dataclass
     class DataClass(DataClassDictMixin):
@@ -68,6 +69,7 @@ def test_pendulum_datetime_parser():
     assert instance == should_be
 
 
+@pytest.mark.skipif(PY_313_MIN, reason="pendulum doesn't install on 3.13")
 def test_pendulum_date_parser():
     @dataclass
     class DataClass(DataClassDictMixin):
@@ -78,6 +80,7 @@ def test_pendulum_date_parser():
     assert instance == should_be
 
 
+@pytest.mark.skipif(PY_313_MIN, reason="pendulum doesn't install on 3.13")
 def test_pendulum_time_parser():
     @dataclass
     class DataClass(DataClassDictMixin):
