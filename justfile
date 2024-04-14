@@ -24,5 +24,5 @@ benchmark:
 
 clean:
     rm -rf benchmark/data/results
-    rm benchmark/data/spec_dump.json
-    rm benchmark/data/spec_load.json
+    rm -f benchmark/data/spec_dump.json
+    rm -f benchmark/data/spec_load.json
