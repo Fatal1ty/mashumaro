@@ -14,7 +14,7 @@ format:
     black mashumaro
 
 test:
-    pytest tests
+    pytest -n auto tests
 
 test-with-coverage:
     pytest --cov . tests
