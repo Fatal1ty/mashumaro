@@ -1,6 +1,9 @@
 from unittest.mock import patch
 
-from mashumaro.core.const import PY_313_MIN
+from mashumaro.core.const import PY_312_MIN, PY_313_MIN
+
+if not PY_312_MIN:
+    collect_ignore = ["test_pep_695.py"]
 
 if PY_313_MIN:
     collect_ignore = [
