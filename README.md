@@ -1833,6 +1833,7 @@ type DeviceID = str
 @dataclass
 class Context(DataClassDictMixin):
     account_sessions: Mapping[AccountID, SessionID]
+    account_devices: list[DeviceID]
 
     class Config:
         serialization_strategy = {
