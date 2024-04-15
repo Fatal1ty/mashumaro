@@ -799,6 +799,6 @@ def get_forward_ref_referencing_globals(
 
 def is_type_alias_type(typ: Type) -> bool:
     if PY_312_MIN:
-        return isinstance(typ, typing.TypeAliasType)
+        return isinstance(typ, typing.TypeAliasType)  # type: ignore
     else:
         return False
