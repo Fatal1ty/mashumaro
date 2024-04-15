@@ -31,6 +31,9 @@ class CodeLines:
     def as_text(self) -> str:
         return "\n".join(self._lines)
 
+    def len(self) -> int:
+        return len(self._lines)
+
     def reset(self) -> None:
         self._lines = []
         self._current_indent = ""

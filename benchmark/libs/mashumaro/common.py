@@ -6,17 +6,13 @@ from typing import Optional, Union
 import pyperf
 
 from benchmark.common import AbstractBenchmark
-from mashumaro import field_options, pass_through
+from mashumaro import field_options
 from mashumaro.codecs import BasicDecoder, BasicEncoder
 from mashumaro.dialect import Dialect
 
 
 class DefaultDialect(Dialect):
     serialize_by_alias = True
-    serialization_strategy = {
-        str: {"deserialize": str, "serialize": pass_through},
-        int: {"serialize": pass_through},
-    }
 
 
 class IssueState(Enum):
