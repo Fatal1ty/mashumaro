@@ -65,7 +65,7 @@ def test_dataclass_with_pass_through():
             metadata=field_options(serialization_strategy=pass_through)
         )
 
-    x = datetime.utcnow()
+    x = datetime.now()
     y = x.date()
     instance = DataClass(x, y)
     assert instance.to_dict() == {"x": x, "y": y}
