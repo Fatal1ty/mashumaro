@@ -14,7 +14,8 @@ class Foo[T](DataClassJSONMixin):
 
 
 @dataclass
-class Bar(Foo): ...
+class Bar(Foo):
+    pass
 
 
 def test_one_generic():
