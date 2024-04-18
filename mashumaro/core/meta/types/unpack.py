@@ -8,6 +8,7 @@ import pathlib
 import types
 import typing
 import uuid
+import warnings
 from abc import ABC
 from base64 import decodebytes
 from contextlib import suppress
@@ -167,13 +168,23 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
         return "union"
 
     def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
-        for unpacker in (
-            UnpackerRegistry.get(spec.copy(type=type_arg, expression="value"))
-            for type_arg in self.union_args
-        ):
+        ambiguous_unpacker_types = []
+        for type_arg in self.union_args:
+            unpacker = UnpackerRegistry.get(
+                spec.copy(type=type_arg, expression="value")
+            )
+            if type_arg in (bool, str) and unpacker == "value":
+                ambiguous_unpacker_types.append(type_arg)
             with lines.indent("try:"):
                 lines.append(f"return {unpacker}")
             lines.append("except Exception: pass")
+        if len(ambiguous_unpacker_types) >= 2:
+            warnings.warn(
+                f"{type_name(spec.builder.cls)}.{spec.field_ctx.name} ({type_name(spec.type)}): "
+                "In the next release, data marked with Union type containing "
+                "'str' and 'bool' will be coerced to the value of the type "
+                "specified first instead of passing it as is"
+            )
         field_type = spec.builder.get_type_name_identifier(
             typ=spec.type,
             resolved_type_params=spec.builder.get_field_resolved_type_params(
