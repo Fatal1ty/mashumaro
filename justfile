@@ -6,15 +6,16 @@ build:
 
 lint:
     ruff check mashumaro
-    black --check mashumaro
+    black --check mashumaro tests
     mypy mashumaro
     codespell mashumaro tests README.md .github/*.md
 
 format:
-    black mashumaro
+    black mashumaro tests
+    isort mashumaro tests
 
 test:
-    pytest -n auto tests
+    pytest tests
 
 test-with-coverage:
     pytest --cov . tests
