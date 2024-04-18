@@ -17,6 +17,7 @@ class DataClassDictMixin:
     __mashumaro_builder_params = {"packer": {}, "unpacker": {}}  # type: ignore
 
     def __init_subclass__(cls: Type[T], **kwargs: Any):
+        super().__init_subclass__(**kwargs)
         for ancestor in cls.__mro__[-1:0:-1]:
             builder_params_ = f"_{ancestor.__name__}__mashumaro_builder_params"
             builder_params = getattr(ancestor, builder_params_, None)

@@ -1815,8 +1815,9 @@ assert a1_dict == a2_dict == a3_dict == a4_dict == {"x": my_class_instance}
 
 There are situations where you might want some values of the same type to be
 treated as their own type. You can create new logical types with
-[`NewType`](https://docs.python.org/3/library/typing.html#newtype) or
+[`NewType`](https://docs.python.org/3/library/typing.html#newtype),
 [`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated)
+or [`TypeAliasType`](https://docs.python.org/3/library/typing.html#typing.TypeAliasType)
 and register serialization strategies for them:
 
 ```python
@@ -1827,9 +1828,12 @@ from mashumaro import DataClassDictMixin
 SessionID = NewType("SessionID", str)
 AccountID = Annotated[str, "AccountID"]
 
+type DeviceID = str
+
 @dataclass
 class Context(DataClassDictMixin):
     account_sessions: Mapping[AccountID, SessionID]
+    account_devices: list[DeviceID]
 
     class Config:
         serialization_strategy = {
@@ -1838,6 +1842,10 @@ class Context(DataClassDictMixin):
                 "serialize": lambda x: ...,
             },
             SessionID: {
+                "deserialize": lambda x: ...,
+                "serialize": lambda x: ...,
+            },
+            DeviceID: {
                 "deserialize": lambda x: ...,
                 "serialize": lambda x: ...,
             }

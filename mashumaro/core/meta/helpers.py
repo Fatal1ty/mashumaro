@@ -37,6 +37,7 @@ from mashumaro.core.const import (
     PY_39_MIN,
     PY_310_MIN,
     PY_311_MIN,
+    PY_312_MIN,
 )
 from mashumaro.dialect import Dialect
 
@@ -85,6 +86,7 @@ __all__ = [
     "is_hashable_type",
     "evaluate_forward_ref",
     "get_forward_ref_referencing_globals",
+    "is_type_alias_type",
 ]
 
 
@@ -793,3 +795,10 @@ def get_forward_ref_referencing_globals(
         )
     else:
         return getattr(forward_module, "__dict__", fallback)
+
+
+def is_type_alias_type(typ: Type) -> bool:
+    if PY_312_MIN:
+        return isinstance(typ, typing.TypeAliasType)  # type: ignore
+    else:
+        return False
