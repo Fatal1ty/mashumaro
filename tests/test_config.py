@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
 from typing import Optional, Union
-from mashumaro.exceptions import ExtraKeysError, InvalidFieldValue
 
 import pytest
-from typing_extensions import Annotated, Literal
+from typing_extensions import Literal
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
+from mashumaro.exceptions import ExtraKeysError, InvalidFieldValue
 from mashumaro.types import Discriminator, SerializationStrategy
 
 from .entities import (

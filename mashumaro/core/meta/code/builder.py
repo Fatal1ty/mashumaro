@@ -69,10 +69,10 @@ from mashumaro.dialect import Dialect
 from mashumaro.exceptions import (  # noqa
     BadDialect,
     BadHookSignature,
+    ExtraKeysError,
     InvalidFieldValue,
     MissingDiscriminatorError,
     MissingField,
-    ExtraKeysError,
     SuitableVariantNotFoundError,
     ThirdPartyModuleNotFoundError,
     UnresolvedTypeReferenceError,
