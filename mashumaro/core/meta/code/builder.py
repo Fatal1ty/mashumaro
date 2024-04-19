@@ -38,7 +38,9 @@ from mashumaro.core.meta.helpers import (
     get_forward_ref_referencing_globals,
     get_literal_values,
     get_name_error_name,
+    get_type_annotations,
     hash_type_args,
+    is_annotated,
     is_class_var,
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
@@ -81,7 +83,7 @@ from mashumaro.exceptions import (  # noqa
     UnsupportedDeserializationEngine,
     UnsupportedSerializationEngine,
 )
-from mashumaro.types import Discriminator
+from mashumaro.types import Alias, Discriminator
 
 __PRE_SERIALIZE__ = "__pre_serialize__"
 __PRE_DESERIALIZE__ = "__pre_deserialize__"
@@ -451,9 +453,7 @@ class CodeBuilder:
                     kw_only_fields.add(fname)
 
                 metadata = self.metadatas.get(fname, {})
-                alias = metadata.get("alias")
-                if alias is None:
-                    alias = config.aliases.get(fname)
+                alias = self.__get_field_alias(fname, ftype, metadata, config)
 
                 filtered_fields.append((fname, alias, ftype))
             if filtered_fields:
@@ -1166,9 +1166,7 @@ class CodeBuilder:
         force_value: bool = False,
     ) -> typing.Tuple[str, typing.Optional[str], bool]:
         metadata = self.metadatas.get(fname, {})
-        alias = metadata.get("alias")
-        if alias is None:
-            alias = config.aliases.get(fname)
+        alias = self.__get_field_alias(fname, ftype, metadata, config)
         could_be_none = (
             ftype in (typing.Any, type(None), None)
             or is_type_var_any(self.get_real_type(fname, ftype))
@@ -1192,6 +1190,23 @@ class CodeBuilder:
             )
         )
         return packer, alias, could_be_none
+
+    @staticmethod
+    def __get_field_alias(
+        fname: str,
+        ftype: typing.Type,
+        metadata: typing.Mapping[str, typing.Any],
+        config: typing.Type[BaseConfig],
+    ) -> typing.Optional[str]:
+        alias = metadata.get("alias")
+        if alias is None and is_annotated(ftype):
+            annotations = get_type_annotations(ftype)
+            for ann in annotations:
+                if isinstance(ann, Alias):
+                    alias = ann.name
+        if alias is None:
+            alias = config.aliases.get(fname)
+        return alias
 
     @typing.no_type_check
     def iter_serialization_strategies(
