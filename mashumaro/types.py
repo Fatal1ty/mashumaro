@@ -12,6 +12,7 @@ __all__ = [
     "SerializationStrategy",
     "RoundedDecimal",
     "Discriminator",
+    "Alias",
 ]
 
 
@@ -105,3 +106,8 @@ class Discriminator:
                 "Either 'include_supertypes' or 'include_subtypes' "
                 "must be enabled"
             )
+
+
+@dataclass(unsafe_hash=True)
+class Alias:
+    name: str
