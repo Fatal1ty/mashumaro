@@ -43,3 +43,11 @@ def test_union_encoding():
             encoded = encode(value, Union[variants])
             assert value == encoded
             assert same_types(value, encoded)
+
+
+def test_str_bool_union_warning():
+    with pytest.warns(UserWarning):
+
+        @dataclass
+        class _(DataClassDictMixin):
+            x: Union[str, bool]
