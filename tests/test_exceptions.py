@@ -7,6 +7,7 @@ from mashumaro import DataClassDictMixin
 from mashumaro.codecs import BasicDecoder
 from mashumaro.core.meta.helpers import type_name
 from mashumaro.exceptions import (
+    ExtraKeysError,
     InvalidFieldValue,
     MissingDiscriminatorError,
     MissingField,
@@ -190,3 +191,16 @@ def test_deserialize_dataclass_from_wrong_value_type():
         f"Argument for {type_name(MyClass)}."
         f"__mashumaro_from_dict__ method should be a dict instance"
     )
+
+
+def test_extra_keys_error():
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: str
+
+        class Config:
+            forbid_extra_keys = True
+
+    with pytest.raises(ExtraKeysError) as exc_info:
+        MyClass.from_dict({"x": "x", "y": "y"})
+    assert str(exc_info.value).endswith(".MyClass: y")
