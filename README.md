@@ -74,6 +74,7 @@ Table of contents
         * [`forbid_extra_keys` config option](#forbid_extra_keys-config-option)
     * [Passing field values as is](#passing-field-values-as-is)
     * [Extending existing types](#extending-existing-types)
+    * [Field aliases](#field-aliases)
     * [Dialects](#dialects)
         * [`serialization_strategy` dialect option](#serialization_strategy-dialect-option)
         * [`serialize_by_alias` dialect option](#serialize_by_alias-dialect-option)
@@ -1240,11 +1241,8 @@ serialization scheme. You can find an example in the
 
 #### `alias` option
 
-In some cases it's better to have different names for a field in your class and
-in its serialized view. For example, a third-party legacy API you are working
-with might operate with camel case style, but you stick to snake case style in
-your code base. Or even you want to load data with keys that are invalid
-identifiers in Python. This problem is easily solved by using aliases:
+This option can be used to assign [field aliases](#field-aliases):
+
 
 ```python
 from dataclasses import dataclass, field
@@ -1256,24 +1254,7 @@ class DataClass(DataClassDictMixin):
     b: int = field(metadata=field_options(alias="#invalid"))
 
 x = DataClass.from_dict({"FieldA": 1, "#invalid": 2})  # DataClass(a=1, b=2)
-x.to_dict()  # {"a": 1, "b": 2}  # no aliases on serialization by default
 ```
-
-If you want to write all the field aliases in one place, there is
-[a config option](#aliases-config-option) for that.
-
-If you want to deserialize all the fields by its names along with aliases,
-there is [a config option](#allow_deserialization_not_by_alias-config-option)
-for that.
-
-If you want to serialize all the fields by aliases you have two options to do so:
-* [`serialize_by_alias` config option](#serialize_by_alias-config-option)
-* [`serialize_by_alias` dialect option](#serialize_by_alias-dialect-option)
-* [`by_alias` keyword argument in `to_*` methods](#add-by_alias-keyword-argument)
-
-It's hard to imagine when it might be necessary to serialize only specific
-fields by alias, but such functionality is easily added to the library. Open
-the issue if you need it.
 
 ### Config options
 
@@ -1411,7 +1392,7 @@ assert C([1], [2.2]).to_dict() == {'ints': ['1'], 'floats': ['2.2']}
 
 #### `aliases` config option
 
-Sometimes it's better to write the field aliases in one place. You can mix
+Sometimes it's better to write the [field aliases](#field-aliases) in one place. You can mix
 aliases here with [aliases in the field options](#alias-option), but the last ones will always
 take precedence.
 
@@ -1873,6 +1854,72 @@ generated code. Therefore, if performance is more important to you than
 catching logical errors by type checkers, and you are actively creating or
 changing dataclasses manually, then you should take a closer look at using
 `Annotated`.
+
+### Field aliases
+
+In some cases it's better to have different names for a field in your dataclass
+and in its serialized view. For example, a third-party legacy API you are
+working with might operate with camel case style, but you stick to snake case
+style in your code base. Or you want to load data with keys that are
+invalid identifiers in Python. Aliases can solve this problem.
+
+There are multiple ways to assign an alias:
+* Using `Alias(...)` annotation in a field type
+* Using `alias` parameter in field metadata
+* Using `aliases` parameter in a dataclass config
+
+By default, aliases only affect deserialization, but it can be extended to
+serialization as well. If you want to serialize all the fields by aliases you
+have two options to do so:
+* [`serialize_by_alias` config option](#serialize_by_alias-config-option)
+* [`serialize_by_alias` dialect option](#serialize_by_alias-dialect-option)
+* [`by_alias` keyword argument in `to_*` methods](#add-by_alias-keyword-argument)
+
+Here is an example with `Alias` annotation in a field type:
+
+```python
+from dataclasses import dataclass
+from typing import Annotated
+from mashumaro import DataClassDictMixin
+from mashumaro.types import Alias
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    foo_bar: Annotated[int, Alias("fooBar")]
+
+obj = DataClass.from_dict({"fooBar": 42})  # DataClass(foo_bar=42)
+obj.to_dict()  # {"foo_bar": 42}  # no aliases on serialization by default
+```
+
+The same with field metadata:
+
+```python
+from dataclasses import dataclass, field
+from mashumaro import field_options
+
+@dataclass
+class DataClass:
+    foo_bar: str = field(metadata=field_options(alias="fooBar"))
+```
+
+And with a dataclass config:
+
+```python
+from dataclasses import dataclass
+from mashumaro.config import BaseConfig
+
+@dataclass
+class DataClass:
+    foo_bar: str
+
+    class Config(BaseConfig):
+        aliases = {"foo_bar": "fooBar"}
+```
+
+> [!TIP]\
+> If you want to deserialize all the fields by its names along with aliases,
+> there is [a config option](#allow_deserialization_not_by_alias-config-option)
+> for that.
 
 ### Dialects
 
