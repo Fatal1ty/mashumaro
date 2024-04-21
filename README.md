@@ -1417,7 +1417,7 @@ DataClass.from_dict({"FieldA": 1, "FieldB": 2})  # DataClass(a=1, b=2)
 
 #### `serialize_by_alias` config option
 
-All the fields with [aliases](#alias-option) will be serialized by them by
+All the fields with [aliases](#field-aliases) will be serialized by them by
 default when this option is enabled. You can mix this config option with
 [`by_alias`](#add-by_alias-keyword-argument) keyword argument.
 
@@ -2596,7 +2596,7 @@ Model(x=Inner(), a=1).to_dict(omit_none=True)  # {'x': {'x': None}, 'a': 1}
 #### Add `by_alias` keyword argument
 
 If you want to have control over whether to serialize fields by their
-[aliases](#alias-option) you can add `by_alias` parameter to `to_*` methods
+[aliases](#field-aliases) you can add `by_alias` parameter to `to_*` methods
 using the `code_generation_options` list. The default value of `by_alias`
 parameter depends on whether the [`serialize_by_alias`](#serialize_by_alias-config-option)
 config option is enabled.
