@@ -108,6 +108,17 @@ class Discriminator:
             )
 
 
-@dataclass(unsafe_hash=True)
 class Alias:
-    name: str
+    def __init__(self, name: str, /):
+        self.name = name
+
+    def __repr__(self) -> str:
+        return f"Alias(name='{self.name}')"
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Alias):
+            return False
+        return self.name == other.name
+
+    def __hash__(self) -> int:
+        return hash(self.name)

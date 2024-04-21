@@ -8,7 +8,7 @@ from typing_extensions import Self
 from mashumaro import DataClassDictMixin
 from mashumaro.core.const import PEP_585_COMPATIBLE
 from mashumaro.exceptions import UnserializableField
-from mashumaro.types import SerializableType
+from mashumaro.types import Alias, SerializableType
 from tests.entities import GenericSerializableList, GenericSerializableWrapper
 
 XT = TypeVar("XT")
@@ -351,3 +351,19 @@ def test_annotated_generic_serializable_type_with_mixed_type_vars():
     obj = DataClass.from_dict({"x": ["1", "2022-05-29", "2.3"]})
     # assert obj.x.value == (1, date(2022, 5, 29), 2.3)
     assert obj.to_dict() == {"x": [1, "2022-05-29", 2.3]}
+
+
+def test_alias():
+    x1 = Alias("x")
+    x2 = Alias("x")
+    y = Alias("y")
+
+    assert x1 == x2
+    assert hash(x1) == hash(x2)
+
+    assert x1 != y
+    assert x1 != "x"
+    assert hash(x1) != hash(y)
+
+    assert str(y) == "Alias(name='y')"
+    assert repr(y) == "Alias(name='y')"
