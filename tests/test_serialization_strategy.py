@@ -1,8 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from typing import Generic, List, Sequence, TypeVar
 
-from mashumaro import DataClassDictMixin
+from mashumaro import DataClassDictMixin, field_options
 from mashumaro.types import SerializationStrategy
 
 T = TypeVar("T")
@@ -153,3 +153,31 @@ def test_date_list_serialization_strategy_use_annotations_without_annotations():
     assert MyDataClass.from_dict(
         {"x": ["2023-02-12", "2023-02-12", "2023-02-12", "2023-02-12"]}
     ) == MyDataClass(["2023-02-12", "2023-02-12", "2023-02-12"])
+
+
+def test_date_list_field_serialization_strategy_with_use_annotations():
+    @dataclass
+    class MyDataClass(DataClassDictMixin):
+        x: List[date] = field(
+            metadata=field_options(
+                serialization_strategy=(
+                    TruncatedAnnotatedDateListSerializationStrategy()
+                )
+            )
+        )
+
+    obj = MyDataClass(
+        [
+            date(2023, 2, 12),
+            date(2023, 2, 12),
+            date(2023, 2, 12),
+            date(2023, 2, 12),
+            date(2023, 2, 12),
+        ]
+    )
+    assert obj.to_dict() == {
+        "x": ["2023-02-12", "2023-02-12", "2023-02-12", "2023-02-12"]
+    }
+    assert MyDataClass.from_dict(
+        {"x": ["2023-02-12", "2023-02-12", "2023-02-12", "2023-02-12"]}
+    ) == MyDataClass([date(2023, 2, 12), date(2023, 2, 12), date(2023, 2, 12)])

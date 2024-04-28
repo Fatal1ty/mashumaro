@@ -110,6 +110,19 @@ def _pack_with_annotated_serialization_strategy(
     )
     overridden_fn = f"__{spec.field_ctx.name}_serialize_{random_hex()}"
     setattr(spec.attrs, overridden_fn, strategy.serialize)
+    new_spec = spec.copy(
+        type=value_type,
+        expression=(
+            f"{spec.self_attrs_name}.{overridden_fn}({spec.expression})"
+        ),
+    )
+    field_metadata = new_spec.field_ctx.metadata
+    if field_metadata.get("serialization_strategy") is strategy:
+        new_spec.field_ctx.metadata = {
+            k: v
+            for k, v in field_metadata.items()
+            if k != "serialization_strategy"
+        }
     return PackerRegistry.get(
         spec.copy(
             type=value_type,
