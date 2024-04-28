@@ -70,6 +70,7 @@ from .entities import (
     MyUntypedNamedTuple,
     T,
     TAny,
+    TDefaultInt,
     TInt,
     TIntStr,
 )
@@ -165,7 +166,10 @@ def test_is_dataclass_dict_mixin_subclass():
 
 
 def test_is_type_var_any():
+    assert is_type_var_any(T)
     assert is_type_var_any(TAny)
+    assert not is_type_var_any(TInt)
+    assert not is_type_var_any(TDefaultInt)
     assert not is_type_var_any(typing.Any)
     assert not is_type_var_any(TMyDataClass)
 
@@ -180,6 +184,7 @@ def test_is_type_var_any_list_38():
 def test_type_name():
     assert type_name(TAny) == "typing.Any"
     assert type_name(TInt) == "int"
+    assert type_name(TDefaultInt) == "int"
     assert type_name(TMyDataClass) == "tests.entities.MyDataClass"
     assert type_name(TIntStr) == "typing.Union[int, str]"
     assert type_name(typing.List[TInt]) == "typing.List[int]"
@@ -285,6 +290,7 @@ def test_type_name_pep_585():
 def test_type_name_short():
     assert type_name(TAny, short=True) == "Any"
     assert type_name(TInt, short=True) == "int"
+    assert type_name(TDefaultInt, short=True) == "int"
     assert type_name(TMyDataClass, short=True) == "MyDataClass"
     assert type_name(TIntStr, short=True) == "Union[int, str]"
     assert type_name(typing.List[TInt], short=True) == "List[int]"

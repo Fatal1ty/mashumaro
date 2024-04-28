@@ -741,7 +741,9 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             if constraints:
                 return TypeVarUnpackerBuilder(constraints).build(spec)
             else:
-                bound = getattr(spec.type, "__bound__")
+                bound = getattr(spec.type, "__default__", None)
+                if bound is None:
+                    bound = getattr(spec.type, "__bound__")
                 # act as if it was Optional[bound]
                 uv = UnpackerRegistry.get(spec.copy(type=bound))
                 return expr_or_maybe_none(spec, uv)

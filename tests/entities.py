@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from enum import Enum, Flag, IntEnum, IntFlag
 from os import PathLike
-from typing import Any, Generic, List, NewType, Optional, TypeVar, Union
+from typing import Any, Generic, List, NewType, Optional, Union
 
 try:
     from enum import StrEnum
@@ -13,7 +13,7 @@ except ImportError:  # pragma: no cover
         pass
 
 
-from typing_extensions import NamedTuple, TypedDict
+from typing_extensions import NamedTuple, TypedDict, TypeVar
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
@@ -22,6 +22,7 @@ from mashumaro.types import GenericSerializableType, SerializableType
 T = TypeVar("T")
 TAny = TypeVar("TAny", bound=Any)
 TInt = TypeVar("TInt", bound=int)
+TDefaultInt = TypeVar("TDefaultInt", default=int)
 TIntStr = TypeVar("TIntStr", int, str)
 T_Optional_int = TypeVar("T_Optional_int", bound=Optional[int])
 
