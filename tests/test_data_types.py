@@ -206,8 +206,6 @@ inner_values = [
     (OrderedDict, Fixture.ORDERED_DICT, Fixture.DICT),
     (DefaultDict[str, int], Fixture.DEFAULT_DICT, Fixture.DICT),
     (DefaultDict, Fixture.DEFAULT_NONE_DICT, Fixture.DICT),
-    (MappingProxyType[str, int], Fixture.MAPPING_PROXY, Fixture.DICT),
-    (MappingProxyType, Fixture.MAPPING_PROXY, Fixture.DICT),
     (Counter[str], Fixture.COUNTER, Fixture.DICT),
     (Counter, Fixture.COUNTER, Fixture.DICT),
     (MutableMapping[str, int], Fixture.DICT, Fixture.DICT),
@@ -338,7 +336,13 @@ if PEP_585_COMPATIBLE:
     )
 
 if PY_39_MIN:
-    inner_values.append((ZoneInfo, ZoneInfo("Europe/Moscow"), "Europe/Moscow"))
+    inner_values.extend(
+        (
+            (ZoneInfo, ZoneInfo("Europe/Moscow"), "Europe/Moscow"),
+            (MappingProxyType[str, int], Fixture.MAPPING_PROXY, Fixture.DICT),
+            (MappingProxyType, Fixture.MAPPING_PROXY, Fixture.DICT),
+        )
+    )
 
 
 hashable_inner_values = [

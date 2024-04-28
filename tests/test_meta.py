@@ -9,7 +9,12 @@ import pytest
 import typing_extensions
 
 from mashumaro import DataClassDictMixin
-from mashumaro.core.const import PEP_585_COMPATIBLE, PY_38, PY_310_MIN
+from mashumaro.core.const import (
+    PEP_585_COMPATIBLE,
+    PY_38,
+    PY_39_MIN,
+    PY_310_MIN,
+)
 from mashumaro.core.meta.code.builder import CodeBuilder
 
 # noinspection PyProtectedMember
@@ -217,9 +222,6 @@ def test_type_name():
         type_name(typing.DefaultDict[int, int])
         == "typing.DefaultDict[int, int]"
     )
-    assert (
-        type_name(types.MappingProxyType[int, int]) == "mappingproxy[int, int]"
-    )
     assert type_name(typing.Optional[int]) == "typing.Optional[int]"
     assert type_name(typing.Union[None, int]) == "typing.Optional[int]"
     assert type_name(typing.Union[int, None]) == "typing.Optional[int]"
@@ -233,6 +235,11 @@ def test_type_name():
     )
     assert type_name(typing.Optional[NoneType]) == "NoneType"
 
+    if PY_39_MIN:
+        assert (
+            type_name(types.MappingProxyType[int, int])
+            == "mappingproxy[int, int]"
+        )
     if PY_310_MIN:
         assert type_name(int | None) == "typing.Optional[int]"
         assert type_name(None | int) == "typing.Optional[int]"
@@ -312,10 +319,6 @@ def test_type_name_short():
         type_name(typing.MutableMapping[int, int], short=True)
         == "MutableMapping[int, int]"
     )
-    assert (
-        type_name(types.MappingProxyType[int, int], short=True)
-        == "mappingproxy[int, int]"
-    )
     assert type_name(typing.Counter[int], short=True) == "Counter[int]"
     assert (
         type_name(typing.ChainMap[int, int], short=True)
@@ -348,6 +351,11 @@ def test_type_name_short():
     )
     assert type_name(typing.Optional[NoneType], short=True) == "NoneType"
 
+    if PY_39_MIN:
+        assert (
+            type_name(types.MappingProxyType[int, int], short=True)
+            == "mappingproxy[int, int]"
+        )
     if PY_310_MIN:
         assert type_name(int | None, short=True) == "Optional[int]"
         assert type_name(None | int, short=True) == "Optional[int]"
