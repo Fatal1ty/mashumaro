@@ -221,6 +221,7 @@ for special primitives from the [`typing`](https://docs.python.org/3/library/typ
 for standard interpreter types from [`types`](https://docs.python.org/3/library/types.html#standard-interpreter-types) module:
 * [`NoneType`](https://docs.python.org/3/library/types.html#types.NoneType)
 * [`UnionType`](https://docs.python.org/3/library/types.html#types.UnionType)
+* [`MappingProxyType`](https://docs.python.org/3/library/types.html#types.MappingProxyType)
 
 for enumerations based on classes from the standard [`enum`](https://docs.python.org/3/library/enum.html) module:
 * [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)

@@ -1,5 +1,6 @@
 import collections
 import collections.abc
+import types
 import typing
 from dataclasses import InitVar, dataclass
 from datetime import datetime
@@ -216,6 +217,9 @@ def test_type_name():
         type_name(typing.DefaultDict[int, int])
         == "typing.DefaultDict[int, int]"
     )
+    assert (
+        type_name(types.MappingProxyType[int, int]) == "mappingproxy[int, int]"
+    )
     assert type_name(typing.Optional[int]) == "typing.Optional[int]"
     assert type_name(typing.Union[None, int]) == "typing.Optional[int]"
     assert type_name(typing.Union[int, None]) == "typing.Optional[int]"
@@ -307,6 +311,10 @@ def test_type_name_short():
     assert (
         type_name(typing.MutableMapping[int, int], short=True)
         == "MutableMapping[int, int]"
+    )
+    assert (
+        type_name(types.MappingProxyType[int, int], short=True)
+        == "mappingproxy[int, int]"
     )
     assert type_name(typing.Counter[int], short=True) == "Counter[int]"
     assert (

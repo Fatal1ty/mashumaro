@@ -16,6 +16,7 @@ from pathlib import (
     WindowsPath,
 )
 from queue import Queue
+from types import MappingProxyType
 from typing import (
     Any,
     AnyStr,
@@ -123,6 +124,7 @@ class Fixture:
     DICT = {"a": 1, "b": 2}
     ORDERED_DICT = collections.OrderedDict(a=1, b=2)
     DEFAULT_DICT = collections.defaultdict(int, a=1, b=2)
+    MAPPING_PROXY = MappingProxyType(DICT)
     DEFAULT_NONE_DICT = collections.defaultdict(None, a=1, b=2)
     COUNTER: Counter[str] = collections.Counter(a=1, b=2)
     BYTES = b"123"
@@ -204,6 +206,8 @@ inner_values = [
     (OrderedDict, Fixture.ORDERED_DICT, Fixture.DICT),
     (DefaultDict[str, int], Fixture.DEFAULT_DICT, Fixture.DICT),
     (DefaultDict, Fixture.DEFAULT_NONE_DICT, Fixture.DICT),
+    (MappingProxyType[str, int], Fixture.MAPPING_PROXY, Fixture.DICT),
+    (MappingProxyType, Fixture.MAPPING_PROXY, Fixture.DICT),
     (Counter[str], Fixture.COUNTER, Fixture.DICT),
     (Counter, Fixture.COUNTER, Fixture.DICT),
     (MutableMapping[str, int], Fixture.DICT, Fixture.DICT),

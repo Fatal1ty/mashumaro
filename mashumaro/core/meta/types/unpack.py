@@ -1230,6 +1230,12 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
         )
     elif is_typed_dict(spec.origin_type):
         return unpack_typed_dict(spec)
+    elif issubclass(spec.origin_type, types.MappingProxyType):
+        spec.builder.ensure_module_imported(types)
+        return (
+            f'types.MappingProxyType({{{inner_expr(0, "key")}: {inner_expr(1)}'
+            f" for key, value in {spec.expression}.items()}})"
+        )
     elif ensure_generic_mapping(spec, args, typing.Mapping):
         return (
             f'{{{inner_expr(0, "key")}: {inner_expr(1)} '
