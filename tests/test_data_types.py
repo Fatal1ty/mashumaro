@@ -16,6 +16,7 @@ from pathlib import (
     WindowsPath,
 )
 from queue import Queue
+from types import MappingProxyType
 from typing import (
     Any,
     AnyStr,
@@ -123,6 +124,7 @@ class Fixture:
     DICT = {"a": 1, "b": 2}
     ORDERED_DICT = collections.OrderedDict(a=1, b=2)
     DEFAULT_DICT = collections.defaultdict(int, a=1, b=2)
+    MAPPING_PROXY = MappingProxyType(DICT)
     DEFAULT_NONE_DICT = collections.defaultdict(None, a=1, b=2)
     COUNTER: Counter[str] = collections.Counter(a=1, b=2)
     BYTES = b"123"
@@ -334,7 +336,13 @@ if PEP_585_COMPATIBLE:
     )
 
 if PY_39_MIN:
-    inner_values.append((ZoneInfo, ZoneInfo("Europe/Moscow"), "Europe/Moscow"))
+    inner_values.extend(
+        (
+            (ZoneInfo, ZoneInfo("Europe/Moscow"), "Europe/Moscow"),
+            (MappingProxyType[str, int], Fixture.MAPPING_PROXY, Fixture.DICT),
+            (MappingProxyType, Fixture.MAPPING_PROXY, Fixture.DICT),
+        )
+    )
 
 
 hashable_inner_values = [

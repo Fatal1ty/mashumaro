@@ -1,5 +1,6 @@
 import collections
 import collections.abc
+import types
 import typing
 from dataclasses import InitVar, dataclass
 from datetime import datetime
@@ -8,7 +9,12 @@ import pytest
 import typing_extensions
 
 from mashumaro import DataClassDictMixin
-from mashumaro.core.const import PEP_585_COMPATIBLE, PY_38, PY_310_MIN
+from mashumaro.core.const import (
+    PEP_585_COMPATIBLE,
+    PY_38,
+    PY_39_MIN,
+    PY_310_MIN,
+)
 from mashumaro.core.meta.code.builder import CodeBuilder
 
 # noinspection PyProtectedMember
@@ -229,6 +235,11 @@ def test_type_name():
     )
     assert type_name(typing.Optional[NoneType]) == "NoneType"
 
+    if PY_39_MIN:
+        assert (
+            type_name(types.MappingProxyType[int, int])
+            == "mappingproxy[int, int]"
+        )
     if PY_310_MIN:
         assert type_name(int | None) == "typing.Optional[int]"
         assert type_name(None | int) == "typing.Optional[int]"
@@ -340,6 +351,11 @@ def test_type_name_short():
     )
     assert type_name(typing.Optional[NoneType], short=True) == "NoneType"
 
+    if PY_39_MIN:
+        assert (
+            type_name(types.MappingProxyType[int, int], short=True)
+            == "mappingproxy[int, int]"
+        )
     if PY_310_MIN:
         assert type_name(int | None, short=True) == "Optional[int]"
         assert type_name(None | int, short=True) == "Optional[int]"
