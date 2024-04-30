@@ -39,3 +39,4 @@ omit = ["setup.py"]
 
 [tool.coverage.report]
 exclude_lines = ["pragma: no cover", "@overload", "@abstractmethod"]
+ignore_errors = true
