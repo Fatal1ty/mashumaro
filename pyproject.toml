@@ -36,7 +36,7 @@ line-length = 79
 
 [tool.coverage.run]
 omit = ["setup.py"]
-ignore_errors = true
 
 [tool.coverage.report]
 exclude_lines = ["pragma: no cover", "@overload", "@abstractmethod"]
+ignore_errors = true
