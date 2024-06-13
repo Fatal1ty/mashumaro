@@ -773,7 +773,7 @@ def evaluate_forward_ref(
 ) -> Optional[Type]:
     if PY_39_MIN:
         return typ._evaluate(
-            globalns, localns, frozenset()
+            globalns, localns, recursive_guard=frozenset()
         )  # type: ignore[call-arg]
     else:
         return typ._evaluate(globalns, localns)  # type: ignore[call-arg]
