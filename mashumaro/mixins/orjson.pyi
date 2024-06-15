@@ -30,7 +30,7 @@ class DataClassORJSONMixin(DataClassDictMixin):
         *,
         orjson_options: int = ...,
         **to_dict_kwargs: Any,
-    ) -> bytes: ...
+    ) -> str: ...
     @classmethod
     @final
     def from_json(
