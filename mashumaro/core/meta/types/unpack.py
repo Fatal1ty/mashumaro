@@ -37,6 +37,7 @@ from mashumaro.core.meta.helpers import (
     get_class_that_defines_method,
     get_function_arg_annotation,
     get_literal_values,
+    get_type_var_default,
     is_final,
     is_generic,
     is_literal,
@@ -59,6 +60,7 @@ from mashumaro.core.meta.helpers import (
     resolve_type_params,
     substitute_type_params,
     type_name,
+    type_var_has_default,
 )
 from mashumaro.core.meta.types.common import (
     AbstractMethodBuilder,
@@ -749,8 +751,9 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             if constraints:
                 return TypeVarUnpackerBuilder(constraints).build(spec)
             else:
-                bound = getattr(spec.type, "__default__", None)
-                if bound is None:
+                if type_var_has_default(spec.type):
+                    bound = get_type_var_default(spec.type)
+                else:
                     bound = getattr(spec.type, "__bound__")
                 # act as if it was Optional[bound]
                 uv = UnpackerRegistry.get(spec.copy(type=bound))
