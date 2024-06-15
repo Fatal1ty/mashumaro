@@ -8,7 +8,6 @@ import pathlib
 import types
 import typing
 import uuid
-import warnings
 from abc import ABC
 from base64 import decodebytes
 from contextlib import suppress
