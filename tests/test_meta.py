@@ -29,6 +29,7 @@ from mashumaro.core.meta.helpers import (
     get_literal_values,
     get_type_annotations,
     get_type_origin,
+    get_type_var_default,
     hash_type_args,
     is_annotated,
     is_dataclass_dict_mixin,
@@ -49,6 +50,7 @@ from mashumaro.core.meta.helpers import (
     resolve_type_params,
     substitute_type_params,
     type_name,
+    type_var_has_default,
 )
 from mashumaro.core.meta.types.common import (
     FieldContext,
@@ -807,3 +809,25 @@ def test_is_hashable_type():
     assert is_hashable_type(int) is True
     assert is_hashable_type(MyFrozenDataClass) is True
     assert is_hashable_type(MyDataClass) is False
+
+
+def test_type_var_has_default():
+    T_WithoutDefault = typing_extensions.TypeVar("T_WithoutDefault")
+    T_WithDefault = typing_extensions.TypeVar("T_WithDefault", default=int)
+    T_WithDefaultNone = typing_extensions.TypeVar(
+        "T_WithDefaultNone", default=None
+    )
+
+    assert not type_var_has_default(T_WithoutDefault)
+    assert type_var_has_default(T_WithDefault)
+    assert type_var_has_default(T_WithDefaultNone)
+
+
+def test_get_type_var_default():
+    T_WithDefault = typing_extensions.TypeVar("T_WithDefault", default=int)
+    T_WithDefaultNone = typing_extensions.TypeVar(
+        "T_WithDefaultNone", default=None
+    )
+
+    assert get_type_var_default(T_WithDefault) is int
+    assert get_type_var_default(T_WithDefaultNone) is None

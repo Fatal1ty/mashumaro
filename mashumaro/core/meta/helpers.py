@@ -272,8 +272,9 @@ def type_name(
             )
             return f"{_typing_name('Union', short)}[{args_str}]"
         else:
-            bound = getattr(typ, "__default__", None)
-            if bound is None:
+            if type_var_has_default(typ):
+                bound = get_type_var_default(typ)
+            else:
                 bound = getattr(typ, "__bound__")
             return type_name(bound, short, resolved_type_params)
     elif is_new_type(typ) and not PY_310_MIN:
@@ -423,7 +424,7 @@ def is_type_var_any(typ: Type) -> bool:
         return False
     elif typ.__bound__ not in (None, Any):
         return False
-    elif getattr(typ, "__default__", None) not in (None, NoneType):
+    elif type_var_has_default(typ):
         return False
     else:
         return True
@@ -806,3 +807,14 @@ def is_type_alias_type(typ: Type) -> bool:
         return isinstance(typ, typing.TypeAliasType)  # type: ignore
     else:
         return False
+
+
+def type_var_has_default(typ: Any) -> bool:
+    try:
+        return typ.has_default()
+    except AttributeError:
+        return getattr(typ, "__default__", None) is not None
+
+
+def get_type_var_default(typ: Any) -> Type:
+    return getattr(typ, "__default__")
