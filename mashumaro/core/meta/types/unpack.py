@@ -180,13 +180,13 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
             with lines.indent("try:"):
                 lines.append(f"return {unpacker}")
             lines.append("except Exception: pass")
-        if len(ambiguous_unpacker_types) >= 2:
-            warnings.warn(
-                f"{type_name(spec.builder.cls)}.{spec.field_ctx.name} ({type_name(spec.type)}): "
-                "In the next release, data marked with Union type containing "
-                "'str' and 'bool' will be coerced to the value of the type "
-                "specified first instead of passing it as is"
-            )
+        # if len(ambiguous_unpacker_types) >= 2:
+        #     warnings.warn(
+        #         f"{type_name(spec.builder.cls)}.{spec.field_ctx.name} ({type_name(spec.type)}): "
+        #         "In the next release, data marked with Union type containing "
+        #         "'str' and 'bool' will be coerced to the value of the type "
+        #         "specified first instead of passing it as is"
+        #     )
         field_type = spec.builder.get_type_name_identifier(
             typ=spec.type,
             resolved_type_params=spec.builder.get_field_resolved_type_params(
