@@ -60,7 +60,7 @@ from mashumaro.types import (
     SerializableType,
     SerializationStrategy,
 )
-from tests.entities import MyUntypedNamedTupleWithDefaults
+from tests.entities import MyUntypedNamedTupleWithDefaults, TDefaultInt
 
 from .conftest import add_unpack_method
 from .entities import (
@@ -181,6 +181,7 @@ inner_values = [
     (T, Fixture.T, Fixture.T),
     (TInt, Fixture.T_INT, Fixture.T_INT),
     (TIntStr, Fixture.T_INT_STR, Fixture.T_INT_STR),
+    (TDefaultInt, Fixture.T_INT, Fixture.T_INT),
     (Any, Fixture.ANY, Fixture.ANY),
     (TAny, Fixture.ANY, Fixture.ANY),
     (int, Fixture.INT, Fixture.INT),
