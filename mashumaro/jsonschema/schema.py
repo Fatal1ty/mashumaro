@@ -752,6 +752,11 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
                 schema.maxLength = annotation.value
             elif isinstance(annotation, Pattern):
                 schema.pattern = annotation.value
+            elif isinstance(
+                annotation,
+                (JSONSchemaStringFormat, JSONSchemaInstanceFormatExtension),
+            ):
+                schema.format = annotation
         return schema
     elif is_generic(instance.type) and issubclass(
         instance.origin_type, (List, typing.Deque)
