@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing_extensions import Annotated
 
 from mashumaro.jsonschema.builder import build_json_schema
-from mashumaro.jsonschema.schema import (
+from mashumaro.jsonschema.models import (
     JSONSchemaInstanceFormatExtension,
     JSONSchemaStringFormat,
 )
