@@ -770,14 +770,14 @@ def str_to_forward_ref(
 
 
 def evaluate_forward_ref(
-    typ: ForwardRef, globalns: Any, localns: Any
+    typ: ForwardRef, globalns: Dict[str, Any], localns: Dict[str, Any]
 ) -> Optional[Type]:
     if PY_39_MIN:
         return typ._evaluate(
             globalns, localns, recursive_guard=frozenset()
         )  # type: ignore[call-arg]
     else:
-        return typ._evaluate(globalns, localns)  # type: ignore[call-arg]
+        return typ._evaluate(globalns, localns)  # type: ignore
 
 
 def get_forward_ref_referencing_globals(
