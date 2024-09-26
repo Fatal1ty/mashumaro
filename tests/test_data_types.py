@@ -258,8 +258,6 @@ inner_values = [
     (MyDatetimeNewType, Fixture.DATETIME, Fixture.DATETIME_STR),
     (LiteralString, Fixture.LITERAL_STRING, Fixture.LITERAL_STRING),
     (re.Pattern, Fixture.PATTERN_STR, Fixture.PATTERN_STR.pattern),
-    (re.Pattern[str], Fixture.PATTERN_STR, Fixture.PATTERN_STR.pattern),
-    (re.Pattern[bytes], Fixture.PATTERN_BYTES, Fixture.PATTERN_BYTES.pattern),
 ]
 
 if os.name == "posix":
@@ -339,6 +337,16 @@ if PEP_585_COMPATIBLE:
             (collections.abc.Sequence, Fixture.LIST, Fixture.LIST),
             (collections.abc.MutableSequence[int], Fixture.LIST, Fixture.LIST),
             (collections.abc.MutableSequence, Fixture.LIST, Fixture.LIST),
+            (
+                re.Pattern[str],
+                Fixture.PATTERN_STR,
+                Fixture.PATTERN_STR.pattern,
+            ),
+            (
+                re.Pattern[bytes],
+                Fixture.PATTERN_BYTES,
+                Fixture.PATTERN_BYTES.pattern,
+            ),
         ]
     )
 
