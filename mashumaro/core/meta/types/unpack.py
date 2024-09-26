@@ -170,15 +170,19 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
 
     def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
         ambiguous_unpacker_types = []
+        unpackers = set()
         for type_arg in self.union_args:
             unpacker = UnpackerRegistry.get(
                 spec.copy(type=type_arg, expression="value")
             )
             if type_arg in (bool, str) and unpacker == "value":
                 ambiguous_unpacker_types.append(type_arg)
+            if unpacker in unpackers:
+                continue
             with lines.indent("try:"):
                 lines.append(f"return {unpacker}")
             lines.append("except Exception: pass")
+            unpackers.add(unpacker)
         # if len(ambiguous_unpacker_types) >= 2:
         #     warnings.warn(
         #         f"{type_name(spec.builder.cls)}.{spec.field_ctx.name} "
