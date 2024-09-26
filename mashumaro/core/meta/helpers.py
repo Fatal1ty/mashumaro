@@ -38,6 +38,7 @@ from mashumaro.core.const import (
     PY_310_MIN,
     PY_311_MIN,
     PY_312_MIN,
+    PY_313_MIN,
 )
 from mashumaro.dialect import Dialect
 
@@ -772,7 +773,11 @@ def str_to_forward_ref(
 def evaluate_forward_ref(
     typ: ForwardRef, globalns: Dict[str, Any], localns: Dict[str, Any]
 ) -> Optional[Type]:
-    if PY_39_MIN:
+    if PY_313_MIN:
+        return typ._evaluate(
+            globalns, localns, type_params=(), recursive_guard=frozenset()
+        )  # type: ignore[call-arg]
+    elif PY_39_MIN:
         return typ._evaluate(
             globalns, localns, recursive_guard=frozenset()
         )  # type: ignore[call-arg]
