@@ -251,7 +251,7 @@ def pack_dataclass(spec: ValueSpec) -> Optional[Expression]:
         if get_class_that_defines_method(
             method_name, method_loc
         ) != method_loc and (
-            spec.origin_type != spec.builder.cls
+            spec.origin_type is not spec.builder.cls
             or spec.builder.get_pack_method_name(
                 type_args=type_args,
                 format_name=spec.builder.format_name,
