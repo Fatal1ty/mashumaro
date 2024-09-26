@@ -4,6 +4,7 @@ import decimal
 import fractions
 import ipaddress
 import os
+import re
 import uuid
 from dataclasses import InitVar, dataclass, field
 from datetime import date, datetime, time, timedelta, timezone
@@ -175,6 +176,7 @@ class Fixture:
     GENERIC_SERIALIZABLE_LIST_INT = GenericSerializableList([1, 2, 3])
     GENERIC_SERIALIZABLE_LIST_STR = GenericSerializableList(["a", "b", "c"])
     LITERAL_STRING = "foo"
+    PATTERN = re.compile("[a-z]+")
 
 
 inner_values = [
@@ -254,6 +256,7 @@ inner_values = [
     ),
     (MyDatetimeNewType, Fixture.DATETIME, Fixture.DATETIME_STR),
     (LiteralString, Fixture.LITERAL_STRING, Fixture.LITERAL_STRING),
+    (re.Pattern, Fixture.PATTERN, Fixture.PATTERN.pattern),
 ]
 
 if os.name == "posix":

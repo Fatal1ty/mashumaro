@@ -5,6 +5,7 @@ import enum
 import ipaddress
 import os
 import pathlib
+import re
 import types
 import typing
 import uuid
@@ -1275,3 +1276,11 @@ def unpack_enum(spec: ValueSpec) -> Optional[Expression]:
     if issubclass(spec.origin_type, enum.Enum):
         field_type = spec.builder.get_type_name_identifier(spec.origin_type)
         return f"{field_type}({spec.expression})"
+
+
+@register
+def unpack_pattern(spec: ValueSpec) -> Optional[Expression]:
+    if spec.origin_type in (typing.Pattern, re.Pattern):
+        method = "__re_compile"
+        spec.builder.ensure_object_imported(re.compile, method)
+        return f"{method}({spec.expression})"
