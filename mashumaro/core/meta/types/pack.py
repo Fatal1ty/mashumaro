@@ -2,6 +2,7 @@ import datetime
 import enum
 import ipaddress
 import os
+import re
 import typing
 import uuid
 from base64 import encodebytes
@@ -856,3 +857,9 @@ def pack_pathlike(spec: ValueSpec) -> Optional[Expression]:
 def pack_enum(spec: ValueSpec) -> Optional[Expression]:
     if issubclass(spec.origin_type, enum.Enum):
         return f"{spec.expression}.value"
+
+
+@register
+def pack_pattern(spec: ValueSpec) -> Optional[Expression]:
+    if spec.origin_type in (typing.Pattern, re.Pattern):
+        return f"{spec.expression}.pattern"
