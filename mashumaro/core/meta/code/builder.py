@@ -8,8 +8,12 @@ import uuid
 from contextlib import contextmanager
 
 # noinspection PyProtectedMember
-from dataclasses import _FIELDS  # type: ignore
-from dataclasses import MISSING, Field, is_dataclass
+from dataclasses import (
+    _FIELDS,  # type: ignore
+    MISSING,
+    Field,
+    is_dataclass,
+)
 from functools import lru_cache
 
 try:
@@ -483,7 +487,7 @@ class CodeBuilder:
                         )
 
                 with self.indent("try:"):
-                    for fname, alias, ftype in filtered_fields:
+                    for i, (fname, alias, ftype) in enumerate(filtered_fields):
                         self.add_type_modules(ftype)
                         metadata = self.metadatas.get(fname, {})
                         field_block = FieldUnpackerCodeBlockBuilder(
@@ -491,6 +495,7 @@ class CodeBuilder:
                         ).build(
                             fname=fname,
                             ftype=ftype,
+                            forder=i + int(discr is not None),
                             metadata=metadata,
                             alias=alias,
                         )
@@ -862,6 +867,7 @@ class CodeBuilder:
             serialize_by_alias = self.get_dialect_or_config_option(
                 "serialize_by_alias", False
             )
+            array_like = self.get_dialect_or_config_option("array_like", False)
             omit_none = self.get_dialect_or_config_option("omit_none", False)
             omit_default = self.get_dialect_or_config_option(
                 "omit_default", False
@@ -983,8 +989,17 @@ class CodeBuilder:
                             packer if packer != "value" else f"self.{fname}",
                         )
                     )
-                kwargs = ", ".join(f"'{k}': {v}" for k, v in kwargs_parts)
-                kwargs = f"{{{kwargs}}}"
+
+                if not array_like:
+                    kwargs = ", ".join(f"'{k}': {v}" for k, v in kwargs_parts)
+                    kwargs = f"{{{kwargs}}}"
+                else:
+                    kwargs = ", ".join(f"{v}" for _, v in kwargs_parts)
+
+                    if len(kwargs_parts) == 1:
+                        kwargs = f"{kwargs},"
+
+                    kwargs = f"({kwargs})"
             post_serialize = self.get_declared_hook(__POST_SERIALIZE__)
             if self.encoder is not None:
                 if self.encoder_kwargs:
@@ -1309,6 +1324,7 @@ class FieldUnpackerCodeBlockBuilder:
         self,
         fname: str,
         ftype: typing.Type,
+        forder: int,
         metadata: typing.Mapping,
         *,
         alias: typing.Optional[str] = None,
@@ -1341,6 +1357,9 @@ class FieldUnpackerCodeBlockBuilder:
                 could_be_none=False if could_be_none else True,
             )
         )
+
+        array_like = self.parent.get_config().array_like
+
         if self.parent.get_config().allow_deserialization_not_by_alias:
             if unpacked_value != "value":
                 self.add_line(f"value = d.get('{alias}', MISSING)")
@@ -1360,15 +1379,24 @@ class FieldUnpackerCodeBlockBuilder:
                 unpacked_value = packed_value
         else:
             if unpacked_value != "value":
-                self.add_line(f"value = d.get('{alias or fname}', MISSING)")
+                if array_like:
+                    self.add_line(f"value = d[{forder}]")
+                else:
+                    self.add_line(f"value = d.get('{alias or fname}', MISSING)")
                 packed_value = "value"
             elif has_default:
-                self.add_line(f"value = d.get('{alias or fname}', MISSING)")
+                if array_like:
+                    self.add_line(f"value = d[{forder}]")
+                else:
+                    self.add_line(f"value = d.get('{alias or fname}', MISSING)")
                 packed_value = "value"
             else:
-                self.add_line(
-                    f"__{fname} = d.get('{alias or fname}', MISSING)"
-                )
+                if array_like:
+                    self.add_line(f"__{fname} = d[{forder}]")
+                else:
+                    self.add_line(
+                        f"__{fname} = d.get('{alias or fname}', MISSING)"
+                    )
                 packed_value = f"__{fname}"
                 unpacked_value = packed_value
         if not has_default:
