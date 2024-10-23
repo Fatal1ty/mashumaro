@@ -176,12 +176,12 @@ class JSONSchema(DataClassJSONMixin):
 
 @dataclass
 class JSONObjectSchema(JSONSchema):
-    type: JSONSchemaInstanceType = JSONSchemaInstanceType.OBJECT
+    type: Optional[JSONSchemaInstanceType] = JSONSchemaInstanceType.OBJECT
 
 
 @dataclass
 class JSONArraySchema(JSONSchema):
-    type: JSONSchemaInstanceType = JSONSchemaInstanceType.ARRAY
+    type: Optional[JSONSchemaInstanceType] = JSONSchemaInstanceType.ARRAY
 
 
 @dataclass
