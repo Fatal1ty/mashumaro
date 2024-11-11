@@ -487,7 +487,7 @@ class CodeBuilder:
                         self.add_type_modules(ftype)
                         metadata = self.metadatas.get(fname, {})
                         field_block = FieldUnpackerCodeBlockBuilder(
-                            self, self.lines.branch_off()
+                            self, CodeLines()
                         ).build(
                             fname=fname,
                             ftype=ftype,

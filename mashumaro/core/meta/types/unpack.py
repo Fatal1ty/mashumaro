@@ -69,6 +69,7 @@ from mashumaro.core.meta.types.common import (
     ExpressionWrapper,
     NoneType,
     Registry,
+    TypeMatchEligibleExpression,
     ValueSpec,
     clean_id,
     ensure_generic_collection,
@@ -170,28 +171,40 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
         return "union"
 
     def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
-        ambiguous_unpacker_types = []
         unpackers = set()
+        fallback_unpackers = []
         for type_arg in self.union_args:
+            condition = ""
             unpacker = UnpackerRegistry.get(
                 spec.copy(type=type_arg, expression="value")
             )
-            if type_arg in (bool, str) and unpacker == "value":
-                ambiguous_unpacker_types.append(type_arg)
-            if unpacker in unpackers:
+            do_try = unpacker != "value"
+            unpacker_block = CodeLines()
+            if isinstance(unpacker, TypeMatchEligibleExpression):
+                do_try = False
+                condition = f"type(value) is {type_arg.__name__}"
+                if (condition, unpacker) in unpackers:
+                    continue
+                with unpacker_block.indent(f"if {condition}:"):
+                    unpacker_block.append("return value")
+                if (condition, unpacker) not in unpackers:
+                    fallback_unpackers.append(unpacker)
+            elif (condition, unpacker) in unpackers:
                 continue
+            else:
+                unpacker_block.append(f"return {unpacker}")
+
+            if do_try:
+                with lines.indent("try:"):
+                    lines.extend(unpacker_block)
+                lines.append("except Exception: pass")
+            else:
+                lines.extend(unpacker_block)
+            unpackers.add((condition, unpacker))
+        for fallback_unpacker in fallback_unpackers:
             with lines.indent("try:"):
-                lines.append(f"return {unpacker}")
+                lines.append(f"return {fallback_unpacker}")
             lines.append("except Exception: pass")
-            unpackers.add(unpacker)
-        # if len(ambiguous_unpacker_types) >= 2:
-        #     warnings.warn(
-        #         f"{type_name(spec.builder.cls)}.{spec.field_ctx.name} "
-        #         f"({type_name(spec.type)}): "
-        #         "In the next release, data marked with Union type "
-        #         "containing 'str' and 'bool' will be coerced to the value "
-        #         "of the type specified first instead of passing it as is"
-        #     )
         field_type = spec.builder.get_type_name_identifier(
             typ=spec.type,
             resolved_type_params=spec.builder.get_field_resolved_type_params(
@@ -843,13 +856,21 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
 @register
 def unpack_number(spec: ValueSpec) -> Optional[Expression]:
     if spec.origin_type in (int, float):
-        return f"{type_name(spec.origin_type)}({spec.expression})"
+        return TypeMatchEligibleExpression(
+            f"{type_name(spec.origin_type)}({spec.expression})"
+        )
 
 
 @register
-def unpack_bool_and_none(spec: ValueSpec) -> Optional[Expression]:
-    if spec.origin_type in (bool, NoneType, None):
-        return spec.expression
+def unpack_bool(spec: ValueSpec) -> Optional[Expression]:
+    if spec.origin_type is bool:
+        return TypeMatchEligibleExpression(f"bool({spec.expression})")
+
+
+@register
+def unpack_none(spec: ValueSpec) -> Optional[Expression]:
+    if spec.origin_type in (NoneType, None):
+        return TypeMatchEligibleExpression("None")
 
 
 @register
@@ -1199,7 +1220,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
             spec.builder.ensure_object_imported(decodebytes)
             return f"bytearray(decodebytes({spec.expression}.encode()))"
     elif issubclass(spec.origin_type, str):
-        return spec.expression
+        return TypeMatchEligibleExpression(f"str({spec.expression})")
     elif ensure_generic_collection_subclass(spec, List):
         return f"[{inner_expr()} for value in {spec.expression}]"
     elif ensure_generic_collection_subclass(spec, typing.Deque):
