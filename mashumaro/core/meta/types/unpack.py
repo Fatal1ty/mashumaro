@@ -171,18 +171,29 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
         return "union"
 
     def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
+        orig_lines = lines
+        lines = CodeLines()
         unpackers = set()
         fallback_unpackers = []
+        type_arg_unpackers = []
+        type_match_statements = 0
         for type_arg in self.union_args:
-            condition = ""
             unpacker = UnpackerRegistry.get(
                 spec.copy(type=type_arg, expression="value")
             )
+            type_arg_unpackers.append((type_arg, unpacker))
+            if isinstance(unpacker, TypeMatchEligibleExpression):
+                type_match_statements += 1
+        for type_arg, unpacker in type_arg_unpackers:
+            condition = ""
             do_try = unpacker != "value"
             unpacker_block = CodeLines()
             if isinstance(unpacker, TypeMatchEligibleExpression):
                 do_try = False
-                condition = f"type(value) is {type_arg.__name__}"
+                if type_match_statements > 1:
+                    condition = f"__value_type is {type_arg.__name__}"
+                else:
+                    condition = f"type(value) is {type_arg.__name__}"
                 if (condition, unpacker) in unpackers:  # pragma: no cover
                     # we shouldn't be here because condition is always unique
                     continue
@@ -219,6 +230,9 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
             )
         else:
             lines.append("raise ValueError(value)")
+        if type_match_statements > 1:
+            orig_lines.append("__value_type = type(value)")
+        orig_lines.extend(lines)
 
 
 class TypeVarUnpackerBuilder(UnionUnpackerBuilder):
