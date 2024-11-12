@@ -1,10 +1,12 @@
 from dataclasses import dataclass, field
+from email.policy import default
+from importlib.metadata import metadata
 from typing import Optional
 
 import pytest
 from typing_extensions import Annotated
 
-from mashumaro import DataClassDictMixin
+from mashumaro import DataClassDictMixin, pass_through
 from mashumaro.config import (
     TO_DICT_ADD_BY_ALIAS_FLAG,
     TO_DICT_ADD_OMIT_NONE_FLAG,
@@ -233,34 +235,74 @@ def test_by_field_with_allow_deserialization_not_by_alias():
         b2: Annotated[Optional[int], Alias("alias_b2")]
         c1: Optional[str] = field(metadata={"alias": "alias_c1"})
         c2: Annotated[Optional[str], Alias("alias_c2")]
-        d1: int = field(metadata={"alias": "alias_d1"}, default=4)
-        d2: Annotated[int, Alias("alias_d2")] = 4
-        e1: Optional[int] = field(metadata={"alias": "alias_e1"}, default=5)
-        e2: Annotated[Optional[int], Alias("alias_e2")] = 5
-        f1: Optional[str] = field(metadata={"alias": "alias_f1"}, default="6")
-        f2: Annotated[Optional[str], Alias("alias_f2")] = "6"
+        d1: int = field(
+            metadata={"alias": "alias_d1", "deserialize": pass_through}
+        )
+        d2: Annotated[int, Alias("alias_d2")] = field(
+            metadata={"deserialize": pass_through}
+        )
+        e1: int = field(metadata={"alias": "alias_e1"}, default=5)
+        e2: Annotated[int, Alias("alias_e2")] = 5
+        f1: Optional[int] = field(metadata={"alias": "alias_f1"}, default=6)
+        f2: Annotated[Optional[int], Alias("alias_f2")] = 6
+        g1: Optional[str] = field(metadata={"alias": "alias_g1"}, default="7")
+        g2: Annotated[Optional[str], Alias("alias_g2")] = "7"
+        h1: int = field(
+            metadata={"alias": "alias_h1", "deserialize": pass_through},
+            default=8,
+        )
+        h2: Annotated[int, Alias("alias_h2")] = field(
+            metadata={"deserialize": pass_through}, default=8
+        )
 
         class Config(BaseConfig):
             serialize_by_alias = True
             code_generation_options = [TO_DICT_ADD_BY_ALIAS_FLAG]
             allow_deserialization_not_by_alias = True
 
-    instance = DataClass(a1=1, a2=1, b1=2, b2=2, c1="3", c2="3")
+    instance = DataClass(a1=1, a2=1, b1=2, b2=2, c1="3", c2="3", d1=4, d2=4)
     assert (
         DataClass.from_dict(
             {
                 "a1": 1,
                 "a2": 1,
-                "alias_b1": 2,
-                "alias_b2": 2,
+                "b1": 2,
+                "b2": 2,
                 "c1": "3",
                 "c2": "3",
-                "alias_d1": 4,
-                "alias_d2": 4,
+                "d1": 4,
+                "d2": 4,
                 "e1": 5,
                 "e2": 5,
-                "alias_f1": "6",
-                "alias_f2": "6",
+                "f1": 6,
+                "f2": 6,
+                "g1": "7",
+                "g2": "7",
+                "h1": 8,
+                "h2": 8,
+            }
+        )
+        == instance
+    )
+    assert (
+        DataClass.from_dict(
+            {
+                "alias_a1": 1,
+                "alias_a2": 1,
+                "alias_b1": 2,
+                "alias_b2": 2,
+                "alias_c1": "3",
+                "alias_c2": "3",
+                "alias_d1": 4,
+                "alias_d2": 4,
+                "alias_e1": 5,
+                "alias_e2": 5,
+                "alias_f1": 6,
+                "alias_f2": 6,
+                "alias_g1": "7",
+                "alias_g2": "7",
+                "alias_h1": 8,
+                "alias_h2": 8,
             }
         )
         == instance
@@ -276,8 +318,12 @@ def test_by_field_with_allow_deserialization_not_by_alias():
         "alias_d2": 4,
         "alias_e1": 5,
         "alias_e2": 5,
-        "alias_f1": "6",
-        "alias_f2": "6",
+        "alias_f1": 6,
+        "alias_f2": 6,
+        "alias_g1": "7",
+        "alias_g2": "7",
+        "alias_h1": 8,
+        "alias_h2": 8,
     }
     assert instance.to_dict(by_alias=False) == {
         "a1": 1,
@@ -290,8 +336,12 @@ def test_by_field_with_allow_deserialization_not_by_alias():
         "d2": 4,
         "e1": 5,
         "e2": 5,
-        "f1": "6",
-        "f2": "6",
+        "f1": 6,
+        "f2": 6,
+        "g1": "7",
+        "g2": "7",
+        "h1": 8,
+        "h2": 8,
     }
 
 
