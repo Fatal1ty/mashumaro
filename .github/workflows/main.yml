@@ -22,6 +22,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
       - name: Install dependencies
         run: |
           pip install --upgrade pip
@@ -35,6 +42,7 @@ jobs:
         run: black --check .
       - name: Run codespell
         run: codespell mashumaro tests README.md .github/*.md
+
   test-posix:
     name: Tests on Posix
     needs:
@@ -50,6 +58,13 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: true
+    - name: Cache Python dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements-dev.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ matrix.python-version }}-
     - name: Install dependencies
       run: |
         pip install --upgrade pip
@@ -63,6 +78,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_FLAG_NAME: posix-${{ matrix.python-version }}
         COVERALLS_PARALLEL: true
+
   test-windows:
     name: Tests on Windows
     needs:
@@ -78,6 +94,13 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: true
+    - name: Cache Python dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~\AppData\Local\pip\Cache
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements-dev.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ matrix.python-version }}-
     - name: Install dependencies
       run: |
         pip install --upgrade pip
@@ -92,6 +115,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_FLAG_NAME: windows-${{ matrix.python-version }}
         COVERALLS_PARALLEL: true
+
   coveralls:
     name: Finish Coveralls
     needs:
