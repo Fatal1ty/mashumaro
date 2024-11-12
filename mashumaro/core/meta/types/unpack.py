@@ -183,7 +183,8 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
             if isinstance(unpacker, TypeMatchEligibleExpression):
                 do_try = False
                 condition = f"type(value) is {type_arg.__name__}"
-                if (condition, unpacker) in unpackers:
+                if (condition, unpacker) in unpackers:  # pragma: no cover
+                    # we shouldn't be here because condition is always unique
                     continue
                 with unpacker_block.indent(f"if {condition}:"):
                     unpacker_block.append("return value")
