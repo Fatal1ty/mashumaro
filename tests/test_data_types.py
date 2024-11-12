@@ -1304,6 +1304,7 @@ def test_data_class_with_none():
 
     obj = DataClass(x=None, y=None, z=[None])
     assert DataClass.from_dict({"x": None, "y": None, "z": [None]}) == obj
+    assert DataClass.from_dict({"x": 42, "y": "foo", "z": ["bar"]}) == obj
     assert obj.to_dict() == {"x": None, "y": None, "z": [None]}
 
 
