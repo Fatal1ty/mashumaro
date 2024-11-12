@@ -13,7 +13,8 @@ class CodeLines:
         self._lines.append(f"{self._current_indent}{line}")
 
     def extend(self, lines: "CodeLines") -> None:
-        self._lines.extend(lines._lines)
+        for line in lines._lines:
+            self._lines.append(f"{self._current_indent}{line}")
 
     @contextmanager
     def indent(
@@ -34,8 +35,3 @@ class CodeLines:
     def reset(self) -> None:
         self._lines = []
         self._current_indent = ""
-
-    def branch_off(self) -> "CodeLines":
-        branch = CodeLines()
-        branch._current_indent = self._current_indent
-        return branch

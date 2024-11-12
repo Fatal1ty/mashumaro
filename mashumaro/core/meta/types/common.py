@@ -16,6 +16,7 @@ from typing import (
     Sequence,
     Type,
     TypeVar,
+    Union,
 )
 
 from typing_extensions import ParamSpec, TypeAlias
@@ -39,8 +40,12 @@ else:
     CodeBuilder = Any
 
 
+class TypeMatchEligibleExpression(str):
+    pass
+
+
 NoneType = type(None)
-Expression: TypeAlias = str
+Expression: TypeAlias = Union[str, TypeMatchEligibleExpression]
 
 P = ParamSpec("P")
 T = TypeVar("T")
