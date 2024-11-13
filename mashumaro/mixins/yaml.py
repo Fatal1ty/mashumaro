@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Type, TypeVar, Union
+from collections.abc import Callable
+from typing import Any, Type, TypeVar, Union
 
 import yaml
 
@@ -9,7 +10,7 @@ T = TypeVar("T", bound="DataClassYAMLMixin")
 
 EncodedData = Union[str, bytes]
 Encoder = Callable[[Any], EncodedData]
-Decoder = Callable[[EncodedData], Dict[Any, Any]]
+Decoder = Callable[[EncodedData], dict[Any, Any]]
 
 
 DefaultLoader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
@@ -20,7 +21,7 @@ def default_encoder(data: Any) -> EncodedData:
     return yaml.dump(data, Dumper=DefaultDumper)
 
 
-def default_decoder(data: EncodedData) -> Dict[Any, Any]:
+def default_decoder(data: EncodedData) -> dict[Any, Any]:
     return yaml.load(data, DefaultLoader)
 
 

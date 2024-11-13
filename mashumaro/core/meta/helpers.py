@@ -5,6 +5,7 @@ import re
 import sys
 import types
 import typing
+from collections.abc import Callable, Hashable, Iterable, Iterator
 from contextlib import suppress
 
 # noinspection PyProtectedMember
@@ -13,9 +14,7 @@ from hashlib import md5
 from typing import (
     Any,
     ClassVar,
-    Dict,
     ForwardRef,
-    List,
     Optional,
     Sequence,
     Tuple,
@@ -31,10 +30,7 @@ except ImportError:
 import typing_extensions
 
 from mashumaro.core.const import (
-    PEP_585_COMPATIBLE,
-    PY_38,
     PY_39,
-    PY_39_MIN,
     PY_310_MIN,
     PY_311_MIN,
     PY_312_MIN,
@@ -125,21 +121,21 @@ def get_generic_name(typ: Type, short: bool = False) -> str:
         return f"{typ.__module__}.{name}"
 
 
-def get_args(typ: Optional[Type]) -> Tuple[Type, ...]:
+def get_args(typ: Optional[Type]) -> tuple[Type, ...]:
     return getattr(typ, "__args__", ())
 
 
 def _get_args_str(
     typ: Type,
     short: bool,
-    resolved_type_params: Optional[Dict[Type, Type]] = None,
+    resolved_type_params: Optional[dict[Type, Type]] = None,
     limit: Optional[int] = None,
     none_type_as_none: bool = False,
     sep: str = ", ",
 ) -> str:
     if typ == Tuple[()]:
         return "()"
-    elif PEP_585_COMPATIBLE and typ == tuple[()]:  # type: ignore
+    elif typ == tuple[()]:
         return "()"
     args = _flatten_type_args(get_args(typ)[:limit])
     to_join = []
@@ -158,9 +154,9 @@ def _get_args_str(
         return sep.join(to_join)
 
 
-def get_literal_values(typ: Type) -> Tuple[Any, ...]:
+def get_literal_values(typ: Type) -> tuple[Any, ...]:
     values = typ.__args__
-    result: List[Any] = []
+    result: list[Any] = []
     for value in values:
         if is_literal(value):
             result.extend(get_literal_values(value))
@@ -193,7 +189,7 @@ def _typing_name(
 def type_name(
     typ: Optional[Type],
     short: bool = False,
-    resolved_type_params: Optional[Dict[Type, Type]] = None,
+    resolved_type_params: Optional[dict[Type, Type]] = None,
     is_type_origin: bool = False,
     none_type_as_none: bool = False,
 ) -> str:
@@ -302,30 +298,23 @@ def is_generic(typ: Type) -> bool:
     with suppress(Exception):
         if hasattr(typ, "__class_getitem__"):
             return True
-    if PY_38:
-        # noinspection PyProtectedMember
-        # noinspection PyUnresolvedReferences
-        return issubclass(typ.__class__, typing._GenericAlias)  # type: ignore
-    elif PY_39_MIN:
-        # noinspection PyProtectedMember
-        # noinspection PyUnresolvedReferences
-        if (
-            issubclass(typ.__class__, typing._BaseGenericAlias)  # type: ignore
-            or type(typ) is types.GenericAlias  # type: ignore  # noqa: E721
-        ):
-            return True
-        else:
-            return False
-        # else:  # for PEP 585 generics without args
-        #     try:
-        #         return (
-        #             hasattr(typ, "__class_getitem__")
-        #             and type(typ[str]) is types.GenericAlias  # type: ignore
-        #         )
-        #     except (TypeError, AttributeError):
-        #         return False
+    # noinspection PyProtectedMember
+    # noinspection PyUnresolvedReferences
+    if (
+        issubclass(typ.__class__, typing._BaseGenericAlias)  # type: ignore
+        or type(typ) is types.GenericAlias  # type: ignore  # noqa: E721
+    ):
+        return True
     else:
-        raise NotImplementedError
+        return False
+    # else:  # for PEP 585 generics without args
+    #     try:
+    #         return (
+    #             hasattr(typ, "__class_getitem__")
+    #             and type(typ[str]) is types.GenericAlias  # type: ignore
+    #         )
+    #     except (TypeError, AttributeError):
+    #         return False
 
 
 def is_typed_dict(typ: Type) -> bool:
@@ -338,9 +327,7 @@ def is_typed_dict(typ: Type) -> bool:
 
 def is_named_tuple(typ: Type) -> bool:
     try:
-        return issubclass(typ, typing.Tuple) and hasattr(  # type: ignore
-            typ, "_fields"
-        )
+        return issubclass(typ, tuple) and hasattr(typ, "_fields")
     except TypeError:
         return False
 
@@ -359,7 +346,7 @@ def is_union(typ: Type) -> bool:
 
 
 def is_optional(
-    typ: Type, resolved_type_params: Optional[Dict[Type, Type]] = None
+    typ: Type, resolved_type_params: Optional[dict[Type, Type]] = None
 ) -> bool:
     if resolved_type_params is None:
         resolved_type_params = {}
@@ -387,7 +374,7 @@ def get_type_annotations(typ: Type) -> Sequence[Any]:
 
 
 def is_literal(typ: Type) -> bool:
-    if PY_38 or PY_39:
+    if PY_39:
         with suppress(AttributeError):
             return is_generic(typ) and get_generic_name(typ, True) == "Literal"
     elif PY_310_MIN:
@@ -403,8 +390,8 @@ def is_local_type_name(typ_name: str) -> bool:
 
 
 def not_none_type_arg(
-    type_args: Tuple[Type, ...],
-    resolved_type_params: Optional[Dict[Type, Type]] = None,
+    type_args: tuple[Type, ...],
+    resolved_type_params: Optional[dict[Type, Type]] = None,
 ) -> Optional[Type]:
     if resolved_type_params is None:
         resolved_type_params = {}
@@ -476,7 +463,7 @@ def is_dataclass_dict_mixin_subclass(typ: Type) -> bool:
     return False
 
 
-def get_orig_bases(typ: Type) -> Tuple[Type, ...]:
+def get_orig_bases(typ: Type) -> tuple[Type, ...]:
     return getattr(typ, "__orig_bases__", ())
 
 
@@ -540,9 +527,7 @@ def _flatten_type_args(
             elif unpacked_type == Tuple[()]:
                 if len(type_args) == 1:
                     result.append(())  # type: ignore
-            elif (
-                PEP_585_COMPATIBLE and unpacked_type == tuple[()]  # type: ignore
-            ):
+            elif unpacked_type == tuple[()]:  # type: ignore
                 if len(type_args) == 1:
                     result.append(())  # type: ignore
             else:
@@ -556,8 +541,8 @@ def resolve_type_params(
     typ: Type,
     type_args: Sequence[Type] = (),
     include_bases: bool = True,
-) -> Dict[Type, Dict[Type, Type]]:
-    resolved_type_params: Dict[Type, Type] = {}
+) -> dict[Type, dict[Type, Type]]:
+    resolved_type_params: dict[Type, Type] = {}
     result = {typ: resolved_type_params}
     type_params = []
 
@@ -633,7 +618,7 @@ def resolve_type_params(
     return result
 
 
-def substitute_type_params(typ: Type, substitutions: Dict[Type, Type]) -> Type:
+def substitute_type_params(typ: Type, substitutions: dict[Type, Type]) -> Type:
     if is_annotated(typ):
         origin = get_type_origin(typ)
         subst = substitutions.get(origin, origin)
@@ -681,10 +666,10 @@ def is_not_required(typ: Type) -> bool:
 
 
 def get_function_arg_annotation(
-    function: typing.Callable[..., Any],
-    arg_name: typing.Optional[str] = None,
-    arg_pos: typing.Optional[int] = None,
-) -> typing.Type:
+    function: Callable[..., Any],
+    arg_name: Optional[str] = None,
+    arg_pos: Optional[int] = None,
+) -> type:
     parameters = inspect.signature(function).parameters
     if arg_name is not None:
         parameter = parameters[arg_name]
@@ -702,9 +687,7 @@ def get_function_arg_annotation(
     return annotation
 
 
-def get_function_return_annotation(
-    function: typing.Callable[[typing.Any], typing.Any]
-) -> typing.Type:
+def get_function_return_annotation(function: Callable[[Any], Any]) -> Type:
     annotation = inspect.signature(function).return_annotation
     if annotation is inspect.Signature.empty:
         raise ValueError("Function doesn't have return annotation")
@@ -736,11 +719,11 @@ def is_variable_length_tuple(typ: Type) -> bool:
     return len(type_args) == 2 and type_args[1] is Ellipsis
 
 
-def hash_type_args(type_args: typing.Iterable[typing.Type]) -> str:
+def hash_type_args(type_args: Iterable[Type]) -> str:
     return md5(",".join(map(type_name, type_args)).encode()).hexdigest()
 
 
-def iter_all_subclasses(cls: Type) -> typing.Iterator[Type]:
+def iter_all_subclasses(cls: Type) -> Iterator[Type]:
     for subclass in cls.__subclasses__():
         yield subclass
         yield from iter_all_subclasses(subclass)
@@ -756,7 +739,7 @@ def is_hashable(value: Any) -> bool:
 
 def is_hashable_type(typ: Any) -> bool:
     try:
-        return issubclass(typ, typing.Hashable)
+        return issubclass(typ, Hashable)
     except TypeError:
         return True
 
@@ -764,32 +747,27 @@ def is_hashable_type(typ: Any) -> bool:
 def str_to_forward_ref(
     annotation: str, module: Optional[types.ModuleType] = None
 ) -> ForwardRef:
-    if PY_39_MIN:
-        return ForwardRef(annotation, module=module)  # type: ignore
-    else:
-        return ForwardRef(annotation)
+    return ForwardRef(annotation, module=module)
 
 
 def evaluate_forward_ref(
-    typ: ForwardRef, globalns: Dict[str, Any], localns: Dict[str, Any]
+    typ: ForwardRef, globalns: dict[str, Any], localns: dict[str, Any]
 ) -> Optional[Type]:
     if PY_313_MIN:
         return typ._evaluate(
             globalns, localns, type_params=(), recursive_guard=frozenset()
         )  # type: ignore[call-arg]
-    elif PY_39_MIN:
+    else:
         return typ._evaluate(
             globalns, localns, recursive_guard=frozenset()
         )  # type: ignore[call-arg]
-    else:
-        return typ._evaluate(globalns, localns)  # type: ignore
 
 
 def get_forward_ref_referencing_globals(
-    referenced_type: typing.ForwardRef,
+    referenced_type: ForwardRef,
     referencing_object: Optional[Any] = None,
-    fallback: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    fallback: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
     if fallback is None:
         fallback = {}
     forward_module = getattr(referenced_type, "__forward_module__", None)

@@ -129,7 +129,7 @@ Remember, everyone starts somewhere, and we're here to support you on your journ
 #### Setting up your Development Environment
 
 Before getting started, you will need to have already installed:
-* [python](https://www.python.org) (3.8+ only)
+* [python](https://www.python.org) (3.9+ only)
 * [git](https://git-scm.com)
 * [just](https://github.com/casey/just)
 

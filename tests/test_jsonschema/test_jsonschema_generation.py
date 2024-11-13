@@ -35,12 +35,12 @@ from typing import (
     Union,
 )
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import pytest
 from typing_extensions import Annotated, Literal, TypeVarTuple, Unpack
 
 from mashumaro.config import BaseConfig
-from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
 from mashumaro.core.meta.helpers import type_name
 from mashumaro.helper import pass_through
 from mashumaro.jsonschema.annotations import (
@@ -105,10 +105,6 @@ from tests.test_pep_655 import (
     TypedDictCorrectNotRequired,
     TypedDictCorrectRequired,
 )
-
-if PY_39_MIN:
-    from zoneinfo import ZoneInfo
-
 
 Ts = TypeVarTuple("Ts")
 
@@ -298,7 +294,6 @@ def test_jsonschema_for_timezone():
     )
 
 
-@pytest.mark.skipif(not PY_39_MIN, reason="requires py39+")
 def test_jsonschema_for_zone_info():
     assert build_json_schema(ZoneInfo) == JSONSchema(
         type=JSONSchemaInstanceType.STRING,
@@ -373,8 +368,7 @@ def test_jsonschema_for_list():
     assert build_json_schema(List) == JSONArraySchema()
     assert build_json_schema(List[Any]) == JSONArraySchema()
     assert build_json_schema(Annotated[List, min])
-    if PEP_585_COMPATIBLE:
-        assert build_json_schema(list) == JSONArraySchema()
+    assert build_json_schema(list) == JSONArraySchema()
 
 
 def test_jsonschema_for_deque():
@@ -383,8 +377,7 @@ def test_jsonschema_for_deque():
     )
     assert build_json_schema(Deque) == JSONArraySchema()
     assert build_json_schema(Deque[Any]) == JSONArraySchema()
-    if PEP_585_COMPATIBLE:
-        assert build_json_schema(collections.deque) == JSONArraySchema()
+    assert build_json_schema(collections.deque) == JSONArraySchema()
 
 
 def test_jsonschema_for_tuple():
@@ -402,8 +395,7 @@ def test_jsonschema_for_tuple():
     assert build_json_schema(Tuple[int, ...]) == JSONArraySchema(
         items=JSONSchema(type=JSONSchemaInstanceType.INTEGER)
     )
-    if PEP_585_COMPATIBLE:
-        assert build_json_schema(tuple) == JSONArraySchema()
+    assert build_json_schema(tuple) == JSONArraySchema()
 
 
 def test_jsonschema_for_named_tuple():
@@ -579,11 +571,8 @@ def test_jsonschema_for_set():
         assert build_json_schema(generic_type[Any]) == JSONArraySchema(
             uniqueItems=True
         )
-    if PEP_585_COMPATIBLE:
-        assert build_json_schema(frozenset) == JSONArraySchema(
-            uniqueItems=True
-        )
-        assert build_json_schema(set) == JSONArraySchema(uniqueItems=True)
+    assert build_json_schema(frozenset) == JSONArraySchema(uniqueItems=True)
+    assert build_json_schema(set) == JSONArraySchema(uniqueItems=True)
 
 
 def test_jsonschema_for_chainmap():
@@ -766,8 +755,7 @@ def test_jsonschema_for_mapping():
         ),
         propertyNames=JSONSchema(type=JSONSchemaInstanceType.INTEGER),
     )
-    if PEP_585_COMPATIBLE:
-        assert build_json_schema(dict) == JSONObjectSchema()
+    assert build_json_schema(dict) == JSONObjectSchema()
 
 
 def test_jsonschema_for_sequence():

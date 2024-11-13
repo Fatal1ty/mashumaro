@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from datetime import date, datetime, time
-from typing import Any, Callable, Dict, Type, TypeVar, final
+from typing import Any, Type, TypeVar, final
 
 import tomli_w
 
@@ -17,7 +18,7 @@ T = TypeVar("T", bound="DataClassTOMLMixin")
 
 EncodedData = str
 Encoder = Callable[[Any], EncodedData]
-Decoder = Callable[[EncodedData], Dict[Any, Any]]
+Decoder = Callable[[EncodedData], dict[Any, Any]]
 
 
 class TOMLDialect(Dialect):

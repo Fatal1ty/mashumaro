@@ -5,26 +5,19 @@ import os
 import re
 import typing
 import uuid
+import zoneinfo
 from base64 import encodebytes
+from collections import ChainMap, Counter, OrderedDict, deque
+from collections.abc import Callable, Collection, Mapping, Sequence, Set
 from contextlib import suppress
 from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    ForwardRef,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, ForwardRef, Optional, Tuple, Union
 
 import typing_extensions
 
-from mashumaro.core.const import PY_39_MIN, PY_311_MIN
+from mashumaro.core.const import PY_311_MIN
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
     get_args,
@@ -81,10 +74,6 @@ from mashumaro.types import (
     SerializationStrategy,
 )
 
-if PY_39_MIN:
-    import zoneinfo
-
-
 __all__ = ["PackerRegistry"]
 
 
@@ -98,7 +87,7 @@ def _pack_with_annotated_serialization_strategy(
 ) -> Expression:
     strategy_type = type(strategy)
     try:
-        value_type: Union[Type, Any] = get_function_return_annotation(
+        value_type: Union[type, Any] = get_function_return_annotation(
             strategy.serialize
         )
     except (KeyError, ValueError):
@@ -298,7 +287,7 @@ def pack_any(spec: ValueSpec) -> Optional[Expression]:
 
 
 def pack_union(
-    spec: ValueSpec, args: Tuple[Type, ...], prefix: str = "union"
+    spec: ValueSpec, args: tuple[type, ...], prefix: str = "union"
 ) -> Expression:
     lines = CodeLines()
     method_name = (
@@ -311,8 +300,8 @@ def pack_union(
         lines.append(f"def {method_name}({method_args}, {default_kwargs}):")
     else:
         lines.append(f"def {method_name}({method_args}):")
-    packers: List[str] = []
-    packer_arg_types: Dict[str, List[Type]] = {}
+    packers: list[str] = []
+    packer_arg_types: dict[str, list[type]] = {}
     for type_arg in args:
         packer = PackerRegistry.get(
             spec.copy(type=type_arg, expression="value")
@@ -529,7 +518,7 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             packer = PackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
             return f"*{packer}"
         elif is_type_var_tuple(spec.type):
-            return PackerRegistry.get(spec.copy(type=Tuple[Any, ...]))
+            return PackerRegistry.get(spec.copy(type=tuple[Any, ...]))
         elif isinstance(spec.type, ForwardRef):
             evaluated = spec.builder.evaluate_forward_ref(
                 spec.type, spec.owner
@@ -569,7 +558,7 @@ def pack_timezone(spec: ValueSpec) -> Optional[Expression]:
 
 @register
 def pack_zone_info(spec: ValueSpec) -> Optional[Expression]:
-    if PY_39_MIN and spec.origin_type is zoneinfo.ZoneInfo:
+    if spec.origin_type is zoneinfo.ZoneInfo:
         return f"str({spec.expression})"
 
 
@@ -604,10 +593,10 @@ def pack_fraction(spec: ValueSpec) -> Optional[Expression]:
         return f"str({spec.expression})"
 
 
-def pack_tuple(spec: ValueSpec, args: Tuple[Type, ...]) -> Expression:
+def pack_tuple(spec: ValueSpec, args: tuple[type, ...]) -> Expression:
     if not args:
         if spec.type in (Tuple, tuple):
-            args = [typing.Any, ...]  # type: ignore
+            args = [Any, ...]  # type: ignore
         else:
             return "[]"
     elif len(args) == 1 and args[0] == ():
@@ -619,7 +608,7 @@ def pack_tuple(spec: ValueSpec, args: Tuple[Type, ...]) -> Expression:
         )
         return f"[{packer} for value in {spec.expression}]"
     else:
-        arg_indexes: List[Union[int, Tuple[int, Union[int, None]]]] = []
+        arg_indexes: list[Union[int, tuple[int, Union[int, None]]]] = []
         unpack_idx: Optional[int] = None
         for arg_idx, type_arg in enumerate(args):
             if is_unpack(type_arg):
@@ -640,7 +629,7 @@ def pack_tuple(spec: ValueSpec, args: Tuple[Type, ...]) -> Expression:
                     arg_indexes.append(arg_idx)
                 else:
                     arg_indexes.append(arg_idx - len(args))
-        packers: List[Expression] = []
+        packers: list[Expression] = []
         for _idx, _arg_idx in enumerate(arg_indexes):
             if isinstance(_arg_idx, tuple):
                 p_expr = f"{spec.expression}[{_arg_idx[0]}:{_arg_idx[1]}]"
@@ -687,7 +676,7 @@ def pack_named_tuple(spec: ValueSpec) -> Expression:
     for idx, field in enumerate(fields):
         packer = PackerRegistry.get(
             spec.copy(
-                type=annotations.get(field, typing.Any),
+                type=annotations.get(field, Any),
                 expression=f"{spec.expression}[{idx}]",
                 could_be_none=True,
             )
@@ -762,7 +751,7 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
 
 @register
 def pack_collection(spec: ValueSpec) -> Optional[Expression]:
-    if not issubclass(spec.origin_type, typing.Collection):
+    if not issubclass(spec.origin_type, Collection):
         return None
     elif issubclass(spec.origin_type, enum.Enum):
         return None
@@ -770,7 +759,7 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
     args = get_args(spec.type)
 
     def inner_expr(
-        arg_num: int = 0, v_name: str = "value", v_type: Optional[Type] = None
+        arg_num: int = 0, v_name: str = "value", v_type: Optional[type] = None
     ) -> Expression:
         if v_type:
             return PackerRegistry.get(
@@ -811,38 +800,36 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
         return f"encodebytes({spec.expression}).decode()"
     elif issubclass(spec.origin_type, str):
         return spec.expression
-    elif issubclass(spec.origin_type, Tuple):  # type: ignore
+    elif issubclass(spec.origin_type, tuple):
         if is_named_tuple(spec.origin_type):
             return pack_named_tuple(spec)
         elif ensure_generic_collection(spec):
             return pack_tuple(spec, args)
-    elif ensure_generic_collection_subclass(
-        spec, typing.List, typing.Deque, typing.AbstractSet
-    ):
+    elif ensure_generic_collection_subclass(spec, list, deque, Set):
         ie = inner_expr()
         return _make_sequence_expression(ie)
-    elif ensure_generic_mapping(spec, args, typing.ChainMap):
+    elif ensure_generic_mapping(spec, args, ChainMap):
         ke = inner_expr(0, "key")
         ve = inner_expr(1)
         return (
             f"[{{{ke}: {ve} for key, value in m.items()}} "
             f"for m in {spec.expression}.maps]"
         )
-    elif ensure_generic_mapping(spec, args, typing.OrderedDict):
+    elif ensure_generic_mapping(spec, args, OrderedDict):
         ke = inner_expr(0, "key")
         ve = inner_expr(1)
         return _make_mapping_expression(ke, ve)
-    elif ensure_generic_mapping(spec, args, typing.Counter):
+    elif ensure_generic_mapping(spec, args, Counter):
         ke = inner_expr(0, "key")
         ve = inner_expr(1, v_type=int)
         return _make_mapping_expression(ke, ve)
     elif is_typed_dict(spec.origin_type):
         return pack_typed_dict(spec)
-    elif ensure_generic_mapping(spec, args, typing.Mapping):
+    elif ensure_generic_mapping(spec, args, Mapping):
         ke = inner_expr(0, "key")
         ve = inner_expr(1)
         return _make_mapping_expression(ke, ve)
-    elif ensure_generic_collection_subclass(spec, typing.Sequence):
+    elif ensure_generic_collection_subclass(spec, Sequence):
         ie = inner_expr()
         return _make_sequence_expression(ie)
 

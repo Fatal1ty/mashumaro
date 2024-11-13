@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Tuple, Type
+from typing import Any, Optional, Type
 
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.dialect import Dialect
@@ -15,7 +15,7 @@ def compile_mixin_packer(
     format_name: str = "dict",
     dialect: Optional[Type[Dialect]] = None,
     encoder: Any = None,
-    encoder_kwargs: Optional[Dict[str, Dict[str, Tuple[str, Any]]]] = None,
+    encoder_kwargs: Optional[dict[str, dict[str, tuple[str, Any]]]] = None,
 ) -> None:
     builder = CodeBuilder(
         cls=cls,

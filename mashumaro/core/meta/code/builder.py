@@ -118,20 +118,18 @@ class CodeBuilder:
         format_name: str = "dict",
         decoder: typing.Optional[typing.Any] = None,
         encoder: typing.Optional[typing.Any] = None,
-        encoder_kwargs: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        encoder_kwargs: typing.Optional[dict[str, typing.Any]] = None,
         default_dialect: typing.Optional[typing.Type[Dialect]] = None,
         attrs: typing.Any = None,
-        attrs_registry: typing.Optional[
-            typing.Dict[typing.Any, typing.Any]
-        ] = None,
+        attrs_registry: typing.Optional[dict[typing.Any, typing.Any]] = None,
     ):
         self.cls = cls
         self.lines: CodeLines = CodeLines()
-        self.globals: typing.Dict[str, typing.Any] = {}
-        self.resolved_type_params: typing.Dict[
-            typing.Type, typing.Dict[typing.Type, typing.Type]
+        self.globals: dict[str, typing.Any] = {}
+        self.resolved_type_params: dict[
+            typing.Type, dict[typing.Type, typing.Type]
         ] = {}
-        self.field_classes: typing.Dict = {}
+        self.field_classes: dict = {}
         self.initial_type_args = type_args
         if dialect is not None and not is_dialect_subclass(dialect):
             raise BadDialect(
@@ -168,7 +166,7 @@ class CodeBuilder:
         return self.cls.__dict__
 
     @property
-    def annotations(self) -> typing.Dict[str, typing.Any]:
+    def annotations(self) -> dict[str, typing.Any]:
         return self.namespace.get("__annotations__", {})
 
     @property
@@ -177,7 +175,7 @@ class CodeBuilder:
 
     def __get_field_types(
         self, recursive: bool = True, include_extras: bool = False
-    ) -> typing.Dict[str, typing.Any]:
+    ) -> dict[str, typing.Any]:
         fields = {}
         try:
             field_type_hints = typing_extensions.get_type_hints(
@@ -211,20 +209,20 @@ class CodeBuilder:
 
     def get_field_resolved_type_params(
         self, field_name: str
-    ) -> typing.Dict[typing.Type, typing.Type]:
+    ) -> dict[typing.Type, typing.Type]:
         cls = self._get_field_class(field_name)
         return self.resolved_type_params[cls]
 
     def get_field_types(
         self, include_extras: bool = False
-    ) -> typing.Dict[str, typing.Any]:
+    ) -> dict[str, typing.Any]:
         return self.__get_field_types(include_extras=include_extras)
 
     def get_type_name_identifier(
         self,
         typ: typing.Optional[typing.Type],
         resolved_type_params: typing.Optional[
-            typing.Dict[typing.Type, typing.Type]
+            dict[typing.Type, typing.Type]
         ] = None,
     ) -> str:
         field_type = type_name(typ, resolved_type_params=resolved_type_params)
@@ -237,7 +235,7 @@ class CodeBuilder:
 
     @property
     @lru_cache()
-    def dataclass_fields(self) -> typing.Dict[str, Field]:
+    def dataclass_fields(self) -> dict[str, Field]:
         d = {}
         for ancestor in self.cls.__mro__[-1:0:-1]:
             if is_dataclass(ancestor):
@@ -256,7 +254,7 @@ class CodeBuilder:
         return d
 
     @property
-    def metadatas(self) -> typing.Dict[str, typing.Mapping[str, typing.Any]]:
+    def metadatas(self) -> dict[str, typing.Mapping[str, typing.Any]]:
         return {
             name: field.metadata
             for name, field in self.dataclass_fields.items()
@@ -1093,7 +1091,7 @@ class CodeBuilder:
 
     def _get_encoder_kwargs(
         self, cls: typing.Optional[typing.Type] = None
-    ) -> typing.Dict[str, typing.Any]:
+    ) -> dict[str, typing.Any]:
         result = {}
         for encoder_param, value in self.encoder_kwargs.items():
             packer_param = value[0]

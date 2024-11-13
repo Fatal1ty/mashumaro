@@ -1,5 +1,6 @@
+from collections.abc import Callable, Sequence
 from types import new_class
-from typing import Any, Callable, Dict, Sequence, Type, Union, cast
+from typing import Any, Type, Union, cast
 
 from typing_extensions import Literal
 
@@ -10,12 +11,12 @@ __all__ = ["Dialect"]
 
 
 SerializationStrategyValueType = Union[
-    SerializationStrategy, Dict[str, Union[str, Callable]]
+    SerializationStrategy, dict[str, Union[str, Callable]]
 ]
 
 
 class Dialect:
-    serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
+    serialization_strategy: dict[Any, SerializationStrategyValueType] = {}
     serialize_by_alias: Union[bool, Literal[Sentinel.MISSING]] = (
         Sentinel.MISSING
     )
@@ -30,7 +31,7 @@ class Dialect:
 
     @classmethod
     def merge(cls, other: Type["Dialect"]) -> Type["Dialect"]:
-        serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
+        serialization_strategy: dict[Any, SerializationStrategyValueType] = {}
         for key, value in cls.serialization_strategy.items():
             if isinstance(value, SerializationStrategy):
                 serialization_strategy[key] = value

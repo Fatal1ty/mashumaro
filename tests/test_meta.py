@@ -9,12 +9,7 @@ import pytest
 import typing_extensions
 
 from mashumaro import DataClassDictMixin
-from mashumaro.core.const import (
-    PEP_585_COMPATIBLE,
-    PY_38,
-    PY_39_MIN,
-    PY_310_MIN,
-)
+from mashumaro.core.const import PY_310_MIN
 from mashumaro.core.meta.code.builder import CodeBuilder
 
 # noinspection PyProtectedMember
@@ -88,20 +83,12 @@ NoneType = type(None)
 TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 
 
-def test_is_generic_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_38", False)
-    mocker.patch("mashumaro.core.meta.helpers.PY_39_MIN", False)
-    with pytest.raises(NotImplementedError):
-        is_generic(int)
-
-
 def test_is_init_var():
     assert is_init_var(InitVar[int])
     assert not is_init_var(int)
 
 
 def test_is_literal_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_38", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_39", False)
     mocker.patch("mashumaro.core.meta.helpers.PY_310_MIN", False)
     assert not is_literal(typing_extensions.Literal[1])
@@ -182,13 +169,6 @@ def test_is_type_var_any():
     assert not is_type_var_any(TMyDataClass)
 
 
-@pytest.mark.skipif(not PY_38, reason="requires python 3.8")
-def test_is_type_var_any_list_38():
-    # noinspection PyProtectedMember
-    # noinspection PyUnresolvedReferences
-    assert is_type_var_any(typing.List.__args__[0])
-
-
 def test_type_name():
     assert type_name(TAny) == "typing.Any"
     assert type_name(TInt) == "int"
@@ -237,11 +217,9 @@ def test_type_name():
     )
     assert type_name(typing.Optional[NoneType]) == "NoneType"
 
-    if PY_39_MIN:
-        assert (
-            type_name(types.MappingProxyType[int, int])
-            == "mappingproxy[int, int]"
-        )
+    assert (
+        type_name(types.MappingProxyType[int, int]) == "mappingproxy[int, int]"
+    )
     if PY_310_MIN:
         assert type_name(int | None) == "typing.Optional[int]"
         assert type_name(None | int) == "typing.Optional[int]"
@@ -258,7 +236,6 @@ def test_type_name():
     )
 
 
-@pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
 def test_type_name_pep_585():
     assert type_name(list[str]) == "list[str]"
     assert type_name(collections.deque[str]) == "collections.deque[str]"
@@ -353,11 +330,10 @@ def test_type_name_short():
     )
     assert type_name(typing.Optional[NoneType], short=True) == "NoneType"
 
-    if PY_39_MIN:
-        assert (
-            type_name(types.MappingProxyType[int, int], short=True)
-            == "mappingproxy[int, int]"
-        )
+    assert (
+        type_name(types.MappingProxyType[int, int], short=True)
+        == "mappingproxy[int, int]"
+    )
     if PY_310_MIN:
         assert type_name(int | None, short=True) == "Optional[int]"
         assert type_name(None | int, short=True) == "Optional[int]"
@@ -374,7 +350,6 @@ def test_type_name_short():
     )
 
 
-@pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
 def test_type_name_pep_585_short():
     assert type_name(list[str], short=True) == "list[str]"
     assert type_name(collections.deque[str], short=True) == "deque[str]"
@@ -687,41 +662,9 @@ def test_is_self():
     assert not is_self(object)
 
 
-@pytest.mark.skipif(PEP_585_COMPATIBLE, reason="requires python <3.9")
-def test_ensure_generic_collection_not_pep_585():
-    for t in (
-        tuple,
-        list,
-        set,
-        frozenset,
-        dict,
-        collections.deque,
-        collections.ChainMap,
-        collections.OrderedDict,
-        collections.defaultdict,
-        collections.Counter,
-    ):
-        with pytest.raises(UnserializableField):
-            ensure_generic_collection(
-                ValueSpec(t, "", CodeBuilder(None), FieldContext("", {}))
-            )
-
-
 def test_ensure_generic_collection_not_generic():
     assert not ensure_generic_collection(
         ValueSpec(int, "", CodeBuilder(None), FieldContext("", {}))
-    )
-
-
-@pytest.mark.skipif(PEP_585_COMPATIBLE, reason="requires python <3.9")
-def test_ensure_generic_collection_with_unhashable_args():
-    assert ensure_generic_collection(
-        ValueSpec(
-            typing.Dict[str, typing_extensions.Annotated[int, {"x": 42}]],
-            "",
-            CodeBuilder(None),
-            FieldContext("", {}),
-        )
     )
 
 

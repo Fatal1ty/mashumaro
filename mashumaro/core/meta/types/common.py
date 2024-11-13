@@ -1,30 +1,16 @@
-import collections.abc
 import re
 import uuid
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from functools import cached_property
 from types import new_class
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, Union
 
 from typing_extensions import ParamSpec, TypeAlias
 
-from mashumaro.core.const import PEP_585_COMPATIBLE
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
-    get_args,
     get_type_origin,
     is_annotated,
     is_generic,
@@ -68,20 +54,6 @@ class AttrsHolder:
 class ExpressionWrapper:
     def __init__(self, expression: str):
         self.expression = expression
-
-
-PROPER_COLLECTION_TYPES: Dict[Type, str] = {
-    tuple: "typing.Tuple[T]",
-    list: "typing.List[T]",
-    set: "typing.Set[T]",
-    frozenset: "typing.FrozenSet[T]",
-    dict: "typing.Dict[KT,VT] or Mapping[KT,VT]",
-    collections.deque: "typing.Deque[T]",
-    collections.ChainMap: "typing.ChainMap[KT,VT]",
-    collections.OrderedDict: "typing.OrderedDict[KT,VT]",
-    collections.defaultdict: "typing.DefaultDict[KT, VT]",
-    collections.Counter: "typing.Counter[KT]",
-}
 
 
 @dataclass
@@ -148,7 +120,7 @@ class ValueSpec:
             return self.attrs.__name__
 
     @cached_property
-    def attrs_registry(self) -> Dict[Any, Any]:
+    def attrs_registry(self) -> dict[Any, Any]:
         return self.builder.attrs_registry
 
     @cached_property
@@ -225,7 +197,7 @@ ValueSpecExprCreator: TypeAlias = Callable[[ValueSpec], Optional[Expression]]
 
 @dataclass
 class Registry:
-    _registry: List[ValueSpecExprCreator] = field(default_factory=list)
+    _registry: list[ValueSpecExprCreator] = field(default_factory=list)
 
     def register(self, function: ValueSpecExprCreator) -> ValueSpecExprCreator:
         self._registry.append(function)
@@ -249,15 +221,6 @@ class Registry:
 
 
 def ensure_generic_collection(spec: ValueSpec) -> bool:
-    if not PEP_585_COMPATIBLE and not get_args(spec.type):
-        proper_type = PROPER_COLLECTION_TYPES.get(spec.type)
-        if proper_type:
-            raise UnserializableField(
-                field_name=spec.field_ctx.name,
-                field_type=spec.type,
-                holder_class=spec.builder.cls,
-                msg=f"Use {proper_type} instead",
-            )
     if not is_generic(spec.type):
         return False
     return True

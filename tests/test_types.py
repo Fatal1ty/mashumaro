@@ -6,7 +6,6 @@ import pytest
 from typing_extensions import Self
 
 from mashumaro import DataClassDictMixin
-from mashumaro.core.const import PEP_585_COMPATIBLE
 from mashumaro.exceptions import UnserializableField
 from mashumaro.types import Alias, SerializableType
 from tests.entities import GenericSerializableList, GenericSerializableWrapper
@@ -95,20 +94,18 @@ class MyAnnotatedGenericSerializableTypeWithMixedTypeVars(
         return cls(value)
 
 
-if PEP_585_COMPATIBLE:
+class MyAnnotatedGenericPEP585SerializableType(
+    Generic[XT, YT], SerializableType, use_annotations=True
+):
+    def __init__(self, value: tuple[XT, YT]):
+        self.value = value
 
-    class MyAnnotatedGenericPEP585SerializableType(
-        Generic[XT, YT], SerializableType, use_annotations=True
-    ):
-        def __init__(self, value: tuple[XT, YT]):
-            self.value = value
+    def _serialize(self) -> tuple[YT, XT]:
+        return tuple(reversed(self.value))
 
-        def _serialize(self) -> tuple[YT, XT]:
-            return tuple(reversed(self.value))
-
-        @classmethod
-        def _deserialize(cls, value: tuple[XT, YT]):
-            return cls(value)
+    @classmethod
+    def _deserialize(cls, value: tuple[XT, YT]):
+        return cls(value)
 
 
 class MyMapping(Mapping[XT, YT], SerializableType, use_annotations=True):
@@ -260,7 +257,6 @@ def test_annotated_generic_serializable_type():
     assert obj.to_dict() == {"x": ["3.14", "2022-12-07"]}
 
 
-@pytest.mark.skipif(not PEP_585_COMPATIBLE, reason="requires python 3.9+")
 def test_annotated_generic_pep585_serializable_type():
     @dataclass
     class DataClass(DataClassDictMixin):

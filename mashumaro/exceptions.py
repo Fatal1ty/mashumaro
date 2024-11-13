@@ -1,4 +1,4 @@
-from typing import Any, Optional, Set, Type
+from typing import Any, Optional, Type
 
 from mashumaro.core.meta.helpers import type_name
 
@@ -25,7 +25,7 @@ class MissingField(LookupError):
 
 
 class ExtraKeysError(ValueError):
-    def __init__(self, extra_keys: Set[str], target_type: Type):
+    def __init__(self, extra_keys: set[str], target_type: Type):
         self.extra_keys = extra_keys
         self.target_type = target_type
 

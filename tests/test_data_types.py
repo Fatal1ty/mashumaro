@@ -40,6 +40,7 @@ from typing import (
     Set,
     Tuple,
 )
+from zoneinfo import ZoneInfo
 
 import pytest
 from typing_extensions import Final, LiteralString
@@ -48,7 +49,6 @@ from mashumaro import DataClassDictMixin
 from mashumaro.codecs import BasicDecoder, BasicEncoder
 from mashumaro.codecs.basic import decode, encode
 from mashumaro.config import BaseConfig
-from mashumaro.core.const import PEP_585_COMPATIBLE, PY_39_MIN
 from mashumaro.exceptions import (
     InvalidFieldValue,
     MissingField,
@@ -99,9 +99,6 @@ from .entities import (
     TypedDictRequiredKeysWithOptional,
 )
 from .utils import same_types
-
-if PY_39_MIN:
-    from zoneinfo import ZoneInfo
 
 NoneType = type(None)
 
@@ -191,31 +188,81 @@ inner_values = [
     (float, Fixture.FLOAT, Fixture.FLOAT),
     (bool, Fixture.BOOL, Fixture.BOOL),
     (List[int], Fixture.LIST, Fixture.LIST),
+    (list[int], Fixture.LIST, Fixture.LIST),
     (List, Fixture.LIST, Fixture.LIST),
+    (list, Fixture.LIST, Fixture.LIST),
     (Deque[int], Fixture.DEQUE, Fixture.LIST),
+    (collections.deque[int], Fixture.DEQUE, Fixture.LIST),
     (Deque, Fixture.DEQUE, Fixture.LIST),
+    (collections.deque, Fixture.DEQUE, Fixture.LIST),
     (Tuple[int], Fixture.TUPLE, Fixture.TUPLE_DUMPED),
+    (tuple[int], Fixture.TUPLE, Fixture.TUPLE_DUMPED),
     (Tuple, Fixture.TUPLE, Fixture.TUPLE_DUMPED),
+    (tuple, Fixture.TUPLE, Fixture.TUPLE_DUMPED),
     (Set[int], Fixture.SET, Fixture.LIST),
+    (set[int], Fixture.SET, Fixture.LIST),
     (Set, Fixture.SET, Fixture.LIST),
+    (set, Fixture.SET, Fixture.LIST),
     (FrozenSet[int], Fixture.FROZEN_SET, Fixture.LIST),
+    (frozenset[int], Fixture.FROZEN_SET, Fixture.LIST),
     (FrozenSet, Fixture.FROZEN_SET, Fixture.LIST),
+    (frozenset, Fixture.FROZEN_SET, Fixture.LIST),
+    (collections.abc.Set[int], Fixture.SET, Fixture.LIST),
+    (collections.abc.Set, Fixture.SET, Fixture.LIST),
+    (collections.abc.MutableSet[int], Fixture.SET, Fixture.LIST),
+    (collections.abc.MutableSet, Fixture.SET, Fixture.LIST),
     (ChainMap[str, int], Fixture.CHAIN_MAP, Fixture.MAPS_LIST),
+    (
+        collections.ChainMap[str, int],
+        Fixture.CHAIN_MAP,
+        Fixture.MAPS_LIST,
+    ),
     (ChainMap, Fixture.CHAIN_MAP, Fixture.MAPS_LIST),
+    (collections.ChainMap, Fixture.CHAIN_MAP, Fixture.MAPS_LIST),
     (Dict[str, int], Fixture.DICT, Fixture.DICT),
+    (dict[str, int], Fixture.DICT, Fixture.DICT),
     (Dict, Fixture.DICT, Fixture.DICT),
+    (dict, Fixture.DICT, Fixture.DICT),
     (Mapping[str, int], Fixture.DICT, Fixture.DICT),
+    (collections.abc.Mapping[str, int], Fixture.DICT, Fixture.DICT),
     (Mapping, Fixture.DICT, Fixture.DICT),
+    (collections.abc.Mapping, Fixture.DICT, Fixture.DICT),
     (OrderedDict[str, int], Fixture.ORDERED_DICT, Fixture.DICT),
+    (
+        collections.OrderedDict[str, int],
+        Fixture.ORDERED_DICT,
+        Fixture.DICT,
+    ),
     (OrderedDict, Fixture.ORDERED_DICT, Fixture.DICT),
+    (collections.OrderedDict, Fixture.ORDERED_DICT, Fixture.DICT),
     (DefaultDict[str, int], Fixture.DEFAULT_DICT, Fixture.DICT),
+    (
+        collections.defaultdict[str, int],
+        Fixture.DEFAULT_DICT,
+        Fixture.DICT,
+    ),
     (DefaultDict, Fixture.DEFAULT_NONE_DICT, Fixture.DICT),
+    (collections.defaultdict, Fixture.DEFAULT_NONE_DICT, Fixture.DICT),
     (Counter[str], Fixture.COUNTER, Fixture.DICT),
+    (collections.Counter[str], Fixture.COUNTER, Fixture.DICT),
     (Counter, Fixture.COUNTER, Fixture.DICT),
+    (collections.Counter, Fixture.COUNTER, Fixture.DICT),
     (MutableMapping[str, int], Fixture.DICT, Fixture.DICT),
+    (
+        collections.abc.MutableMapping[str, int],
+        Fixture.DICT,
+        Fixture.DICT,
+    ),
     (MutableMapping, Fixture.DICT, Fixture.DICT),
+    (collections.abc.MutableMapping, Fixture.DICT, Fixture.DICT),
+    (MappingProxyType[str, int], Fixture.MAPPING_PROXY, Fixture.DICT),
+    (MappingProxyType, Fixture.MAPPING_PROXY, Fixture.DICT),
     (Sequence[int], Fixture.LIST, Fixture.LIST),
+    (collections.abc.Sequence[int], Fixture.LIST, Fixture.LIST),
     (Sequence, Fixture.LIST, Fixture.LIST),
+    (collections.abc.Sequence, Fixture.LIST, Fixture.LIST),
+    (collections.abc.MutableSequence[int], Fixture.LIST, Fixture.LIST),
+    (collections.abc.MutableSequence, Fixture.LIST, Fixture.LIST),
     (bytes, Fixture.BYTES, Fixture.BYTES_BASE64),
     (bytearray, Fixture.BYTE_ARRAY, Fixture.BYTES_BASE64),
     (str, Fixture.STR, Fixture.STR),
@@ -234,6 +281,7 @@ inner_values = [
     (time, Fixture.TIME, Fixture.TIME_STR),
     (timedelta, Fixture.TIMEDELTA, Fixture.TIMEDELTA.total_seconds()),
     (timezone, Fixture.TIMEZONE, "UTC+03:00"),
+    (ZoneInfo, ZoneInfo("Europe/Moscow"), "Europe/Moscow"),
     (uuid.UUID, Fixture.UUID, Fixture.UUID_STR),
     (ipaddress.IPv4Address, Fixture.IP4ADDRESS, Fixture.IP4ADDRESS_STR),
     (ipaddress.IPv6Address, Fixture.IP6ADDRESS, Fixture.IP6ADDRESS_STR),
@@ -258,6 +306,16 @@ inner_values = [
     (MyDatetimeNewType, Fixture.DATETIME, Fixture.DATETIME_STR),
     (LiteralString, Fixture.LITERAL_STRING, Fixture.LITERAL_STRING),
     (re.Pattern, Fixture.PATTERN_STR, Fixture.PATTERN_STR.pattern),
+    (
+        re.Pattern[str],
+        Fixture.PATTERN_STR,
+        Fixture.PATTERN_STR.pattern,
+    ),
+    (
+        re.Pattern[bytes],
+        Fixture.PATTERN_BYTES,
+        Fixture.PATTERN_BYTES.pattern,
+    ),
 ]
 
 if os.name == "posix":
@@ -286,80 +344,6 @@ else:
     )
 
 
-if PEP_585_COMPATIBLE:
-    inner_values.extend(
-        [
-            (list[int], Fixture.LIST, Fixture.LIST),
-            (list, Fixture.LIST, Fixture.LIST),
-            (collections.deque[int], Fixture.DEQUE, Fixture.LIST),
-            (collections.deque, Fixture.DEQUE, Fixture.LIST),
-            (tuple[int], Fixture.TUPLE, Fixture.TUPLE_DUMPED),
-            (tuple, Fixture.TUPLE, Fixture.TUPLE_DUMPED),
-            (set[int], Fixture.SET, Fixture.LIST),
-            (set, Fixture.SET, Fixture.LIST),
-            (frozenset[int], Fixture.FROZEN_SET, Fixture.LIST),
-            (frozenset, Fixture.FROZEN_SET, Fixture.LIST),
-            (collections.abc.Set[int], Fixture.SET, Fixture.LIST),
-            (collections.abc.Set, Fixture.SET, Fixture.LIST),
-            (collections.abc.MutableSet[int], Fixture.SET, Fixture.LIST),
-            (collections.abc.MutableSet, Fixture.SET, Fixture.LIST),
-            (
-                collections.ChainMap[str, int],
-                Fixture.CHAIN_MAP,
-                Fixture.MAPS_LIST,
-            ),
-            (collections.ChainMap, Fixture.CHAIN_MAP, Fixture.MAPS_LIST),
-            (dict[str, int], Fixture.DICT, Fixture.DICT),
-            (dict, Fixture.DICT, Fixture.DICT),
-            (collections.abc.Mapping[str, int], Fixture.DICT, Fixture.DICT),
-            (collections.abc.Mapping, Fixture.DICT, Fixture.DICT),
-            (
-                collections.OrderedDict[str, int],
-                Fixture.ORDERED_DICT,
-                Fixture.DICT,
-            ),
-            (collections.OrderedDict, Fixture.ORDERED_DICT, Fixture.DICT),
-            (
-                collections.defaultdict[str, int],
-                Fixture.DEFAULT_DICT,
-                Fixture.DICT,
-            ),
-            (collections.defaultdict, Fixture.DEFAULT_NONE_DICT, Fixture.DICT),
-            (collections.Counter[str], Fixture.COUNTER, Fixture.DICT),
-            (collections.Counter, Fixture.COUNTER, Fixture.DICT),
-            (
-                collections.abc.MutableMapping[str, int],
-                Fixture.DICT,
-                Fixture.DICT,
-            ),
-            (collections.abc.MutableMapping, Fixture.DICT, Fixture.DICT),
-            (collections.abc.Sequence[int], Fixture.LIST, Fixture.LIST),
-            (collections.abc.Sequence, Fixture.LIST, Fixture.LIST),
-            (collections.abc.MutableSequence[int], Fixture.LIST, Fixture.LIST),
-            (collections.abc.MutableSequence, Fixture.LIST, Fixture.LIST),
-            (
-                re.Pattern[str],
-                Fixture.PATTERN_STR,
-                Fixture.PATTERN_STR.pattern,
-            ),
-            (
-                re.Pattern[bytes],
-                Fixture.PATTERN_BYTES,
-                Fixture.PATTERN_BYTES.pattern,
-            ),
-        ]
-    )
-
-if PY_39_MIN:
-    inner_values.extend(
-        (
-            (ZoneInfo, ZoneInfo("Europe/Moscow"), "Europe/Moscow"),
-            (MappingProxyType[str, int], Fixture.MAPPING_PROXY, Fixture.DICT),
-            (MappingProxyType, Fixture.MAPPING_PROXY, Fixture.DICT),
-        )
-    )
-
-
 hashable_inner_values = [
     (type_, value, value_dumped)
     for type_, value, value_dumped in inner_values
@@ -367,101 +351,74 @@ hashable_inner_values = [
 ]
 
 
-generic_sequence_types = [List, Deque, Tuple, Set, FrozenSet]
+generic_sequence_types = [
+    List,
+    Deque,
+    Tuple,
+    Set,
+    FrozenSet,
+    list,
+    collections.deque,
+    tuple,
+    set,
+    frozenset,
+    collections.abc.Set,
+    collections.abc.MutableSet,
+    collections.Counter,
+    collections.abc.Sequence,
+    collections.abc.MutableSequence,
+]
 generic_mapping_types = [
     Dict,
     Mapping,
     OrderedDict,
     DefaultDict,
     MutableMapping,
+    collections.ChainMap,
+    dict,
+    collections.abc.Mapping,
+    collections.OrderedDict,
+    collections.defaultdict,
+    collections.abc.MutableMapping,
 ]
-if PEP_585_COMPATIBLE:
-    generic_sequence_types.extend(
-        [
-            list,
-            collections.deque,
-            tuple,
-            set,
-            frozenset,
-            collections.abc.Set,
-            collections.abc.MutableSet,
-            collections.Counter,
-            collections.abc.Sequence,
-            collections.abc.MutableSequence,
-        ]
-    )
-    generic_mapping_types.extend(
-        [
-            collections.ChainMap,
-            dict,
-            collections.abc.Mapping,
-            collections.OrderedDict,
-            collections.defaultdict,
-            collections.abc.MutableMapping,
-        ]
-    )
 
 
 unsupported_field_types = [Queue]
-if not PEP_585_COMPATIBLE:
-    unsupported_field_types.extend(
-        [
-            list,
-            collections.deque,
-            tuple,
-            set,
-            frozenset,
-            collections.ChainMap,
-            dict,
-            collections.OrderedDict,
-            collections.defaultdict,
-            collections.Counter,
-        ]
-    )
-
-
 unsupported_typing_primitives = [AnyStr]
 
 
 x_factory_mapping = {
     List: list,
+    list: list,
     Deque: collections.deque,
+    collections.deque: collections.deque,
     Tuple: tuple,
+    tuple: tuple,
     Set: set,
+    set: set,
     FrozenSet: frozenset,
+    frozenset: frozenset,
     MutableSet: set,
+    collections.abc.MutableSet: set,
     Dict: lambda items: {k: v for k, v in items},
+    dict: lambda items: {k: v for k, v in items},
     Mapping: lambda items: {k: v for k, v in items},
+    collections.abc.Mapping: lambda items: {k: v for k, v in items},
     MutableMapping: lambda items: {k: v for k, v in items},
+    collections.abc.MutableMapping: lambda items: {k: v for k, v in items},
     OrderedDict: lambda items: {k: v for k, v in items},
+    collections.OrderedDict: lambda items: {k: v for k, v in items},
     DefaultDict: lambda items: {k: v for k, v in items},
+    collections.defaultdict: lambda items: {k: v for k, v in items},
     Counter: lambda items: collections.Counter({k: v for k, v in items}),
+    collections.Counter: lambda items: collections.Counter(
+        {k: v for k, v in items}
+    ),
     ChainMap: lambda items: collections.ChainMap(*({k: v} for k, v in items)),
+    collections.ChainMap: lambda items: collections.ChainMap(
+        *({k: v} for k, v in items)
+    ),
 }
-if PEP_585_COMPATIBLE:
-    x_factory_mapping.update(
-        {
-            list: list,
-            collections.deque: collections.deque,
-            tuple: tuple,
-            set: set,
-            frozenset: frozenset,
-            collections.abc.MutableSet: set,
-            dict: lambda items: {k: v for k, v in items},
-            collections.abc.Mapping: lambda items: {k: v for k, v in items},
-            collections.abc.MutableMapping: lambda items: {
-                k: v for k, v in items
-            },
-            collections.OrderedDict: lambda items: {k: v for k, v in items},
-            collections.defaultdict: lambda items: {k: v for k, v in items},
-            collections.Counter: lambda items: collections.Counter(
-                {k: v for k, v in items}
-            ),
-            collections.ChainMap: lambda items: collections.ChainMap(
-                *({k: v} for k, v in items)
-            ),
-        }
-    )
 
 
 # noinspection PyCallingNonCallable

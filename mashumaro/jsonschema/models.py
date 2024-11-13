@@ -2,9 +2,9 @@ import datetime
 import ipaddress
 from dataclasses import MISSING, dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Union
 
-from typing_extensions import TypeAlias
+from typing_extensions import Self, TypeAlias
 
 from mashumaro.config import BaseConfig
 from mashumaro.helper import pass_through
@@ -95,7 +95,7 @@ class JSONSchema(DataClassJSONMixin):
     # Common keywords
     schema: Optional[str] = None
     type: Optional[JSONSchemaInstanceType] = None
-    enum: Optional[List[Any]] = None
+    enum: Optional[list[Any]] = None
     const: Optional[Any] = field(default_factory=lambda: MISSING)
     format: Optional[
         Union[JSONSchemaStringFormat, JSONSchemaInstanceFormatExtension]
@@ -107,7 +107,7 @@ class JSONSchema(DataClassJSONMixin):
     definitions: Optional[Dict[str, "JSONSchema"]] = None
     default: Optional[Any] = field(default_factory=lambda: MISSING)
     deprecated: Optional[bool] = None
-    examples: Optional[List[Any]] = None
+    examples: Optional[list[Any]] = None
     # Keywords for Objects
     properties: Optional[Dict[str, "JSONSchema"]] = None
     patternProperties: Optional[Dict[str, "JSONSchema"]] = None
@@ -136,8 +136,8 @@ class JSONSchema(DataClassJSONMixin):
     # Validation keywords for Objects
     maxProperties: Optional[int] = None
     minProperties: Optional[int] = None
-    required: Optional[List[str]] = None
-    dependentRequired: Optional[Dict[str, Set[str]]] = None
+    required: Optional[list[str]] = None
+    dependentRequired: Optional[dict[str, set[str]]] = None
 
     class Config(BaseConfig):
         omit_none = True
@@ -153,14 +153,14 @@ class JSONSchema(DataClassJSONMixin):
             Null: pass_through,
         }
 
-    def __pre_serialize__(self) -> "JSONSchema":
+    def __pre_serialize__(self) -> Self:
         if self.const is None:
             self.const = Null
         if self.default is None:
             self.default = Null
         return self
 
-    def __post_serialize__(self, d: Dict[Any, Any]) -> Dict[Any, Any]:
+    def __post_serialize__(self, d: dict[Any, Any]) -> dict[Any, Any]:
         const = d.get("const")
         if const is MISSING:
             d.pop("const")
@@ -187,6 +187,6 @@ class JSONArraySchema(JSONSchema):
 @dataclass
 class Context:
     dialect: JSONSchemaDialect = DRAFT_2020_12
-    definitions: Dict[str, JSONSchema] = field(default_factory=dict)
+    definitions: dict[str, JSONSchema] = field(default_factory=dict)
     all_refs: Optional[bool] = None
     ref_prefix: Optional[str] = None

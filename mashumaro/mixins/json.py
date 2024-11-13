@@ -1,5 +1,6 @@
 import json
-from typing import Any, Callable, Dict, Type, TypeVar, Union
+from collections.abc import Callable
+from typing import Any, Type, TypeVar, Union
 
 from mashumaro.mixins.dict import DataClassDictMixin
 
@@ -8,7 +9,7 @@ T = TypeVar("T", bound="DataClassJSONMixin")
 
 EncodedData = Union[str, bytes, bytearray]
 Encoder = Callable[[Any], EncodedData]
-Decoder = Callable[[EncodedData], Dict[Any, Any]]
+Decoder = Callable[[EncodedData], dict[Any, Any]]
 
 
 class DataClassJSONMixin(DataClassDictMixin):

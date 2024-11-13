@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Optional, TypeVar, Union
+from collections.abc import Callable
+from typing import Any, Optional, TypeVar, Union
 
 from typing_extensions import Literal
 
@@ -35,7 +36,7 @@ def field_options(
     ] = None,
     serialization_strategy: Optional[SerializationStrategy] = None,
     alias: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return {
         "serialize": serialize,
         "deserialize": deserialize,
