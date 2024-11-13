@@ -128,7 +128,8 @@
         "domain": false
       },
       "scale": {
-        "type": "log"
+        "type": "symlog",
+        "constant": 1e-5
       }
     }
   },
