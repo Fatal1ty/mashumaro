@@ -3075,7 +3075,7 @@ All dataclass JSON Schemas can or can not be placed in the
 [definitions](https://json-schema.org/draft/2020-12/json-schema-core.html#name-schema-re-use-with-defs)
 section, depending on the `all_refs` parameter, which default value comes
 from a dialect used (`False` for Draft 2022-12, `True` for OpenAPI
-Specification 3.1.0):
+Specification 3.1.1):
 
 ```python
 print(build_json_schema(List[User], all_refs=True).to_json())
