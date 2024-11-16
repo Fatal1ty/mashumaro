@@ -79,9 +79,8 @@ jobs:
       run: |
         python -m venv .venv
         source .venv/bin/activate
-        pip install --upgrade pip
-        pip install .
         pip install -r requirements-dev.txt
+        pip install .
     - name: Save cached virtualenv
       uses: actions/cache/save@v4
       with:
@@ -123,10 +122,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m venv .venv
-        source .venv/bin/activate
-        pip install --upgrade pip
-        pip install .
+        .venv/activate
         pip install -r requirements-dev.txt
+        pip install .
         pip install tzdata
     - name: Save cached virtualenv
       uses: actions/cache/save@v4
@@ -135,11 +133,11 @@ jobs:
         path: .venv
     - name: Run tests with coverage
       run: |
-        source .venv/bin/activate
+        .venv/activate
         pytest --cov=mashumaro --cov=tests
     - name: Upload Coverage
       run: |
-        source .venv/bin/activate
+        .venv/activate
         coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
