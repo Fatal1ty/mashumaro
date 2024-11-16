@@ -122,7 +122,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m venv .venv
-        .venv/activate
+        .venv/Scripts/activate
         pip install -r requirements-dev.txt
         pip install .
         pip install tzdata
@@ -133,11 +133,11 @@ jobs:
         path: .venv
     - name: Run tests with coverage
       run: |
-        .venv/activate
+        .venv/Scripts/activate
         pytest --cov=mashumaro --cov=tests
     - name: Upload Coverage
       run: |
-        .venv/activate
+        .venv/Scripts/activate
         coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
