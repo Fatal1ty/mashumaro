@@ -22,18 +22,22 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
-      - name: Cache Python dependencies
-        uses: actions/cache@v4
+      - name: Restore cached virtualenv
+        uses: actions/cache/restore@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements-dev.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+          key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
+          path: .venv
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install .
+          python -m venv .venv
+          source .venv/bin/activate
           pip install -r requirements-dev.txt
+          pip install .
+      - name: Save cached virtualenv
+        uses: actions/cache/save@v4
+        with:
+          key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
+          path: .venv
       - name: Run ruff
         run: ruff check mashumaro
       - name: Run mypy
@@ -58,18 +62,23 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: true
-    - name: Cache Python dependencies
-      uses: actions/cache@v4
+    - name: Restore cached virtualenv
+      uses: actions/cache/restore@v4
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements-dev.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-${{ matrix.python-version }}-
+        key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
+        path: .venv
     - name: Install dependencies
       run: |
+        python -m venv .venv
+        source .venv/bin/activate
         pip install --upgrade pip
         pip install .
         pip install -r requirements-dev.txt
+    - name: Save cached virtualenv
+      uses: actions/cache/save@v4
+      with:
+        key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
+        path: .venv
     - name: Run tests with coverage
       run: pytest --cov=mashumaro --cov=tests
     - name: Upload Coverage
@@ -94,19 +103,24 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: true
-    - name: Cache Python dependencies
-      uses: actions/cache@v4
+    - name: Restore cached virtualenv
+      uses: actions/cache/restore@v4
       with:
-        path: ~\AppData\Local\pip\Cache
-        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements-dev.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-${{ matrix.python-version }}-
+        key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
+        path: .venv
     - name: Install dependencies
       run: |
+        python -m venv .venv
+        source .venv/bin/activate
         pip install --upgrade pip
         pip install .
         pip install -r requirements-dev.txt
         pip install tzdata
+    - name: Save cached virtualenv
+      uses: actions/cache/save@v4
+      with:
+        key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
+        path: .venv
     - name: Run tests with coverage
       run: pytest --cov=mashumaro --cov=tests
     - name: Upload Coverage
