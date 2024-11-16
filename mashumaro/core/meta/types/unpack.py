@@ -9,27 +9,26 @@ import re
 import types
 import typing
 import uuid
+import zoneinfo
 from abc import ABC
 from base64 import decodebytes
+from collections.abc import (
+    Callable,
+    Collection,
+    Iterable,
+    Mapping,
+    Sequence,
+    Set,
+)
 from contextlib import suppress
 from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
-from typing import (
-    Any,
-    Callable,
-    ForwardRef,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, ForwardRef, Optional, Tuple, Union
 
 import typing_extensions
 
-from mashumaro.core.const import PY_39_MIN, PY_311_MIN
+from mashumaro.core.const import PY_311_MIN
 from mashumaro.core.helpers import parse_timezone
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
@@ -92,9 +91,6 @@ from mashumaro.types import (
     SerializationStrategy,
 )
 
-if PY_39_MIN:
-    import zoneinfo
-
 try:
     import ciso8601
 except ImportError:  # pragma: no cover
@@ -134,7 +130,7 @@ class AbstractUnpackerBuilder(AbstractMethodBuilder, ABC):
         lines.append(f"def {method_name}({method_args}):")
         return method_name
 
-    def _get_extra_method_args(self) -> List[str]:
+    def _get_extra_method_args(self) -> list[str]:
         return []
 
     def _generate_method_args(self, spec: ValueSpec) -> str:
@@ -164,7 +160,7 @@ class AbstractUnpackerBuilder(AbstractMethodBuilder, ABC):
 
 
 class UnionUnpackerBuilder(AbstractUnpackerBuilder):
-    def __init__(self, args: Tuple[Type, ...]):
+    def __init__(self, args: tuple[type, ...]):
         self.union_args = args
 
     def get_method_prefix(self) -> str:
@@ -281,7 +277,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
     def __init__(
         self,
         discriminator: Discriminator,
-        base_variants: Optional[Tuple[Type, ...]] = None,
+        base_variants: Optional[tuple[type, ...]] = None,
     ):
         self.discriminator = discriminator
         self.base_variants = base_variants or tuple()
@@ -290,7 +286,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
     def get_method_prefix(self) -> str:
         return ""
 
-    def _get_extra_method_args(self) -> List[str]:
+    def _get_extra_method_args(self) -> list[str]:
         return ["_dialect", "_default_dialect"]
 
     def _get_variants_attr(self, spec: ValueSpec) -> str:
@@ -308,9 +304,9 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         else:
             return f"{spec.cls_attrs_name}.{variants_attr}"
 
-    def _get_variant_names(self, spec: ValueSpec) -> List[str]:
+    def _get_variant_names(self, spec: ValueSpec) -> list[str]:
         base_variants = self.base_variants or (spec.origin_type,)
-        variant_names: List[str] = []
+        variant_names: list[str] = []
         if self.discriminator.include_subtypes:
             spec.builder.ensure_object_imported(iter_all_subclasses)
             variant_names.extend(
@@ -334,7 +330,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         return f'({", ".join(variant_names)})'
 
     @staticmethod
-    def _get_variants_attr_holder(spec: ValueSpec) -> Type:
+    def _get_variants_attr_holder(spec: ValueSpec) -> type:
         return spec.attrs
 
     @staticmethod
@@ -544,7 +540,7 @@ def _unpack_with_annotated_serialization_strategy(
 ) -> Expression:
     strategy_type = type(strategy)
     try:
-        value_type: Union[Type, Any] = get_function_arg_annotation(
+        value_type: Union[type, Any] = get_function_arg_annotation(
             strategy.deserialize, arg_pos=0
         )
     except (KeyError, ValueError):
@@ -854,7 +850,7 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
             )
             return f"*{unpacker}"
         elif is_type_var_tuple(spec.type):
-            return UnpackerRegistry.get(spec.copy(type=Tuple[Any, ...]))
+            return UnpackerRegistry.get(spec.copy(type=tuple[Any, ...]))
         elif isinstance(spec.type, ForwardRef):
             evaluated = spec.builder.evaluate_forward_ref(
                 spec.type, spec.owner
@@ -947,7 +943,7 @@ def unpack_timezone(spec: ValueSpec) -> Optional[Expression]:
 
 @register
 def unpack_zone_info(spec: ValueSpec) -> Optional[Expression]:
-    if PY_39_MIN and spec.origin_type is zoneinfo.ZoneInfo:
+    if spec.origin_type is zoneinfo.ZoneInfo:
         method = "__zoneinfo_ZoneInfo"
         spec.builder.ensure_object_imported(zoneinfo.ZoneInfo, method)
         return f"{method}({spec.expression})"
@@ -990,10 +986,10 @@ def unpack_fraction(spec: ValueSpec) -> Optional[Expression]:
         return f"Fraction({spec.expression})"
 
 
-def unpack_tuple(spec: ValueSpec, args: Tuple[Type, ...]) -> Expression:
+def unpack_tuple(spec: ValueSpec, args: tuple[type, ...]) -> Expression:
     if not args:
         if spec.type in (Tuple, tuple):
-            args = [typing.Any, ...]  # type: ignore
+            args = [Any, ...]  # type: ignore
         else:
             return "()"
     elif len(args) == 1 and args[0] == ():
@@ -1005,7 +1001,7 @@ def unpack_tuple(spec: ValueSpec, args: Tuple[Type, ...]) -> Expression:
         )
         return f"tuple([{unpacker} for value in {spec.expression}])"
     else:
-        arg_indexes: List[Union[int, Tuple[int, Union[int, None]]]] = []
+        arg_indexes: list[Union[int, tuple[int, Union[int, None]]]] = []
         unpack_idx: Optional[int] = None
         for arg_idx, type_arg in enumerate(args):
             if is_unpack(type_arg):
@@ -1026,7 +1022,7 @@ def unpack_tuple(spec: ValueSpec, args: Tuple[Type, ...]) -> Expression:
                     arg_indexes.append(arg_idx)
                 else:
                     arg_indexes.append(arg_idx - len(args))
-        unpackers: List[Expression] = []
+        unpackers: list[Expression] = []
         for _idx, _arg_idx in enumerate(arg_indexes):
             if isinstance(_arg_idx, tuple):
                 u_expr = f"{spec.expression}[{_arg_idx[0]}:{_arg_idx[1]}]"
@@ -1199,7 +1195,7 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
 
 @register
 def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
-    if not issubclass(spec.origin_type, typing.Collection):
+    if not issubclass(spec.origin_type, Collection):
         return None
     elif issubclass(spec.origin_type, enum.Enum):
         return None
@@ -1207,7 +1203,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
     args = get_args(spec.type)
 
     def inner_expr(
-        arg_num: int = 0, v_name: str = "value", v_type: Optional[Type] = None
+        arg_num: int = 0, v_name: str = "value", v_type: Optional[type] = None
     ) -> Expression:
         if v_type:
             return UnpackerRegistry.get(
@@ -1236,36 +1232,36 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
             return f"bytearray(decodebytes({spec.expression}.encode()))"
     elif issubclass(spec.origin_type, str):
         return TypeMatchEligibleExpression(f"str({spec.expression})")
-    elif ensure_generic_collection_subclass(spec, List):
+    elif ensure_generic_collection_subclass(spec, list):
         return f"[{inner_expr()} for value in {spec.expression}]"
-    elif ensure_generic_collection_subclass(spec, typing.Deque):
+    elif ensure_generic_collection_subclass(spec, collections.deque):
         spec.builder.ensure_module_imported(collections)
         return (
             f"collections.deque([{inner_expr()} "
             f"for value in {spec.expression}])"
         )
-    elif issubclass(spec.origin_type, Tuple):  # type: ignore
+    elif issubclass(spec.origin_type, tuple):  # type: ignore
         if is_named_tuple(spec.origin_type):
             return unpack_named_tuple(spec)
         elif ensure_generic_collection(spec):
             return unpack_tuple(spec, args)
-    elif ensure_generic_collection_subclass(spec, typing.FrozenSet):
+    elif ensure_generic_collection_subclass(spec, frozenset):
         return f"frozenset([{inner_expr()} for value in {spec.expression}])"
-    elif ensure_generic_collection_subclass(spec, typing.AbstractSet):
+    elif ensure_generic_collection_subclass(spec, Set):
         return f"set([{inner_expr()} for value in {spec.expression}])"
-    elif ensure_generic_mapping(spec, args, typing.ChainMap):
+    elif ensure_generic_mapping(spec, args, collections.ChainMap):
         spec.builder.ensure_module_imported(collections)
         return (
             f'collections.ChainMap(*[{{{inner_expr(0, "key")}:{inner_expr(1)} '
             f"for key, value in m.items()}} for m in {spec.expression}])"
         )
-    elif ensure_generic_mapping(spec, args, typing.OrderedDict):
+    elif ensure_generic_mapping(spec, args, collections.OrderedDict):
         spec.builder.ensure_module_imported(collections)
         return (
             f'collections.OrderedDict({{{inner_expr(0, "key")}: '
             f"{inner_expr(1)} for key, value in {spec.expression}.items()}})"
         )
-    elif ensure_generic_mapping(spec, args, typing.DefaultDict):
+    elif ensure_generic_mapping(spec, args, collections.defaultdict):
         spec.builder.ensure_module_imported(collections)
         default_type = type_name(args[1] if args else None)
         return (
@@ -1273,7 +1269,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
             f"{{{inner_expr(0, 'key')}: "
             f"{inner_expr(1)} for key, value in {spec.expression}.items()}})"
         )
-    elif ensure_generic_mapping(spec, args, typing.Counter):
+    elif ensure_generic_mapping(spec, args, collections.Counter):
         spec.builder.ensure_module_imported(collections)
         return (
             f'collections.Counter({{{inner_expr(0, "key")}: '
@@ -1288,12 +1284,12 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
             f'types.MappingProxyType({{{inner_expr(0, "key")}: {inner_expr(1)}'
             f" for key, value in {spec.expression}.items()}})"
         )
-    elif ensure_generic_mapping(spec, args, typing.Mapping):
+    elif ensure_generic_mapping(spec, args, Mapping):
         return (
             f'{{{inner_expr(0, "key")}: {inner_expr(1)} '
             f"for key, value in {spec.expression}.items()}}"
         )
-    elif ensure_generic_collection_subclass(spec, typing.Sequence):
+    elif ensure_generic_collection_subclass(spec, Sequence):
         return f"[{inner_expr()} for value in {spec.expression}]"
 
 

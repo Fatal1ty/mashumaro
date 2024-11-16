@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Optional, Type
 
 from mashumaro.jsonschema.dialects import DRAFT_2020_12, JSONSchemaDialect
 from mashumaro.jsonschema.models import Context, JSONSchema
@@ -50,11 +50,11 @@ def build_json_schema(
 
 @dataclass
 class JSONSchemaDefinitions(DataClassJSONMixin):
-    definitions: Dict[str, JSONSchema]
+    definitions: dict[str, JSONSchema]
 
     def __post_serialize__(  # type: ignore
-        self, d: Dict[Any, Any]
-    ) -> List[Dict[str, Any]]:
+        self, d: dict[Any, Any]
+    ) -> list[dict[str, Any]]:
         return d["definitions"]
 
 

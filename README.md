@@ -143,7 +143,7 @@ Use pip to install:
 $ pip install mashumaro
 ```
 
-The current version of `mashumaro` supports Python versions 3.8 — 3.13.
+The current version of `mashumaro` supports Python versions 3.9 — 3.13.
 
 
 It's not recommended to use any version of Python that has reached its
@@ -155,6 +155,7 @@ of Python.
 
 | Python Version | Last Version of mashumaro                                          | Python EOL |
 |----------------|--------------------------------------------------------------------|------------|
+| 3.8            | [3.14](https://github.com/Fatal1ty/mashumaro/releases/tag/v3.14)   | 2024-10-07 |
 | 3.7            | [3.9.1](https://github.com/Fatal1ty/mashumaro/releases/tag/v3.9.1) | 2023-06-27 |
 | 3.6            | [3.1.1](https://github.com/Fatal1ty/mashumaro/releases/tag/v3.1.1) | 2021-12-23 |
 

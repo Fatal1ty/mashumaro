@@ -1,12 +1,13 @@
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator, List, Optional
+from typing import Optional
 
 __all__ = ["CodeLines"]
 
 
 class CodeLines:
     def __init__(self) -> None:
-        self._lines: List[str] = []
+        self._lines: list[str] = []
         self._current_indent: str = ""
 
     def append(self, line: str) -> None:

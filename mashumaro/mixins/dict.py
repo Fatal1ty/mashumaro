@@ -1,4 +1,5 @@
-from typing import Any, Dict, Mapping, Type, TypeVar, final
+from collections.abc import Mapping
+from typing import Any, Type, TypeVar, final
 
 from mashumaro.core.meta.mixin import (
     compile_mixin_packer,
@@ -34,7 +35,7 @@ class DataClassDictMixin:
         # by_alias: bool = False
         # dialect: Type[Dialect] = None
         **kwargs: Any,
-    ) -> Dict[Any, Any]: ...
+    ) -> dict[Any, Any]: ...
 
     @classmethod
     @final
@@ -49,8 +50,8 @@ class DataClassDictMixin:
 
     @classmethod
     def __pre_deserialize__(
-        cls: Type[T], d: Dict[Any, Any]
-    ) -> Dict[Any, Any]: ...
+        cls: Type[T], d: dict[Any, Any]
+    ) -> dict[Any, Any]: ...
 
     @classmethod
     def __post_deserialize__(cls: Type[T], obj: T) -> T: ...
@@ -62,6 +63,6 @@ class DataClassDictMixin:
 
     def __post_serialize__(
         self: T,
-        d: Dict[Any, Any],
+        d: dict[Any, Any],
         # context: Any = None,  # added with ADD_SERIALIZATION_CONTEXT option
-    ) -> Dict[Any, Any]: ...
+    ) -> dict[Any, Any]: ...

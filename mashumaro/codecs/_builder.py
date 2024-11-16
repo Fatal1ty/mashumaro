@@ -1,5 +1,6 @@
 import re
-from typing import Any, Callable, Optional, Type
+from collections.abc import Callable
+from typing import Any, Optional, Type
 
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import is_optional, is_type_var_any

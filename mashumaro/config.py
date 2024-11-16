@@ -1,14 +1,5 @@
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Type,
-    TypedDict,
-    Union,
-)
+from collections.abc import Callable
+from typing import Any, Literal, Optional, Type, TypedDict, Union
 
 from mashumaro.core.const import Sentinel
 from mashumaro.dialect import Dialect
@@ -50,9 +41,9 @@ SerializationStrategyValueType = Union[
 
 class BaseConfig:
     debug: bool = False
-    code_generation_options: List[CodeGenerationOption] = []
-    serialization_strategy: Dict[Any, SerializationStrategyValueType] = {}
-    aliases: Dict[str, str] = {}
+    code_generation_options: list[CodeGenerationOption] = []
+    serialization_strategy: dict[Any, SerializationStrategyValueType] = {}
+    aliases: dict[str, str] = {}
     serialize_by_alias: Union[bool, Literal[Sentinel.MISSING]] = (
         Sentinel.MISSING
     )
@@ -64,7 +55,7 @@ class BaseConfig:
     omit_none: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
     omit_default: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
     orjson_options: Optional[int] = 0
-    json_schema: Dict[str, Any] = {}
+    json_schema: dict[str, Any] = {}
     discriminator: Optional[Discriminator] = None
     lazy_compilation: bool = False
     sort_keys: bool = False

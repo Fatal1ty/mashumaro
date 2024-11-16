@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict, Set
 
 from mashumaro.jsonschema.models import JSONSchema, Number
 
@@ -110,7 +109,7 @@ class MinProperties(ObjectConstraint):
 
 @dataclass
 class DependentRequired(ObjectConstraint):
-    value: Dict[str, Set[str]]
+    value: dict[str, set[str]]
 
 
 __all__ = [

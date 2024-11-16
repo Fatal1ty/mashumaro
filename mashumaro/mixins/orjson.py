@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from datetime import date, datetime, time
-from typing import Any, Callable, Dict, Type, TypeVar, Union, final
+from typing import Any, Type, TypeVar, Union, final
 from uuid import UUID
 
 import orjson
@@ -14,7 +15,7 @@ T = TypeVar("T", bound="DataClassORJSONMixin")
 
 EncodedData = Union[str, bytes, bytearray]
 Encoder = Callable[[Any], EncodedData]
-Decoder = Callable[[EncodedData], Dict[Any, Any]]
+Decoder = Callable[[EncodedData], dict[Any, Any]]
 
 
 class OrjsonDialect(Dialect):

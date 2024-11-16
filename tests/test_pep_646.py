@@ -15,7 +15,7 @@ except ImportError:
 import pytest
 
 from mashumaro import DataClassDictMixin
-from mashumaro.core.const import PEP_585_COMPATIBLE, PY_311_MIN
+from mashumaro.core.const import PY_311_MIN
 
 # noinspection PyProtectedMember
 from mashumaro.core.meta.helpers import (
@@ -594,6 +594,5 @@ def test_unpack_tuple_with_multiple_unpacks():
 def test_flatten_type_args_with_empty_tuple():
     assert _flatten_type_args([Unpack[Tuple[()]]]) == [()]
     assert _flatten_type_args([int, Unpack[Tuple[()]]]) == [int]
-    if PEP_585_COMPATIBLE:
-        assert _flatten_type_args([Unpack[tuple[()]]]) == [()]
-        assert _flatten_type_args([int, Unpack[tuple[()]]]) == [int]
+    assert _flatten_type_args([Unpack[tuple[()]]]) == [()]
+    assert _flatten_type_args([int, Unpack[tuple[()]]]) == [int]

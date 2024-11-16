@@ -1,32 +1,31 @@
 import datetime
 import ipaddress
 import os
-import typing
 import warnings
 from base64 import encodebytes
+from collections import ChainMap, Counter, deque
+from collections.abc import (
+    ByteString,
+    Callable,
+    Collection,
+    Iterable,
+    Mapping,
+    Sequence,
+    Set,
+)
 from dataclasses import MISSING, dataclass, field, is_dataclass, replace
 from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
 from functools import cached_property
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    ForwardRef,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, ForwardRef, Optional, Tuple, Type, Union
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from typing_extensions import TypeAlias
 
 from mashumaro.config import BaseConfig
-from mashumaro.core.const import PY_39_MIN, PY_311_MIN
+from mashumaro.core.const import PY_311_MIN
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import (
     evaluate_forward_ref,
@@ -87,9 +86,6 @@ from mashumaro.jsonschema.models import (
 )
 from mashumaro.types import SerializationStrategy
 
-if PY_39_MIN:
-    from zoneinfo import ZoneInfo
-
 try:
     from mashumaro.mixins.orjson import (
         DataClassORJSONMixin as DataClassJSONMixin,
@@ -110,10 +106,10 @@ class Instance:
     __self_builder: Optional[CodeBuilder] = None
 
     origin_type: Type = field(init=False)
-    annotations: List[Annotation] = field(init=False, default_factory=list)
+    annotations: list[Annotation] = field(init=False, default_factory=list)
 
     @cached_property
-    def metadata(self) -> Dict[str, Any]:
+    def metadata(self) -> dict[str, Any]:
         if self.name and self.__owner_builder:
             return dict(**self.__owner_builder.metadatas.get(self.name, {}))
         else:
@@ -174,7 +170,7 @@ class Instance:
         else:
             self.__self_builder = None
 
-    def fields(self) -> Iterable[Tuple[str, Type, bool, Any]]:
+    def fields(self) -> Iterable[tuple[str, Type, bool, Any]]:
         for f_name, f_type in self._self_builder.get_field_types(
             include_extras=True
         ).items():
@@ -246,7 +242,7 @@ InstanceSchemaCreator: TypeAlias = Callable[
 
 @dataclass
 class InstanceSchemaCreatorRegistry:
-    _registry: List[InstanceSchemaCreator] = field(default_factory=list)
+    _registry: list[InstanceSchemaCreator] = field(default_factory=list)
 
     def register(self, func: InstanceSchemaCreator) -> InstanceSchemaCreator:
         self._registry.append(func)
@@ -347,7 +343,7 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
                 "additionalProperties", False
             ),
         )
-        properties: Dict[str, JSONSchema] = {}
+        properties: dict[str, JSONSchema] = {}
         required = []
         field_schema_overrides = jsonschema_config.get("properties", {})
         for f_name, f_type, has_default, f_default in instance.fields():
@@ -446,7 +442,7 @@ def on_special_typing_primitive(
             instance.derive(type=get_args(instance.type)[0]), ctx
         )
     elif is_type_var_tuple(instance.type):
-        return get_schema(instance.derive(type=Tuple[Any, ...]), ctx)
+        return get_schema(instance.derive(type=tuple[Any, ...]), ctx)
     elif isinstance(instance.type, ForwardRef):
         evaluated = evaluate_forward_ref(
             instance.type,
@@ -523,7 +519,7 @@ def on_timezone(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
 @register
 def on_zone_info(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
-    if PY_39_MIN and instance.origin_type is ZoneInfo:
+    if instance.origin_type is ZoneInfo:
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.TIME_ZONE,
@@ -577,7 +573,7 @@ def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
     args = get_args(instance.type)
     if not args:
         if instance.type in (Tuple, tuple):
-            args = [typing.Any, ...]  # type: ignore
+            args = [Any, ...]  # type: ignore
         else:
             return JSONArraySchema(maxItems=0)
     elif len(args) == 1 and args[0] == ():
@@ -642,7 +638,7 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
         as_dict = False
     properties = {}
     for f_name in fields:
-        f_type = annotations.get(f_name, typing.Any)
+        f_type = annotations.get(f_name, Any)
         f_schema = get_schema(instance.derive(type=f_type), ctx)
         f_default = defaults.get(f_name, MISSING)
         if f_default is not MISSING:
@@ -731,14 +727,14 @@ def apply_object_constraints(
 
 @register
 def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
-    if not issubclass(instance.origin_type, typing.Collection):
+    if not issubclass(instance.origin_type, Collection):
         return None
     elif issubclass(instance.origin_type, Enum):
         return None
 
     args = get_args(instance.type)
 
-    if issubclass(instance.origin_type, typing.ByteString):  # type: ignore
+    if issubclass(instance.origin_type, ByteString):  # type: ignore[arg-type]
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,
@@ -754,7 +750,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
                 schema.pattern = annotation.value
         return schema
     elif is_generic(instance.type) and issubclass(
-        instance.origin_type, (List, typing.Deque)
+        instance.origin_type, (list, deque)
     ):
         return apply_array_constraints(
             instance,
@@ -766,7 +762,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
                 )
             ),
         )
-    elif issubclass(instance.origin_type, Tuple):  # type: ignore
+    elif issubclass(instance.origin_type, tuple):
         if is_named_tuple(instance.origin_type):
             return apply_array_constraints(
                 instance, on_named_tuple(instance, ctx)
@@ -774,7 +770,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         elif is_generic(instance.type):
             return apply_array_constraints(instance, on_tuple(instance, ctx))
     elif is_generic(instance.type) and issubclass(
-        instance.origin_type, (typing.FrozenSet, typing.AbstractSet)
+        instance.origin_type, (frozenset, Set)
     ):
         return apply_array_constraints(
             instance,
@@ -788,7 +784,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
             ),
         )
     elif is_generic(instance.type) and issubclass(
-        instance.origin_type, typing.ChainMap
+        instance.origin_type, ChainMap
     ):
         return apply_array_constraints(
             instance,
@@ -796,9 +792,9 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
                 items=get_schema(
                     instance=instance.derive(
                         type=(
-                            Dict[args[0], args[1]]  # type: ignore
+                            dict[args[0], args[1]]  # type: ignore
                             if args
-                            else Dict
+                            else dict
                         )
                     ),
                     ctx=ctx,
@@ -806,7 +802,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
             ),
         )
     elif is_generic(instance.type) and issubclass(
-        instance.origin_type, typing.Counter
+        instance.origin_type, Counter
     ):
         schema = JSONObjectSchema(
             additionalProperties=get_schema(instance.derive(type=int), ctx),
@@ -819,7 +815,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     elif is_typed_dict(instance.origin_type):
         return on_typed_dict(instance, ctx)
     elif is_generic(instance.type) and issubclass(
-        instance.origin_type, typing.Mapping
+        instance.origin_type, Mapping
     ):
         schema = JSONObjectSchema(
             additionalProperties=(
@@ -835,7 +831,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         )
         return apply_object_constraints(instance, schema)
     elif is_generic(instance.type) and issubclass(
-        instance.origin_type, typing.Sequence
+        instance.origin_type, Sequence
     ):
         return apply_array_constraints(
             instance,

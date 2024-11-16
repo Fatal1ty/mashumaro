@@ -1,6 +1,7 @@
 import decimal
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Type, Union
+from typing import Any, Optional, Type, Union
 
 from typing_extensions import Literal
 
@@ -42,11 +43,11 @@ class SerializableType:
 class GenericSerializableType:
     __slots__ = ()
 
-    def _serialize(self, types: List[Type]) -> Any:
+    def _serialize(self, types: list[Type]) -> Any:
         raise NotImplementedError
 
     @classmethod
-    def _deserialize(cls, value: Any, types: List[Type]) -> Any:
+    def _deserialize(cls, value: Any, types: list[Type]) -> Any:
         raise NotImplementedError
 
 
