@@ -39,13 +39,21 @@ jobs:
           key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
           path: .venv
       - name: Run ruff
-        run: ruff check mashumaro
+        run: |
+          source .venv/bin/activate
+          ruff check mashumaro
       - name: Run mypy
-        run: mypy mashumaro
+        run: |
+          source .venv/bin/activate
+          mypy mashumaro
       - name: Run black
-        run: black --check .
+        run: |
+          source .venv/bin/activate
+          black --check .
       - name: Run codespell
-        run: codespell mashumaro tests README.md .github/*.md
+        run: |
+          source .venv/bin/activate
+          codespell mashumaro tests README.md .github/*.md
 
   test-posix:
     name: Tests on Posix
@@ -80,9 +88,13 @@ jobs:
         key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
         path: .venv
     - name: Run tests with coverage
-      run: pytest --cov=mashumaro --cov=tests
+      run: |
+        source .venv/bin/activate
+        pytest --cov=mashumaro --cov=tests
     - name: Upload Coverage
-      run: coveralls --service=github
+      run: |
+        source .venv/bin/activate
+        coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_FLAG_NAME: posix-${{ matrix.python-version }}
@@ -122,9 +134,13 @@ jobs:
         key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
         path: .venv
     - name: Run tests with coverage
-      run: pytest --cov=mashumaro --cov=tests
+      run: |
+        source .venv/bin/activate
+        pytest --cov=mashumaro --cov=tests
     - name: Upload Coverage
-      run: coveralls --service=github
+      run: |
+        source .venv/bin/activate
+        coveralls --service=github
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COVERALLS_FLAG_NAME: windows-${{ matrix.python-version }}
