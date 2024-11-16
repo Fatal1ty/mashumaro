@@ -2942,7 +2942,7 @@ You can build JSON Schema not only for dataclasses but also for any other
 [supported](#supported-data-types) data
 types. There is support for the following standards:
 * [Draft 2020-12](https://json-schema.org/specification.html)
-* [OpenAPI Specification 3.1.0](https://spec.openapis.org/oas/v3.1.0)
+* [OpenAPI Specification 3.1.1](https://spec.openapis.org/oas/v3.1.1)
 
 ### Building JSON Schema
 
