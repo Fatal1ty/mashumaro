@@ -106,6 +106,7 @@ Table of contents
 * [JSON Schema](#json-schema)
     * [Building JSON Schema](#building-json-schema)
     * [JSON Schema constraints](#json-schema-constraints)
+    * [JSON Schema plugins](#json-schema-plugins)
     * [Extending JSON Schema](#extending-json-schema)
     * [JSON Schema and custom serialization methods](#json-schema-and-custom-serialization-methods)
 
@@ -3282,6 +3283,129 @@ Object constraints:
 * [`MaxProperties`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-maxproperties)
 * [`MinProperties`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-minproperties)
 * [`DependentRequired`](https://json-schema.org/draft/2020-12/json-schema-validation.html#name-dependentrequired)
+
+### JSON Schema plugins
+
+If the built-in functionality doesn't meet your needs, you can customize the JSON Schema generation or add support for additional types using plugins. The `mashumaro.jsonschema.plugins.BasePlugin` class provides a `get_schema` method that you can override to implement custom behavior.
+
+The plugin system works by iterating through all registered plugins and calling their `get_schema` methods. If a plugin's `get_schema` method raises a `NotImplementedError` or returns `None`, it indicates that the plugin doesn't provide the required functionality for that particular case.
+
+You can apply multiple plugins sequentially, allowing each to modify the schema in turn. This approach enables a step-by-step transformation of the schema, with each plugin contributing its specific modifications.
+
+Plugins can be registered using the `plugins` argument in either the `build_json_schema` function or the `JSONSchemaBuilder` class.
+
+The `mashumaro.jsonschema.plugins` module contains several built-in plugins. Currently, one of these plugins adds descriptions to JSON schemas using docstrings from dataclasses:
+
+```python
+from dataclasses import dataclass
+
+from mashumaro.jsonschema import build_json_schema
+from mashumaro.jsonschema.plugins import DocstringDescriptionPlugin
+
+
+@dataclass
+class MyClass:
+    """My class"""
+
+    x: int
+
+
+schema = build_json_schema(MyClass, plugins=[DocstringDescriptionPlugin()])
+print(schema.to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "object",
+    "title": "MyClass",
+    "description": "My class",
+    "properties": {
+        "x": {
+            "type": "integer"
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "x"
+    ]
+}
+```
+</details>
+
+Creating your own custom plugin is straightforward. For instance, if you want to add support for Pydantic models, you could write a plugin similar to the following:
+
+```python
+from dataclasses import dataclass
+
+from pydantic import BaseModel
+
+from mashumaro.jsonschema import build_json_schema
+from mashumaro.jsonschema.models import Context, JSONSchema
+from mashumaro.jsonschema.plugins import BasePlugin
+from mashumaro.jsonschema.schema import Instance
+
+
+class PydanticSchemaPlugin(BasePlugin):
+    def get_schema(
+        self,
+        instance: Instance,
+        ctx: Context,
+        schema: JSONSchema | None = None,
+    ) -> JSONSchema | None:
+        try:
+            if issubclass(instance.type, BaseModel):
+                pydantic_schema = instance.type.model_json_schema()
+                return JSONSchema.from_dict(pydantic_schema)
+        except TypeError:
+            return None
+
+
+class MyPydanticClass(BaseModel):
+    x: int
+
+
+@dataclass
+class MyDataClass:
+    y: MyPydanticClass
+
+
+schema = build_json_schema(MyDataClass, plugins=[PydanticSchemaPlugin()])
+print(schema.to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "object",
+    "title": "MyDataClass",
+    "properties": {
+        "y": {
+            "type": "object",
+            "title": "MyPydanticClass",
+            "properties": {
+                "x": {
+                    "type": "integer",
+                    "title": "X"
+                }
+            },
+            "required": [
+                "x"
+            ]
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "y"
+    ]
+}
+```
+</details>
+
 
 ### Extending JSON Schema
 
