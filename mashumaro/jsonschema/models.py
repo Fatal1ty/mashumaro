@@ -5,7 +5,7 @@ from dataclasses import MISSING, dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from typing_extensions import Self, TypeAlias, TYPE_CHECKING
+from typing_extensions import TYPE_CHECKING, Self, TypeAlias
 
 from mashumaro.config import BaseConfig
 from mashumaro.helper import pass_through

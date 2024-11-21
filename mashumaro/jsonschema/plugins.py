@@ -11,7 +11,7 @@ class BasePlugin:
         instance: Instance,
         ctx: Context,
         schema: Optional[JSONSchema] = None,
-    ):
+    ) -> Optional[JSONSchema]:
         pass
 
 
@@ -21,6 +21,7 @@ class DocstringDescriptionPlugin(BasePlugin):
         instance: Instance,
         ctx: Context,
         schema: Optional[JSONSchema] = None,
-    ):
+    ) -> Optional[JSONSchema]:
         if schema and is_dataclass(instance.type) and instance.type.__doc__:
             schema.description = instance.type.__doc__
+        return None
