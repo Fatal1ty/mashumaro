@@ -1,8 +1,10 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Optional, Type
 
 from mashumaro.jsonschema.dialects import DRAFT_2020_12, JSONSchemaDialect
 from mashumaro.jsonschema.models import Context, JSONSchema
+from mashumaro.jsonschema.plugins import BasePlugin
 from mashumaro.jsonschema.schema import Instance, get_schema
 
 try:
@@ -21,15 +23,17 @@ def build_json_schema(
     with_dialect_uri: bool = False,
     dialect: Optional[JSONSchemaDialect] = None,
     ref_prefix: Optional[str] = None,
+    plugins: Sequence[BasePlugin] = (),
 ) -> JSONSchema:
     if context is None:
-        context = Context()
+        context = Context(plugins=plugins)
     else:
         context = Context(
             dialect=context.dialect,
             definitions=context.definitions,
             all_refs=context.all_refs,
             ref_prefix=context.ref_prefix,
+            plugins=plugins,
         )
     if dialect is not None:
         context.dialect = dialect

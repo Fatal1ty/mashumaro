@@ -1,14 +1,20 @@
 import datetime
 import ipaddress
+from collections.abc import Sequence
 from dataclasses import MISSING, dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from typing_extensions import Self, TypeAlias
+from typing_extensions import Self, TypeAlias, TYPE_CHECKING
 
 from mashumaro.config import BaseConfig
 from mashumaro.helper import pass_through
 from mashumaro.jsonschema.dialects import DRAFT_2020_12, JSONSchemaDialect
+
+if TYPE_CHECKING:  # pragma: no cover
+    from mashumaro.jsonschema.plugins import BasePlugin
+else:
+    BasePlugin = Any
 
 try:
     from mashumaro.mixins.orjson import (
@@ -190,3 +196,4 @@ class Context:
     definitions: dict[str, JSONSchema] = field(default_factory=dict)
     all_refs: Optional[bool] = None
     ref_prefix: Optional[str] = None
+    plugins: Sequence[BasePlugin] = ()

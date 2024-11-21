@@ -260,12 +260,22 @@ class EmptyJSONSchema(JSONSchema):
 def get_schema(
     instance: Instance, ctx: Context, with_dialect_uri: bool = False
 ) -> JSONSchema:
+    schema = None
     for schema_creator in Registry.iter():
         schema = schema_creator(instance, ctx)
         if schema is not None:
             if with_dialect_uri:
                 schema.schema = ctx.dialect.uri
-            return schema
+            break
+    for plugin in ctx.plugins:
+        try:
+            new_schema = plugin.get_schema(instance, ctx, schema)
+            if new_schema:
+                schema = new_schema
+        except NotImplementedError:
+            continue
+    if schema:
+        return schema
     raise NotImplementedError(
         f'Type {type_name(instance.type)} of field "{instance.name}" '
         f"in {type_name(instance.owner_class)} isn't supported"
