@@ -105,6 +105,9 @@ class Instance:
     __owner_builder: Optional[CodeBuilder] = None
     __self_builder: Optional[CodeBuilder] = None
 
+    # Original type despite custom serialization. To be revised.
+    _original_type: Type = field(init=False)
+
     origin_type: Type = field(init=False)
     annotations: list[Annotation] = field(init=False, default_factory=list)
 
@@ -150,6 +153,7 @@ class Instance:
         return new_instance
 
     def __post_init__(self) -> None:
+        self._original_type = self.type
         self.update_type(self.type)
         if is_annotated(self.type):
             self.annotations = getattr(self.type, "__metadata__", [])
