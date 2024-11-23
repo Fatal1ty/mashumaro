@@ -4,7 +4,11 @@ from typing import Optional
 import pytest
 
 from mashumaro.jsonschema.builder import JSONSchemaBuilder, build_json_schema
-from mashumaro.jsonschema.models import Context, JSONSchema
+from mashumaro.jsonschema.models import (
+    Context,
+    JSONSchema,
+    JSONSchemaInstanceType,
+)
 from mashumaro.jsonschema.plugins import BasePlugin, DocstringDescriptionPlugin
 from mashumaro.jsonschema.schema import Instance
 
@@ -23,6 +27,30 @@ class DataClassWithDocstring:
 @dataclass
 class DataClassWithoutDocstring:
     x: int
+
+
+def test_basic_plugin():
+    assert build_json_schema(int, plugins=[BasePlugin()]) == JSONSchema(
+        type=JSONSchemaInstanceType.INTEGER
+    )
+
+
+def test_plugin_with_not_implemented_error():
+    class NotImplementedErrorPlugin(BasePlugin):
+        def get_schema(
+            self,
+            instance: Instance,
+            ctx: Context,
+            schema: Optional[JSONSchema] = None,
+        ) -> Optional[JSONSchema]:
+            raise NotImplementedError
+
+    assert build_json_schema(
+        int, plugins=[NotImplementedErrorPlugin()]
+    ) == JSONSchema(type=JSONSchemaInstanceType.INTEGER)
+    assert JSONSchemaBuilder(plugins=[NotImplementedErrorPlugin()]).build(
+        int
+    ) == JSONSchema(type=JSONSchemaInstanceType.INTEGER)
 
 
 @pytest.mark.parametrize(
