@@ -289,11 +289,27 @@ def pack_any(spec: ValueSpec) -> Optional[Expression]:
 def pack_union(
     spec: ValueSpec, args: tuple[type, ...], prefix: str = "union"
 ) -> Expression:
+    if spec.type is spec.owner and spec.field_ctx.packer:
+        return spec.field_ctx.packer
     lines = CodeLines()
+
     method_name = (
         f"__pack_{prefix}_{spec.builder.cls.__name__}_{spec.field_ctx.name}__"
         f"{random_hex()}"
     )
+
+    if not spec.field_ctx.packer:
+        method_args = ", ".join(
+            filter(None, ("value", spec.builder.get_pack_method_flags()))
+        )
+        if spec.builder.is_nailed:
+            union_packer = (
+                f"{spec.self_attrs_name}.{method_name}({method_args})"
+            )
+        else:
+            union_packer = f"{method_name}({method_args})"
+        spec.field_ctx.packer = union_packer
+
     method_args = "self, value" if spec.builder.is_nailed else "value"
     default_kwargs = spec.builder.get_pack_method_default_flag_values()
     if default_kwargs:
@@ -304,7 +320,7 @@ def pack_union(
     packer_arg_types: dict[str, list[type]] = {}
     for type_arg in args:
         packer = PackerRegistry.get(
-            spec.copy(type=type_arg, expression="value")
+            spec.copy(type=type_arg, expression="value", owner=spec.type)
         )
         if packer not in packers:
             if packer == "value":
@@ -363,7 +379,9 @@ def pack_union(
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
+
     exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_pack_method_flags()))
     )

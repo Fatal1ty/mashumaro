@@ -60,6 +60,8 @@ class ExpressionWrapper:
 class FieldContext:
     name: str
     metadata: Mapping
+    packer: Optional[str] = None
+    unpacker: Optional[str] = None
 
     def copy(self, **changes: Any) -> "FieldContext":
         return replace(self, **changes)
@@ -181,8 +183,13 @@ class AbstractMethodBuilder(ABC):
     def _before_build(self, spec: ValueSpec) -> None:
         pass
 
+    def _get_existing_method(self, spec: ValueSpec) -> Optional[str]:
+        return None
+
     def build(self, spec: ValueSpec) -> str:
         self._before_build(spec)
+        if method := self._get_existing_method(spec):
+            return method
         lines = CodeLines()
         method_name = self._add_definition(spec, lines)
         with lines.indent():

@@ -6,6 +6,7 @@ if not PY_312_MIN:
     collect_ignore = [
         "test_generics_pep_695.py",
         "test_pep_695.py",
+        "test_recursive_union.py",
     ]
 
 if PY_313_MIN:
