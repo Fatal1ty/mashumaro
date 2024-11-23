@@ -162,11 +162,21 @@ class AbstractUnpackerBuilder(AbstractMethodBuilder, ABC):
 class UnionUnpackerBuilder(AbstractUnpackerBuilder):
     def __init__(self, args: tuple[type, ...]):
         self.union_args = args
+        self.method_name: str | None = None
 
     def get_method_prefix(self) -> str:
         return "union"
 
+    def _generate_method_name(self, spec: ValueSpec) -> str:
+        method_name = super()._generate_method_name(spec)
+        self.method_name = method_name
+        return method_name
+
     def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
+        if not spec.field_ctx.unpacker and self.method_name:
+            spec.field_ctx.unpacker = self._get_call_expr(
+                spec, self.method_name
+            )
         orig_lines = lines
         lines = CodeLines()
         unpackers = set()
@@ -175,7 +185,7 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
         type_match_statements = 0
         for type_arg in self.union_args:
             unpacker = UnpackerRegistry.get(
-                spec.copy(type=type_arg, expression="value")
+                spec.copy(type=type_arg, expression="value", owner=spec.type)
             )
             type_arg_unpackers.append((type_arg, unpacker))
             if isinstance(unpacker, TypeMatchEligibleExpression):
@@ -229,6 +239,10 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
         if type_match_statements > 1:
             orig_lines.append("__value_type = type(value)")
         orig_lines.extend(lines)
+
+    def _get_existing_method(self, spec: ValueSpec) -> Optional[str]:
+        if spec.owner is spec.type:
+            return spec.field_ctx.unpacker
 
 
 class TypeVarUnpackerBuilder(UnionUnpackerBuilder):
