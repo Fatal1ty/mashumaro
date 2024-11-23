@@ -29,7 +29,7 @@ ensure_newline_before_comments = true
 
 [tool.black]
 line-length = 79
-target-version = ['py38', 'py39', 'py310', 'py311']
+target-version = ['py39', 'py310', 'py311', 'py312']
 
 [tool.ruff]
 line-length = 79
