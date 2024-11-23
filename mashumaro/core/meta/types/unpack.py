@@ -162,7 +162,7 @@ class AbstractUnpackerBuilder(AbstractMethodBuilder, ABC):
 class UnionUnpackerBuilder(AbstractUnpackerBuilder):
     def __init__(self, args: tuple[type, ...]):
         self.union_args = args
-        self.method_name: str | None = None
+        self.method_name: Optional[str] = None
 
     def get_method_prefix(self) -> str:
         return "union"
