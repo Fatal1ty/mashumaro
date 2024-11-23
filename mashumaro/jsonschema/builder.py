@@ -1,8 +1,10 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Optional, Type
 
 from mashumaro.jsonschema.dialects import DRAFT_2020_12, JSONSchemaDialect
 from mashumaro.jsonschema.models import Context, JSONSchema
+from mashumaro.jsonschema.plugins import BasePlugin
 from mashumaro.jsonschema.schema import Instance, get_schema
 
 try:
@@ -21,6 +23,7 @@ def build_json_schema(
     with_dialect_uri: bool = False,
     dialect: Optional[JSONSchemaDialect] = None,
     ref_prefix: Optional[str] = None,
+    plugins: Sequence[BasePlugin] = (),
 ) -> JSONSchema:
     if context is None:
         context = Context()
@@ -30,6 +33,7 @@ def build_json_schema(
             definitions=context.definitions,
             all_refs=context.all_refs,
             ref_prefix=context.ref_prefix,
+            plugins=context.plugins,
         )
     if dialect is not None:
         context.dialect = dialect
@@ -41,6 +45,8 @@ def build_json_schema(
         context.ref_prefix = ref_prefix.rstrip("/")
     elif context.ref_prefix is None:
         context.ref_prefix = context.dialect.definitions_root_pointer
+    if plugins:
+        context.plugins = plugins
     instance = Instance(instance_type)
     schema = get_schema(instance, context, with_dialect_uri=with_dialect_uri)
     if with_definitions and context.definitions:
@@ -64,6 +70,7 @@ class JSONSchemaBuilder:
         dialect: JSONSchemaDialect = DRAFT_2020_12,
         all_refs: Optional[bool] = None,
         ref_prefix: Optional[str] = None,
+        plugins: Sequence[BasePlugin] = (),
     ):
         if all_refs is None:
             all_refs = dialect.all_refs
@@ -73,6 +80,7 @@ class JSONSchemaBuilder:
             dialect=dialect,
             all_refs=all_refs,
             ref_prefix=ref_prefix.rstrip("/"),
+            plugins=plugins,
         )
 
     def build(self, instance_type: Type) -> JSONSchema:

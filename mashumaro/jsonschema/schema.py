@@ -105,6 +105,9 @@ class Instance:
     __owner_builder: Optional[CodeBuilder] = None
     __self_builder: Optional[CodeBuilder] = None
 
+    # Original type despite custom serialization. To be revised.
+    _original_type: Type = field(init=False)
+
     origin_type: Type = field(init=False)
     annotations: list[Annotation] = field(init=False, default_factory=list)
 
@@ -150,6 +153,7 @@ class Instance:
         return new_instance
 
     def __post_init__(self) -> None:
+        self._original_type = self.type
         self.update_type(self.type)
         if is_annotated(self.type):
             self.annotations = getattr(self.type, "__metadata__", [])
@@ -260,12 +264,22 @@ class EmptyJSONSchema(JSONSchema):
 def get_schema(
     instance: Instance, ctx: Context, with_dialect_uri: bool = False
 ) -> JSONSchema:
+    schema = None
     for schema_creator in Registry.iter():
         schema = schema_creator(instance, ctx)
         if schema is not None:
             if with_dialect_uri:
                 schema.schema = ctx.dialect.uri
-            return schema
+            break
+    for plugin in ctx.plugins:
+        try:
+            new_schema = plugin.get_schema(instance, ctx, schema)
+            if new_schema:
+                schema = new_schema
+        except NotImplementedError:
+            continue
+    if schema:
+        return schema
     raise NotImplementedError(
         f'Type {type_name(instance.type)} of field "{instance.name}" '
         f"in {type_name(instance.owner_class)} isn't supported"
