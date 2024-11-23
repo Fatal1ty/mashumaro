@@ -3286,15 +3286,27 @@ Object constraints:
 
 ### JSON Schema plugins
 
-If the built-in functionality doesn't meet your needs, you can customize the JSON Schema generation or add support for additional types using plugins. The `mashumaro.jsonschema.plugins.BasePlugin` class provides a `get_schema` method that you can override to implement custom behavior.
+If the built-in functionality doesn't meet your needs, you can customize the
+JSON Schema generation or add support for additional types using plugins.
+The [`mashumaro.jsonschema.plugins.BasePlugin`](https://github.com/Fatal1ty/mashumaro/blob/32179eac1927483f4da015f711b07c04e8b2b2b9/mashumaro/jsonschema/plugins.py#L9-L16)
+class provides a `get_schema` method that you can override to implement custom
+behavior.
 
-The plugin system works by iterating through all registered plugins and calling their `get_schema` methods. If a plugin's `get_schema` method raises a `NotImplementedError` or returns `None`, it indicates that the plugin doesn't provide the required functionality for that particular case.
+The plugin system works by iterating through all registered plugins and calling
+their `get_schema` methods. If a plugin's `get_schema` method raises a
+`NotImplementedError` or returns `None`, it indicates that the plugin doesn't
+provide the required functionality for that particular case.
 
-You can apply multiple plugins sequentially, allowing each to modify the schema in turn. This approach enables a step-by-step transformation of the schema, with each plugin contributing its specific modifications.
+You can apply multiple plugins sequentially, allowing each to modify the schema
+in turn. This approach enables a step-by-step transformation of the schema,
+with each plugin contributing its specific modifications.
 
-Plugins can be registered using the `plugins` argument in either the `build_json_schema` function or the `JSONSchemaBuilder` class.
+Plugins can be registered using the `plugins` argument in either the
+`build_json_schema` function or the `JSONSchemaBuilder` class.
 
-The `mashumaro.jsonschema.plugins` module contains several built-in plugins. Currently, one of these plugins adds descriptions to JSON schemas using docstrings from dataclasses:
+The [`mashumaro.jsonschema.plugins`](https://github.com/Fatal1ty/mashumaro/blob/master/mashumaro/jsonschema/plugins.py)
+module contains several built-in plugins. Currently, one of these plugins adds
+descriptions to JSON schemas using docstrings from dataclasses:
 
 ```python
 from dataclasses import dataclass
@@ -3335,7 +3347,9 @@ print(schema.to_json())
 ```
 </details>
 
-Creating your own custom plugin is straightforward. For instance, if you want to add support for Pydantic models, you could write a plugin similar to the following:
+Creating your own custom plugin is straightforward. For instance, if you want
+to add support for Pydantic models, you could write a plugin similar to the
+following:
 
 ```python
 from dataclasses import dataclass
