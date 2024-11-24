@@ -65,14 +65,21 @@ from mashumaro.jsonschema.annotations import (
 from mashumaro.jsonschema.builder import JSONSchemaBuilder, build_json_schema
 from mashumaro.jsonschema.dialects import DRAFT_2020_12, OPEN_API_3_1
 from mashumaro.jsonschema.models import (
+    Context,
     JSONArraySchema,
     JSONObjectSchema,
     JSONSchema,
+    JSONSchemaInstanceFormat,
     JSONSchemaInstanceFormatExtension,
     JSONSchemaInstanceType,
     JSONSchemaStringFormat,
 )
-from mashumaro.jsonschema.schema import UTC_OFFSET_PATTERN, EmptyJSONSchema
+from mashumaro.jsonschema.plugins import BasePlugin
+from mashumaro.jsonschema.schema import (
+    UTC_OFFSET_PATTERN,
+    EmptyJSONSchema,
+    Instance,
+)
 from mashumaro.types import Discriminator, SerializationStrategy
 from tests.entities import (
     CustomPath,
@@ -1354,3 +1361,79 @@ def test_jsonschema_with_optional_discriminator_and_default_for_local_types():
         additionalProperties=False,
     )
     assert build_json_schema(Main) == schema
+
+
+def test_jsonschema_with_custom_instance_format():
+    class CustomJSONSchemaInstanceFormatPlugin(BasePlugin):
+        def get_schema(
+            self,
+            instance: Instance,
+            ctx: Context,
+            schema: Optional[JSONSchema] = None,
+        ) -> Optional[JSONSchema]:
+            for annotation in instance.annotations:
+                if isinstance(annotation, JSONSchemaInstanceFormat):
+                    schema.format = annotation
+            return schema
+
+    class Custom1InstanceFormat(JSONSchemaInstanceFormat):
+        CUSTOM1 = "custom1"
+
+    class CustomInstanceFormatBase(JSONSchemaInstanceFormat):
+        pass
+
+    class Custom2InstanceFormat(CustomInstanceFormatBase):
+        CUSTOM2 = "custom2"
+
+    type1 = Annotated[str, Custom1InstanceFormat.CUSTOM1]
+    schema1 = build_json_schema(
+        type1, plugins=[CustomJSONSchemaInstanceFormatPlugin()]
+    )
+    assert schema1.format is Custom1InstanceFormat.CUSTOM1
+    assert schema1.to_dict()["format"] == "custom1"
+
+    type2 = Annotated[int, Custom2InstanceFormat.CUSTOM2]
+    schema2 = build_json_schema(
+        type2, plugins=[CustomJSONSchemaInstanceFormatPlugin()]
+    )
+    assert schema2.format is Custom2InstanceFormat.CUSTOM2
+    assert schema2.to_dict()["format"] == "custom2"
+
+    assert (
+        JSONSchema.from_dict({"format": "custom1"}).format
+        is Custom1InstanceFormat.CUSTOM1
+    )
+    assert (
+        JSONSchema.from_dict({"format": "custom2"}).format
+        is Custom2InstanceFormat.CUSTOM2
+    )
+
+    @dataclass
+    class MyClass:
+        x: str
+        y: str
+
+        class Config(BaseConfig):
+            json_schema = {
+                "properties": {
+                    "x": {"type": "string", "format": "custom1"},
+                    "y": {"type": "string", "format": "custom2"},
+                }
+            }
+
+    schema3 = build_json_schema(MyClass)
+    assert schema3 == JSONObjectSchema(
+        title="MyClass",
+        properties={
+            "x": JSONSchema(
+                type=JSONSchemaInstanceType.STRING,
+                format=Custom1InstanceFormat.CUSTOM1,
+            ),
+            "y": JSONSchema(
+                type=JSONSchemaInstanceType.STRING,
+                format=Custom2InstanceFormat.CUSTOM2,
+            ),
+        },
+        required=["x", "y"],
+        additionalProperties=False,
+    )

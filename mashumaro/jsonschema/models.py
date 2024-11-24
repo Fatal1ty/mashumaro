@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 from typing_extensions import TYPE_CHECKING, Self, TypeAlias
 
 from mashumaro.config import BaseConfig
+from mashumaro.core.meta.helpers import iter_all_subclasses
 from mashumaro.helper import pass_through
 from mashumaro.jsonschema.dialects import DRAFT_2020_12, JSONSchemaDialect
 
@@ -96,6 +97,17 @@ IPADDRESS_FORMATS = {
 }
 
 
+def _deserialize_json_schema_instance_format(
+    value: Any,
+) -> JSONSchemaInstanceFormat:
+    for cls in iter_all_subclasses(JSONSchemaInstanceFormat):
+        try:
+            return cls(value)
+        except (ValueError, TypeError):
+            pass
+    raise ValueError(value)
+
+
 @dataclass(unsafe_hash=True)
 class JSONSchema(DataClassJSONMixin):
     # Common keywords
@@ -103,9 +115,7 @@ class JSONSchema(DataClassJSONMixin):
     type: Optional[JSONSchemaInstanceType] = None
     enum: Optional[list[Any]] = None
     const: Optional[Any] = field(default_factory=lambda: MISSING)
-    format: Optional[
-        Union[JSONSchemaStringFormat, JSONSchemaInstanceFormatExtension]
-    ] = None
+    format: Optional[JSONSchemaInstanceFormat] = None
     title: Optional[str] = None
     description: Optional[str] = None
     anyOf: Optional[List["JSONSchema"]] = None
@@ -157,6 +167,9 @@ class JSONSchema(DataClassJSONMixin):
             int: pass_through,
             float: pass_through,
             Null: pass_through,
+            JSONSchemaInstanceFormat: {
+                "deserialize": _deserialize_json_schema_instance_format,
+            },
         }
 
     def __pre_serialize__(self) -> Self:
