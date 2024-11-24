@@ -65,7 +65,6 @@ from mashumaro.jsonschema.annotations import (
 from mashumaro.jsonschema.builder import JSONSchemaBuilder, build_json_schema
 from mashumaro.jsonschema.dialects import DRAFT_2020_12, OPEN_API_3_1
 from mashumaro.jsonschema.models import (
-    BasePlugin,
     Context,
     JSONArraySchema,
     JSONObjectSchema,
@@ -75,6 +74,7 @@ from mashumaro.jsonschema.models import (
     JSONSchemaInstanceType,
     JSONSchemaStringFormat,
 )
+from mashumaro.jsonschema.plugins import BasePlugin
 from mashumaro.jsonschema.schema import (
     UTC_OFFSET_PATTERN,
     EmptyJSONSchema,
