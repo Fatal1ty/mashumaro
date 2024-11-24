@@ -97,7 +97,9 @@ IPADDRESS_FORMATS = {
 }
 
 
-def _deserialize_json_schema_instance_format(value):
+def _deserialize_json_schema_instance_format(
+    value: Any,
+) -> JSONSchemaInstanceFormat:
     for cls in iter_all_subclasses(JSONSchemaInstanceFormat):
         try:
             return cls(value)
@@ -167,7 +169,7 @@ class JSONSchema(DataClassJSONMixin):
             Null: pass_through,
             JSONSchemaInstanceFormat: {
                 "deserialize": _deserialize_json_schema_instance_format,
-            }
+            },
         }
 
     def __pre_serialize__(self) -> Self:
