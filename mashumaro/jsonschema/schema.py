@@ -40,6 +40,7 @@ from mashumaro.core.meta.helpers import (
     is_named_tuple,
     is_new_type,
     is_not_required,
+    is_readonly,
     is_required,
     is_special_typing_primitive,
     is_type_var,
@@ -457,6 +458,8 @@ def on_special_typing_primitive(
         )
     elif is_type_var_tuple(instance.type):
         return get_schema(instance.derive(type=tuple[Any, ...]), ctx)
+    elif is_readonly(instance.type):
+        return get_schema(instance.derive(type=args[0]), ctx)
     elif isinstance(instance.type, ForwardRef):
         evaluated = evaluate_forward_ref(
             instance.type,
