@@ -325,6 +325,15 @@ def is_typed_dict(typ: Type) -> bool:
     return False
 
 
+def is_readonly(typ: Type) -> bool:
+    origin = get_type_origin(typ)
+    for module in (typing, typing_extensions):
+        with suppress(AttributeError):
+            if origin is getattr(module, "ReadOnly"):
+                return True
+    return False
+
+
 def is_named_tuple(typ: Type) -> bool:
     try:
         return issubclass(typ, tuple) and hasattr(typ, "_fields")

@@ -44,6 +44,7 @@ from mashumaro.core.meta.helpers import (
     is_new_type,
     is_not_required,
     is_optional,
+    is_readonly,
     is_required,
     is_self,
     is_special_typing_primitive,
@@ -873,6 +874,8 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
                 return UnpackerRegistry.get(spec.copy(type=evaluated))
         elif is_type_alias_type(spec.type):
             return UnpackerRegistry.get(spec.copy(type=spec.type.__value__))
+        elif is_readonly(spec.type):
+            return UnpackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
         raise UnserializableDataError(
             f"{spec.type} as a field type is not supported by mashumaro"
         )

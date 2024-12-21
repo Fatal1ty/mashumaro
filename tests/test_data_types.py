@@ -61,7 +61,11 @@ from mashumaro.types import (
     SerializableType,
     SerializationStrategy,
 )
-from tests.entities import MyUntypedNamedTupleWithDefaults, TDefaultInt
+from tests.entities import (
+    MyUntypedNamedTupleWithDefaults,
+    TDefaultInt,
+    TypedDictWithReadOnly,
+)
 
 from .conftest import add_unpack_method
 from .entities import (
@@ -1195,6 +1199,15 @@ def test_dataclass_with_typed_dict_required_and_optional_keys():
     assert DataClass(x={"int": 1, "float": 2.0, "str": "str"}).to_dict() == {
         "x": {"int": 1, "float": 2.0, "str": "str"}
     }
+
+
+def test_dataclass_with_typed_dict_with_read_only_key():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: TypedDictWithReadOnly
+
+    assert DataClass.from_dict({"x": {"x": "42"}}) == DataClass({"x": 42})
+    assert DataClass({"x": 42}).to_dict() == {"x": {"x": 42}}
 
 
 def test_dataclass_with_named_tuple():

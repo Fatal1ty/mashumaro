@@ -107,6 +107,7 @@ from tests.entities import (
     TypedDictRequiredAndOptionalKeys,
     TypedDictRequiredKeys,
     TypedDictRequiredKeysWithOptional,
+    TypedDictWithReadOnly,
 )
 from tests.test_pep_655 import (
     TypedDictCorrectNotRequired,
@@ -720,6 +721,11 @@ def test_jsonschema_for_typeddict():
         },
         additionalProperties=False,
         required=["required"],
+    )
+    assert build_json_schema(TypedDictWithReadOnly) == JSONObjectSchema(
+        properties={"x": JSONSchema(type=JSONSchemaInstanceType.INTEGER)},
+        additionalProperties=False,
+        required=["x"],
     )
 
 
