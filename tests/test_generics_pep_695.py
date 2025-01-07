@@ -4,6 +4,7 @@ from typing import Any, Mapping
 
 from mashumaro import DataClassDictMixin
 from mashumaro.mixins.json import DataClassJSONMixin
+from mashumaro.types import SerializableType
 from tests.entities import MyGenericDataClass, SerializableTypeGenericList
 
 
@@ -16,6 +17,18 @@ class Foo[T](DataClassJSONMixin):
 @dataclass
 class Bar(Foo):
     pass
+
+
+@dataclass
+class GenericSerializableType[T](SerializableType):
+    value: object
+
+    def _serialize(self):
+        return self.value
+
+    @classmethod
+    def _deserialize(cls, value):
+        return cls(value)
 
 
 def test_one_generic():
@@ -238,3 +251,11 @@ def test_self_referenced_generic_no_max_recursion_error():
     assert Bar.from_dict({"x": 42, "y": {"x": 33, "y": None}}) == obj
     assert obj.to_json() == '{"x": 42, "y": {"x": 33, "y": null}}'
     assert Bar.from_json('{"x": 42, "y": {"x": 33, "y": null}}') == obj
+
+
+# Regression test for https://github.com/Fatal1ty/mashumaro/issues/274.
+def test_generic_serializable_type_getitem():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        # Simply specializing the type would lead to an AttributeError.
+        x: GenericSerializableType[int]

@@ -29,6 +29,7 @@ class SerializableType:
         ] = Sentinel.MISSING,
         **kwargs: Any,
     ):
+        super().__init_subclass__(**kwargs)
         if use_annotations is not Sentinel.MISSING:
             cls.__use_annotations__ = use_annotations
 
@@ -61,6 +62,7 @@ class SerializationStrategy:
         ] = Sentinel.MISSING,
         **kwargs: Any,
     ):
+        super().__init_subclass__(**kwargs)
         if use_annotations is not Sentinel.MISSING:
             cls.__use_annotations__ = use_annotations
 
