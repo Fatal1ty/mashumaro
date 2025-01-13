@@ -22,22 +22,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
-      - name: Restore cached virtualenv
-        uses: actions/cache/restore@v4
-        with:
-          key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
-          path: .venv
       - name: Install dependencies
         run: |
           python -m venv .venv
           source .venv/bin/activate
           pip install -r requirements-dev.txt
           pip install .
-      - name: Save cached virtualenv
-        uses: actions/cache/save@v4
-        with:
-          key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
-          path: .venv
       - name: Run ruff
         run: |
           source .venv/bin/activate
@@ -70,22 +60,12 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: true
-    - name: Restore cached virtualenv
-      uses: actions/cache/restore@v4
-      with:
-        key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
-        path: .venv
     - name: Install dependencies
       run: |
         python -m venv .venv
         source .venv/bin/activate
         pip install -r requirements-dev.txt
         pip install .
-    - name: Save cached virtualenv
-      uses: actions/cache/save@v4
-      with:
-        key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
-        path: .venv
     - name: Run tests with coverage
       run: |
         source .venv/bin/activate
@@ -114,11 +94,6 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: true
-    - name: Restore cached virtualenv
-      uses: actions/cache/restore@v4
-      with:
-        key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
-        path: .venv
     - name: Install dependencies
       run: |
         python -m venv .venv
@@ -126,11 +101,6 @@ jobs:
         pip install -r requirements-dev.txt
         pip install .
         pip install tzdata
-    - name: Save cached virtualenv
-      uses: actions/cache/save@v4
-      with:
-        key: venv-${{ runner.os }}-py-${{ matrix.python-version }}-${{ hashFiles('requirements-dev.txt') }}
-        path: .venv
     - name: Run tests with coverage
       run: |
         .venv/Scripts/activate
