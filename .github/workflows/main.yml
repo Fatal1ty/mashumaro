@@ -43,7 +43,8 @@ jobs:
       - name: Run codespell
         run: |
           source .venv/bin/activate
-          codespell mashumaro tests README.md .github/*.md
+          codespell mashumaro tests .github/*.md
+          codespell README.md --ignore-words-list brunch
 
   test-posix:
     name: Tests on Posix
