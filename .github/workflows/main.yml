@@ -13,8 +13,9 @@ jobs:
     name: Code style tests
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
@@ -52,8 +53,9 @@ jobs:
       - test-code-style
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -70,7 +72,7 @@ jobs:
     - name: Run tests with coverage
       run: |
         source .venv/bin/activate
-        pytest --cov=mashumaro --cov=tests
+        pytest --numprocesses=auto --cov=mashumaro --cov=tests
     - name: Upload Coverage
       run: |
         source .venv/bin/activate
@@ -86,8 +88,9 @@ jobs:
       - test-code-style
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -105,7 +108,7 @@ jobs:
     - name: Run tests with coverage
       run: |
         .venv/Scripts/activate
-        pytest --cov=mashumaro --cov=tests
+        pytest --numprocesses=auto --cov=mashumaro --cov=tests
     - name: Upload Coverage
       run: |
         .venv/Scripts/activate
