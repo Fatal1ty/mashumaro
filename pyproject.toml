@@ -1,3 +1,44 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=77.0"]
+
+[project]
+name = "mashumaro"
+version = "3.16"
+license = "Apache-2.0"
+description = "Fast and well tested serialization library"
+readme = "README.md"
+authors = [{ name = "Alexander Tikhonov", email = "random.gauss@gmail.com" }]
+requires-python = ">=3.9"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Development Status :: 5 - Production/Stable",
+]
+dependencies = [
+    "typing_extensions>=4.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Fatal1ty/mashumaro"
+
+[project.optional-dependencies]
+orjson = ["orjson"]
+msgpack = ["msgpack>=0.5.6"]
+yaml = ["pyyaml>=3.13"]
+toml = [
+    "tomli-w>=1.0",
+    "tomli>=1.1.0;python_version<'3.11'",
+]
+
+[tool.setuptools.packages.find]
+include = ["mashumaro*"]
+
 [tool.mypy]
 ignore_missing_imports = true
 disallow_untyped_defs = true
@@ -33,9 +74,6 @@ target-version = ['py39', 'py310', 'py311', 'py312']
 
 [tool.ruff]
 line-length = 79
-
-[tool.coverage.run]
-omit = ["setup.py"]
 
 [tool.coverage.report]
 exclude_lines = ["pragma: no cover", "@overload", "@abstractmethod"]
