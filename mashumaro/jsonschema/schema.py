@@ -153,6 +153,7 @@ class Instance:
                 new_type,
                 get_forward_ref_referencing_globals(new_type, self.type),
                 self.__dict__,
+                owner=self.origin_type,
             )
         new_instance = replace(self, **changes)
         if is_dataclass(self.origin_type):
@@ -471,6 +472,7 @@ def on_special_typing_primitive(
             instance.type,
             get_forward_ref_referencing_globals(instance.type),
             None,
+            owner=instance.origin_type,
         )
         if evaluated is not None:
             return get_schema(instance.derive(type=evaluated), ctx)
