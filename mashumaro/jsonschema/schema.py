@@ -2,6 +2,7 @@ import collections.abc
 import datetime
 import ipaddress
 import os
+import sys
 import warnings
 from base64 import encodebytes
 from collections import ChainMap, Counter, deque
@@ -93,6 +94,11 @@ try:
     )
 except ImportError:  # pragma: no cover
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
+
+if sys.version_info >= (3, 14):
+    from annotationlib import get_annotations
+else:
+    from typing_extensions import get_annotations  # type: ignore[attr-defined]
 
 
 UTC_OFFSET_PATTERN = r"^UTC([+-][0-2][0-9]:[0-5][0-9])?$"
@@ -639,8 +645,8 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
     )[instance.origin_type]
     annotations = {
         k: resolved.get(v, v)
-        for k, v in getattr(
-            instance.origin_type, "__annotations__", {}
+        for k, v in get_annotations(
+            instance.origin_type, eval_str=True
         ).items()
     }
     fields = getattr(instance.type, "_fields", ())
@@ -685,7 +691,9 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
     )[instance.origin_type]
     annotations = {
         k: resolved.get(v, v)
-        for k, v in instance.origin_type.__annotations__.items()
+        for k, v in get_annotations(
+            instance.origin_type, eval_str=True
+        ).items()
     }
     all_keys = list(annotations.keys())
     required_keys = getattr(instance.type, "__required_keys__", all_keys)
