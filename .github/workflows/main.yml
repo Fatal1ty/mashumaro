@@ -74,6 +74,7 @@ jobs:
         source .venv/bin/activate
         pytest --numprocesses=auto --cov=mashumaro --cov=tests
     - name: Upload Coverage
+      if: matrix.python-version != '3.14'
       run: |
         source .venv/bin/activate
         coveralls --service=github
@@ -110,6 +111,7 @@ jobs:
         .venv/Scripts/activate
         pytest --numprocesses=auto --cov=mashumaro --cov=tests
     - name: Upload Coverage
+      if: matrix.python-version != '3.14'
       run: |
         .venv/Scripts/activate
         coveralls --service=github
