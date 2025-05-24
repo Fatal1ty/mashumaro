@@ -343,7 +343,7 @@ class CodeBuilder:
         globalns = get_forward_ref_referencing_globals(
             typ, owner, self.globals
         )
-        return evaluate_forward_ref(typ, globalns, self.__dict__)
+        return evaluate_forward_ref(typ, globalns, self.__dict__, owner=owner)
 
     def get_declared_hook(self, method_name: str) -> typing.Any:
         cls = get_class_that_defines_method(method_name, self.cls)
