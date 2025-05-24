@@ -290,7 +290,7 @@ def type_name(
 def is_special_typing_primitive(typ: Any) -> bool:
     try:
         issubclass(typ, object)
-        return False
+        return PY_314_MIN and issubclass(typ, typing.Union)  # type: ignore[arg-type]
     except TypeError:
         return True
 
