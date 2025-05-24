@@ -29,7 +29,8 @@ setup(
     package_data={"mashumaro": ["py.typed", "mixins/orjson.pyi"]},
     python_requires=">=3.9",
     install_requires=[
-        "typing_extensions>=4.1.0",
+        "typing_extensions>=4.13.0;python_version<'3.14'",
+        "typing_extensions>=4.14.0rc1;python_version>='3.14'",
     ],
     extras_require={
         "orjson": ["orjson"],
