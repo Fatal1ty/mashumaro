@@ -2,6 +2,7 @@ import enum
 import importlib
 import inspect
 import math
+import sys
 import types
 import typing
 import uuid
@@ -85,6 +86,11 @@ from mashumaro.exceptions import (  # noqa
 )
 from mashumaro.types import Alias, Discriminator
 
+if sys.version_info >= (3, 14):
+    from annotationlib import get_annotations
+else:
+    from typing_extensions import get_annotations  # type: ignore[attr-defined]
+
 __PRE_SERIALIZE__ = "__pre_serialize__"
 __PRE_DESERIALIZE__ = "__pre_deserialize__"
 __POST_SERIALIZE__ = "__post_serialize__"
@@ -167,7 +173,7 @@ class CodeBuilder:
 
     @property
     def annotations(self) -> dict[str, typing.Any]:
-        return self.namespace.get("__annotations__", {})
+        return get_annotations(self.cls, eval_str=True)
 
     @property
     def is_nailed(self) -> bool:

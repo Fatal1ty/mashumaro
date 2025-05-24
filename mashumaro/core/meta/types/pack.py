@@ -3,6 +3,7 @@ import enum
 import ipaddress
 import os
 import re
+import sys
 import typing
 import uuid
 import zoneinfo
@@ -74,6 +75,11 @@ from mashumaro.types import (
     SerializableType,
     SerializationStrategy,
 )
+
+if sys.version_info >= (3, 14):
+    from annotationlib import get_annotations
+else:
+    from typing_extensions import get_annotations  # type: ignore[attr-defined]
 
 __all__ = ["PackerRegistry"]
 
@@ -674,7 +680,7 @@ def pack_named_tuple(spec: ValueSpec) -> Expression:
     ]
     annotations = {
         k: resolved.get(v, v)
-        for k, v in getattr(spec.origin_type, "__annotations__", {}).items()
+        for k, v in get_annotations(spec.origin_type, eval_str=True).items()
     }
     fields = getattr(spec.type, "_fields", ())
     packers = []
@@ -716,7 +722,7 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
     ]
     annotations = {
         k: resolved.get(v, v)
-        for k, v in spec.origin_type.__annotations__.items()
+        for k, v in get_annotations(spec.origin_type, eval_str=True).items()
     }
     all_keys = list(annotations.keys())
     required_keys = getattr(spec.type, "__required_keys__", all_keys)
