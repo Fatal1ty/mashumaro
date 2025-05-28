@@ -1,11 +1,12 @@
+import collections.abc
 import datetime
 import ipaddress
 import os
+import sys
 import warnings
 from base64 import encodebytes
 from collections import ChainMap, Counter, deque
 from collections.abc import (
-    ByteString,
     Callable,
     Collection,
     Iterable,
@@ -25,7 +26,7 @@ from zoneinfo import ZoneInfo
 from typing_extensions import TypeAlias
 
 from mashumaro.config import BaseConfig
-from mashumaro.core.const import PY_311_MIN
+from mashumaro.core.const import PY_311_MIN, PY_314_MIN
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import (
     evaluate_forward_ref,
@@ -94,6 +95,11 @@ try:
 except ImportError:  # pragma: no cover
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
+if sys.version_info >= (3, 14):
+    from annotationlib import get_annotations
+else:
+    from typing_extensions import get_annotations  # type: ignore[attr-defined]
+
 
 UTC_OFFSET_PATTERN = r"^UTC([+-][0-2][0-9]:[0-5][0-9])?$"
 
@@ -147,6 +153,7 @@ class Instance:
                 new_type,
                 get_forward_ref_referencing_globals(new_type, self.type),
                 self.__dict__,
+                owner=self.origin_type,
             )
         new_instance = replace(self, **changes)
         if is_dataclass(self.origin_type):
@@ -465,6 +472,7 @@ def on_special_typing_primitive(
             instance.type,
             get_forward_ref_referencing_globals(instance.type),
             None,
+            owner=instance.origin_type,
         )
         if evaluated is not None:
             return get_schema(instance.derive(type=evaluated), ctx)
@@ -639,8 +647,8 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
     )[instance.origin_type]
     annotations = {
         k: resolved.get(v, v)
-        for k, v in getattr(
-            instance.origin_type, "__annotations__", {}
+        for k, v in get_annotations(
+            instance.origin_type, eval_str=True
         ).items()
     }
     fields = getattr(instance.type, "_fields", ())
@@ -685,7 +693,9 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
     )[instance.origin_type]
     annotations = {
         k: resolved.get(v, v)
-        for k, v in instance.origin_type.__annotations__.items()
+        for k, v in get_annotations(
+            instance.origin_type, eval_str=True
+        ).items()
     }
     all_keys = list(annotations.keys())
     required_keys = getattr(instance.type, "__required_keys__", all_keys)
@@ -751,7 +761,11 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
     args = get_args(instance.type)
 
-    if issubclass(instance.origin_type, ByteString):  # type: ignore[arg-type]
+    if (
+        not PY_314_MIN
+        and issubclass(instance.origin_type, collections.abc.ByteString)  # type: ignore[arg-type,attr-defined]
+        or instance.origin_type in (bytes, bytearray)
+    ):
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,

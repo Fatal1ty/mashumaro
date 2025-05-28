@@ -6,6 +6,7 @@ import ipaddress
 import os
 import pathlib
 import re
+import sys
 import types
 import typing
 import uuid
@@ -91,6 +92,11 @@ from mashumaro.types import (
     SerializableType,
     SerializationStrategy,
 )
+
+if sys.version_info >= (3, 14):
+    from annotationlib import get_annotations
+else:
+    from typing_extensions import get_annotations  # type: ignore[attr-defined]
 
 try:
     import ciso8601
@@ -1063,7 +1069,7 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
     ]
     annotations = {
         k: resolved.get(v, v)
-        for k, v in getattr(spec.origin_type, "__annotations__", {}).items()
+        for k, v in get_annotations(spec.origin_type, eval_str=True).items()
     }
     fields = getattr(spec.type, "_fields", ())
     defaults = getattr(spec.type, "_field_defaults", {})
@@ -1151,7 +1157,7 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
     ]
     annotations = {
         k: resolved.get(v, v)
-        for k, v in spec.origin_type.__annotations__.items()
+        for k, v in get_annotations(spec.origin_type, eval_str=True).items()
     }
     all_keys = list(annotations.keys())
     required_keys = getattr(spec.type, "__required_keys__", all_keys)
@@ -1240,13 +1246,12 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
                 )
             )
 
-    if issubclass(spec.origin_type, typing.ByteString):  # type: ignore
-        if spec.origin_type is bytes:
-            spec.builder.ensure_object_imported(decodebytes)
-            return f"decodebytes({spec.expression}.encode())"
-        elif spec.origin_type is bytearray:
-            spec.builder.ensure_object_imported(decodebytes)
-            return f"bytearray(decodebytes({spec.expression}.encode()))"
+    if spec.origin_type is bytes:
+        spec.builder.ensure_object_imported(decodebytes)
+        return f"decodebytes({spec.expression}.encode())"
+    elif spec.origin_type is bytearray:
+        spec.builder.ensure_object_imported(decodebytes)
+        return f"bytearray(decodebytes({spec.expression}.encode()))"
     elif issubclass(spec.origin_type, str):
         return TypeMatchEligibleExpression(f"str({spec.expression})")
     elif ensure_generic_collection_subclass(spec, list):
