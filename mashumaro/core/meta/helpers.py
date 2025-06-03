@@ -35,6 +35,7 @@ from mashumaro.core.const import (
     PY_311_MIN,
     PY_312_MIN,
     PY_313_MIN,
+    PY_314_MIN,
 )
 from mashumaro.dialect import Dialect
 
@@ -289,7 +290,7 @@ def type_name(
 def is_special_typing_primitive(typ: Any) -> bool:
     try:
         issubclass(typ, object)
-        return False
+        return PY_314_MIN and issubclass(typ, typing.Union)  # type: ignore[arg-type]
     except TypeError:
         return True
 
@@ -760,8 +761,17 @@ def str_to_forward_ref(
 
 
 def evaluate_forward_ref(
-    typ: ForwardRef, globalns: dict[str, Any], localns: dict[str, Any]
+    typ: ForwardRef,
+    globalns: dict[str, Any],
+    localns: dict[str, Any],
+    *,
+    owner: Optional[type] = None,
 ) -> Optional[Type]:
+    if PY_314_MIN:
+        if owner is None or typ is owner:
+            return typing_extensions.evaluate_forward_ref(typ, globals=globalns)  # type: ignore[attr-defined]
+        else:
+            return typing_extensions.evaluate_forward_ref(typ, owner=owner)  # type: ignore[attr-defined]
     if PY_313_MIN:
         return typ._evaluate(
             globalns, localns, type_params=(), recursive_guard=frozenset()
