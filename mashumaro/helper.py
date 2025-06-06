@@ -36,12 +36,14 @@ def field_options(
     ] = None,
     serialization_strategy: Optional[SerializationStrategy] = None,
     alias: Optional[str] = None,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     return {
         "serialize": serialize,
         "deserialize": deserialize,
         "serialization_strategy": serialization_strategy,
         "alias": alias,
+        **kwargs,
     }
 
 
