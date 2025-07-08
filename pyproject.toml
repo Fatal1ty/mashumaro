@@ -12,6 +12,7 @@ authors = [{ name = "Alexander Tikhonov", email = "random.gauss@gmail.com" }]
 requires-python = ">=3.9"
 classifiers = [
     "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -38,6 +39,12 @@ toml = [
 
 [tool.setuptools.packages.find]
 include = ["mashumaro*"]
+
+[tool.setuptools.package-data]
+mashumaro = [
+    "py.typed",
+    "mixins/orjson.pyi",
+]
 
 [tool.mypy]
 ignore_missing_imports = true
