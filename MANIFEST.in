@@ -1,1 +1,2 @@
-recursive-include tests *
+graft tests
+recursive-exclude * *.py[co]
