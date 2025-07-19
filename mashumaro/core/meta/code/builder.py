@@ -2,6 +2,7 @@ import enum
 import importlib
 import inspect
 import math
+import sys
 import types
 import typing
 import uuid
@@ -31,11 +32,9 @@ from mashumaro.core.const import Sentinel
 from mashumaro.core.helpers import ConfigValue
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
-    evaluate_forward_ref,
     get_args,
     get_class_that_defines_field,
     get_class_that_defines_method,
-    get_forward_ref_referencing_globals,
     get_literal_values,
     get_name_error_name,
     get_type_annotations,
@@ -84,6 +83,11 @@ from mashumaro.exceptions import (  # noqa
     UnsupportedSerializationEngine,
 )
 from mashumaro.types import Alias, Discriminator
+
+if sys.version_info >= (3, 14):
+    from annotationlib import get_annotations
+else:
+    from typing_extensions import get_annotations
 
 __PRE_SERIALIZE__ = "__pre_serialize__"
 __PRE_DESERIALIZE__ = "__pre_deserialize__"
@@ -167,7 +171,7 @@ class CodeBuilder:
 
     @property
     def annotations(self) -> dict[str, typing.Any]:
-        return self.namespace.get("__annotations__", {})
+        return get_annotations(self.cls, eval_str=True)
 
     @property
     def is_nailed(self) -> bool:
@@ -328,16 +332,6 @@ class CodeBuilder:
                 print(f"{type_name(self.cls)}:")
             print(code)
         exec(code, self.globals, self.__dict__)
-
-    def evaluate_forward_ref(
-        self,
-        typ: typing.ForwardRef,
-        owner: typing.Optional[typing.Type],
-    ) -> typing.Optional[typing.Type]:
-        globalns = get_forward_ref_referencing_globals(
-            typ, owner, self.globals
-        )
-        return evaluate_forward_ref(typ, globalns, self.__dict__)
 
     def get_declared_hook(self, method_name: str) -> typing.Any:
         cls = get_class_that_defines_method(method_name, self.cls)
