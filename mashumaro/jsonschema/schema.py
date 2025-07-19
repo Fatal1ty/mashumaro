@@ -297,7 +297,9 @@ def _get_schema_or_none(
     return schema
 
 
-def _default(f_type: Type, f_value: Any, config_cls: Type[BaseConfig]) -> Any:
+def _default(
+    f_type: Optional[Type], f_value: Any, config_cls: Type[BaseConfig]
+) -> Any:
     @dataclass
     class CC(DataClassJSONMixin):
         x: f_type = f_value  # type: ignore
