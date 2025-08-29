@@ -180,7 +180,10 @@ def test_jsonschema_for_dataclass():
     )
     assert build_json_schema(DataClass) == schema
     assert build_json_schema(DataClass, all_refs=True) == JSONSchema(
-        reference="#/$defs/DataClass", definitions={"DataClass": schema}
+        reference="#/$defs/test_jsonschema_for_dataclass__locals__DataClass",
+        definitions={
+            "test_jsonschema_for_dataclass__locals__DataClass": schema
+        },
     )
 
 
@@ -1157,7 +1160,12 @@ def test_jsonschema_with_ref_prefix():
     class DataClass:
         pass
 
-    schema = {"$ref": "#/components/responses/DataClass"}
+    schema = {
+        "$ref": (
+            "#/components/responses/"
+            "test_jsonschema_with_ref_prefix__locals__DataClass"
+        )
+    }
     assert (
         build_json_schema(
             List[DataClass], all_refs=True, ref_prefix="#/components/responses"

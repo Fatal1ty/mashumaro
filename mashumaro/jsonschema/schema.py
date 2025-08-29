@@ -52,7 +52,7 @@ from mashumaro.core.meta.helpers import (
     resolve_type_params,
     type_name,
 )
-from mashumaro.core.meta.types.common import NoneType
+from mashumaro.core.meta.types.common import NoneType, clean_id
 from mashumaro.helper import pass_through
 from mashumaro.jsonschema.annotations import (
     Annotation,
@@ -386,11 +386,12 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         if required:
             schema.required = required
         if ctx.all_refs:
-            ctx.definitions[instance.origin_type.__name__] = schema
-            ref_prefix = ctx.ref_prefix or ctx.dialect.definitions_root_pointer
-            return JSONSchema(
-                reference=f"{ref_prefix}/{instance.origin_type.__name__}"
+            def_name = clean_id(type_name(instance.type, short=True)).strip(
+                "_"
             )
+            ctx.definitions[def_name] = schema
+            ref_prefix = ctx.ref_prefix or ctx.dialect.definitions_root_pointer
+            return JSONSchema(reference=f"{ref_prefix}/{def_name}")
         else:
             return schema
 
