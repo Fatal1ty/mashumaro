@@ -352,9 +352,14 @@ def on_type_with_overridden_serialization(
 def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
     # TODO: Self references might not work
     if is_dataclass(instance.origin_type):
+        if ctx.all_refs:
+            title = clean_id(type_name(instance.type, short=True))
+            title = title.strip("_")
+        else:
+            title = instance.origin_type.__name__
         jsonschema_config = instance.get_self_config().json_schema
         schema = JSONObjectSchema(
-            title=instance.origin_type.__name__,
+            title=title,
             additionalProperties=jsonschema_config.get(
                 "additionalProperties", False
             ),
@@ -386,12 +391,9 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         if required:
             schema.required = required
         if ctx.all_refs:
-            def_name = clean_id(type_name(instance.type, short=True)).strip(
-                "_"
-            )
-            ctx.definitions[def_name] = schema
+            ctx.definitions[title] = schema
             ref_prefix = ctx.ref_prefix or ctx.dialect.definitions_root_pointer
-            return JSONSchema(reference=f"{ref_prefix}/{def_name}")
+            return JSONSchema(reference=f"{ref_prefix}/{title}")
         else:
             return schema
 
