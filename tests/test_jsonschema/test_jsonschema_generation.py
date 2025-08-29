@@ -32,6 +32,7 @@ from typing import (
     OrderedDict,
     Sequence,
     Tuple,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -1442,4 +1443,73 @@ def test_jsonschema_with_custom_instance_format():
         },
         required=["x", "y"],
         additionalProperties=False,
+    )
+
+
+def test_jsonschema_for_generic_dataclass():
+    T = TypeVar("T")
+
+    @dataclass
+    class MyClass(Generic[T]):
+        x: T
+        y: list[T]
+
+    assert build_json_schema(MyClass) == JSONObjectSchema(
+        title="MyClass",
+        properties={
+            "x": EmptyJSONSchema(),
+            "y": JSONArraySchema(),
+        },
+        additionalProperties=False,
+        required=["x", "y"],
+    )
+    assert build_json_schema(MyClass[int]) == JSONObjectSchema(
+        title="MyClass",
+        properties={
+            "x": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            "y": JSONArraySchema(
+                items=JSONSchema(type=JSONSchemaInstanceType.INTEGER)
+            ),
+        },
+        additionalProperties=False,
+        required=["x", "y"],
+    )
+
+    @dataclass
+    class MyClass2(Generic[T]):
+        z: MyClass[T]
+
+    assert build_json_schema(MyClass2) == JSONObjectSchema(
+        title="MyClass2",
+        properties={
+            "z": JSONObjectSchema(
+                title="MyClass",
+                properties={
+                    "x": EmptyJSONSchema(),
+                    "y": JSONArraySchema(),
+                },
+                additionalProperties=False,
+                required=["x", "y"],
+            )
+        },
+        additionalProperties=False,
+        required=["z"],
+    )
+    assert build_json_schema(MyClass2[str]) == JSONObjectSchema(
+        title="MyClass2",
+        properties={
+            "z": JSONObjectSchema(
+                title="MyClass",
+                properties={
+                    "x": JSONSchema(type=JSONSchemaInstanceType.STRING),
+                    "y": JSONArraySchema(
+                        items=JSONSchema(type=JSONSchemaInstanceType.STRING)
+                    ),
+                },
+                additionalProperties=False,
+                required=["x", "y"],
+            )
+        },
+        additionalProperties=False,
+        required=["z"],
     )
