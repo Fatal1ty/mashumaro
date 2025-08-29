@@ -151,6 +151,7 @@ class Instance:
         new_instance = replace(self, **changes)
         if is_dataclass(self.origin_type):
             new_instance.__owner_builder = self.__self_builder
+            new_instance.update_type(new_instance.type)
         return new_instance
 
     def __post_init__(self) -> None:
