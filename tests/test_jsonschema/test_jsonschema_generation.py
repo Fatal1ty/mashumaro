@@ -144,7 +144,7 @@ class DataClassWithThirdPartyType:
 
 def test_jsonschema_for_dataclass():
     @dataclass
-    class DataClass:
+    class MyClass:
         a: int
         b: float = 3.14
         c: Optional[int] = field(default=None, metadata={"alias": "cc"})
@@ -157,8 +157,8 @@ def test_jsonschema_for_dataclass():
         class Config:
             aliases = {"a": "aa", "d": "dd"}
 
-    schema = JSONObjectSchema(
-        title="DataClass",
+    assert build_json_schema(MyClass) == JSONObjectSchema(
+        title="MyClass",
         properties={
             "aa": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
             "b": JSONSchema(type=JSONSchemaInstanceType.NUMBER, default=3.14),
@@ -178,9 +178,35 @@ def test_jsonschema_for_dataclass():
         additionalProperties=False,
         required=["aa"],
     )
-    assert build_json_schema(DataClass) == schema
-    assert build_json_schema(DataClass, all_refs=True) == JSONSchema(
-        reference="#/$defs/DataClass", definitions={"DataClass": schema}
+    assert build_json_schema(MyClass, all_refs=True) == JSONSchema(
+        reference="#/$defs/test_jsonschema_for_dataclass__locals__MyClass",
+        definitions={
+            "test_jsonschema_for_dataclass__locals__MyClass": JSONObjectSchema(
+                title="test_jsonschema_for_dataclass__locals__MyClass",
+                properties={
+                    "aa": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+                    "b": JSONSchema(
+                        type=JSONSchemaInstanceType.NUMBER, default=3.14
+                    ),
+                    "cc": JSONSchema(
+                        anyOf=[
+                            JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+                            JSONSchema(type=JSONSchemaInstanceType.NULL),
+                        ],
+                        default=None,
+                    ),
+                    "dd": JSONSchema(
+                        type=JSONSchemaInstanceType.STRING, default=""
+                    ),
+                    "f": JSONArraySchema(
+                        items=JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+                        description="description for f",
+                    ),
+                },
+                additionalProperties=False,
+                required=["aa"],
+            )
+        },
     )
 
 
@@ -1157,7 +1183,12 @@ def test_jsonschema_with_ref_prefix():
     class DataClass:
         pass
 
-    schema = {"$ref": "#/components/responses/DataClass"}
+    schema = {
+        "$ref": (
+            "#/components/responses/"
+            "test_jsonschema_with_ref_prefix__locals__DataClass"
+        )
+    }
     assert (
         build_json_schema(
             List[DataClass], all_refs=True, ref_prefix="#/components/responses"
