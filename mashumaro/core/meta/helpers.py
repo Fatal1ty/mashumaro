@@ -2,7 +2,6 @@ import dataclasses
 import enum
 import inspect
 import re
-import sys
 import types
 import typing
 from collections.abc import Callable, Hashable, Iterable, Iterator
@@ -34,7 +33,7 @@ from mashumaro.core.const import (
     PY_310_MIN,
     PY_311_MIN,
     PY_312_MIN,
-    PY_313_MIN,
+    PY_314_MIN,
 )
 from mashumaro.dialect import Dialect
 
@@ -81,8 +80,6 @@ __all__ = [
     "iter_all_subclasses",
     "is_hashable",
     "is_hashable_type",
-    "evaluate_forward_ref",
-    "get_forward_ref_referencing_globals",
     "is_type_alias_type",
 ]
 
@@ -289,7 +286,7 @@ def type_name(
 def is_special_typing_primitive(typ: Any) -> bool:
     try:
         issubclass(typ, object)
-        return False
+        return PY_314_MIN and issubclass(typ, typing.Union)  # type: ignore[arg-type]
     except TypeError:
         return True
 
@@ -756,42 +753,8 @@ def is_hashable_type(typ: Any) -> bool:
 def str_to_forward_ref(
     annotation: str, module: Optional[types.ModuleType] = None
 ) -> ForwardRef:
-    return ForwardRef(annotation, module=module)
-
-
-def evaluate_forward_ref(
-    typ: ForwardRef, globalns: dict[str, Any], localns: dict[str, Any]
-) -> Optional[Type]:
-    if PY_313_MIN:
-        return typ._evaluate(
-            globalns, localns, type_params=(), recursive_guard=frozenset()
-        )  # type: ignore[call-arg]
-    else:
-        return typ._evaluate(
-            globalns, localns, recursive_guard=frozenset()
-        )  # type: ignore[call-arg]
-
-
-def get_forward_ref_referencing_globals(
-    referenced_type: ForwardRef,
-    referencing_object: Optional[Any] = None,
-    fallback: Optional[dict[str, Any]] = None,
-) -> dict[str, Any]:
-    if fallback is None:
-        fallback = {}
-    forward_module = getattr(referenced_type, "__forward_module__", None)
-    if not forward_module and referencing_object:
-        # We can't get the module in which ForwardRef's value is defined on
-        # Python < 3.10, ForwardRef evaluation might not work properly
-        # without this information, so we will consider the namespace of
-        # the module in which this ForwardRef is used as globalns.
-        return getattr(
-            sys.modules.get(referencing_object.__module__, None),
-            "__dict__",
-            fallback,
-        )
-    else:
-        return getattr(forward_module, "__dict__", fallback)
+    module_name = module.__name__ if module else None
+    return ForwardRef(annotation, module=module_name)
 
 
 def is_type_alias_type(typ: Type) -> bool:
