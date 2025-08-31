@@ -14,10 +14,10 @@ from pathlib import (
     PureWindowsPath,
     WindowsPath,
 )
+import sys
 from typing import (
     AbstractSet,
     Any,
-    ByteString,
     ChainMap,
     Counter,
     DefaultDict,
@@ -42,6 +42,7 @@ import pytest
 from typing_extensions import Annotated, Literal, TypeVarTuple, Unpack
 
 from mashumaro.config import BaseConfig
+from mashumaro.core.const import PY_314_MIN
 from mashumaro.core.meta.helpers import type_name
 from mashumaro.helper import pass_through
 from mashumaro.jsonschema.annotations import (
@@ -114,6 +115,13 @@ from tests.test_pep_655 import (
     TypedDictCorrectNotRequired,
     TypedDictCorrectRequired,
 )
+
+if sys.version_info < (3, 14):
+    from collections.abc import ByteString as ColByteString
+    from typing import ByteString as TpByteString
+else:
+    ColByteString = None
+    TpByteString = None
 
 Ts = TypeVarTuple("Ts")
 
@@ -374,12 +382,32 @@ def test_jsonschema_for_fraction():
     )
 
 
-def test_jsonschema_for_bytestring():
-    for instance_type in (ByteString, bytes, bytearray):
-        assert build_json_schema(instance_type) == JSONSchema(
-            type=JSONSchemaInstanceType.STRING,
-            format=JSONSchemaInstanceFormatExtension.BASE64,
-        )
+@pytest.mark.parametrize(
+    ["instance_type"],
+    (
+        pytest.param(bytes),
+        pytest.param(bytearray),
+        pytest.param(
+            ColByteString,
+            id="ByteString",
+            marks=pytest.mark.skipif(
+                PY_314_MIN, reason="ByteString was removed in 3.14"
+            ),
+        ),
+        pytest.param(
+            TpByteString,
+            id="ByteString",
+            marks=pytest.mark.skipif(
+                PY_314_MIN, reason="ByteString was removed in 3.14"
+            ),
+        ),
+    ),
+)
+def test_jsonschema_for_bytestring(instance_type):
+    assert build_json_schema(instance_type) == JSONSchema(
+        type=JSONSchemaInstanceType.STRING,
+        format=JSONSchemaInstanceFormatExtension.BASE64,
+    )
 
 
 def test_jsonschema_for_str():
