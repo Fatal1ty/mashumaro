@@ -1241,12 +1241,13 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
                 )
             )
 
-    if spec.origin_type is bytes:
-        spec.builder.ensure_object_imported(decodebytes)
-        return f"decodebytes({spec.expression}.encode())"
-    elif spec.origin_type is bytearray:
-        spec.builder.ensure_object_imported(decodebytes)
-        return f"bytearray(decodebytes({spec.expression}.encode()))"
+    if issubclass(spec.origin_type, typing.ByteString):  # type: ignore
+        if spec.origin_type is bytes:
+            spec.builder.ensure_object_imported(decodebytes)
+            return f"decodebytes({spec.expression}.encode())"
+        elif spec.origin_type is bytearray:
+            spec.builder.ensure_object_imported(decodebytes)
+            return f"bytearray(decodebytes({spec.expression}.encode()))"
     elif issubclass(spec.origin_type, str):
         return TypeMatchEligibleExpression(f"str({spec.expression})")
     elif ensure_generic_collection_subclass(spec, list):

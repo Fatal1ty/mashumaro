@@ -1,4 +1,3 @@
-import collections.abc
 import datetime
 import ipaddress
 import os
@@ -6,7 +5,8 @@ import sys
 import warnings
 from base64 import encodebytes
 from collections import ChainMap, Counter, deque
-from collections.abc import (
+from collections.abc import (  # type: ignore[attr-defined]
+    ByteString,
     Callable,
     Collection,
     Iterable,
@@ -26,7 +26,7 @@ from zoneinfo import ZoneInfo
 from typing_extensions import TypeAlias
 
 from mashumaro.config import BaseConfig
-from mashumaro.core.const import PY_311_MIN, PY_314_MIN
+from mashumaro.core.const import PY_311_MIN
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import (
     get_args,
@@ -756,11 +756,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
     args = get_args(instance.type)
 
-    if (
-        not PY_314_MIN
-        and issubclass(instance.origin_type, collections.abc.ByteString)  # type: ignore[arg-type,attr-defined]
-        or instance.origin_type in (bytes, bytearray)
-    ):
+    if issubclass(instance.origin_type, ByteString):  # type: ignore[arg-type]
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,
