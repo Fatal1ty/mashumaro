@@ -28,6 +28,7 @@ from fractions import Fraction
 from typing import Any, ForwardRef, Optional, Tuple, Union
 
 import typing_extensions
+from typing_extensions import NotRequired
 
 from mashumaro.core.const import PY_311_MIN
 from mashumaro.core.helpers import parse_timezone
@@ -37,6 +38,7 @@ from mashumaro.core.meta.helpers import (
     get_class_that_defines_method,
     get_function_arg_annotation,
     get_literal_values,
+    get_type_origin,
     get_type_var_default,
     is_final,
     is_generic,
@@ -94,8 +96,9 @@ from mashumaro.types import (
 )
 
 if sys.version_info >= (3, 14):
-    from annotationlib import get_annotations
     from typing import evaluate_forward_ref
+
+    from annotationlib import get_annotations
 else:
     from typing_extensions import evaluate_forward_ref, get_annotations
 
@@ -1155,8 +1158,17 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
         for k, v in get_annotations(spec.origin_type, eval_str=True).items()
     }
     all_keys = list(annotations.keys())
-    required_keys = getattr(spec.type, "__required_keys__", all_keys)
-    optional_keys = getattr(spec.type, "__optional_keys__", [])
+    required_keys = set(getattr(spec.type, "__required_keys__", all_keys))
+    optional_keys = set(getattr(spec.type, "__optional_keys__", []))
+
+    # workaround for https://github.com/python/cpython/issues/97727
+    for key, annotation in annotations.items():
+        if isinstance(annotation, ForwardRef):
+            annotation = evaluate_forward_ref(annotation)
+            if get_type_origin(annotation) is NotRequired:
+                required_keys.discard(key)
+                optional_keys.add(key)
+
     lines = CodeLines()
     method_name = (
         f"__unpack_typed_dict_{spec.builder.cls.__name__}_"

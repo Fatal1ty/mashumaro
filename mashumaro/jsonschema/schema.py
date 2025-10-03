@@ -23,7 +23,7 @@ from typing import Any, ForwardRef, Optional, Tuple, Type, Union
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from typing_extensions import TypeAlias
+from typing_extensions import NotRequired, TypeAlias
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_311_MIN
@@ -94,8 +94,9 @@ except ImportError:  # pragma: no cover
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
 if sys.version_info >= (3, 14):
-    from annotationlib import get_annotations
     from typing import evaluate_forward_ref
+
+    from annotationlib import get_annotations
 else:
     from typing_extensions import evaluate_forward_ref, get_annotations
 
@@ -693,7 +694,15 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
         ).items()
     }
     all_keys = list(annotations.keys())
-    required_keys = getattr(instance.type, "__required_keys__", all_keys)
+    required_keys = set(getattr(instance.type, "__required_keys__", all_keys))
+
+    # workaround for https://github.com/python/cpython/issues/97727
+    for key, annotation in annotations.items():
+        if isinstance(annotation, ForwardRef):
+            annotation = evaluate_forward_ref(annotation)
+            if get_type_origin(annotation) is NotRequired:
+                required_keys.discard(key)
+
     return JSONObjectSchema(
         properties={
             key: get_schema(instance.derive(type=annotations[key]), ctx)
