@@ -4,7 +4,7 @@ requires = ["setuptools>=77.0"]
 
 [project]
 name = "mashumaro"
-version = "3.16"
+version = "3.17"
 license = "Apache-2.0"
 description = "Fast and well tested serialization library"
 readme = "README.md"
