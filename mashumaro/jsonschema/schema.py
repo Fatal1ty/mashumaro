@@ -1,10 +1,11 @@
 import datetime
 import ipaddress
 import os
+import sys
 import warnings
 from base64 import encodebytes
 from collections import ChainMap, Counter, deque
-from collections.abc import (
+from collections.abc import (  # type: ignore[attr-defined]
     ByteString,
     Callable,
     Collection,
@@ -28,9 +29,7 @@ from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_311_MIN
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import (
-    evaluate_forward_ref,
     get_args,
-    get_forward_ref_referencing_globals,
     get_function_return_annotation,
     get_literal_values,
     get_type_origin,
@@ -94,6 +93,12 @@ try:
 except ImportError:  # pragma: no cover
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
+if sys.version_info >= (3, 14):
+    from annotationlib import get_annotations
+    from typing import evaluate_forward_ref
+else:
+    from typing_extensions import evaluate_forward_ref, get_annotations
+
 
 UTC_OFFSET_PATTERN = r"^UTC([+-][0-2][0-9]:[0-5][0-9])?$"
 
@@ -143,11 +148,7 @@ class Instance:
     def derive(self, **changes: Any) -> "Instance":
         new_type = changes.get("type")
         if isinstance(new_type, ForwardRef):
-            changes["type"] = evaluate_forward_ref(
-                new_type,
-                get_forward_ref_referencing_globals(new_type, self.type),
-                self.__dict__,
-            )
+            changes["type"] = evaluate_forward_ref(new_type)
         new_instance = replace(self, **changes)
         if is_dataclass(self.origin_type):
             new_instance.__owner_builder = self.__self_builder
@@ -297,7 +298,9 @@ def _get_schema_or_none(
     return schema
 
 
-def _default(f_type: Type, f_value: Any, config_cls: Type[BaseConfig]) -> Any:
+def _default(
+    f_type: Optional[Type], f_value: Any, config_cls: Type[BaseConfig]
+) -> Any:
     @dataclass
     class CC(DataClassJSONMixin):
         x: f_type = f_value  # type: ignore
@@ -465,11 +468,7 @@ def on_special_typing_primitive(
     elif is_readonly(instance.type):
         return get_schema(instance.derive(type=args[0]), ctx)
     elif isinstance(instance.type, ForwardRef):
-        evaluated = evaluate_forward_ref(
-            instance.type,
-            get_forward_ref_referencing_globals(instance.type),
-            None,
-        )
+        evaluated = evaluate_forward_ref(instance.type)
         if evaluated is not None:
             return get_schema(instance.derive(type=evaluated), ctx)
 
@@ -643,8 +642,8 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
     )[instance.origin_type]
     annotations = {
         k: resolved.get(v, v)
-        for k, v in getattr(
-            instance.origin_type, "__annotations__", {}
+        for k, v in get_annotations(
+            instance.origin_type, eval_str=True
         ).items()
     }
     fields = getattr(instance.type, "_fields", ())
@@ -689,7 +688,9 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
     )[instance.origin_type]
     annotations = {
         k: resolved.get(v, v)
-        for k, v in instance.origin_type.__annotations__.items()
+        for k, v in get_annotations(
+            instance.origin_type, eval_str=True
+        ).items()
     }
     all_keys = list(annotations.keys())
     required_keys = getattr(instance.type, "__required_keys__", all_keys)

@@ -6,6 +6,7 @@ import ipaddress
 import os
 import pathlib
 import re
+import sys
 import types
 import typing
 import uuid
@@ -91,6 +92,12 @@ from mashumaro.types import (
     SerializableType,
     SerializationStrategy,
 )
+
+if sys.version_info >= (3, 14):
+    from annotationlib import get_annotations
+    from typing import evaluate_forward_ref
+else:
+    from typing_extensions import evaluate_forward_ref, get_annotations
 
 try:
     import ciso8601
@@ -561,9 +568,7 @@ def _unpack_with_annotated_serialization_strategy(
     except (KeyError, ValueError):
         value_type = Any
     if isinstance(value_type, ForwardRef):
-        value_type = spec.builder.evaluate_forward_ref(
-            value_type, spec.origin_type
-        )
+        value_type = evaluate_forward_ref(value_type)
     value_type = substitute_type_params(
         value_type,  # type: ignore
         resolve_type_params(strategy_type, get_args(spec.type))[strategy_type],
@@ -649,9 +654,7 @@ def _unpack_annotated_serializable_type(
             f"._deserialize({spec.expression})"
         )
     if isinstance(value_type, ForwardRef):
-        value_type = spec.builder.evaluate_forward_ref(
-            value_type, spec.origin_type
-        )
+        value_type = evaluate_forward_ref(value_type)
     value_type = substitute_type_params(
         value_type,
         resolve_type_params(spec.origin_type, get_args(spec.type))[
@@ -867,9 +870,7 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
         elif is_type_var_tuple(spec.type):
             return UnpackerRegistry.get(spec.copy(type=tuple[Any, ...]))
         elif isinstance(spec.type, ForwardRef):
-            evaluated = spec.builder.evaluate_forward_ref(
-                spec.type, spec.owner
-            )
+            evaluated = evaluate_forward_ref(spec.type)
             if evaluated is not None:
                 return UnpackerRegistry.get(spec.copy(type=evaluated))
         elif is_type_alias_type(spec.type):
@@ -1063,7 +1064,7 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
     ]
     annotations = {
         k: resolved.get(v, v)
-        for k, v in getattr(spec.origin_type, "__annotations__", {}).items()
+        for k, v in get_annotations(spec.origin_type, eval_str=True).items()
     }
     fields = getattr(spec.type, "_fields", ())
     defaults = getattr(spec.type, "_field_defaults", {})
@@ -1151,7 +1152,7 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
     ]
     annotations = {
         k: resolved.get(v, v)
-        for k, v in spec.origin_type.__annotations__.items()
+        for k, v in get_annotations(spec.origin_type, eval_str=True).items()
     }
     all_keys = list(annotations.keys())
     required_keys = getattr(spec.type, "__required_keys__", all_keys)
