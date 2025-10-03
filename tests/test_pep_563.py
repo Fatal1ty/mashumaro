@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict
+from typing import Any, Dict, Optional
 
 import msgpack
 import orjson
@@ -13,6 +13,7 @@ from mashumaro.dialect import Dialect
 from mashumaro.exceptions import UnresolvedTypeReferenceError
 from mashumaro.mixins.msgpack import DataClassMessagePackMixin
 from mashumaro.mixins.orjson import DataClassORJSONMixin
+from mashumaro.types import SerializationStrategy
 
 from .conftest import add_unpack_method
 
@@ -290,3 +291,23 @@ def test_postponed_orjson_with_custom_encoder_and_decoder():
     dumped = orjson.dumps({"a": {"b": 123000}, "x": 456000})
     assert instance.to_jsonb(encoder=encoder) == dumped
     assert A3ORJSON.from_json(dumped, decoder=decoder) == instance
+
+
+def test_postponed_serialization_strategy() -> None:
+    class Strategy(SerializationStrategy, use_annotations=True):
+        def serialize(self, value) -> dict[str, Any]:
+            return {"a": value}
+
+        def deserialize(self, value: dict[str, Any]):
+            return value.get("a")
+
+    @dataclass
+    class MyDataClass(DataClassDictMixin):
+        x: Optional[int]
+
+        class Config(BaseConfig):
+            serialization_strategy = {int: Strategy()}
+
+    obj = MyDataClass(x=2)
+    assert obj.to_dict() == {"x": {"a": 2}}
+    assert MyDataClass.from_dict({"x": {"a": 2}}) == obj
