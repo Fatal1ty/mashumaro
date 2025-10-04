@@ -386,6 +386,35 @@ def test_forbid_extra_keys():
     assert exc_info.value.extra_keys == {"baz"}
     assert exc_info.value.target_type == ForbidKeysModel
 
+def test_array_like():
+    @dataclass
+    class FooModel(DataClassDictMixin):
+        foo: int
+
+        class Config(BaseConfig):
+            array_like = True
+
+    # Test packing works
+    assert FooModel(1).to_dict() == (1,)
+
+    # Test unpacking works
+    assert FooModel.from_dict((1,)) == FooModel(1)
+
+    # Nested
+    @dataclass
+    class BarModel(DataClassDictMixin):
+        bar: str
+        inner: FooModel
+
+        class Config(BaseConfig):
+            array_like = True
+
+    # Test packing works
+    assert BarModel("bar", FooModel(1)).to_dict() == ("bar", (1,))
+
+    # Test unpacking works
+    assert BarModel.from_dict(("bar", (1,))) == BarModel("bar", FooModel(1))
+
 
 @dataclass
 class _VariantByBase(DataClassDictMixin):

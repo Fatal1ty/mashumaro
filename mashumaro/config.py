@@ -61,3 +61,4 @@ class BaseConfig:
     sort_keys: bool = False
     allow_deserialization_not_by_alias: bool = False
     forbid_extra_keys: bool = False
+    array_like: bool = False
