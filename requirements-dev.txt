@@ -1,5 +1,5 @@
 # extra
-msgpack>=0.5.6;sys_platform != 'win32' or (sys_platform == 'win32' and python_version<'3.14')
+msgpack>=0.5.6
 pyyaml>=3.13
 tomli-w>=1.0
 tomli>=1.1.0;python_version<'3.11'
@@ -26,7 +26,7 @@ pyperf>=2.6.1
 termtables>=0.2.3
 pytablewriter[html]>=0.58.0
 cattrs==24.1.2
-pydantic==2.9.2;python_version<'3.14'  # see https://github.com/pydantic/pydantic/issues/11613
+pydantic==2.12.0
 dacite==1.7.0  # see https://github.com/konradhalas/dacite/issues/236#issuecomment-1613987368
 marshmallow>=3.19.0
 dataclasses-json==0.6.7
