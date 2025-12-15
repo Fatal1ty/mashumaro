@@ -17,7 +17,6 @@ from pathlib import (
 from typing import (
     AbstractSet,
     Any,
-    ByteString,
     ChainMap,
     Counter,
     DefaultDict,
@@ -375,7 +374,7 @@ def test_jsonschema_for_fraction():
 
 
 def test_jsonschema_for_bytestring():
-    for instance_type in (ByteString, bytes, bytearray):
+    for instance_type in (memoryview, bytes, bytearray):
         assert build_json_schema(instance_type) == JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,

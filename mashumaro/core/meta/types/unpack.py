@@ -1253,7 +1253,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
                 )
             )
 
-    if issubclass(spec.origin_type, typing.ByteString):  # type: ignore
+    if issubclass(spec.origin_type, bytes | bytearray | memoryview):  # type: ignore
         if spec.origin_type is bytes:
             spec.builder.ensure_object_imported(decodebytes)
             return f"decodebytes({spec.expression}.encode())"

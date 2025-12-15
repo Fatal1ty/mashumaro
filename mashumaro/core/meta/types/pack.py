@@ -828,7 +828,7 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
                 return f"{spec.expression}.copy()"
         return f"{{{ke}: {ve} for key, value in {spec.expression}.items()}}"
 
-    if issubclass(spec.origin_type, typing.ByteString):  # type: ignore
+    if issubclass(spec.origin_type, bytes | bytearray | memoryview):  # type: ignore
         spec.builder.ensure_object_imported(encodebytes)
         return f"encodebytes({spec.expression}).decode()"
     elif issubclass(spec.origin_type, str):

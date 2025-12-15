@@ -6,7 +6,6 @@ import warnings
 from base64 import encodebytes
 from collections import ChainMap, Counter, deque
 from collections.abc import (  # type: ignore[attr-defined]
-    ByteString,
     Callable,
     Collection,
     Iterable,
@@ -765,7 +764,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
     args = get_args(instance.type)
 
-    if issubclass(instance.origin_type, ByteString):  # type: ignore[arg-type]
+    if issubclass(instance.origin_type, bytes | bytearray | memoryview):  # type: ignore[arg-type]
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,
