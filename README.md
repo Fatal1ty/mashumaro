@@ -144,7 +144,7 @@ Use pip to install:
 $ pip install mashumaro
 ```
 
-The current version of `mashumaro` supports Python versions 3.9 — 3.13.
+The current version of `mashumaro` supports Python versions 3.9 — 3.14.
 
 
 It's not recommended to use any version of Python that has reached its
