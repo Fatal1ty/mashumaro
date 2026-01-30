@@ -42,6 +42,7 @@ from mashumaro.core.meta.helpers import (
     is_readonly,
     is_required,
     is_special_typing_primitive,
+    is_type_alias_type,
     is_type_var,
     is_type_var_any,
     is_type_var_tuple,
@@ -472,6 +473,8 @@ def on_special_typing_primitive(
         evaluated = evaluate_forward_ref(instance.type)
         if evaluated is not None:
             return get_schema(instance.derive(type=evaluated), ctx)
+    elif is_type_alias_type(instance.type):
+        return get_schema(instance.derive(type=instance.type.__value__), ctx)
 
 
 @register

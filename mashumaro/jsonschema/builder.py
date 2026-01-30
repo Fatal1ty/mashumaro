@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Optional, Type
+from typing import Any, Optional, Type, Union
 
 from mashumaro.jsonschema.dialects import DRAFT_2020_12, JSONSchemaDialect
 from mashumaro.jsonschema.models import Context, JSONSchema
@@ -16,7 +16,7 @@ except ImportError:  # pragma: no cover
 
 
 def build_json_schema(
-    instance_type: Type,
+    instance_type: Union[Type, Any],
     context: Optional[Context] = None,
     with_definitions: bool = True,
     all_refs: Optional[bool] = None,
