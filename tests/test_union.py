@@ -5,8 +5,10 @@ from typing import Any, Dict, List, Union
 
 import pytest
 
-from mashumaro import DataClassDictMixin
+from mashumaro import DataClassDictMixin, pass_through
 from mashumaro.codecs.basic import encode
+from mashumaro.config import BaseConfig
+from mashumaro.dialect import Dialect
 from tests.utils import same_types
 
 
@@ -139,3 +141,27 @@ def test_union_encoding():
             encoded = encode(value, Union[variants])
             assert value == encoded
             assert same_types(value, encoded)
+
+
+def test_union_no_copy_list_with_dataclass_items_or_passed_through_items():
+    class NoCopyListDialect(Dialect):
+        no_copy_collections = (list,)
+
+    @dataclass
+    class Item(DataClassDictMixin):
+        value: int
+
+    @dataclass
+    class Container(DataClassDictMixin):
+        items: Union[list[Item], list[str]]
+
+        class Config(BaseConfig):
+            dialect = NoCopyListDialect
+            serialization_strategy = {str: {"serialize": lambda x: str(x)}}
+
+    item1 = Item(1)
+    item2 = Item(2)
+    items = [item1, item2]
+    container = Container(items=items)
+    data = container.to_dict()
+    assert data == {"items": [{"value": 1}, {"value": 2}]}
