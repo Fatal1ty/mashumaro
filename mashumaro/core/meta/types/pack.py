@@ -329,7 +329,9 @@ def pack_union(
             spec.copy(type=type_arg, expression="value", owner=spec.type)
         )
         if packer not in packers:
-            if packer == "value":
+            if packer == "value" and not issubclass(
+                get_type_origin(type_arg), Collection
+            ):
                 packers.insert(0, packer)
             else:
                 packers.append(packer)
@@ -356,7 +358,9 @@ def pack_union(
                 )
             else:
                 packer_arg_type_check = f"is {packer_arg_type_names[0]}"
-            if packer == "value":
+            if packer == "value" and not issubclass(
+                packer_arg_type, Collection
+            ):
                 with lines.indent(
                     f"if value.__class__ {packer_arg_type_check}:"
                 ):
