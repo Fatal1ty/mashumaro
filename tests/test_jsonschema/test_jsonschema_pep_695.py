@@ -1,5 +1,7 @@
+from mashumaro.core.meta.types.common import clean_id
 from mashumaro.jsonschema import build_json_schema
 from mashumaro.jsonschema.models import Context
+from mashumaro.jsonschema.schema import _type_alias_definition_name
 
 type JSON = int | str | float | bool | None | list[JSON] | dict[str, JSON]
 type X = int | str
@@ -122,3 +124,14 @@ def test_type_alias_placeholder_not_leaking_into_context_defs() -> None:
         ]
     }
     assert ctx.definitions == {}
+
+
+def test_type_alias_definition_name_falls_back_to_clean_id_when_name_empty() -> (
+    None
+):
+    class NamelessAlias:
+        __name__ = ""
+
+    alias = NamelessAlias()
+
+    assert _type_alias_definition_name(alias) == clean_id(str(id(alias)))
