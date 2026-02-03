@@ -317,6 +317,15 @@ Registry = InstanceSchemaCreatorRegistry()
 register = Registry.register
 
 
+def _type_alias_definition_name(alias_type: Any) -> str:
+    """Return a stable $defs key for PEP 695 TypeAliasType."""
+
+    name = getattr(alias_type, "__name__", None)
+    if isinstance(name, str) and name:
+        return name
+    return clean_id(str(id(alias_type)))
+
+
 BASIC_TYPES = {str, int, float, bool}
 
 
@@ -474,7 +483,36 @@ def on_special_typing_primitive(
         if evaluated is not None:
             return get_schema(instance.derive(type=evaluated), ctx)
     elif is_type_alias_type(instance.type):
-        return get_schema(instance.derive(type=instance.type.__value__), ctx)
+        alias_type = instance.type
+        def_name = _type_alias_definition_name(alias_type)
+        alias_id = id(alias_type)
+        ref_prefix = ctx.ref_prefix or ctx.dialect.definitions_root_pointer
+
+        # If we're already building this alias, it's recursion.
+        # In that case, force using $ref/$defs.
+        if alias_id in ctx._building_type_aliases:
+            # The $defs placeholder may not exist yet (mutual recursion).
+            ctx.definitions.setdefault(def_name, EmptyJSONSchema())
+            return JSONSchema(reference=f"{ref_prefix}/{def_name}")
+
+        ctx._building_type_aliases.add(alias_id)
+        try:
+            value_schema = get_schema(
+                instance.derive(type=alias_type.__value__), ctx
+            )
+        finally:
+            ctx._building_type_aliases.discard(alias_id)
+
+        # If the alias is marked as recursive (direct or mutual),
+        # store its definition in $defs and return a $ref.
+        if def_name in ctx.definitions or ctx.all_refs:
+            existing = ctx.definitions.get(def_name)
+            if existing is None or isinstance(existing, EmptyJSONSchema):
+                ctx.definitions[def_name] = value_schema
+            return JSONSchema(reference=f"{ref_prefix}/{def_name}")
+
+        # Non-recursive alias: return the schema directly, without $defs.
+        return value_schema
 
 
 @register
