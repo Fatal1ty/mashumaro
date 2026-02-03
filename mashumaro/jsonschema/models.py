@@ -210,3 +210,5 @@ class Context:
     all_refs: Optional[bool] = None
     ref_prefix: Optional[str] = None
     plugins: Sequence[BasePlugin] = ()
+    # PEP 695 TypeAliasType recursion guard
+    _building_type_aliases: set[int] = field(default_factory=set, repr=False)
