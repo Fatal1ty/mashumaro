@@ -186,7 +186,7 @@ def _typing_name(
 
 
 def type_name(
-    typ: Optional[Type] | Any,
+    typ: Union[Type, Any],
     short: bool = False,
     resolved_type_params: Optional[dict[Type, Type]] = None,
     is_type_origin: bool = False,
