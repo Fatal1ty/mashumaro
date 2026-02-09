@@ -13,6 +13,8 @@ def test_type_name_recursive_type_alias_does_not_recurse_forever() -> None:
     assert "JSON" in s
 
 
-def test_type_name_mutual_recursive_type_aliases_does_not_recurse_forever() -> None:
+def test_type_name_mutual_recursive_type_aliases_does_not_recurse_forever() -> (
+    None
+):
     s = type_name(A, short=True)
     assert "A" in s
