@@ -212,3 +212,5 @@ class Context:
     plugins: Sequence[BasePlugin] = ()
     # PEP 695 TypeAliasType recursion guard
     _building_type_aliases: set[int] = field(default_factory=set, repr=False)
+    # Dataclass recursion guard (e.g. typing.Self, direct or mutual references)
+    _building_dataclasses: set[type] = field(default_factory=set, repr=False)

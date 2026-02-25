@@ -41,6 +41,7 @@ from mashumaro.core.meta.helpers import (
     is_not_required,
     is_readonly,
     is_required,
+    is_self,
     is_special_typing_primitive,
     is_type_alias_type,
     is_type_var,
@@ -364,52 +365,69 @@ def on_type_with_overridden_serialization(
 
 @register
 def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
-    # TODO: Self references might not work
     if is_dataclass(instance.origin_type):
+        # When dataclasses reference themselves (typing.Self) or each other,
+        # we must break infinite recursion by forcing $ref/$defs.
+        origin = instance.origin_type
+
         if ctx.all_refs:
-            title = clean_id(type_name(instance.type, short=True))
-            title = title.strip("_")
+            def_key = clean_id(type_name(instance.type, short=True)).strip("_")
         else:
-            title = instance.origin_type.__name__
-        jsonschema_config = instance.get_self_config().json_schema
-        schema = JSONObjectSchema(
-            title=title,
-            additionalProperties=jsonschema_config.get(
-                "additionalProperties", False
-            ),
-        )
-        properties: dict[str, JSONSchema] = {}
-        required = []
-        field_schema_overrides = jsonschema_config.get("properties", {})
-        for f_name, f_type, has_default, f_default in instance.fields():
-            override = field_schema_overrides.get(f_name)
-            f_instance = instance.derive(type=f_type, name=f_name)
-            if override:
-                f_schema = JSONSchema.from_dict(override)
+            def_key = origin.__name__
+
+        ref_prefix = ctx.ref_prefix or ctx.dialect.definitions_root_pointer
+
+        if origin in ctx._building_dataclasses:
+            # Ensure placeholder exists so the final schema can fill it in.
+            ctx.definitions.setdefault(def_key, EmptyJSONSchema())
+            return JSONSchema(reference=f"{ref_prefix}/{def_key}")
+
+        ctx._building_dataclasses.add(origin)
+        try:
+            # If a placeholder exists (recursion), we'll populate it later
+            jsonschema_config = instance.get_self_config().json_schema
+            schema = JSONObjectSchema(
+                title=def_key,
+                additionalProperties=jsonschema_config.get(
+                    "additionalProperties", False
+                ),
+            )
+            properties: dict[str, JSONSchema] = {}
+            required = []
+            field_schema_overrides = jsonschema_config.get("properties", {})
+            for f_name, f_type, has_default, f_default in instance.fields():
+                override = field_schema_overrides.get(f_name)
+                f_instance = instance.derive(type=f_type, name=f_name)
+                if override:
+                    f_schema = JSONSchema.from_dict(override)
+                else:
+                    f_schema = get_schema(f_instance, ctx)
+                if f_instance.alias:
+                    f_name = f_instance.alias
+                if f_default is not MISSING:
+                    f_schema.default = f_default
+                description = f_instance.metadata.get("description")
+                if description:
+                    f_schema.description = description
+
+                if not has_default:
+                    required.append(f_name)
+
+                properties[f_name] = f_schema
+            if properties:
+                schema.properties = properties
+            if required:
+                schema.required = required
+
+            # If recursion was detected, we need $defs/$ref regardless
+            existing = ctx.definitions.get(def_key)
+            if ctx.all_refs or isinstance(existing, EmptyJSONSchema):
+                ctx.definitions[def_key] = schema
+                return JSONSchema(reference=f"{ref_prefix}/{def_key}")
             else:
-                f_schema = get_schema(f_instance, ctx)
-            if f_instance.alias:
-                f_name = f_instance.alias
-            if f_default is not MISSING:
-                f_schema.default = f_default
-            description = f_instance.metadata.get("description")
-            if description:
-                f_schema.description = description
-
-            if not has_default:
-                required.append(f_name)
-
-            properties[f_name] = f_schema
-        if properties:
-            schema.properties = properties
-        if required:
-            schema.required = required
-        if ctx.all_refs:
-            ctx.definitions[title] = schema
-            ref_prefix = ctx.ref_prefix or ctx.dialect.definitions_root_pointer
-            return JSONSchema(reference=f"{ref_prefix}/{title}")
-        else:
-            return schema
+                return schema
+        finally:
+            ctx._building_dataclasses.discard(origin)
 
 
 @register
@@ -466,8 +484,16 @@ def on_special_typing_primitive(
         )
     elif is_literal(instance.type):
         return on_literal(instance, ctx)
-    # elif is_self(instance.type):
-    #     raise NotImplementedError
+    elif is_self(instance.type):
+        # typing.Self / typing_extensions.Self is only meaningful inside
+        # a class body. In dataclasses, Instance.owner_class points to the
+        # dataclass that defines the field.
+        owner = instance.owner_class
+        if owner is None:  # pragma: no cover
+            raise NotImplementedError(
+                "typing.Self is supported only for dataclass fields"
+            )
+        return get_schema(instance.derive(type=owner), ctx)
     elif is_required(instance.type) or is_not_required(instance.type):
         return get_schema(instance.derive(type=args[0]), ctx)
     elif is_unpack(instance.type):
