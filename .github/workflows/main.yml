@@ -72,15 +72,11 @@ jobs:
     - name: Run tests with coverage
       run: |
         source .venv/bin/activate
-        pytest --cov=mashumaro --cov=tests
-#    - name: Upload Coverage
-#      run: |
-#        source .venv/bin/activate
-#        coveralls --service=github
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        COVERALLS_FLAG_NAME: posix-${{ matrix.python-version }}
-#        COVERALLS_PARALLEL: true
+        pytest --cov=mashumaro --cov=tests --cov-report=xml
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   test-windows:
     name: Tests on Windows
@@ -108,30 +104,8 @@ jobs:
     - name: Run tests with coverage
       run: |
         .venv/Scripts/activate
-        pytest --cov=mashumaro --cov=tests
-#    - name: Upload Coverage
-#      run: |
-#        .venv/Scripts/activate
-#        coveralls --service=github
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        COVERALLS_FLAG_NAME: windows-${{ matrix.python-version }}
-#        COVERALLS_PARALLEL: true
-
-#  coveralls:
-#    name: Finish Coveralls
-#    needs:
-#    - test-posix
-#    - test-windows
-#    runs-on: ubuntu-latest
-#    steps:
-#    - name: Set up Python
-#      uses: actions/setup-python@v5
-#      with:
-#        python-version: 3.11
-#    - name: Install dependencies
-#      run: pip install coveralls
-#    - name: Finish coveralls
-#      run: coveralls --service=github --finish
-#      env:
-#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        pytest --cov=mashumaro --cov=tests --cov-report=xml
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
