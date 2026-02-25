@@ -73,14 +73,14 @@ jobs:
       run: |
         source .venv/bin/activate
         pytest --cov=mashumaro --cov=tests
-    - name: Upload Coverage
-      run: |
-        source .venv/bin/activate
-        coveralls --service=github
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_FLAG_NAME: posix-${{ matrix.python-version }}
-        COVERALLS_PARALLEL: true
+#    - name: Upload Coverage
+#      run: |
+#        source .venv/bin/activate
+#        coveralls --service=github
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        COVERALLS_FLAG_NAME: posix-${{ matrix.python-version }}
+#        COVERALLS_PARALLEL: true
 
   test-windows:
     name: Tests on Windows
@@ -109,29 +109,29 @@ jobs:
       run: |
         .venv/Scripts/activate
         pytest --cov=mashumaro --cov=tests
-    - name: Upload Coverage
-      run: |
-        .venv/Scripts/activate
-        coveralls --service=github
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_FLAG_NAME: windows-${{ matrix.python-version }}
-        COVERALLS_PARALLEL: true
+#    - name: Upload Coverage
+#      run: |
+#        .venv/Scripts/activate
+#        coveralls --service=github
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        COVERALLS_FLAG_NAME: windows-${{ matrix.python-version }}
+#        COVERALLS_PARALLEL: true
 
-  coveralls:
-    name: Finish Coveralls
-    needs:
-    - test-posix
-    - test-windows
-    runs-on: ubuntu-latest
-    steps:
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.11
-    - name: Install dependencies
-      run: pip install coveralls
-    - name: Finish coveralls
-      run: coveralls --service=github --finish
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#  coveralls:
+#    name: Finish Coveralls
+#    needs:
+#    - test-posix
+#    - test-windows
+#    runs-on: ubuntu-latest
+#    steps:
+#    - name: Set up Python
+#      uses: actions/setup-python@v5
+#      with:
+#        python-version: 3.11
+#    - name: Install dependencies
+#      run: pip install coveralls
+#    - name: Finish coveralls
+#      run: coveralls --service=github --finish
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
