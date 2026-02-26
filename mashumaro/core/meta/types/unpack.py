@@ -96,9 +96,8 @@ from mashumaro.types import (
 )
 
 if sys.version_info >= (3, 14):
-    from typing import evaluate_forward_ref
-
     from annotationlib import get_annotations
+    from typing import evaluate_forward_ref
 else:
     from typing_extensions import evaluate_forward_ref, get_annotations
 
@@ -571,7 +570,8 @@ def _unpack_with_annotated_serialization_strategy(
     except (KeyError, ValueError):
         value_type = Any
     if isinstance(value_type, ForwardRef):
-        value_type = evaluate_forward_ref(value_type)
+        type_params = getattr(strategy_type, "__type_params__", ())
+        value_type = evaluate_forward_ref(value_type, type_params=type_params)
     value_type = substitute_type_params(
         value_type,  # type: ignore
         resolve_type_params(strategy_type, get_args(spec.type))[strategy_type],
@@ -657,7 +657,8 @@ def _unpack_annotated_serializable_type(
             f"._deserialize({spec.expression})"
         )
     if isinstance(value_type, ForwardRef):
-        value_type = evaluate_forward_ref(value_type)
+        type_params = getattr(spec.origin_type, "__type_params__", ())
+        value_type = evaluate_forward_ref(value_type, type_params=type_params)
     value_type = substitute_type_params(
         value_type,
         resolve_type_params(spec.origin_type, get_args(spec.type))[
