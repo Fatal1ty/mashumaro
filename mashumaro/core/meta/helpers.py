@@ -129,7 +129,6 @@ def _get_args_str(
     limit: Optional[int] = None,
     none_type_as_none: bool = False,
     sep: str = ", ",
-    _type_alias_guard: Optional[set[int]] = None,
 ) -> str:
     if typ == Tuple[()]:
         return "()"
@@ -144,7 +143,6 @@ def _get_args_str(
                 short=short,
                 resolved_type_params=resolved_type_params,
                 none_type_as_none=none_type_as_none,
-                _type_alias_guard=_type_alias_guard,
             )
         )
     if len(to_join) > 1:
@@ -191,12 +189,9 @@ def type_name(
     resolved_type_params: Optional[dict[Type, Type]] = None,
     is_type_origin: bool = False,
     none_type_as_none: bool = False,
-    _type_alias_guard: Optional[set[int]] = None,
 ) -> str:
     if resolved_type_params is None:
         resolved_type_params = {}
-    if _type_alias_guard is None:
-        _type_alias_guard = set()
     if typ is None:
         return "None"
     elif typ is NoneType and none_type_as_none:
@@ -210,7 +205,6 @@ def type_name(
             typ=not_none_type_arg(get_args(typ), resolved_type_params),
             short=short,
             resolved_type_params=resolved_type_params,
-            _type_alias_guard=_type_alias_guard,
         )
         return f"{_typing_name('Optional', short)}[{args_str}]"
     elif is_union(typ):
@@ -219,7 +213,6 @@ def type_name(
             short=short,
             resolved_type_params=resolved_type_params,
             none_type_as_none=True,
-            _type_alias_guard=_type_alias_guard,
         )
         return f"{_typing_name('Union', short)}[{args_str}]"
     elif is_annotated(typ):
@@ -227,7 +220,6 @@ def type_name(
             typ=get_args(typ)[0],
             short=short,
             resolved_type_params=resolved_type_params,
-            _type_alias_guard=_type_alias_guard,
         )
     elif not is_type_origin and is_literal(typ):
         args_str = _get_literal_values_str(typ, short)
@@ -241,7 +233,6 @@ def type_name(
                 typ=resolved_type_params[typ],
                 short=short,
                 resolved_type_params=resolved_type_params,
-                _type_alias_guard=_type_alias_guard,
             )
         else:
             unpacked_type_arg = get_args(typ)[0]
@@ -252,13 +243,11 @@ def type_name(
                     typ=unpacked_type_arg,
                     short=short,
                     resolved_type_params=resolved_type_params,
-                    _type_alias_guard=_type_alias_guard,
                 )
             unpacked_type_name = type_name(
                 typ=unpacked_type_arg,
                 short=short,
                 resolved_type_params=resolved_type_params,
-                _type_alias_guard=_type_alias_guard,
             )
             if PY_311_MIN:
                 return f"*{unpacked_type_name}"
@@ -270,7 +259,6 @@ def type_name(
             typ=typ,
             short=short,
             resolved_type_params=resolved_type_params,
-            _type_alias_guard=_type_alias_guard,
         )
         if not args_str:
             return get_generic_name(typ, short)
@@ -287,7 +275,6 @@ def type_name(
                 typ=resolved_type_params[typ],
                 short=short,
                 resolved_type_params=resolved_type_params,
-                _type_alias_guard=_type_alias_guard,
             )
         elif is_type_var_any(typ):
             return _typing_name("Any", short)
@@ -298,7 +285,6 @@ def type_name(
                     typ=c,
                     short=short,
                     resolved_type_params=resolved_type_params,
-                    _type_alias_guard=_type_alias_guard,
                 )
                 for c in constraints
             )
@@ -312,27 +298,14 @@ def type_name(
                 typ=bound,
                 short=short,
                 resolved_type_params=resolved_type_params,
-                _type_alias_guard=_type_alias_guard,
             )
     elif is_new_type(typ) and not PY_310_MIN:
         # because __qualname__ and __module__ are messed up
         typ = typ.__supertype__
     if is_type_alias_type(typ):
-        alias_id = id(typ)
-        if alias_id in _type_alias_guard:
+        if short:
             return typ.__name__
-        _type_alias_guard.add(alias_id)
-        try:
-            return type_name(
-                typ=typ.__value__,
-                short=short,
-                resolved_type_params=resolved_type_params,
-                is_type_origin=is_type_origin,
-                none_type_as_none=none_type_as_none,
-                _type_alias_guard=_type_alias_guard,
-            )
-        finally:
-            _type_alias_guard.discard(alias_id)
+        return f"{typ.__module__}.{typ.__name__}"
     try:
         if short:
             return typ.__qualname__  # type: ignore

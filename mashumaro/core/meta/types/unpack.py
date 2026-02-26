@@ -96,9 +96,8 @@ from mashumaro.types import (
 )
 
 if sys.version_info >= (3, 14):
-    from typing import evaluate_forward_ref
-
     from annotationlib import get_annotations
+    from typing import evaluate_forward_ref
 else:
     from typing_extensions import evaluate_forward_ref, get_annotations
 
@@ -878,6 +877,13 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
                 return UnpackerRegistry.get(spec.copy(type=evaluated))
         elif is_type_alias_type(spec.type):
             return UnpackerRegistry.get(spec.copy(type=spec.type.__value__))
+        elif is_type_alias_type(get_type_origin(spec.type)):
+            origin = get_type_origin(spec.type)
+            type_params = getattr(origin, "__type_params__", ())
+            args = get_args(spec.type)
+            param_map = dict(zip(type_params, args))
+            resolved = substitute_type_params(origin.__value__, param_map)
+            return UnpackerRegistry.get(spec.copy(type=resolved))
         elif is_readonly(spec.type):
             return UnpackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
         raise UnserializableDataError(
