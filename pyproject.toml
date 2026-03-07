@@ -27,7 +27,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Fatal1ty/mashumaro"
+Homepage = "https://mashumaro.io"
+Repository = "https://github.com/Fatal1ty/mashumaro"
 
 [project.optional-dependencies]
 orjson = ["orjson"]
