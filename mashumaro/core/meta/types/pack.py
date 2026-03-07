@@ -554,6 +554,13 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
                 return PackerRegistry.get(spec.copy(type=evaluated))
         elif is_type_alias_type(spec.type):
             return PackerRegistry.get(spec.copy(type=spec.type.__value__))
+        elif is_type_alias_type(get_type_origin(spec.type)):
+            origin = get_type_origin(spec.type)
+            type_params = getattr(origin, "__type_params__", ())
+            args = get_args(spec.type)
+            param_map = dict(zip(type_params, args))
+            resolved = substitute_type_params(origin.__value__, param_map)
+            return PackerRegistry.get(spec.copy(type=resolved))
         elif is_readonly(spec.type):
             return PackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
         raise UnserializableDataError(
