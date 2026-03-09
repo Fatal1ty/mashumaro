@@ -42,6 +42,7 @@ import pytest
 from typing_extensions import Annotated, Literal, TypeVarTuple, Unpack
 
 from mashumaro.config import BaseConfig
+from mashumaro.core.const import PY_310_MIN
 from mashumaro.core.meta.helpers import type_name
 from mashumaro.helper import pass_through
 from mashumaro.jsonschema.annotations import (
@@ -1546,6 +1547,7 @@ def test_jsonschema_for_generic_dataclass():
     )
 
 
+@pytest.mark.skipif(not PY_310_MIN, reason="requires python 3.10+")
 def test_jsonschema_for_dataclass_with_slots():
     @dataclass(slots=True)
     class DataClassWithSlots:
