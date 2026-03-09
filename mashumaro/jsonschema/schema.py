@@ -1,4 +1,5 @@
 import datetime
+import inspect
 import ipaddress
 import os
 import sys
@@ -189,7 +190,9 @@ class Instance:
             f_default = f.default
             if f_default is MISSING:
                 f_default = self._self_builder.namespace.get(f_name, MISSING)
-            if f_default is not MISSING:
+            if f_default is not MISSING and not inspect.isdatadescriptor(
+                f_default
+            ):
                 f_default = _default(f_type, f_default, self.get_self_config())
 
             has_default = (
@@ -403,7 +406,9 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
                     f_schema = get_schema(f_instance, ctx)
                 if f_instance.alias:
                     f_name = f_instance.alias
-                if f_default is not MISSING:
+                if f_default is not MISSING and not inspect.isdatadescriptor(
+                    f_default
+                ):
                     f_schema.default = f_default
                 description = f_instance.metadata.get("description")
                 if description:

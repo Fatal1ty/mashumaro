@@ -1544,3 +1544,23 @@ def test_jsonschema_for_generic_dataclass():
         additionalProperties=False,
         required=["z"],
     )
+
+
+def test_jsonschema_for_dataclass_with_slots():
+    @dataclass(slots=True)
+    class DataClassWithSlots:
+        no_default: str
+        has_default: int = 42
+
+    schema = build_json_schema(DataClassWithSlots)
+    assert schema == JSONObjectSchema(
+        title="DataClassWithSlots",
+        properties={
+            "no_default": JSONSchema(type=JSONSchemaInstanceType.STRING),
+            "has_default": JSONSchema(
+                type=JSONSchemaInstanceType.INTEGER, default=42
+            ),
+        },
+        additionalProperties=False,
+        required=["no_default"],
+    )
