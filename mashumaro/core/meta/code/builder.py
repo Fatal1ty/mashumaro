@@ -391,6 +391,7 @@ class CodeBuilder:
                     field=discr.field,
                     include_subtypes=discr.include_subtypes,
                     variant_tagger_fn=discr.variant_tagger_fn,
+                    possible_subtypes_fn=discr.possible_subtypes_fn,
                 )
                 self.add_type_modules(self.cls)
                 method = SubtypeUnpackerBuilder(discr).build(
