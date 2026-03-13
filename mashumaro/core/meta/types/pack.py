@@ -266,6 +266,9 @@ def pack_dataclass(spec: ValueSpec) -> Optional[Expression]:
                 attrs_registry=(
                     spec.attrs_registry if not spec.builder.is_nailed else None
                 ),
+                allow_postponed_evaluation=(
+                    spec.builder.allow_postponed_evaluation
+                ),
             )
             builder.add_pack_method()
         flags = spec.builder.get_pack_method_flags(spec.type)

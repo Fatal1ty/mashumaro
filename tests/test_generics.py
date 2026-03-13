@@ -2,7 +2,10 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any, Generic, List, Mapping, Optional, TypeVar
 
+import pytest
+
 from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
 from mashumaro.mixins.json import DataClassJSONMixin
 from tests.entities import MyGenericDataClass, SerializableTypeGenericList
 
@@ -237,3 +240,42 @@ def test_self_referenced_generic_no_max_recursion_error():
     assert Bar.from_dict({"x": 42, "y": {"x": 33, "y": None}}) == obj
     assert obj.to_json() == '{"x": 42, "y": {"x": 33, "y": null}}'
     assert Bar.from_json('{"x": 42, "y": {"x": 33, "y": null}}') == obj
+
+
+@pytest.mark.parametrize("lazy", [True, False])
+def test_nested_generic_no_inf_recursion(lazy):
+
+    T = TypeVar("T")
+
+    @dataclass
+    class A(Generic[T], DataClassDictMixin):
+        class Config(BaseConfig):
+            lazy_compilation = lazy
+
+        field: T
+
+    @dataclass
+    class B(Generic[T], DataClassDictMixin):
+        class Config(BaseConfig):
+            lazy_compilation = lazy
+
+        fieldB: A[T]
+
+    @dataclass
+    class C(Generic[T], DataClassDictMixin):
+        class Config(BaseConfig):
+            lazy_compilation = lazy
+
+        fieldC: B[T]
+
+    @dataclass
+    class D(C[int], B[int], Generic[T], DataClassDictMixin):
+        class Config(BaseConfig):
+            lazy_compilation = lazy
+
+        fieldD: A[T]
+
+    obj = D(
+        fieldD=A(field=1.2), fieldC=B(fieldB=A(field=2)), fieldB=A(field=2)
+    )
+    assert D.from_dict(obj.to_dict()) == obj
