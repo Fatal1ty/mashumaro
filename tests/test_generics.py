@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any, Generic, List, Mapping, Optional, TypeVar
 
+import pytest
+
 from mashumaro import DataClassDictMixin
 from mashumaro.mixins.json import DataClassJSONMixin
 from tests.entities import MyGenericDataClass, SerializableTypeGenericList
@@ -237,3 +239,57 @@ def test_self_referenced_generic_no_max_recursion_error():
     assert Bar.from_dict({"x": 42, "y": {"x": 33, "y": None}}) == obj
     assert obj.to_json() == '{"x": 42, "y": {"x": 33, "y": null}}'
     assert Bar.from_json('{"x": 42, "y": {"x": 33, "y": null}}') == obj
+
+
+@pytest.mark.parametrize("lazy", [True, False])
+def test_cross_module_generics_with_forward_refs(tmp_path, lazy):
+    base_code = f"""\
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+from mashumaro.types import Discriminator
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
+
+@dataclass
+class MyBase(Generic[T], DataClassDictMixin):
+    field: T
+
+    class Config(BaseConfig):
+        lazy_compilation = {lazy}
+
+"""
+    sub_code = """\
+from __future__ import annotations
+from dataclasses import dataclass
+from _base_mod import MyBase, T
+
+
+
+@dataclass
+class SubType(MyBase["Other"]): ...
+
+@dataclass
+class Other:
+    inner: int
+"""
+    base_file = tmp_path / "_base_mod.py"
+    sub_file = tmp_path / "_sub_mod.py"
+    base_file.write_text(base_code)
+    sub_file.write_text(sub_code)
+
+    import sys
+
+    original_path = sys.path.copy()
+    sys.path.insert(0, str(tmp_path))
+    try:
+        import _sub_mod
+
+        result = _sub_mod.SubType.from_dict({"field": {"inner": 42}})
+        assert type(result).__name__ == "SubType"
+
+    finally:
+        sys.path[:] = original_path
+        sys.modules.pop("_base_mod", None)
+        sys.modules.pop("_sub_mod", None)
