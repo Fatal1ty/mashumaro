@@ -555,6 +555,30 @@ class CodeBuilder:
             format_name=self.format_name,
             decoder=self.decoder,
         )
+        try:
+            self._add_unpack_method_eager(method_name)
+        except UnresolvedTypeReferenceError:
+            config = self.get_config()
+            if (
+                not self.allow_postponed_evaluation
+                or not config.allow_postponed_evaluation
+            ):
+                raise
+            self.reset()
+            self._add_unpack_method_with_lazy_body(method_name)
+        self.compile()
+
+    def _add_unpack_method_with_lazy_body(self, method_name: str) -> None:
+
+        if self.dialect is None and self.is_nailed:
+            self.add_line("@classmethod")
+        self._add_unpack_method_definition(method_name)
+        with self.indent():
+            self._add_unpack_method_lines_lazy(method_name)
+        cache_name = f"__dialect_{self.format_name}_unpacker_cache__"
+        self._add_setattr_method(method_name, cache_name)
+
+    def _add_unpack_method_eager(self, method_name: str) -> None:
         if self.decoder is not None:
             self.add_type_modules(self.decoder)
         dialects_feature = self.is_code_generation_option_enabled(
@@ -577,7 +601,6 @@ class CodeBuilder:
             else:
                 self._add_unpack_method_lines(method_name)
         self._add_setattr_method(method_name, cache_name)
-        self.compile()
 
     def _add_unpack_method_definition(self, method_name: str) -> None:
         kwargs = ""
@@ -1111,6 +1134,27 @@ class CodeBuilder:
             format_name=self.format_name,
             encoder=self.encoder,
         )
+        try:
+            self._add_pack_method_eager(method_name)
+        except UnresolvedTypeReferenceError:
+            config = self.get_config()
+            if (
+                not self.allow_postponed_evaluation
+                or not config.allow_postponed_evaluation
+            ):
+                raise
+            self.reset()
+            self._add_pack_method_with_lazy_body(method_name)
+        self.compile()
+
+    def _add_pack_method_with_lazy_body(self, method_name: str) -> None:
+        self._add_pack_method_definition(method_name)
+        with self.indent():
+            self._add_pack_method_lines_lazy(method_name)
+        cache_name = f"__dialect_{self.format_name}_packer_cache__"
+        self._add_setattr_method(method_name, cache_name)
+
+    def _add_pack_method_eager(self, method_name: str) -> None:
         if self.encoder is not None:
             self.add_type_modules(self.encoder)
         dialects_feature = self.is_code_generation_option_enabled(
@@ -1131,7 +1175,6 @@ class CodeBuilder:
             else:
                 self._add_pack_method_lines(method_name)
         self._add_setattr_method(method_name, cache_name)
-        self.compile()
 
     def _add_setattr_method(
         self, method_name: InternalMethodName, cache_name: str

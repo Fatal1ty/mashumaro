@@ -66,6 +66,7 @@ from mashumaro.core.meta.types.common import (
     random_hex,
 )
 from mashumaro.exceptions import (
+    UnresolvedTypeReferenceError,
     UnserializableDataError,
     UnserializableField,
     UnsupportedSerializationEngine,
@@ -549,7 +550,14 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
         elif is_type_var_tuple(spec.type):
             return PackerRegistry.get(spec.copy(type=tuple[Any, ...]))
         elif isinstance(spec.type, ForwardRef):
-            evaluated = evaluate_forward_ref(spec.type)
+            try:
+                evaluated = evaluate_forward_ref(
+                    spec.type, owner=spec.owner or spec.builder.cls
+                )
+            except NameError as e:
+                raise UnresolvedTypeReferenceError(
+                    spec.builder.cls, spec.type.__forward_arg__
+                ) from e
             if evaluated is not None:
                 return PackerRegistry.get(spec.copy(type=evaluated))
         elif is_type_alias_type(spec.type):
