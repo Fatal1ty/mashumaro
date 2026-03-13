@@ -54,10 +54,14 @@ class GenericSerializableType:
 
 class SerializationStrategy:
     __use_annotations__ = False
+    __match_subclasses__ = False
 
     def __init_subclass__(
         cls,
         use_annotations: Union[
+            bool, Literal[Sentinel.MISSING]
+        ] = Sentinel.MISSING,
+        match_subclasses: Union[
             bool, Literal[Sentinel.MISSING]
         ] = Sentinel.MISSING,
         **kwargs: Any,
@@ -65,6 +69,8 @@ class SerializationStrategy:
         super().__init_subclass__(**kwargs)
         if use_annotations is not Sentinel.MISSING:
             cls.__use_annotations__ = use_annotations
+        if match_subclasses is not Sentinel.MISSING:
+            cls.__match_subclasses__ = match_subclasses
 
     def serialize(self, value: Any) -> Any:
         raise NotImplementedError

@@ -1048,6 +1048,46 @@ thanks to the `float` annotation.
 > As well as for `SerializableType`, the value of `use_annotatons` will be
 > `True` by default in the future major release.
 
+#### Matching subclasses
+
+By default, a serialization strategy registered for a type only applies to that exact type.
+If you want it to also apply to subclasses, you can use `match_subclasses=True`.
+
+This can be particularly helpful for serializing any/all enums with the same strategy:
+
+```python
+import enum
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.types import SerializationStrategy
+
+class ParentStrategy(SerializationStrategy, match_subclasses=True):
+    def serialize(self, value: enum.Enum) -> str:
+        return value.name
+
+    def deserialize(self, value: str) -> enum.Enum:
+        raise NotImplementedError
+
+class MyEnum(enum.Enum):
+    a = 1
+    b = 2
+
+@dataclass
+class Example(DataClassDictMixin):
+    e: MyEnum
+
+    class Config:
+        serialization_strategy = {
+            enum.Enum: EnumByNameStrategy(),
+        }
+
+example = Example(e=MyEnum.a)
+print(example.to_dict())
+# {'e': 'a'}
+```
+
+When multiple strategies in the same config match via the MRO, the first type discovered in the MRO with a custom serializer registered will be used.
+
 #### Third-party generic types
 
 To create a generic version of a serialization strategy you need to follow these steps:
