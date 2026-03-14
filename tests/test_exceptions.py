@@ -5,8 +5,10 @@ import pytest
 
 from mashumaro import DataClassDictMixin
 from mashumaro.codecs import BasicDecoder
+from mashumaro.config import BaseConfig
 from mashumaro.core.meta.helpers import type_name
 from mashumaro.exceptions import (
+    DiscriminatedUnionError,
     ExtraKeysError,
     InvalidFieldValue,
     MissingDiscriminatorError,
@@ -18,6 +20,7 @@ from mashumaro.exceptions import (
     UnsupportedDeserializationEngine,
     UnsupportedSerializationEngine,
 )
+from mashumaro.types import Discriminator
 
 
 def test_missing_field_simple_field_type_name():
@@ -204,3 +207,79 @@ def test_extra_keys_error():
     with pytest.raises(ExtraKeysError) as exc_info:
         MyClass.from_dict({"x": "x", "y": "y"})
     assert str(exc_info.value).endswith(".MyClass: y")
+
+
+def test_deserialize_union_provides_helpful_info():
+
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        class Config(BaseConfig):
+            discriminator = Discriminator(
+                field="typename",
+                include_subtypes=True,
+            )
+            forbid_extra_keys = True
+
+        typename: str = "MyClass"
+
+    @dataclass(kw_only=True)
+    class OtherClass(MyClass):
+        inner: int | float
+        typename: str = "OtherClass"
+
+    @dataclass
+    class RandomClass(DataClassDictMixin):
+        z: int
+
+    @dataclass
+    class ParentClass(DataClassDictMixin):
+        x: Union[int, MyClass, RandomClass]
+
+    with pytest.raises(InvalidFieldValue) as exc_info:
+        ParentClass.from_dict(
+            {"x": {"inner": "not an int", "typename": "OtherClass"}}
+        )
+
+    exc = exc_info.value
+    assert exc.field_name == "x"
+    assert exc.holder_class is ParentClass
+
+    cause = exc.__cause__
+    assert isinstance(cause, DiscriminatedUnionError)
+    assert cause.matched_variant == "OtherClass"
+    cause = cause.__cause__
+    assert isinstance(cause, InvalidFieldValue)
+    assert cause.field_name == "inner"
+    assert cause.holder_class is OtherClass
+    assert cause.field_value == "not an int"
+
+    # Now give it a missing field
+    with pytest.raises(InvalidFieldValue) as exc_info:
+        ParentClass.from_dict({"x": {"typename": "OtherClass"}})
+
+    exc = exc_info.value
+    assert exc.field_name == "x"
+    assert exc.holder_class is ParentClass
+    cause = exc.__cause__
+    assert isinstance(cause, DiscriminatedUnionError)
+    assert cause.matched_variant == "OtherClass"
+    cause = cause.__cause__
+    assert isinstance(cause, MissingField)
+    assert cause.field_name == "inner"
+    assert cause.holder_class is OtherClass
+
+    # Now give it a too many fields
+    with pytest.raises(InvalidFieldValue) as exc_info:
+        ParentClass.from_dict(
+            {"x": {"inner": 5, "bad": 6, "typename": "OtherClass"}}
+        )
+
+    exc = exc_info.value
+    assert exc.field_name == "x"
+    assert exc.holder_class is ParentClass
+    cause = exc.__cause__
+    assert isinstance(cause, DiscriminatedUnionError)
+    assert cause.matched_variant == "OtherClass"
+    cause = cause.__cause__
+    assert isinstance(cause, ExtraKeysError)
+    assert cause.extra_keys == {"bad"}

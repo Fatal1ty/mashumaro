@@ -70,6 +70,7 @@ from mashumaro.dialect import Dialect
 from mashumaro.exceptions import (  # noqa
     BadDialect,
     BadHookSignature,
+    DiscriminatedUnionError,
     ExtraKeysError,
     InvalidFieldValue,
     MissingDiscriminatorError,
@@ -1283,10 +1284,11 @@ class FieldUnpackerCodeBlockBuilder:
     ) -> None:
         with self.lines.indent("try:"):
             self._set_value(field_name, unpacked_value, in_kwargs)
-        with self.lines.indent("except:"):
+        with self.lines.indent("except Exception as exc:"):
             self.lines.append(
                 "raise InvalidFieldValue("
                 f"'{field_name}',{field_type_name},value,cls)"
+                " from exc"
             )
 
     def _set_value(

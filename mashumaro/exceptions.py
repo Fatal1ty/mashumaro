@@ -142,6 +142,16 @@ class InvalidFieldValue(ValueError):
         return s
 
 
+class DiscriminatedUnionError(Exception):
+    """A discriminator matched a variant but deserialization failed."""
+
+    def __init__(self, matched_variant: str):
+        self.matched_variant = matched_variant
+
+    def __str__(self) -> str:
+        return f"Deserialization failed for matched variant {self.matched_variant}"
+
+
 class MissingDiscriminatorError(LookupError):
     def __init__(self, field_name: str):
         self.field_name = field_name

@@ -225,6 +225,7 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
             if do_try:
                 with lines.indent("try:"):
                     lines.extend(unpacker_block)
+                lines.append("except DiscriminatedUnionError: raise")
                 lines.append("except Exception: pass")
             else:
                 lines.extend(unpacker_block)
@@ -411,48 +412,62 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                     " from None"
                 )
             with lines.indent("try:"):
-                if spec.builder.is_nailed:
-                    lines.append(f"return {chosen_cls}.{variant_method_call}")
-                else:
-                    lines.append(
-                        f"return {spec.attrs_registry_name}"
-                        f"[{chosen_cls}].{variant_method_call}"
-                    )
-            with lines.indent("except (KeyError, AttributeError):"):
-                lines.append(f"variants_map = {variants_map}")
-                with lines.indent(f"for variant in {variants}:"):
-                    if discriminator.variant_tagger_fn is not None:
-                        self._add_register_variant_tags(
-                            lines, variant_tagger_expr
-                        )
-                    else:
-                        with lines.indent("try:"):
-                            self._add_register_variant_tags(
-                                lines, variant_tagger_expr
-                            )
-                        with lines.indent("except KeyError:"):
-                            lines.append("continue")
-                    self._add_build_variant_unpacker(
-                        spec, lines, variant_method_name, variant_method_call
-                    )
                 with lines.indent("try:"):
                     if spec.builder.is_nailed:
                         lines.append(
-                            "return variants_map[discriminator]"
-                            f".{variant_method_call}"
+                            f"return {chosen_cls}.{variant_method_call}"
                         )
                     else:
                         lines.append(
-                            f"return {spec.attrs_registry_name}["
-                            "variants_map[discriminator]]"
-                            f".{variant_method_call}"
+                            f"return {spec.attrs_registry_name}"
+                            f"[{chosen_cls}].{variant_method_call}"
                         )
-                with lines.indent("except KeyError:"):
-                    lines.append(
-                        "raise SuitableVariantNotFoundError("
-                        f"{variants_type_expr}, '{discriminator.field}', "
-                        "discriminator) from None"
-                    )
+                with lines.indent("except (KeyError, AttributeError):"):
+                    lines.append(f"variants_map = {variants_map}")
+                    with lines.indent(f"for variant in {variants}:"):
+                        if discriminator.variant_tagger_fn is not None:
+                            self._add_register_variant_tags(
+                                lines, variant_tagger_expr
+                            )
+                        else:
+                            with lines.indent("try:"):
+                                self._add_register_variant_tags(
+                                    lines, variant_tagger_expr
+                                )
+                            with lines.indent("except KeyError:"):
+                                lines.append("continue")
+                        self._add_build_variant_unpacker(
+                            spec,
+                            lines,
+                            variant_method_name,
+                            variant_method_call,
+                        )
+                    with lines.indent("try:"):
+                        if spec.builder.is_nailed:
+                            lines.append(
+                                "return variants_map[discriminator]"
+                                f".{variant_method_call}"
+                            )
+                        else:
+                            lines.append(
+                                f"return {spec.attrs_registry_name}["
+                                "variants_map[discriminator]]"
+                                f".{variant_method_call}"
+                            )
+                    with lines.indent("except KeyError:"):
+                        lines.append(
+                            "raise SuitableVariantNotFoundError("
+                            f"{variants_type_expr}, '{discriminator.field}', "
+                            "discriminator) from None"
+                        )
+            with lines.indent("except (KeyError, AttributeError):"):
+                lines.append("raise")
+            with lines.indent(
+                "except (InvalidFieldValue, DiscriminatedUnionError, MissingField, ExtraKeysError, UnresolvedTypeReferenceError) as exc:"
+            ):
+                lines.append(
+                    f"raise DiscriminatedUnionError(discriminator) from exc"
+                )
         else:
             with lines.indent(f"for variant in {variants}:"):
                 with lines.indent("try:"):
