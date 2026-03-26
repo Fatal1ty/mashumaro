@@ -592,3 +592,45 @@ def test_union_resolves_via_discriminator():
     assert isinstance(result.item, UnrelatedChild)
     assert result == container
 
+
+@pytest.mark.parametrize("forbid", [False, True])
+def test_discriminator_matches_current_class(forbid):
+
+    def _tagger(cls: type) -> str:
+        return f"{cls.__module__}.{cls.__qualname__}"
+
+    @dataclass
+    class Root(DataClassDictMixin):
+        class Config(BaseConfig):
+            forbid_extra_keys = forbid
+            discriminator = Discriminator(
+                field="_type",
+                include_subtypes=True,
+                include_current_type=True,
+                variant_tagger_fn=_tagger,
+            )
+
+        name: str = "base"
+
+        def __post_serialize__(self, data: dict):
+            data["_type"] = _tagger(type(self))
+            return data
+
+        @classmethod
+        def __pre_deserialize__(cls, data: dict) -> dict:
+            return {k: v for k, v in data.items() if k != "_type"}
+
+    @dataclass
+    class Middle(Root):
+        value: int = 0
+
+    @dataclass
+    class Container(DataClassDictMixin):
+        item: Root
+
+    child = Container(item=Root(name="hi"))
+    serialized = child.to_dict()
+
+    from_root = Container.from_dict(serialized)
+    assert isinstance(from_root.item, Root)
+    assert not isinstance(from_root.item, Middle)

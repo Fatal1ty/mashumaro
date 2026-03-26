@@ -101,6 +101,7 @@ class Discriminator:
     field: Optional[str] = None
     include_supertypes: bool = False
     include_subtypes: bool = False
+    include_current_type: bool = False
     variant_tagger_fn: Optional[Callable[[Any], Any]] = None
 
     def __post_init__(self) -> None:

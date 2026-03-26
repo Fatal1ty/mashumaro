@@ -2112,6 +2112,7 @@ It has the following parameters that affects class selection rules:
   by which all the variants can be distinguished
 * `include_subtypes` — allow to deserialize subclasses
 * `include_supertypes` — allow to deserialize superclasses
+* `include_current_type` - allow to deserialize to the class which hosts this discriminator
 * `variant_tagger_fn` — a custom function used to generate tag values
   associated with a variant
 

@@ -380,12 +380,19 @@ class CodeBuilder:
             if self.decoder is not None:
                 self.add_line("d = decoder(d)")
             discr = self.get_discriminator()
+            inherited = False
+            if not discr:
+                discr = self.get_discriminator(look_in_parents=True)
+                if discr and discr.field is None:
+                    discr = None
+                inherited = True
             if discr:
                 if not discr.include_subtypes:
                     raise ValueError(
                         "Config based discriminator must have "
                         "'include_subtypes' enabled"
                     )
+                fallthrough = inherited or discr.include_current_type
                 discr = Discriminator(
                     # prevent RecursionError
                     field=discr.field,
@@ -401,32 +408,18 @@ class CodeBuilder:
                         field_ctx=FieldContext("", {}),
                     )
                 )
-                self.add_line(f"return {method}")
-                return
-            inherited_discr = self.get_discriminator(look_in_parents=True)
-            if inherited_discr and inherited_discr.field is not None:
-                discr_copy = Discriminator(
-                    field=inherited_discr.field,
-                    include_subtypes=inherited_discr.include_subtypes,
-                    variant_tagger_fn=inherited_discr.variant_tagger_fn,
-                )
-                self.add_type_modules(self.cls)
-                method = SubtypeUnpackerBuilder(discr_copy).build(
-                    spec=ValueSpec(
-                        type=self.cls,
-                        expression="d",
-                        builder=self,
-                        field_ctx=FieldContext("", {}),
-                    )
-                )
-                with self.indent("try:"):
+                if fallthrough:
+                    with self.indent("try:"):
+                        self.add_line(f"return {method}")
+                    with self.indent(
+                        "except ("
+                        "SuitableVariantNotFoundError, "
+                        "MissingDiscriminatorError):"
+                    ):
+                        self.add_line("pass")
+                else:
                     self.add_line(f"return {method}")
-                with self.indent(
-                    "except ("
-                    "SuitableVariantNotFoundError, "
-                    "MissingDiscriminatorError):"
-                ):
-                    self.add_line("pass")
+                    return
             pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
             if pre_deserialize:
                 if not isinstance(pre_deserialize, classmethod):
