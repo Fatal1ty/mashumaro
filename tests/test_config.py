@@ -461,3 +461,134 @@ def test_forbid_extra_keys_with_discriminator_for_subclass():
             {"x": "foo", "__type": "_VariantByField4", "y": "bar"}
         )
     assert exc_info.value.extra_keys == {"y"}
+
+
+@pytest.mark.parametrize("forbid", [False, True])
+def test_subclass_from_dict_inherits_discriminator(forbid):
+
+    def _tagger(cls: type) -> str:
+        return f"{cls.__module__}.{cls.__qualname__}"
+
+    @dataclass
+    class Root(DataClassDictMixin):
+        class Config(BaseConfig):
+            forbid_extra_keys = forbid
+            discriminator = Discriminator(
+                field="_type",
+                include_subtypes=True,
+                variant_tagger_fn=_tagger,
+            )
+
+        name: str = "base"
+
+        def __post_serialize__(self, data: dict):
+            data["_type"] = _tagger(type(self))
+            return data
+
+        @classmethod
+        def __pre_deserialize__(cls, data: dict) -> dict:
+            return {k: v for k, v in data.items() if k != "_type"}
+
+    @dataclass
+    class Middle(Root):
+        value: int = 0
+
+    @dataclass
+    class Child(Middle):
+        extra: int = 0
+
+    child = Child(name="hi", extra=42)
+    serialized = child.to_dict()
+
+    # Root.from_dict works in both cases
+    from_root = Root.from_dict(serialized)
+    assert isinstance(from_root, Child)
+    assert from_root == child
+
+    # Middle.from_dict should also work
+    from_middle = Middle.from_dict(serialized)
+    assert isinstance(from_middle, Child)
+    assert from_middle == child
+
+
+def test_union_resolves_via_discriminator():
+    """Union[Branch, int] should use discriminator to resolve Leaf."""
+
+    def _tagger(cls: type) -> str:
+        return f"{cls.__module__}.{cls.__qualname__}"
+
+    @dataclass
+    class Root(DataClassDictMixin):
+        class Config(BaseConfig):
+            forbid_extra_keys = True
+            discriminator = Discriminator(
+                field="_type",
+                include_subtypes=True,
+                variant_tagger_fn=_tagger,
+            )
+
+        name: str = "base"
+
+        def __post_serialize__(self, data: dict):
+            data["_type"] = _tagger(type(self))
+            return data
+
+        @classmethod
+        def __pre_deserialize__(cls, data: dict) -> dict:
+            return {k: v for k, v in data.items() if k != "_type"}
+
+    @dataclass
+    class Branch(Root):
+        value: int = 0
+
+    @dataclass
+    class Leaf(Branch):
+        extra: int = 0
+
+    leaf = Leaf(name="hi", extra=42)
+    d = leaf.to_dict()
+
+    assert isinstance(Root.from_dict(d), Leaf)
+    assert isinstance(Branch.from_dict(d), Leaf)
+
+    @dataclass
+    class Unrelated(DataClassDictMixin):
+        class Config(BaseConfig):
+            forbid_extra_keys = True
+            discriminator = Discriminator(
+                field="_other_type",
+                include_subtypes=True,
+                variant_tagger_fn=_tagger,
+            )
+
+        def __post_serialize__(self, data: dict):
+            data["_other_type"] = _tagger(type(self))
+            return data
+
+        @classmethod
+        def __pre_deserialize__(cls, data: dict) -> dict:
+            return {k: v for k, v in data.items() if k != "_other_type"}
+
+    @dataclass
+    class UnrelatedChild(Unrelated):
+        value: int = 0
+
+    @dataclass
+    class Container(DataClassDictMixin):
+        item: Branch | int | Unrelated
+
+    container = Container(item=Leaf(name="hi", extra=42))
+    result = Container.from_dict(container.to_dict())
+    assert isinstance(result.item, Leaf)
+    assert result == container
+
+    container = Container(item=1)
+    result = Container.from_dict(container.to_dict())
+    assert isinstance(result.item, int)
+    assert result == container
+
+    container = Container(item=UnrelatedChild(value=123))
+    result = Container.from_dict(container.to_dict())
+    assert isinstance(result.item, UnrelatedChild)
+    assert result == container
+
