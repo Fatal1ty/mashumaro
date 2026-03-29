@@ -382,6 +382,10 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         variant_method_call = self._get_variant_method_call(
             variant_method_name, spec
         )
+        if discriminator.possible_subtypes_fn:
+            spec.builder.ensure_object_imported(
+                discriminator.possible_subtypes_fn, "possible_subtypes_fn"
+            )
         if discriminator.variant_tagger_fn:
             spec.builder.ensure_object_imported(
                 discriminator.variant_tagger_fn, "variant_tagger_fn"
@@ -420,6 +424,8 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                     )
             with lines.indent("except (KeyError, AttributeError):"):
                 lines.append(f"variants_map = {variants_map}")
+                if discriminator.possible_subtypes_fn:
+                    lines.append("list(possible_subtypes_fn())")
                 with lines.indent(f"for variant in {variants}:"):
                     if discriminator.variant_tagger_fn is not None:
                         self._add_register_variant_tags(
@@ -454,6 +460,8 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                         "discriminator) from None"
                     )
         else:
+            if discriminator.possible_subtypes_fn:
+                lines.append("list(possible_subtypes_fn())")
             with lines.indent(f"for variant in {variants}:"):
                 with lines.indent("try:"):
                     if spec.builder.is_nailed:

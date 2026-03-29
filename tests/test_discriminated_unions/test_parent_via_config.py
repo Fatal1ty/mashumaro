@@ -811,3 +811,52 @@ def test_by_subtypes_with_custom_variant_tagger_and_multiple_tags():
         VariantWithMultipleTags.from_dict({"type": "unknown"})
     with pytest.raises(SuitableVariantNotFoundError):
         decode({"type": "unknown"}, _VariantWithMultipleTags)
+
+
+def test_cross_module_discriminator_by_field_with_subtypes(tmp_path):
+    base_code = """\
+from dataclasses import dataclass
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+from mashumaro.types import Discriminator
+
+def _get_possible_subtypes():
+    from _sub_mod import SubType
+    yield SubType
+
+@dataclass
+class MyBase(DataClassDictMixin):
+    class Config(BaseConfig):
+        discriminator = Discriminator(
+            field="config_type",
+            include_subtypes=True,
+            get_possible_subtypes=_get_possible_subtypes,
+        )
+"""
+    sub_code = """\
+from dataclasses import dataclass
+from _base_mod import MyBase
+
+@dataclass
+class SubType(MyBase):
+    config_type = "SubType"
+"""
+    base_file = tmp_path / "_base_mod.py"
+    sub_file = tmp_path / "_sub_mod.py"
+    base_file.write_text(base_code)
+    sub_file.write_text(sub_code)
+
+    import sys
+
+    original_path = sys.path.copy()
+    sys.path.insert(0, str(tmp_path))
+    try:
+        import _base_mod
+
+        result = _base_mod.MyBase.from_dict({"config_type": "SubType"})
+        assert type(result).__name__ == "SubType"
+
+    finally:
+        sys.path[:] = original_path
+        sys.modules.pop("_base_mod", None)
+        sys.modules.pop("_sub_mod", None)
