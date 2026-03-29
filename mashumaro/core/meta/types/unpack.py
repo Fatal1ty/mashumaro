@@ -734,6 +734,9 @@ def unpack_dataclass(spec: ValueSpec) -> Optional[Expression]:
                 attrs_registry=(
                     spec.attrs_registry if not spec.builder.is_nailed else None
                 ),
+                allow_postponed_evaluation=(
+                    spec.builder.allow_postponed_evaluation
+                ),
             )
             builder.add_unpack_method()
         method_args = ", ".join(
