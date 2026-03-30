@@ -575,7 +575,7 @@ def test_union_resolves_via_discriminator():
 
     @dataclass
     class Container(DataClassDictMixin):
-        item: Branch | int | Unrelated
+        item: Union[Branch, int, Unrelated]
 
     container = Container(item=Leaf(name="hi", extra=42))
     result = Container.from_dict(container.to_dict())
