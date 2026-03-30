@@ -830,7 +830,7 @@ class MyBase(DataClassDictMixin):
         discriminator = Discriminator(
             field="config_type",
             include_subtypes=True,
-            get_possible_subtypes=_get_possible_subtypes,
+            possible_subtypes_fn=_get_possible_subtypes,
         )
 """
     sub_code = """\
