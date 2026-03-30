@@ -380,12 +380,19 @@ class CodeBuilder:
             if self.decoder is not None:
                 self.add_line("d = decoder(d)")
             discr = self.get_discriminator()
+            inherited = False
+            if not discr:
+                discr = self.get_discriminator(look_in_parents=True)
+                if discr and discr.field is None:
+                    discr = None
+                inherited = True
             if discr:
                 if not discr.include_subtypes:
                     raise ValueError(
                         "Config based discriminator must have "
                         "'include_subtypes' enabled"
                     )
+                fallthrough = inherited or discr.include_current_type
                 discr = Discriminator(
                     # prevent RecursionError
                     field=discr.field,
@@ -401,8 +408,18 @@ class CodeBuilder:
                         field_ctx=FieldContext("", {}),
                     )
                 )
-                self.add_line(f"return {method}")
-                return
+                if fallthrough:
+                    with self.indent("try:"):
+                        self.add_line(f"return {method}")
+                    with self.indent(
+                        "except ("
+                        "SuitableVariantNotFoundError, "
+                        "MissingDiscriminatorError):"
+                    ):
+                        self.add_line("pass")
+                else:
+                    self.add_line(f"return {method}")
+                    return
             pre_deserialize = self.get_declared_hook(__PRE_DESERIALIZE__)
             if pre_deserialize:
                 if not isinstance(pre_deserialize, classmethod):
