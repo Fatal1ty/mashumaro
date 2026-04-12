@@ -1208,12 +1208,31 @@ class CodeBuilder:
             yield metadata.get("serialization_strategy")
             yield from self.__iter_serialization_strategies(ftype)
 
+    @staticmethod
+    def _get_strategy_for_type(
+        strategies: typing.Dict, ftype: typing.Type
+    ) -> typing.Optional[SerializationStrategyValueType]:
+        result = strategies.get(ftype)
+        if result is not None:
+            return result
+        mro = getattr(ftype, "__mro__", None)
+        if mro is not None:
+            for base in mro[1:]:
+                result = strategies.get(base)
+                if result is not None and getattr(
+                    result, "__match_subclasses__", False
+                ):
+                    return result
+        return None
+
     @typing.no_type_check
     def __iter_serialization_strategies(
         self, ftype: typing.Type
     ) -> typing.Iterator[SerializationStrategyValueType]:
         if self.dialect is not None:
-            yield self.dialect.serialization_strategy.get(ftype)
+            yield self._get_strategy_for_type(
+                self.dialect.serialization_strategy, ftype
+            )
         default_dialect = self.get_config().dialect
         if default_dialect is not None:
             if not is_dialect_subclass(default_dialect):
@@ -1221,10 +1240,16 @@ class CodeBuilder:
                     'Config option "dialect" of '
                     f"{type_name(self.cls)} must be a subclass of Dialect"
                 )
-            yield default_dialect.serialization_strategy.get(ftype)
-        yield self.get_config().serialization_strategy.get(ftype)
+            yield self._get_strategy_for_type(
+                default_dialect.serialization_strategy, ftype
+            )
+        yield self._get_strategy_for_type(
+            self.get_config().serialization_strategy, ftype
+        )
         if self.default_dialect is not None:
-            yield self.default_dialect.serialization_strategy.get(ftype)
+            yield self._get_strategy_for_type(
+                self.default_dialect.serialization_strategy, ftype
+            )
 
     def get_dialect_or_config_option(
         self,
