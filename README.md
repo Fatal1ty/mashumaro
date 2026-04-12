@@ -2154,6 +2154,7 @@ It has the following parameters that affects class selection rules:
 * `include_supertypes` — allow to deserialize superclasses
 * `variant_tagger_fn` — a custom function used to generate tag values
   associated with a variant
+* `possible_subtypes_fn` — a custom function which enumerates possible subtypes to deserialize to.  Used in cases where cyclic-imports prevent importing subtypes at the module-level.
 
 By default, each variant that you want to discriminate by tags should have a
 class-level attribute containing an associated tag value. This attribute should
