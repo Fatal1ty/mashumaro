@@ -1210,7 +1210,8 @@ class CodeBuilder:
 
     @staticmethod
     def _get_strategy_for_type(
-        strategies: typing.Dict, ftype: typing.Type
+        strategies: typing.Mapping[typing.Any, SerializationStrategyValueType],
+        ftype: typing.Type,
     ) -> typing.Optional[SerializationStrategyValueType]:
         result = strategies.get(ftype)
         if result is not None:
