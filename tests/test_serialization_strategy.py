@@ -189,7 +189,12 @@ class EnumByNameStrategy(SerializationStrategy, match_subclasses=True):
         return value.name
 
     def deserialize(self, value: str) -> enum.Enum:
-        raise NotImplementedError
+        if value == "A":
+            return MyEnum.A
+        elif value == "B":
+            return MyEnum.B
+        else:
+            raise ValueError(f"Unknown enum: {value}")
 
 
 class MyEnum(enum.Enum):
@@ -213,6 +218,7 @@ def test_serialization_strategy_match_subclasses():
 
     obj = MyDataClass(e=MyEnum.A)
     assert obj.to_dict() == {"e": "A"}
+    assert MyDataClass.from_dict({"e": "A"}) == MyDataClass(e=MyEnum.A)
 
 
 def test_serialization_strategy_match_subclasses_specific_overrides_base():
@@ -221,7 +227,12 @@ def test_serialization_strategy_match_subclasses_specific_overrides_base():
             return value.value * 100
 
         def deserialize(self, value: int) -> enum.IntEnum:
-            raise NotImplementedError
+            if value / 100 == 10:
+                return MyIntEnum.X
+            elif value / 100 == 20:
+                return MyIntEnum.Y
+            else:
+                raise ValueError(f"Unknown enum: {value}")
 
     @dataclass
     class MyDataClass(DataClassDictMixin):
@@ -238,6 +249,7 @@ def test_serialization_strategy_match_subclasses_specific_overrides_base():
     result = obj.to_dict()
     assert result["e1"] == "B"
     assert result["e2"] == 1000
+    MyDataClass.from_dict(result) == MyDataClass(e1=MyEnum.B, e2=MyIntEnum.X)
 
 
 def test_serialization_strategy_no_match_subclasses_by_default():
@@ -247,7 +259,7 @@ def test_serialization_strategy_no_match_subclasses_by_default():
             return value.name
 
         def deserialize(self, value: str) -> enum.Enum:
-            raise NotImplementedError
+            raise NotImplementedError  # pragma: no cover
 
     @dataclass
     class MyDataClass(DataClassDictMixin):
@@ -258,3 +270,4 @@ def test_serialization_strategy_no_match_subclasses_by_default():
 
     obj = MyDataClass(e=MyEnum.A)
     assert obj.to_dict() == {"e": 1}
+    assert MyDataClass.from_dict({"e": 1}) == MyDataClass(e=MyEnum.A)
