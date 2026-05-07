@@ -216,13 +216,9 @@ def test_named_tuple_as_dict_and_as_list_engine():
             namedtuple_as_dict = True
 
     obj = DataClass(
-        as_dict=MyNamedTuple(i=1, f=2.0),
-        as_list=MyNamedTuple(i=1, f=2.0),
+        as_dict=MyNamedTuple(i=1, f=2.0), as_list=MyNamedTuple(i=1, f=2.0)
     )
-    obj_dict = {
-        "as_dict": {"i": 1, "f": 2.0},
-        "as_list": [1, 2.0],
-    }
+    obj_dict = {"as_dict": {"i": 1, "f": 2.0}, "as_list": [1, 2.0]}
     assert obj.to_dict() == obj_dict
     assert DataClass.from_dict(obj_dict) == obj
 
@@ -307,8 +303,7 @@ def test_sort_keys_plain_dataclass():
             sort_keys = False
 
     t = RootSortedModel(
-        unsorted_sub=UnSortedDataClass(1, 2),
-        sorted_sub=SortedDataClass(1, 2),
+        unsorted_sub=UnSortedDataClass(1, 2), sorted_sub=SortedDataClass(1, 2)
     )
     assert str(t.to_dict()) == (
         "{'sorted_sub': {'bar': 2, 'foo': 1}, "
@@ -316,8 +311,7 @@ def test_sort_keys_plain_dataclass():
     )
 
     t = RootUnSortedModel(
-        unsorted_sub=UnSortedDataClass(1, 2),
-        sorted_sub=SortedDataClass(1, 2),
+        unsorted_sub=UnSortedDataClass(1, 2), sorted_sub=SortedDataClass(1, 2)
     )
     assert str(t.to_dict()) == (
         "{'unsorted_sub': {'foo': 1, 'bar': 2}, "

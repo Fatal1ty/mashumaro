@@ -1,13 +1,13 @@
 import json
 from collections.abc import Callable
-from typing import Any, Type, TypeVar, Union
+from typing import Any, Type, TypeVar
 
 from mashumaro.mixins.dict import DataClassDictMixin
 
 T = TypeVar("T", bound="DataClassJSONMixin")
 
 
-EncodedData = Union[str, bytes, bytearray]
+EncodedData = str | bytes | bytearray
 Encoder = Callable[[Any], EncodedData]
 Decoder = Callable[[EncodedData], dict[Any, Any]]
 
@@ -16,9 +16,7 @@ class DataClassJSONMixin(DataClassDictMixin):
     __slots__ = ()
 
     def to_json(
-        self: T,
-        encoder: Encoder = json.dumps,
-        **to_dict_kwargs: Any,
+        self: T, encoder: Encoder = json.dumps, **to_dict_kwargs: Any
     ) -> EncodedData:
         return encoder(self.to_dict(**to_dict_kwargs))
 

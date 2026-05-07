@@ -30,10 +30,7 @@ class Bar:
 
 class MyDialect(Dialect):
     serialization_strategy = {
-        date: {
-            "serialize": date.toordinal,
-            "deserialize": date.fromordinal,
-        },
+        date: {"serialize": date.toordinal, "deserialize": date.fromordinal}
     }
 
 
@@ -49,10 +46,7 @@ class GenericDataClass(Generic[T]):
         [
             List[date],
             ["2023-09-22", "2023-09-23"],
-            [
-                date(2023, 9, 22),
-                date(2023, 9, 23),
-            ],
+            [date(2023, 9, 22), date(2023, 9, 23)],
         ],
         [DataClassWithoutMixin, {"i": 42}, DataClassWithoutMixin(42)],
         [
@@ -89,10 +83,7 @@ def test_decode(shape_type, encoded, decoded):
         [
             List[date],
             ["2023-09-22", "2023-09-23"],
-            [
-                date(2023, 9, 22),
-                date(2023, 9, 23),
-            ],
+            [date(2023, 9, 22), date(2023, 9, 23)],
         ],
         [DataClassWithoutMixin, {"i": 42}, DataClassWithoutMixin(42)],
         [
@@ -146,12 +137,7 @@ def test_pre_decoder_func():
 def test_post_encoder_func():
     encoder = BasicEncoder(List[date], post_encoder_func=lambda v: ",".join(v))
     assert (
-        encoder.encode(
-            [
-                date(2023, 9, 22),
-                date(2023, 9, 23),
-            ]
-        )
+        encoder.encode([date(2023, 9, 22), date(2023, 9, 23)])
         == "2023-09-22,2023-09-23"
     )
 

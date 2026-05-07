@@ -43,9 +43,7 @@ def test_annotated_with_overridden_methods():
             }
 
     obj = DataClass(
-        foo=date(2023, 6, 12),
-        bar=date(2023, 6, 12),
-        baz=date(2023, 6, 12),
+        foo=date(2023, 6, 12), bar=date(2023, 6, 12), baz=date(2023, 6, 12)
     )
     obj.foo.strftime("%Y%M%D")
     assert (

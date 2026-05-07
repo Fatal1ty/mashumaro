@@ -47,10 +47,7 @@ def test_jsonschema_for_not_required_and_future_annotations():
     schema = build_json_schema(MyDict).to_dict()
     assert schema == {
         "type": "object",
-        "properties": {
-            "a": {"type": "string"},
-            "b": {"type": "integer"},
-        },
+        "properties": {"a": {"type": "string"}, "b": {"type": "integer"}},
         "required": ["a"],
         "additionalProperties": False,
     }

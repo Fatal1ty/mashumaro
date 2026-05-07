@@ -1,6 +1,6 @@
 import re
 from collections.abc import Callable
-from typing import Any, Optional, Type
+from typing import Any, Type
 
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import is_optional, is_type_var_any
@@ -26,7 +26,7 @@ class CodecCodeBuilder(CodeBuilder):
         self,
         shape_type: Type,
         decoder_obj: Any,
-        pre_decoder_func: Optional[Callable[[Any], Any]] = None,
+        pre_decoder_func: Callable[[Any], Any] | None = None,
     ) -> None:
         self.reset()
         with self.indent("def decode(value):"):
@@ -65,7 +65,7 @@ class CodecCodeBuilder(CodeBuilder):
         self,
         shape_type: Type,
         encoder_obj: Any,
-        post_encoder_func: Optional[Callable[[Any], Any]] = None,
+        post_encoder_func: Callable[[Any], Any] | None = None,
     ) -> None:
         self.reset()
         with self.indent("def encode(value):"):

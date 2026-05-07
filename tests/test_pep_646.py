@@ -100,12 +100,7 @@ def test_dataclass_with_single_unpack_tuple():
         c: Tuple[Unpack[Tuple[int]]]
         d: Tuple[Unpack[Tuple[()]]]
 
-    obj = DataClass(
-        a=(1, 2, 3, 4, 5),
-        b=(1, 2.2, 3),
-        c=(1,),
-        d=(),
-    )
+    obj = DataClass(a=(1, 2, 3, 4, 5), b=(1, 2.2, 3), c=(1,), d=())
     assert obj.to_dict() == {
         "a": [1, 2, 3, 4, 5],
         "b": [1, 2.2, 3],
@@ -133,9 +128,7 @@ def test_dataclass_with_mixed_unpack_tuple_ellipsis():
         c: Tuple[float, Unpack[Tuple[int, ...]], float]
 
     obj = DataClass(
-        a=(1.1, 2, 3, 4, 5),
-        b=(1, 2, 3, 4, 5.5),
-        c=(1.1, 2, 3, 4, 5.5),
+        a=(1.1, 2, 3, 4, 5), b=(1, 2, 3, 4, 5.5), c=(1.1, 2, 3, 4, 5.5)
     )
     assert obj.to_dict() == {
         "a": [1.1, 2, 3, 4, 5],
@@ -162,9 +155,7 @@ def test_dataclass_with_mixed_unpack_tuple_multiple_args():
         c: Tuple[float, Unpack[Tuple[int, float, int]], float]
 
     obj = DataClass(
-        a=(1.1, 2, 3.3, 4),
-        b=(1, 2.2, 3, 4.4),
-        c=(1.1, 2, 3.3, 4, 5.5),
+        a=(1.1, 2, 3.3, 4), b=(1, 2.2, 3, 4.4), c=(1.1, 2, 3.3, 4, 5.5)
     )
     assert obj.to_dict() == {
         "a": [1.1, 2, 3.3, 4],
@@ -190,23 +181,11 @@ def test_dataclass_with_mixed_unpack_tuple_one_arg():
         b: Tuple[Unpack[Tuple[int]], float]
         c: Tuple[float, Unpack[Tuple[int]], float]
 
-    obj = DataClass(
-        a=(1.1, 2),
-        b=(1, 2.2),
-        c=(1.1, 2, 3.3),
-    )
-    assert obj.to_dict() == {
-        "a": [1.1, 2],
-        "b": [1, 2.2],
-        "c": [1.1, 2, 3.3],
-    }
+    obj = DataClass(a=(1.1, 2), b=(1, 2.2), c=(1.1, 2, 3.3))
+    assert obj.to_dict() == {"a": [1.1, 2], "b": [1, 2.2], "c": [1.1, 2, 3.3]}
     assert (
         DataClass.from_dict(
-            {
-                "a": ["1.1", 2.0],
-                "b": [1.0, "2.2"],
-                "c": ["1.1", 2.0, 3.3],
-            }
+            {"a": ["1.1", 2.0], "b": [1.0, "2.2"], "c": ["1.1", 2.0, 3.3]}
         )
         == obj
     )
@@ -219,24 +198,10 @@ def test_dataclass_with_mixed_unpack_empty_tuple():
         b: Tuple[Unpack[Tuple[()]], float]
         c: Tuple[float, Unpack[Tuple[()]], float]
 
-    obj = DataClass(
-        a=(1.1,),
-        b=(1.1,),
-        c=(1.1, 2.2),
-    )
-    assert obj.to_dict() == {
-        "a": [1.1],
-        "b": [1.1],
-        "c": [1.1, 2.2],
-    }
+    obj = DataClass(a=(1.1,), b=(1.1,), c=(1.1, 2.2))
+    assert obj.to_dict() == {"a": [1.1], "b": [1.1], "c": [1.1, 2.2]}
     assert (
-        DataClass.from_dict(
-            {
-                "a": ["1.1"],
-                "b": ["1.1"],
-                "c": ["1.1", "2.2"],
-            }
-        )
+        DataClass.from_dict({"a": ["1.1"], "b": ["1.1"], "c": ["1.1", "2.2"]})
         == obj
     )
 

@@ -216,11 +216,7 @@ inner_values = [
     (collections.abc.MutableSet[int], Fixture.SET, Fixture.LIST),
     (collections.abc.MutableSet, Fixture.SET, Fixture.LIST),
     (ChainMap[str, int], Fixture.CHAIN_MAP, Fixture.MAPS_LIST),
-    (
-        collections.ChainMap[str, int],
-        Fixture.CHAIN_MAP,
-        Fixture.MAPS_LIST,
-    ),
+    (collections.ChainMap[str, int], Fixture.CHAIN_MAP, Fixture.MAPS_LIST),
     (ChainMap, Fixture.CHAIN_MAP, Fixture.MAPS_LIST),
     (collections.ChainMap, Fixture.CHAIN_MAP, Fixture.MAPS_LIST),
     (Dict[str, int], Fixture.DICT, Fixture.DICT),
@@ -232,19 +228,11 @@ inner_values = [
     (Mapping, Fixture.DICT, Fixture.DICT),
     (collections.abc.Mapping, Fixture.DICT, Fixture.DICT),
     (OrderedDict[str, int], Fixture.ORDERED_DICT, Fixture.DICT),
-    (
-        collections.OrderedDict[str, int],
-        Fixture.ORDERED_DICT,
-        Fixture.DICT,
-    ),
+    (collections.OrderedDict[str, int], Fixture.ORDERED_DICT, Fixture.DICT),
     (OrderedDict, Fixture.ORDERED_DICT, Fixture.DICT),
     (collections.OrderedDict, Fixture.ORDERED_DICT, Fixture.DICT),
     (DefaultDict[str, int], Fixture.DEFAULT_DICT, Fixture.DICT),
-    (
-        collections.defaultdict[str, int],
-        Fixture.DEFAULT_DICT,
-        Fixture.DICT,
-    ),
+    (collections.defaultdict[str, int], Fixture.DEFAULT_DICT, Fixture.DICT),
     (DefaultDict, Fixture.DEFAULT_NONE_DICT, Fixture.DICT),
     (collections.defaultdict, Fixture.DEFAULT_NONE_DICT, Fixture.DICT),
     (Counter[str], Fixture.COUNTER, Fixture.DICT),
@@ -252,11 +240,7 @@ inner_values = [
     (Counter, Fixture.COUNTER, Fixture.DICT),
     (collections.Counter, Fixture.COUNTER, Fixture.DICT),
     (MutableMapping[str, int], Fixture.DICT, Fixture.DICT),
-    (
-        collections.abc.MutableMapping[str, int],
-        Fixture.DICT,
-        Fixture.DICT,
-    ),
+    (collections.abc.MutableMapping[str, int], Fixture.DICT, Fixture.DICT),
     (MutableMapping, Fixture.DICT, Fixture.DICT),
     (collections.abc.MutableMapping, Fixture.DICT, Fixture.DICT),
     (MappingProxyType[str, int], Fixture.MAPPING_PROXY, Fixture.DICT),
@@ -310,16 +294,8 @@ inner_values = [
     (MyDatetimeNewType, Fixture.DATETIME, Fixture.DATETIME_STR),
     (LiteralString, Fixture.LITERAL_STRING, Fixture.LITERAL_STRING),
     (re.Pattern, Fixture.PATTERN_STR, Fixture.PATTERN_STR.pattern),
-    (
-        re.Pattern[str],
-        Fixture.PATTERN_STR,
-        Fixture.PATTERN_STR.pattern,
-    ),
-    (
-        re.Pattern[bytes],
-        Fixture.PATTERN_BYTES,
-        Fixture.PATTERN_BYTES.pattern,
-    ),
+    (re.Pattern[str], Fixture.PATTERN_STR, Fixture.PATTERN_STR.pattern),
+    (re.Pattern[bytes], Fixture.PATTERN_BYTES, Fixture.PATTERN_BYTES.pattern),
 ]
 
 if os.name == "posix":
@@ -1125,17 +1101,8 @@ def test_dataclass_with_empty_tuple():
         x: Tuple[()]
 
     obj = DataClass(x=())
-    assert (
-        DataClass.from_dict(
-            {
-                "x": [1, 2, 3],
-            }
-        )
-        == obj
-    )
-    assert obj.to_dict() == {
-        "x": [],
-    }
+    assert DataClass.from_dict({"x": [1, 2, 3]}) == obj
+    assert obj.to_dict() == {"x": []}
 
 
 def test_dataclass_with_typed_dict_required_keys():

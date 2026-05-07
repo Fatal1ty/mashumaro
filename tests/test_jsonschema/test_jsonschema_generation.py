@@ -42,7 +42,6 @@ import pytest
 from typing_extensions import Annotated, Literal, TypeVarTuple, Unpack
 
 from mashumaro.config import BaseConfig
-from mashumaro.core.const import PY_310_MIN
 from mashumaro.core.meta.helpers import type_name
 from mashumaro.helper import pass_through
 from mashumaro.jsonschema.annotations import (
@@ -325,8 +324,7 @@ def test_jsonschema_for_timedelta():
 
 def test_jsonschema_for_timezone():
     assert build_json_schema(datetime.timezone) == JSONSchema(
-        type=JSONSchemaInstanceType.STRING,
-        pattern=UTC_OFFSET_PATTERN,
+        type=JSONSchemaInstanceType.STRING, pattern=UTC_OFFSET_PATTERN
     )
 
 
@@ -356,8 +354,7 @@ def test_jsonschema_for_uuid():
 )
 def test_jsonschema_for_ipaddress(instance_type, string_format):
     assert build_json_schema(instance_type) == JSONSchema(
-        type=JSONSchemaInstanceType.STRING,
-        format=string_format,
+        type=JSONSchemaInstanceType.STRING, format=string_format
     )
 
 
@@ -409,7 +406,7 @@ def test_jsonschema_for_list():
 
 def test_jsonschema_for_deque():
     assert build_json_schema(Deque[int]) == JSONArraySchema(
-        items=JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        items=JSONSchema(type=JSONSchemaInstanceType.INTEGER)
     )
     assert build_json_schema(Deque) == JSONArraySchema()
     assert build_json_schema(Deque[Any]) == JSONArraySchema()
@@ -637,7 +634,7 @@ def test_jsonschema_for_counter():
         additionalProperties=JSONSchema(type=JSONSchemaInstanceType.INTEGER)
     )
     assert build_json_schema(Counter[Any]) == JSONObjectSchema(
-        additionalProperties=JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        additionalProperties=JSONSchema(type=JSONSchemaInstanceType.INTEGER)
     )
     assert build_json_schema(
         Annotated[
@@ -790,7 +787,7 @@ def test_jsonschema_for_mapping():
     ) == JSONObjectSchema(
         additionalProperties=JSONObjectSchema(
             additionalProperties=JSONSchema(
-                type=JSONSchemaInstanceType.INTEGER,
+                type=JSONSchemaInstanceType.INTEGER
             ),
             propertyNames=JSONSchema(type=JSONSchemaInstanceType.STRING),
         ),
@@ -954,9 +951,7 @@ def test_overridden_serialization_method_without_signature():
 
         class Config(BaseConfig):
             serialization_strategy = {
-                datetime.datetime: {
-                    "serialize": datetime.datetime.timestamp,
-                }
+                datetime.datetime: {"serialize": datetime.datetime.timestamp}
             }
 
     with pytest.warns(
@@ -992,9 +987,7 @@ def test_overridden_serialization_method_with_return_annotation():
     def as_timestamp(dt: datetime.datetime) -> float:
         return dt.timestamp()  # pragma: no cover
 
-    def first_datetime_as_timestamp(
-        seq: List[datetime.datetime],
-    ) -> float:
+    def first_datetime_as_timestamp(seq: List[datetime.datetime]) -> float:
         return as_timestamp(seq[0])  # pragma: no cover
 
     @dataclass
@@ -1163,8 +1156,7 @@ def test_jsonschema_with_override_for_properties():
         description="Description for x",
     )
     assert build_json_schema(DataClass).properties["y"] == JSONSchema(
-        type=JSONSchemaInstanceType.NUMBER,
-        description="Description for y",
+        type=JSONSchemaInstanceType.NUMBER, description="Description for y"
     )
 
 
@@ -1239,9 +1231,7 @@ def test_jsonschema_with_additional_properties_true():
 
     schema = JSONObjectSchema(
         title="DataClass",
-        properties={
-            "x": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
-        },
+        properties={"x": JSONSchema(type=JSONSchemaInstanceType.INTEGER)},
         additionalProperties=True,
         required=["x"],
     )
@@ -1262,9 +1252,7 @@ def test_jsonschema_with_additional_properties_schema():
 
     schema = JSONObjectSchema(
         title="DataClass",
-        properties={
-            "x": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
-        },
+        properties={"x": JSONSchema(type=JSONSchemaInstanceType.INTEGER)},
         additionalProperties=JSONSchema(type=JSONSchemaInstanceType.INTEGER),
         required=["x"],
     )
@@ -1301,8 +1289,8 @@ def test_jsonschema_with_discriminator_for_local_types():
                         title="B",
                         additionalProperties=False,
                     ),
-                ],
-            ),
+                ]
+            )
         },
         additionalProperties=False,
         required=["value"],
@@ -1341,12 +1329,10 @@ def test_jsonschema_with_discriminator_with_default_for_local_types():
                         title="B",
                         additionalProperties=False,
                     ),
-                    JSONSchema(
-                        type=JSONSchemaInstanceType.NULL,
-                    ),
+                    JSONSchema(type=JSONSchemaInstanceType.NULL),
                 ],
                 default=None,
-            ),
+            )
         },
         additionalProperties=False,
     )
@@ -1390,12 +1376,10 @@ def test_jsonschema_with_optional_discriminator_and_default_for_local_types():
                             ),
                         ]
                     ),
-                    JSONSchema(
-                        type=JSONSchemaInstanceType.NULL,
-                    ),
+                    JSONSchema(type=JSONSchemaInstanceType.NULL),
                 ],
                 default=None,
-            ),
+            )
         },
         additionalProperties=False,
     )
@@ -1488,10 +1472,7 @@ def test_jsonschema_for_generic_dataclass():
 
     assert build_json_schema(MyClass) == JSONObjectSchema(
         title="MyClass",
-        properties={
-            "x": EmptyJSONSchema(),
-            "y": JSONArraySchema(),
-        },
+        properties={"x": EmptyJSONSchema(), "y": JSONArraySchema()},
         additionalProperties=False,
         required=["x", "y"],
     )
@@ -1516,10 +1497,7 @@ def test_jsonschema_for_generic_dataclass():
         properties={
             "z": JSONObjectSchema(
                 title="MyClass",
-                properties={
-                    "x": EmptyJSONSchema(),
-                    "y": JSONArraySchema(),
-                },
+                properties={"x": EmptyJSONSchema(), "y": JSONArraySchema()},
                 additionalProperties=False,
                 required=["x", "y"],
             )
@@ -1547,7 +1525,6 @@ def test_jsonschema_for_generic_dataclass():
     )
 
 
-@pytest.mark.skipif(not PY_310_MIN, reason="requires python 3.10+")
 def test_jsonschema_for_dataclass_with_slots():
     @dataclass(slots=True)
     class DataClassWithSlots:

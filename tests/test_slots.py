@@ -1,12 +1,6 @@
 from dataclasses import dataclass, field
 
-import pytest
-
 from mashumaro import DataClassDictMixin, field_options
-from mashumaro.core.const import PY_310_MIN
-
-if not PY_310_MIN:
-    pytest.skip("requires python>=3.10", allow_module_level=True)
 
 
 def test_field_options_in_dataclass_with_slots():

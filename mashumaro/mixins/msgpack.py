@@ -19,10 +19,7 @@ class MessagePackDialect(Dialect):
     no_copy_collections = (list, dict)
     serialization_strategy = {
         bytes: pass_through,
-        bytearray: {
-            "deserialize": bytearray,
-            "serialize": pass_through,
-        },
+        bytearray: {"deserialize": bytearray, "serialize": pass_through},
     }
 
 
@@ -52,9 +49,7 @@ class DataClassMessagePackMixin(DataClassDictMixin):
 
     @final
     def to_msgpack(
-        self: T,
-        encoder: Encoder = default_encoder,
-        **to_dict_kwargs: Any,
+        self: T, encoder: Encoder = default_encoder, **to_dict_kwargs: Any
     ) -> EncodedData: ...
 
     @classmethod

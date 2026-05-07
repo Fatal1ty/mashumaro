@@ -49,9 +49,7 @@ class DataClassTOMLMixin(DataClassDictMixin):
 
     @final
     def to_toml(
-        self: T,
-        encoder: Encoder = tomli_w.dumps,
-        **to_dict_kwargs: Any,
+        self: T, encoder: Encoder = tomli_w.dumps, **to_dict_kwargs: Any
     ) -> EncodedData: ...
 
     @classmethod

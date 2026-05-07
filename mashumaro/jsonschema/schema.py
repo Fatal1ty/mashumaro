@@ -20,7 +20,7 @@ from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
 from functools import cached_property
-from typing import Any, ForwardRef, Optional, Tuple, Type, Union
+from typing import Any, ForwardRef, Tuple, Type
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -97,8 +97,9 @@ except ImportError:  # pragma: no cover
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
 if sys.version_info >= (3, 14):
-    from annotationlib import get_annotations
     from typing import evaluate_forward_ref
+
+    from annotationlib import get_annotations
 else:
     from typing_extensions import evaluate_forward_ref, get_annotations
 
@@ -109,10 +110,10 @@ UTC_OFFSET_PATTERN = r"^UTC([+-][0-2][0-9]:[0-5][0-9])?$"
 @dataclass
 class Instance:
     type: Type
-    name: Optional[str] = None
+    name: str | None = None
 
-    __owner_builder: Optional[CodeBuilder] = None
-    __self_builder: Optional[CodeBuilder] = None
+    __owner_builder: CodeBuilder | None = None
+    __self_builder: CodeBuilder | None = None
 
     # Original type despite custom serialization. To be revised.
     _original_type: Type = field(init=False)
@@ -133,7 +134,7 @@ class Instance:
         return self.__self_builder
 
     @property
-    def alias(self) -> Optional[str]:
+    def alias(self) -> str | None:
         alias = self.metadata.get("alias")
         if alias is None:
             aliases_config = self.get_owner_config().aliases
@@ -143,7 +144,7 @@ class Instance:
         return alias
 
     @property
-    def owner_class(self) -> Optional[Type]:
+    def owner_class(self) -> Type | None:
         if self.__owner_builder:
             return self.__owner_builder.cls
         return None
@@ -169,8 +170,7 @@ class Instance:
     def update_type(self, new_type: Type) -> None:
         if self.__owner_builder:
             self.type = self.__owner_builder.get_real_type(
-                field_name=self.name,  # type: ignore
-                field_type=new_type,
+                field_name=self.name, field_type=new_type  # type: ignore
             )
         self.origin_type = get_type_origin(self.type)
         if is_dataclass(self.origin_type):
@@ -201,9 +201,7 @@ class Instance:
 
             yield f_name, f_type, has_default, f_default
 
-    def get_overridden_serialization_method(
-        self,
-    ) -> Optional[Union[Callable, str]]:
+    def get_overridden_serialization_method(self) -> Callable | str | None:
         if not self.__owner_builder:
             return None
         serialize_option = self.metadata.get("serialize")
@@ -248,7 +246,7 @@ class Instance:
 
 
 InstanceSchemaCreator: TypeAlias = Callable[
-    [Instance, Context], Optional[JSONSchema]
+    [Instance, Context], JSONSchema | None
 ]
 
 
@@ -294,9 +292,7 @@ def get_schema(
     )
 
 
-def _get_schema_or_none(
-    instance: Instance, ctx: Context
-) -> Optional[JSONSchema]:
+def _get_schema_or_none(instance: Instance, ctx: Context) -> JSONSchema | None:
     schema = get_schema(instance, ctx)
     if isinstance(schema, EmptyJSONSchema):
         return None
@@ -304,7 +300,7 @@ def _get_schema_or_none(
 
 
 def _default(
-    f_type: Optional[Type], f_value: Any, config_cls: Type[BaseConfig]
+    f_type: Type | None, f_value: Any, config_cls: Type[BaseConfig]
 ) -> Any:
     @dataclass
     class CC(DataClassJSONMixin):
@@ -335,7 +331,7 @@ BASIC_TYPES = {str, int, float, bool}
 @register
 def on_type_with_overridden_serialization(
     instance: Instance, ctx: Context
-) -> Optional[JSONSchema]:
+) -> JSONSchema | None:
     def override_with_any(reason: Any) -> None:
         if instance.owner_class is not None:
             name = f"{type_name(instance.owner_class)}.{instance.name}"
@@ -366,7 +362,7 @@ def on_type_with_overridden_serialization(
 
 
 @register
-def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_dataclass(instance: Instance, ctx: Context) -> JSONSchema | None:
     if is_dataclass(instance.origin_type):
         # When dataclasses reference themselves (typing.Self) or each other,
         # we must break infinite recursion by forcing $ref/$defs.
@@ -435,12 +431,12 @@ def on_dataclass(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
 
 @register
-def on_any(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_any(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.type is Any:
         return EmptyJSONSchema()
 
 
-def on_literal(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_literal(instance: Instance, ctx: Context) -> JSONSchema | None:
     enum_values = []
     for value in get_literal_values(instance.type):
         if isinstance(value, Enum):
@@ -458,7 +454,7 @@ def on_literal(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 @register
 def on_special_typing_primitive(
     instance: Instance, ctx: Context
-) -> Optional[JSONSchema]:
+) -> JSONSchema | None:
     if not is_special_typing_primitive(instance.origin_type):
         return None
 
@@ -546,7 +542,7 @@ def on_special_typing_primitive(
 
 
 @register
-def on_number(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_number(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type is int:
         schema = JSONSchema(type=JSONSchemaInstanceType.INTEGER)
     elif instance.origin_type is float:
@@ -568,19 +564,19 @@ def on_number(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
 
 @register
-def on_bool(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_bool(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type is bool:
         return JSONSchema(type=JSONSchemaInstanceType.BOOLEAN)
 
 
 @register
-def on_none(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_none(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type in (NoneType, None):
         return JSONSchema(type=JSONSchemaInstanceType.NULL)
 
 
 @register
-def on_date_objects(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_date_objects(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type in (
         datetime.datetime,
         datetime.date,
@@ -593,7 +589,7 @@ def on_date_objects(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
 
 @register
-def on_timedelta(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_timedelta(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type is datetime.timedelta:
         return JSONSchema(
             type=JSONSchemaInstanceType.NUMBER,
@@ -602,7 +598,7 @@ def on_timedelta(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
 
 @register
-def on_timezone(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_timezone(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type is datetime.timezone:
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING, pattern=UTC_OFFSET_PATTERN
@@ -610,7 +606,7 @@ def on_timezone(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
 
 @register
-def on_zone_info(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_zone_info(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type is ZoneInfo:
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
@@ -619,7 +615,7 @@ def on_zone_info(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
 
 @register
-def on_uuid(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_uuid(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type is UUID:
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
@@ -628,7 +624,7 @@ def on_uuid(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
 
 @register
-def on_ipaddress(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_ipaddress(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type in (
         ipaddress.IPv4Address,
         ipaddress.IPv6Address,
@@ -644,7 +640,7 @@ def on_ipaddress(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
 
 @register
-def on_decimal(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_decimal(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type is Decimal:
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
@@ -653,7 +649,7 @@ def on_decimal(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
 
 @register
-def on_fraction(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_fraction(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type is Fraction:
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
@@ -678,8 +674,8 @@ def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
         min_items = 0
         max_items = 0
         prefix_items = []
-        items: Optional[JSONSchema] = None
-        unpack_schema: Optional[JSONSchema] = None
+        items: JSONSchema | None = None
+        unpack_schema: JSONSchema | None = None
         unpack_idx = 0
         for arg_idx, arg in enumerate(args, start=1):
             if not is_unpack(arg):
@@ -786,12 +782,11 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
 
 
 def apply_array_constraints(
-    instance: Instance,
-    schema: JSONSchema,
+    instance: Instance, schema: JSONSchema
 ) -> JSONSchema:
     has_contains = False
-    min_contains: Optional[int] = None
-    max_contains: Optional[int] = None
+    min_contains: int | None = None
+    max_contains: int | None = None
     for annotation in instance.annotations:
         if isinstance(annotation, MinItems):
             schema.minItems = annotation.value
@@ -828,7 +823,7 @@ def apply_object_constraints(
 
 
 @register
-def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
     if not issubclass(instance.origin_type, Collection):
         return None
     elif issubclass(instance.origin_type, Enum):
@@ -907,7 +902,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
         instance.origin_type, Counter
     ):
         schema = JSONObjectSchema(
-            additionalProperties=get_schema(instance.derive(type=int), ctx),
+            additionalProperties=get_schema(instance.derive(type=int), ctx)
         )
         if args:
             schema.propertyNames = _get_schema_or_none(
@@ -948,7 +943,7 @@ def on_collection(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
 
 @register
-def on_pathlike(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_pathlike(instance: Instance, ctx: Context) -> JSONSchema | None:
     if issubclass(instance.origin_type, os.PathLike):
         schema = JSONSchema(
             type=JSONSchemaInstanceType.STRING,
@@ -963,7 +958,7 @@ def on_pathlike(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
 
 
 @register
-def on_enum(instance: Instance, ctx: Context) -> Optional[JSONSchema]:
+def on_enum(instance: Instance, ctx: Context) -> JSONSchema | None:
     if issubclass(instance.origin_type, Enum):
         return JSONSchema(enum=[m.value for m in instance.origin_type])
 

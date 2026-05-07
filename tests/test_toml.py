@@ -19,10 +19,7 @@ serialization_strategy = {
         "serialize": lambda dt: dt.strftime("%Y/%m/%d/%H/%M/%S"),
         "deserialize": lambda s: datetime.strptime(s, "%Y/%m/%d/%H/%M/%S"),
     },
-    date: {
-        "serialize": date.toordinal,
-        "deserialize": date.fromordinal,
-    },
+    date: {"serialize": date.toordinal, "deserialize": date.fromordinal},
     time: {
         "serialize": lambda t: t.strftime("%H/%M/%S"),
         "deserialize": lambda s: datetime.strptime(s, "%H/%M/%S").time(),

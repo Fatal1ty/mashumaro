@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type
+from typing import Any, Type
 
 from mashumaro.core.meta.helpers import type_name
 
@@ -51,7 +51,7 @@ class UnserializableField(UnserializableDataError):
         field_name: str,
         field_type: Type,
         holder_class: Type,
-        msg: Optional[str] = None,
+        msg: str | None = None,
     ):
         self.field_name = field_name
         self.field_type = field_type
@@ -115,7 +115,7 @@ class InvalidFieldValue(ValueError):
         field_type: Type,
         field_value: Any,
         holder_class: Type,
-        msg: Optional[str] = None,
+        msg: str | None = None,
     ):
         self.field_name = field_name
         self.field_type = field_type
@@ -154,7 +154,7 @@ class SuitableVariantNotFoundError(ValueError):
     def __init__(
         self,
         variants_type: Type,
-        discriminator_name: Optional[str] = None,
+        discriminator_name: str | None = None,
         discriminator_value: Any = None,
     ):
         self.variants_type = variants_type

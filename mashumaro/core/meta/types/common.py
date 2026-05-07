@@ -5,7 +5,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from functools import cached_property
 from types import new_class
-from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Type, TypeVar
 
 from typing_extensions import ParamSpec, TypeAlias
 
@@ -31,7 +31,7 @@ class TypeMatchEligibleExpression(str):
 
 
 NoneType = type(None)
-Expression: TypeAlias = Union[str, TypeMatchEligibleExpression]
+Expression: TypeAlias = str | TypeMatchEligibleExpression
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -41,7 +41,7 @@ _PY_VALID_ID_RE = re.compile(r"\W|^(?=\d)")
 
 class AttrsHolder:
     def __new__(
-        cls, name: Optional[str] = None, *args: Any, **kwargs: Any
+        cls, name: str | None = None, *args: Any, **kwargs: Any
     ) -> Any:
         ah = new_class("AttrsHolder")
         ah_id = id(ah)
@@ -60,8 +60,8 @@ class ExpressionWrapper:
 class FieldContext:
     name: str
     metadata: Mapping
-    packer: Optional[str] = None
-    unpacker: Optional[str] = None
+    packer: str | None = None
+    unpacker: str | None = None
 
     def copy(self, **changes: Any) -> "FieldContext":
         return replace(self, **changes)
@@ -75,8 +75,8 @@ class ValueSpec:
     builder: CodeBuilder
     field_ctx: FieldContext
     could_be_none: bool = True
-    annotated_type: Optional[Type] = None
-    owner: Optional[Type] = None
+    annotated_type: Type | None = None
+    owner: Type | None = None
     no_copy_collections: Sequence = tuple()
 
     def __setattr__(self, key: str, value: Any) -> None:
@@ -183,7 +183,7 @@ class AbstractMethodBuilder(ABC):
     def _before_build(self, spec: ValueSpec) -> None:
         pass
 
-    def _get_existing_method(self, spec: ValueSpec) -> Optional[str]:
+    def _get_existing_method(self, spec: ValueSpec) -> str | None:
         return None
 
     def build(self, spec: ValueSpec) -> str:
@@ -199,7 +199,7 @@ class AbstractMethodBuilder(ABC):
         return self._get_call_expr(spec, method_name)
 
 
-ValueSpecExprCreator: TypeAlias = Callable[[ValueSpec], Optional[Expression]]
+ValueSpecExprCreator: TypeAlias = Callable[[ValueSpec], Expression | None]
 
 
 @dataclass

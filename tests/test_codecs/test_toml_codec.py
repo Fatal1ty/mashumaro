@@ -14,20 +14,14 @@ from mashumaro.dialect import Dialect
 
 class MyDialect(Dialect):
     serialization_strategy = {
-        date: {
-            "serialize": date.toordinal,
-            "deserialize": date.fromordinal,
-        },
+        date: {"serialize": date.toordinal, "deserialize": date.fromordinal}
     }
 
 
 def test_toml_decode():
     data = tomli_w.dumps({"x": [date(2023, 9, 22), date(2023, 9, 23)]})
     assert toml_decode(data, Dict[str, List[date]]) == {
-        "x": [
-            date(2023, 9, 22),
-            date(2023, 9, 23),
-        ]
+        "x": [date(2023, 9, 22), date(2023, 9, 23)]
     }
 
 
@@ -46,10 +40,7 @@ def test_decoder_with_default_dialect():
     data = tomli_w.dumps({"x": [738785, 738786]})
     decoder = TOMLDecoder(Dict[str, List[date]], default_dialect=MyDialect)
     assert decoder.decode(data) == {
-        "x": [
-            date(2023, 9, 22),
-            date(2023, 9, 23),
-        ]
+        "x": [date(2023, 9, 22), date(2023, 9, 23)]
     }
 
 

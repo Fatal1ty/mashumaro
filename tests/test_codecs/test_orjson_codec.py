@@ -12,10 +12,7 @@ from mashumaro.dialect import Dialect
 
 class MyDialect(Dialect):
     serialization_strategy = {
-        date: {
-            "serialize": date.toordinal,
-            "deserialize": date.fromordinal,
-        },
+        date: {"serialize": date.toordinal, "deserialize": date.fromordinal}
     }
 
 

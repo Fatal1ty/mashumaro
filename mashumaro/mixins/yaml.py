@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Type, TypeVar, Union
+from typing import Any, Type, TypeVar
 
 import yaml
 
@@ -8,7 +8,7 @@ from mashumaro.mixins.dict import DataClassDictMixin
 T = TypeVar("T", bound="DataClassYAMLMixin")
 
 
-EncodedData = Union[str, bytes]
+EncodedData = str | bytes
 Encoder = Callable[[Any], EncodedData]
 Decoder = Callable[[EncodedData], dict[Any, Any]]
 
@@ -29,9 +29,7 @@ class DataClassYAMLMixin(DataClassDictMixin):
     __slots__ = ()
 
     def to_yaml(
-        self: T,
-        encoder: Encoder = default_encoder,
-        **to_dict_kwargs: Any,
+        self: T, encoder: Encoder = default_encoder, **to_dict_kwargs: Any
     ) -> EncodedData:
         return encoder(self.to_dict(**to_dict_kwargs))
 
