@@ -13,10 +13,7 @@ from dataclasses import _FIELDS  # type: ignore
 from dataclasses import MISSING, Field, is_dataclass
 from functools import lru_cache
 
-try:
-    from dataclasses import KW_ONLY  # type: ignore
-except ImportError:
-    KW_ONLY = object()  # type: ignore
+from dataclasses import KW_ONLY
 
 import typing_extensions
 
