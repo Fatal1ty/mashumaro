@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Literal, Optional, Type, TypedDict, Union
+from typing import Any, Literal, Type, TypedDict
 
 from mashumaro.core.const import Sentinel
 from mashumaro.dialect import Dialect
@@ -30,13 +30,13 @@ CodeGenerationOption = Literal[
 
 
 class SerializationStrategyDict(TypedDict, total=False):
-    serialize: Union[str, Callable]
-    deserialize: Union[str, Callable]
+    serialize: str | Callable
+    deserialize: str | Callable
 
 
-SerializationStrategyValueType = Union[
-    SerializationStrategy, SerializationStrategyDict
-]
+SerializationStrategyValueType = (
+    SerializationStrategy | SerializationStrategyDict
+)
 
 
 class BaseConfig:
@@ -44,19 +44,15 @@ class BaseConfig:
     code_generation_options: list[CodeGenerationOption] = []
     serialization_strategy: dict[Any, SerializationStrategyValueType] = {}
     aliases: dict[str, str] = {}
-    serialize_by_alias: Union[bool, Literal[Sentinel.MISSING]] = (
-        Sentinel.MISSING
-    )
-    namedtuple_as_dict: Union[bool, Literal[Sentinel.MISSING]] = (
-        Sentinel.MISSING
-    )
+    serialize_by_alias: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
+    namedtuple_as_dict: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     allow_postponed_evaluation: bool = True
-    dialect: Optional[Type[Dialect]] = None
-    omit_none: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
-    omit_default: Union[bool, Literal[Sentinel.MISSING]] = Sentinel.MISSING
-    orjson_options: Optional[int] = 0
+    dialect: Type[Dialect] | None = None
+    omit_none: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
+    omit_default: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
+    orjson_options: int | None = 0
     json_schema: dict[str, Any] = {}
-    discriminator: Optional[Discriminator] = None
+    discriminator: Discriminator | None = None
     lazy_compilation: bool = False
     sort_keys: bool = False
     allow_deserialization_not_by_alias: bool = False

@@ -14,10 +14,7 @@ from mashumaro.dialect import Dialect
 
 class MyDialect(Dialect):
     serialization_strategy = {
-        date: {
-            "serialize": date.toordinal,
-            "deserialize": date.fromordinal,
-        },
+        date: {"serialize": date.toordinal, "deserialize": date.fromordinal}
     }
 
 
@@ -39,10 +36,7 @@ def test_yaml_encode():
 def test_decoder_with_default_dialect():
     data = "- 738785\n- 738786\n"
     decoder = YAMLDecoder(List[date], default_dialect=MyDialect)
-    assert decoder.decode(data) == [
-        date(2023, 9, 22),
-        date(2023, 9, 23),
-    ]
+    assert decoder.decode(data) == [date(2023, 9, 22), date(2023, 9, 23)]
 
 
 def test_encoder_with_default_dialect():
@@ -60,14 +54,8 @@ def test_pre_decoder_func():
         calls += 1
         return yaml.load(value, getattr(yaml, "CSafeLoader", yaml.SafeLoader))
 
-    decoder = YAMLDecoder(
-        List[date],
-        pre_decoder_func=pre_decoder_func,
-    )
-    assert decoder.decode(data) == [
-        date(2023, 9, 22),
-        date(2023, 9, 23),
-    ]
+    decoder = YAMLDecoder(List[date], pre_decoder_func=pre_decoder_func)
+    assert decoder.decode(data) == [date(2023, 9, 22), date(2023, 9, 23)]
     assert calls == 1
 
 
@@ -80,17 +68,6 @@ def test_post_encoder_func():
         calls += 1
         return yaml.dump(value, Dumper=getattr(yaml, "CDumper", yaml.Dumper))
 
-    encoder = YAMLEncoder(
-        List[date],
-        post_encoder_func=post_encoder_func,
-    )
-    assert (
-        encoder.encode(
-            [
-                date(2023, 9, 22),
-                date(2023, 9, 23),
-            ]
-        )
-        == data
-    )
+    encoder = YAMLEncoder(List[date], post_encoder_func=post_encoder_func)
+    assert encoder.encode([date(2023, 9, 22), date(2023, 9, 23)]) == data
     assert calls == 1

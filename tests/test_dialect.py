@@ -41,10 +41,7 @@ class HexSerializationStrategy(SerializationStrategy):
 
 class OrdinalDialect(Dialect):
     serialization_strategy = {
-        date: {
-            "serialize": date.toordinal,
-            "deserialize": date.fromordinal,
-        },
+        date: {"serialize": date.toordinal, "deserialize": date.fromordinal},
         int: HexSerializationStrategy(),
     }
 
@@ -61,10 +58,7 @@ class FormattedDialect(Dialect):
 
 class ISODialect(Dialect):
     serialization_strategy = {
-        date: {
-            "serialize": date.isoformat,
-            "deserialize": date.fromisoformat,
-        },
+        date: {"serialize": date.isoformat, "deserialize": date.fromisoformat},
         int: HexSerializationStrategy(),
     }
 
@@ -177,12 +171,10 @@ class GenericDataClassWithDialectSupportAndDefaultDialect(
 
 class MyNamedTuple(NamedTuple):
     x: DataClassWithDialectSupport = DataClassWithDialectSupport(
-        dt=date(2022, 1, 1),
-        i=999,
+        dt=date(2022, 1, 1), i=999
     )
     y: DataClassWithoutDialects = DataClassWithoutDialects(
-        dt=date(2022, 1, 1),
-        i=999,
+        dt=date(2022, 1, 1), i=999
     )
 
 
@@ -1225,10 +1217,7 @@ def test_dialect_merge():
                 "deserialize": date.fromordinal,
             },
             int: HexSerializationStrategy(),
-            float: {
-                "serialize": pass_through,
-                "deserialize": float,
-            },
+            float: {"serialize": pass_through, "deserialize": float},
         }
 
     class DialectB(Dialect):
@@ -1237,13 +1226,8 @@ def test_dialect_merge():
         no_copy_collections = [list]
         serialization_strategy = {
             date: pass_through,
-            int: {
-                "serialize": int,
-                "deserialize": int,
-            },
-            float: {
-                "serialize": float,
-            },
+            int: {"serialize": int, "deserialize": int},
+            float: {"serialize": float},
         }
 
     DialectC = DialectA.merge(DialectB)
@@ -1252,12 +1236,6 @@ def test_dialect_merge():
     assert DialectC.no_copy_collections == [list]
     assert DialectC.serialization_strategy == {
         date: pass_through,
-        int: {
-            "serialize": int,
-            "deserialize": int,
-        },
-        float: {
-            "serialize": float,
-            "deserialize": float,
-        },
+        int: {"serialize": int, "deserialize": int},
+        float: {"serialize": float, "deserialize": float},
     }

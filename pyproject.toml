@@ -9,12 +9,11 @@ license = "Apache-2.0"
 description = "Fast and well tested serialization library"
 readme = "README.md"
 authors = [{ name = "Alexander Tikhonov", email = "random.gauss@gmail.com" }]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -79,7 +78,8 @@ ensure_newline_before_comments = true
 
 [tool.black]
 line-length = 79
-target-version = ['py39', 'py310', 'py311', 'py312']
+skip-magic-trailing-comma = true
+target-version = ['py310', 'py311', 'py312']
 
 [tool.ruff]
 line-length = 79

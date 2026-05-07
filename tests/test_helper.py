@@ -57,8 +57,7 @@ def test_dataclass_with_pass_through():
     class DataClass(DataClassDictMixin):
         x: datetime = field(
             metadata=field_options(
-                serialize=pass_through,
-                deserialize=pass_through,
+                serialize=pass_through, deserialize=pass_through
             )
         )
         y: date = field(

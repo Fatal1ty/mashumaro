@@ -9,7 +9,6 @@ import pytest
 from typing_extensions import Self
 
 from mashumaro.config import BaseConfig
-from mashumaro.core.const import PY_310_MIN
 from mashumaro.core.meta.types.common import clean_id
 from mashumaro.mixins.dict import DataClassDictMixin
 from mashumaro.mixins.json import DataClassJSONMixin
@@ -64,61 +63,66 @@ class EntityBWrapperMessagePack(DataClassMessagePackMixin):
     entity2wrapper: EntityB2WrapperMessagePack
 
 
-if PY_310_MIN:
+@dataclass(kw_only=True)
+class DataClassKwOnly1(DataClassDictMixin):
+    x: int
+    y: int
 
-    @dataclass(kw_only=True)
-    class DataClassKwOnly1(DataClassDictMixin):
-        x: int
-        y: int
 
-    @dataclass
-    class DataClassKwOnly2(DataClassDictMixin):
-        x: int = field(kw_only=True)
-        y: int
+@dataclass
+class DataClassKwOnly2(DataClassDictMixin):
+    x: int = field(kw_only=True)
+    y: int
 
-    @dataclass(kw_only=True)
-    class DataClassKwOnly3(DataClassDictMixin):
-        x: int
-        y: int = field(kw_only=False)
 
-    @dataclass
-    class DataClassKwOnly4(DataClassDictMixin):
-        x: int
-        _: dataclasses.KW_ONLY
-        y: int
+@dataclass(kw_only=True)
+class DataClassKwOnly3(DataClassDictMixin):
+    x: int
+    y: int = field(kw_only=False)
 
-    @dataclass(kw_only=True)
-    class LazyDataClassKwOnly1(DataClassDictMixin):
-        x: int
-        y: int
 
-        class Config(BaseConfig):
-            lazy_compilation = True
+@dataclass
+class DataClassKwOnly4(DataClassDictMixin):
+    x: int
+    _: dataclasses.KW_ONLY
+    y: int
 
-    @dataclass
-    class LazyDataClassKwOnly2(DataClassDictMixin):
-        x: int = field(kw_only=True)
-        y: int
 
-        class Config(BaseConfig):
-            lazy_compilation = True
+@dataclass(kw_only=True)
+class LazyDataClassKwOnly1(DataClassDictMixin):
+    x: int
+    y: int
 
-    @dataclass(kw_only=True)
-    class LazyDataClassKwOnly3(DataClassDictMixin):
-        x: int
-        y: int = field(kw_only=False)
+    class Config(BaseConfig):
+        lazy_compilation = True
 
-        class Config(BaseConfig):
-            lazy_compilation = True
 
-    @dataclass
-    class LazyDataClassKwOnly4(DataClassDictMixin):
-        x: int
-        _: dataclasses.KW_ONLY
-        y: int
+@dataclass
+class LazyDataClassKwOnly2(DataClassDictMixin):
+    x: int = field(kw_only=True)
+    y: int
 
-        class Config(BaseConfig):
-            lazy_compilation = True
+    class Config(BaseConfig):
+        lazy_compilation = True
+
+
+@dataclass(kw_only=True)
+class LazyDataClassKwOnly3(DataClassDictMixin):
+    x: int
+    y: int = field(kw_only=False)
+
+    class Config(BaseConfig):
+        lazy_compilation = True
+
+
+@dataclass
+class LazyDataClassKwOnly4(DataClassDictMixin):
+    x: int
+    _: dataclasses.KW_ONLY
+    y: int
+
+    class Config(BaseConfig):
+        lazy_compilation = True
 
 
 @dataclass
@@ -226,7 +230,6 @@ def test_compiled_mixin_with_inheritance_2():
     assert EntityBWrapperMessagePack.from_msgpack(data) == wrapper
 
 
-@pytest.mark.skipif(not PY_310_MIN, reason="requires python 3.10+")
 def test_kw_only_dataclasses():
     data = {"x": "1", "y": "2"}
     for cls in (

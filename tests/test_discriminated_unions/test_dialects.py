@@ -14,10 +14,7 @@ from mashumaro.types import Discriminator
 
 class DefaultDialect(Dialect):
     serialization_strategy = {
-        date: {
-            "deserialize": date.fromisoformat,
-            "serialize": date.isoformat,
-        },
+        date: {"deserialize": date.fromisoformat, "serialize": date.isoformat},
         dict: {
             "deserialize": lambda x: {k: v for k, v in x},
             "serialize": lambda x: [(k, v) for k, v in x.items()],
@@ -27,14 +24,8 @@ class DefaultDialect(Dialect):
 
 class MyDialect(Dialect):
     serialization_strategy = {
-        date: {
-            "deserialize": date.fromordinal,
-            "serialize": date.toordinal,
-        },
-        dict: {
-            "deserialize": dict,
-            "serialize": dict,
-        },
+        date: {"deserialize": date.fromordinal, "serialize": date.toordinal},
+        dict: {"deserialize": dict, "serialize": dict},
     }
 
 

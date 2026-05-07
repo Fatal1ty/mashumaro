@@ -737,7 +737,7 @@ def test_tuple_with_discriminated_elements():
             (
                 UnannotatedVariantStr(DT_STR),
                 UnannotatedVariantDateSubtype(DT_DATE),
-            ),
+            )
         )
 
     for func in (

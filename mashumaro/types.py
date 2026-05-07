@@ -1,7 +1,7 @@
 import decimal
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Optional, Type, Union
+from typing import Any, Type
 
 from typing_extensions import Literal
 
@@ -24,9 +24,7 @@ class SerializableType:
 
     def __init_subclass__(
         cls,
-        use_annotations: Union[
-            bool, Literal[Sentinel.MISSING]
-        ] = Sentinel.MISSING,
+        use_annotations: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING,
         **kwargs: Any,
     ):
         super().__init_subclass__(**kwargs)
@@ -58,12 +56,8 @@ class SerializationStrategy:
 
     def __init_subclass__(
         cls,
-        use_annotations: Union[
-            bool, Literal[Sentinel.MISSING]
-        ] = Sentinel.MISSING,
-        match_subclasses: Union[
-            bool, Literal[Sentinel.MISSING]
-        ] = Sentinel.MISSING,
+        use_annotations: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING,
+        match_subclasses: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING,
         **kwargs: Any,
     ):
         super().__init_subclass__(**kwargs)
@@ -80,9 +74,7 @@ class SerializationStrategy:
 
 
 class RoundedDecimal(SerializationStrategy):
-    def __init__(
-        self, places: Optional[int] = None, rounding: Optional[str] = None
-    ):
+    def __init__(self, places: int | None = None, rounding: str | None = None):
         if places is not None:
             self.exp = decimal.Decimal((0, (1,), -places))
         else:
@@ -104,10 +96,10 @@ class RoundedDecimal(SerializationStrategy):
 
 @dataclass(unsafe_hash=True)
 class Discriminator:
-    field: Optional[str] = None
+    field: str | None = None
     include_supertypes: bool = False
     include_subtypes: bool = False
-    variant_tagger_fn: Optional[Callable[[Any], Any]] = None
+    variant_tagger_fn: Callable[[Any], Any] | None = None
 
     def __post_init__(self) -> None:
         if not self.include_supertypes and not self.include_subtypes:

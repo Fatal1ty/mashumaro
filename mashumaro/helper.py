@@ -1,14 +1,11 @@
 from collections.abc import Callable
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
 from typing_extensions import Literal
 
 from mashumaro.types import SerializationStrategy
 
-__all__ = [
-    "field_options",
-    "pass_through",
-]
+__all__ = ["field_options", "pass_through"]
 
 
 NamedTupleDeserializationEngine = Literal["as_dict", "as_list"]
@@ -19,23 +16,19 @@ AnyDeserializationEngine = Literal[
 
 NamedTupleSerializationEngine = Literal["as_dict", "as_list"]
 OmitSerializationEngine = Literal["omit"]
-AnySerializationEngine = Union[
-    NamedTupleSerializationEngine, OmitSerializationEngine
-]
+AnySerializationEngine = (
+    NamedTupleSerializationEngine | OmitSerializationEngine
+)
 
 
 T = TypeVar("T")
 
 
 def field_options(
-    serialize: Optional[
-        Union[AnySerializationEngine, Callable[[Any], Any]]
-    ] = None,
-    deserialize: Optional[
-        Union[AnyDeserializationEngine, Callable[[Any], Any]]
-    ] = None,
-    serialization_strategy: Optional[SerializationStrategy] = None,
-    alias: Optional[str] = None,
+    serialize: AnySerializationEngine | Callable[[Any], Any] | None = None,
+    deserialize: AnyDeserializationEngine | Callable[[Any], Any] | None = None,
+    serialization_strategy: SerializationStrategy | None = None,
+    alias: str | None = None,
     **kwargs: Any,
 ) -> dict[str, Any]:
     return {

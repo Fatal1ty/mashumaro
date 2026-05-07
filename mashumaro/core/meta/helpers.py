@@ -1,7 +1,6 @@
 import dataclasses
 import enum
 import inspect
-import re
 import types
 import typing
 from collections.abc import Callable, Hashable, Iterable, Iterator
@@ -10,16 +9,7 @@ from contextlib import suppress
 # noinspection PyProtectedMember
 from dataclasses import _FIELDS  # type: ignore
 from hashlib import md5
-from typing import (
-    Any,
-    ClassVar,
-    ForwardRef,
-    Optional,
-    Sequence,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, ClassVar, ForwardRef, Sequence, Tuple, Type, Union
 
 try:
     from typing import Unpack  # type: ignore[attr-defined]
@@ -28,13 +18,7 @@ except ImportError:
 
 import typing_extensions
 
-from mashumaro.core.const import (
-    PY_39,
-    PY_310_MIN,
-    PY_311_MIN,
-    PY_312_MIN,
-    PY_314_MIN,
-)
+from mashumaro.core.const import PY_311_MIN, PY_312_MIN, PY_314_MIN
 from mashumaro.dialect import Dialect
 
 __all__ = [
@@ -118,15 +102,15 @@ def get_generic_name(typ: Type, short: bool = False) -> str:
         return f"{typ.__module__}.{name}"
 
 
-def get_args(typ: Optional[Type]) -> tuple[Type, ...]:
+def get_args(typ: Type | None) -> tuple[Type, ...]:
     return getattr(typ, "__args__", ())
 
 
 def _get_args_str(
     typ: Type,
     short: bool,
-    resolved_type_params: Optional[dict[Type, Type]] = None,
-    limit: Optional[int] = None,
+    resolved_type_params: dict[Type, Type] | None = None,
+    limit: int | None = None,
     none_type_as_none: bool = False,
     sep: str = ", ",
 ) -> str:
@@ -168,25 +152,22 @@ def _get_literal_values_str(typ: Type, short: bool) -> str:
         if isinstance(value, enum.Enum):
             values_str.append(f"{type_name(type(value), short)}.{value.name}")
         elif isinstance(
-            value,
-            (int, str, bytes, bool, NoneType),  # type: ignore
+            value, (int, str, bytes, bool, NoneType)  # type: ignore
         ):
             values_str.append(repr(value))
     return ", ".join(values_str)
 
 
 def _typing_name(
-    typ_name: str,
-    short: bool = False,
-    module_name: str = "typing",
+    typ_name: str, short: bool = False, module_name: str = "typing"
 ) -> str:
     return typ_name if short else f"{module_name}.{typ_name}"
 
 
 def type_name(
-    typ: Union[Type, Any],
+    typ: Type | Any,
     short: bool = False,
-    resolved_type_params: Optional[dict[Type, Type]] = None,
+    resolved_type_params: dict[Type, Type] | None = None,
     is_type_origin: bool = False,
     none_type_as_none: bool = False,
 ) -> str:
@@ -256,9 +237,7 @@ def type_name(
                 return f"{_unpack}[{unpacked_type_name}]"
     elif not is_type_origin and is_generic(typ):
         args_str = _get_args_str(
-            typ=typ,
-            short=short,
-            resolved_type_params=resolved_type_params,
+            typ=typ, short=short, resolved_type_params=resolved_type_params
         )
         if not args_str:
             return get_generic_name(typ, short)
@@ -299,9 +278,6 @@ def type_name(
                 short=short,
                 resolved_type_params=resolved_type_params,
             )
-    elif is_new_type(typ) and not PY_310_MIN:
-        # because __qualname__ and __module__ are messed up
-        typ = typ.__supertype__
     if is_type_alias_type(typ):
         if short:
             return typ.__name__
@@ -376,7 +352,7 @@ def is_new_type(typ: Type) -> bool:
 
 def is_union(typ: Type) -> bool:
     try:
-        if PY_310_MIN and isinstance(typ, types.UnionType):  # type: ignore
+        if isinstance(typ, types.UnionType):  # type: ignore
             return True
         return typ.__origin__ is Union
     except AttributeError:
@@ -384,7 +360,7 @@ def is_union(typ: Type) -> bool:
 
 
 def is_optional(
-    typ: Type, resolved_type_params: Optional[dict[Type, Type]] = None
+    typ: Type, resolved_type_params: dict[Type, Type] | None = None
 ) -> bool:
     if resolved_type_params is None:
         resolved_type_params = {}
@@ -412,14 +388,10 @@ def get_type_annotations(typ: Type) -> Sequence[Any]:
 
 
 def is_literal(typ: Type) -> bool:
-    if PY_39:
-        with suppress(AttributeError):
-            return is_generic(typ) and get_generic_name(typ, True) == "Literal"
-    elif PY_310_MIN:
-        with suppress(AttributeError):
-            # noinspection PyProtectedMember
-            # noinspection PyUnresolvedReferences
-            return type(typ) is typing._LiteralGenericAlias  # type: ignore
+    with suppress(AttributeError):
+        # noinspection PyProtectedMember
+        # noinspection PyUnresolvedReferences
+        return type(typ) is typing._LiteralGenericAlias  # type: ignore
     return False
 
 
@@ -429,8 +401,8 @@ def is_local_type_name(typ_name: str) -> bool:
 
 def not_none_type_arg(
     type_args: tuple[Type, ...],
-    resolved_type_params: Optional[dict[Type, Type]] = None,
-) -> Optional[Type]:
+    resolved_type_params: dict[Type, Type] | None = None,
+) -> Type | None:
     if resolved_type_params is None:
         resolved_type_params = {}
     for type_arg in type_args:
@@ -468,16 +440,14 @@ def is_init_var(typ: Type) -> bool:
     return isinstance(typ, dataclasses.InitVar)
 
 
-def get_class_that_defines_method(
-    method_name: str, cls: Type
-) -> Optional[Type]:
+def get_class_that_defines_method(method_name: str, cls: Type) -> Type | None:
     for cls in cls.__mro__:
         if method_name in cls.__dict__:
             return cls
     return None
 
 
-def get_class_that_defines_field(field_name: str, cls: Type) -> Optional[Type]:
+def get_class_that_defines_field(field_name: str, cls: Type) -> Type | None:
     prev_cls = None
     prev_field = None
     for base in reversed(cls.__mro__):
@@ -546,8 +516,7 @@ def _check_generic(
 
 
 def _flatten_type_args(
-    type_args: Sequence[Type],
-    allow_ellipsis_if_many_args: bool = False,
+    type_args: Sequence[Type], allow_ellipsis_if_many_args: bool = False
 ) -> Sequence[Type]:
     result = []
     for type_arg in type_args:
@@ -576,9 +545,7 @@ def _flatten_type_args(
 
 
 def resolve_type_params(
-    typ: Type,
-    type_args: Sequence[Type] = (),
-    include_bases: bool = True,
+    typ: Type, type_args: Sequence[Type] = (), include_bases: bool = True
 ) -> dict[Type, dict[Type, Type]]:
     resolved_type_params: dict[Type, Type] = {}
     result = {typ: resolved_type_params}
@@ -677,11 +644,7 @@ def substitute_type_params(typ: Type, substitutions: dict[Type, Type]) -> Type:
 
 
 def get_name_error_name(e: NameError) -> str:
-    if PY_310_MIN:
-        return e.name  # type: ignore
-    else:
-        match = re.search("'(.*)'", e.args[0])
-        return match.group(1) if match else ""
+    return e.name  # type: ignore
 
 
 def is_dialect_subclass(typ: Type) -> bool:
@@ -705,8 +668,8 @@ def is_not_required(typ: Type) -> bool:
 
 def get_function_arg_annotation(
     function: Callable[..., Any],
-    arg_name: Optional[str] = None,
-    arg_pos: Optional[int] = None,
+    arg_name: str | None = None,
+    arg_pos: int | None = None,
 ) -> type:
     parameters = inspect.signature(function).parameters
     if arg_name is not None:
@@ -783,7 +746,7 @@ def is_hashable_type(typ: Any) -> bool:
 
 
 def str_to_forward_ref(
-    annotation: str, module: Optional[types.ModuleType] = None
+    annotation: str, module: types.ModuleType | None = None
 ) -> ForwardRef:
     module_name = module.__name__ if module else None
     return ForwardRef(annotation, module=module_name)

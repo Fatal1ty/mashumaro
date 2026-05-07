@@ -144,7 +144,7 @@ Use pip to install:
 $ pip install mashumaro
 ```
 
-The current version of `mashumaro` supports Python versions 3.9 — 3.14.
+The current version of `mashumaro` supports Python versions 3.10 — 3.14.
 
 
 It's not recommended to use any version of Python that has reached its
@@ -156,6 +156,7 @@ of Python.
 
 | Python Version | Last Version of mashumaro                                          | Python EOL |
 |----------------|--------------------------------------------------------------------|------------|
+| 3.9            | [3.20](https://github.com/Fatal1ty/mashumaro/releases/tag/v3.20)   | 2025-10-31 |
 | 3.8            | [3.14](https://github.com/Fatal1ty/mashumaro/releases/tag/v3.14)   | 2024-10-07 |
 | 3.7            | [3.9.1](https://github.com/Fatal1ty/mashumaro/releases/tag/v3.9.1) | 2023-06-27 |
 | 3.6            | [3.1.1](https://github.com/Fatal1ty/mashumaro/releases/tag/v3.1.1) | 2021-12-23 |
@@ -187,7 +188,7 @@ There is support for generic types from the standard [`typing`](https://docs.pyt
 * [`ChainMap`](https://docs.python.org/3/library/typing.html#typing.ChainMap)
 * [`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)
 
-for standard generic types on [PEP 585](https://www.python.org/dev/peps/pep-0585/) compatible Python (3.9+):
+for standard generic types on [PEP 585](https://www.python.org/dev/peps/pep-0585/):
 * [`list`](https://docs.python.org/3/library/stdtypes.html#list)
 * [`tuple`](https://docs.python.org/3/library/stdtypes.html#tuple)
 * [`namedtuple`](https://docs.python.org/3/library/collections.html#collections.namedtuple)

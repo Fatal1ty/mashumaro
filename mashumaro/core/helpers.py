@@ -1,11 +1,7 @@
 import datetime
 import re
 
-__all__ = [
-    "parse_timezone",
-    "ConfigValue",
-    "UTC_OFFSET_PATTERN",
-]
+__all__ = ["parse_timezone", "ConfigValue", "UTC_OFFSET_PATTERN"]
 
 
 UTC_OFFSET_PATTERN = r"^UTC(([+-][0-2][0-9]):([0-5][0-9]))?$"

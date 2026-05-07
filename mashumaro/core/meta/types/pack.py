@@ -14,7 +14,7 @@ from contextlib import suppress
 from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, ForwardRef, Optional, Tuple, Union
+from typing import Any, ForwardRef, Tuple
 
 import typing_extensions
 from typing_extensions import NotRequired
@@ -78,8 +78,9 @@ from mashumaro.types import (
 )
 
 if sys.version_info >= (3, 14):
-    from annotationlib import get_annotations
     from typing import evaluate_forward_ref
+
+    from annotationlib import get_annotations
 else:
     from typing_extensions import evaluate_forward_ref, get_annotations
 
@@ -91,12 +92,11 @@ register = PackerRegistry.register
 
 
 def _pack_with_annotated_serialization_strategy(
-    spec: ValueSpec,
-    strategy: SerializationStrategy,
+    spec: ValueSpec, strategy: SerializationStrategy
 ) -> Expression:
     strategy_type = type(strategy)
     try:
-        value_type: Union[type, Any] = get_function_return_annotation(
+        value_type: type | Any = get_function_return_annotation(
             strategy.serialize
         )
     except (KeyError, ValueError):
@@ -135,7 +135,7 @@ def _pack_with_annotated_serialization_strategy(
 
 def get_overridden_serialization_method(
     spec: ValueSpec,
-) -> Optional[Union[Callable, str, ExpressionWrapper]]:
+) -> Callable | str | ExpressionWrapper | None:
     serialize_option = spec.field_ctx.metadata.get("serialize")
     if serialize_option is not None:
         return serialize_option
@@ -154,8 +154,7 @@ def get_overridden_serialization_method(
                 if strategy.__use_annotations__ or is_generic(type(strategy)):
                     return ExpressionWrapper(
                         _pack_with_annotated_serialization_strategy(
-                            spec=spec,
-                            strategy=strategy,
+                            spec=spec, strategy=strategy
                         )
                     )
                 else:
@@ -167,7 +166,7 @@ def get_overridden_serialization_method(
 @register
 def pack_type_with_overridden_serialization(
     spec: ValueSpec,
-) -> Optional[Expression]:
+) -> Expression | None:
     serialization_method = get_overridden_serialization_method(spec)
     if serialization_method is pass_through:
         return spec.expression
@@ -179,9 +178,7 @@ def pack_type_with_overridden_serialization(
         return f"{spec.self_attrs_name}.{overridden_fn}({spec.expression})"
 
 
-def _pack_annotated_serializable_type(
-    spec: ValueSpec,
-) -> Optional[Expression]:
+def _pack_annotated_serializable_type(spec: ValueSpec) -> Expression | None:
     try:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
@@ -208,14 +205,13 @@ def _pack_annotated_serializable_type(
     )
     return PackerRegistry.get(
         spec.copy(
-            type=value_type,
-            expression=f"{spec.expression}._serialize()",
+            type=value_type, expression=f"{spec.expression}._serialize()"
         )
     )
 
 
 @register
-def pack_serializable_type(spec: ValueSpec) -> Optional[Expression]:
+def pack_serializable_type(spec: ValueSpec) -> Expression | None:
     try:
         if not issubclass(spec.origin_type, SerializableType):
             return None
@@ -228,7 +224,7 @@ def pack_serializable_type(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def pack_generic_serializable_type(spec: ValueSpec) -> Optional[Expression]:
+def pack_generic_serializable_type(spec: ValueSpec) -> Expression | None:
     with suppress(TypeError):
         if issubclass(spec.origin_type, GenericSerializableType):
             type_args = get_args(spec.type)
@@ -238,7 +234,7 @@ def pack_generic_serializable_type(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def pack_dataclass(spec: ValueSpec) -> Optional[Expression]:
+def pack_dataclass(spec: ValueSpec) -> Expression | None:
     if is_dataclass(spec.origin_type):
         type_args = get_args(spec.type)
         method_name = spec.builder.get_pack_method_name(
@@ -285,13 +281,13 @@ def pack_dataclass(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def pack_final(spec: ValueSpec) -> Optional[Expression]:
+def pack_final(spec: ValueSpec) -> Expression | None:
     if is_final(spec.type):
         return PackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
 
 
 @register
-def pack_any(spec: ValueSpec) -> Optional[Expression]:
+def pack_any(spec: ValueSpec) -> Expression | None:
     if spec.type is Any:
         return spec.expression
 
@@ -432,8 +428,7 @@ def pack_literal(spec: ValueSpec) -> Expression:
             )
             if isinstance(literal_value, enum.Enum):
                 enum_type_name = spec.builder.get_type_name_identifier(
-                    typ=value_type,
-                    resolved_type_params=resolved_type_params,
+                    typ=value_type, resolved_type_params=resolved_type_params
                 )
                 with lines.indent(
                     f"if value == {enum_type_name}.{literal_value.name}:"
@@ -446,8 +441,7 @@ def pack_literal(spec: ValueSpec) -> Expression:
                 with lines.indent(f"if value == {literal_value!r}:"):
                     lines.append(f"return {packer}")
         field_type = spec.builder.get_type_name_identifier(
-            typ=spec.type,
-            resolved_type_params=resolved_type_params,
+            typ=spec.type, resolved_type_params=resolved_type_params
         )
         if spec.builder.is_nailed:
             lines.append(
@@ -470,7 +464,7 @@ def pack_literal(spec: ValueSpec) -> Expression:
 
 
 @register
-def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
+def pack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
     if is_special_typing_primitive(spec.origin_type):
         if is_union(spec.type):
             resolved_type_params = spec.builder.get_field_resolved_type_params(
@@ -572,43 +566,43 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def pack_number_and_bool_and_none(spec: ValueSpec) -> Optional[Expression]:
+def pack_number_and_bool_and_none(spec: ValueSpec) -> Expression | None:
     if spec.origin_type in (int, float, bool, NoneType, None):
         return spec.expression
 
 
 @register
-def pack_date_objects(spec: ValueSpec) -> Optional[Expression]:
+def pack_date_objects(spec: ValueSpec) -> Expression | None:
     if spec.origin_type in (datetime.datetime, datetime.date, datetime.time):
         return f"{spec.expression}.isoformat()"
 
 
 @register
-def pack_timedelta(spec: ValueSpec) -> Optional[Expression]:
+def pack_timedelta(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is datetime.timedelta:
         return f"{spec.expression}.total_seconds()"
 
 
 @register
-def pack_timezone(spec: ValueSpec) -> Optional[Expression]:
+def pack_timezone(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is datetime.timezone:
         return f"{spec.expression}.tzname(None)"
 
 
 @register
-def pack_zone_info(spec: ValueSpec) -> Optional[Expression]:
+def pack_zone_info(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is zoneinfo.ZoneInfo:
         return f"str({spec.expression})"
 
 
 @register
-def pack_uuid(spec: ValueSpec) -> Optional[Expression]:
+def pack_uuid(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is uuid.UUID:
         return f"str({spec.expression})"
 
 
 @register
-def pack_ipaddress(spec: ValueSpec) -> Optional[Expression]:
+def pack_ipaddress(spec: ValueSpec) -> Expression | None:
     if spec.origin_type in (
         ipaddress.IPv4Address,
         ipaddress.IPv6Address,
@@ -621,13 +615,13 @@ def pack_ipaddress(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def pack_decimal(spec: ValueSpec) -> Optional[Expression]:
+def pack_decimal(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is Decimal:
         return f"str({spec.expression})"
 
 
 @register
-def pack_fraction(spec: ValueSpec) -> Optional[Expression]:
+def pack_fraction(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is Fraction:
         return f"str({spec.expression})"
 
@@ -647,8 +641,8 @@ def pack_tuple(spec: ValueSpec, args: tuple[type, ...]) -> Expression:
         )
         return f"[{packer} for value in {spec.expression}]"
     else:
-        arg_indexes: list[Union[int, tuple[int, Union[int, None]]]] = []
-        unpack_idx: Optional[int] = None
+        arg_indexes: list[int | tuple[int, int | None]] = []
+        unpack_idx: int | None = None
         for arg_idx, type_arg in enumerate(args):
             if is_unpack(type_arg):
                 if unpack_idx is not None:
@@ -676,9 +670,7 @@ def pack_tuple(spec: ValueSpec, args: tuple[type, ...]) -> Expression:
                 p_expr = f"{spec.expression}[{_arg_idx}]"
             packer = PackerRegistry.get(
                 spec.copy(
-                    type=args[_idx],
-                    expression=p_expr,
-                    could_be_none=True,
+                    type=args[_idx], expression=p_expr, could_be_none=True
                 )
             )
             if packer != "*[]":
@@ -798,7 +790,7 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
 
 
 @register
-def pack_collection(spec: ValueSpec) -> Optional[Expression]:
+def pack_collection(spec: ValueSpec) -> Expression | None:
     if not issubclass(spec.origin_type, Collection):
         return None
     elif issubclass(spec.origin_type, enum.Enum):
@@ -807,7 +799,7 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
     args = get_args(spec.type)
 
     def inner_expr(
-        arg_num: int = 0, v_name: str = "value", v_type: Optional[type] = None
+        arg_num: int = 0, v_name: str = "value", v_type: type | None = None
     ) -> Expression:
         if v_type:
             return PackerRegistry.get(
@@ -883,18 +875,18 @@ def pack_collection(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def pack_pathlike(spec: ValueSpec) -> Optional[Expression]:
+def pack_pathlike(spec: ValueSpec) -> Expression | None:
     if issubclass(spec.origin_type, os.PathLike):
         return f"{spec.expression}.__fspath__()"
 
 
 @register
-def pack_enum(spec: ValueSpec) -> Optional[Expression]:
+def pack_enum(spec: ValueSpec) -> Expression | None:
     if issubclass(spec.origin_type, enum.Enum):
         return f"{spec.expression}.value"
 
 
 @register
-def pack_pattern(spec: ValueSpec) -> Optional[Expression]:
+def pack_pattern(spec: ValueSpec) -> Expression | None:
     if spec.origin_type in (typing.Pattern, re.Pattern):
         return f"{spec.expression}.pattern"

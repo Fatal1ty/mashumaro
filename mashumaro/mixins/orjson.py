@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from datetime import date, datetime, time
-from typing import Any, Type, TypeVar, Union, final
+from typing import Any, Type, TypeVar, final
 from uuid import UUID
 
 import orjson
@@ -13,7 +13,7 @@ from mashumaro.mixins.dict import DataClassDictMixin
 T = TypeVar("T", bound="DataClassORJSONMixin")
 
 
-EncodedData = Union[str, bytes, bytearray]
+EncodedData = str | bytes | bytearray
 Encoder = Callable[[Any], EncodedData]
 Decoder = Callable[[EncodedData], dict[Any, Any]]
 
@@ -37,7 +37,7 @@ class DataClassORJSONMixin(DataClassDictMixin):
             "dialect": OrjsonDialect,
             "encoder": orjson.dumps,
             "encoder_kwargs": {
-                "option": ("orjson_options", ConfigValue("orjson_options")),
+                "option": ("orjson_options", ConfigValue("orjson_options"))
             },
         },
         "unpacker": {

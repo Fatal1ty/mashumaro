@@ -9,7 +9,6 @@ import pytest
 import typing_extensions
 
 from mashumaro import DataClassDictMixin
-from mashumaro.core.const import PY_310_MIN
 from mashumaro.core.meta.code.builder import CodeBuilder
 
 # noinspection PyProtectedMember
@@ -86,12 +85,6 @@ TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 def test_is_init_var():
     assert is_init_var(InitVar[int])
     assert not is_init_var(int)
-
-
-def test_is_literal_unsupported_python(mocker):
-    mocker.patch("mashumaro.core.meta.helpers.PY_39", False)
-    mocker.patch("mashumaro.core.meta.helpers.PY_310_MIN", False)
-    assert not is_literal(typing_extensions.Literal[1])
 
 
 def test_no_code_builder(mocker):
@@ -220,16 +213,10 @@ def test_type_name():
     assert (
         type_name(types.MappingProxyType[int, int]) == "mappingproxy[int, int]"
     )
-    if PY_310_MIN:
-        assert type_name(int | None) == "typing.Optional[int]"
-        assert type_name(None | int) == "typing.Optional[int]"
-        assert type_name(int | str) == "typing.Union[int, str]"
-    if PY_310_MIN:
-        assert (
-            type_name(MyDatetimeNewType) == "tests.entities.MyDatetimeNewType"
-        )
-    else:
-        assert type_name(MyDatetimeNewType) == type_name(datetime)
+    assert type_name(int | None) == "typing.Optional[int]"
+    assert type_name(None | int) == "typing.Optional[int]"
+    assert type_name(int | str) == "typing.Union[int, str]"
+    assert type_name(MyDatetimeNewType) == "tests.entities.MyDatetimeNewType"
     assert (
         type_name(typing_extensions.Annotated[TMyDataClass, None])
         == "tests.entities.MyDataClass"
@@ -334,16 +321,10 @@ def test_type_name_short():
         type_name(types.MappingProxyType[int, int], short=True)
         == "mappingproxy[int, int]"
     )
-    if PY_310_MIN:
-        assert type_name(int | None, short=True) == "Optional[int]"
-        assert type_name(None | int, short=True) == "Optional[int]"
-        assert type_name(int | str, short=True) == "Union[int, str]"
-    if PY_310_MIN:
-        assert type_name(MyDatetimeNewType, short=True) == "MyDatetimeNewType"
-    else:
-        assert type_name(MyDatetimeNewType, short=True) == type_name(
-            datetime, short=True
-        )
+    assert type_name(int | None, short=True) == "Optional[int]"
+    assert type_name(None | int, short=True) == "Optional[int]"
+    assert type_name(int | str, short=True) == "Union[int, str]"
+    assert type_name(MyDatetimeNewType, short=True) == "MyDatetimeNewType"
     assert (
         type_name(typing_extensions.Annotated[TMyDataClass, None], short=True)
         == "MyDataClass"
@@ -462,7 +443,6 @@ def test_is_union():
     assert get_args(t) == (NoneType, str)
 
 
-@pytest.mark.skipif(not PY_310_MIN, reason="requires python 3.10+")
 def test_is_union_pep_604():
     t = str | None
     assert is_union(t)
@@ -484,7 +464,6 @@ def test_is_optional():
     assert get_args(t) == (NoneType, str)
 
 
-@pytest.mark.skipif(not PY_310_MIN, reason="requires python 3.10+")
 def test_is_optional_pep_604():
     t = str | None
     assert is_optional(t)

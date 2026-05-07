@@ -25,7 +25,7 @@ from contextlib import suppress
 from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, ForwardRef, Optional, Tuple, Union
+from typing import Any, ForwardRef, Tuple
 
 import typing_extensions
 from typing_extensions import NotRequired
@@ -96,19 +96,20 @@ from mashumaro.types import (
 )
 
 if sys.version_info >= (3, 14):
-    from annotationlib import get_annotations
     from typing import evaluate_forward_ref
+
+    from annotationlib import get_annotations
 else:
     from typing_extensions import evaluate_forward_ref, get_annotations
 
 try:
     import ciso8601
 except ImportError:  # pragma: no cover
-    ciso8601: Optional[types.ModuleType] = None  # type: ignore
+    ciso8601: types.ModuleType | None = None  # type: ignore
 try:
     import pendulum
 except ImportError:  # pragma: no cover
-    pendulum: Optional[types.ModuleType] = None  # type: ignore
+    pendulum: types.ModuleType | None = None  # type: ignore
 
 
 __all__ = ["UnpackerRegistry", "SubtypeUnpackerBuilder"]
@@ -172,7 +173,7 @@ class AbstractUnpackerBuilder(AbstractMethodBuilder, ABC):
 class UnionUnpackerBuilder(AbstractUnpackerBuilder):
     def __init__(self, args: tuple[type, ...]):
         self.union_args = args
-        self.method_name: Optional[str] = None
+        self.method_name: str | None = None
 
     def get_method_prefix(self) -> str:
         return "union"
@@ -250,7 +251,7 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
             orig_lines.append("__value_type = type(value)")
         orig_lines.extend(lines)
 
-    def _get_existing_method(self, spec: ValueSpec) -> Optional[str]:
+    def _get_existing_method(self, spec: ValueSpec) -> str | None:
         if spec.owner is spec.type:
             return spec.field_ctx.unpacker
 
@@ -289,8 +290,7 @@ class LiteralUnpackerBuilder(AbstractUnpackerBuilder):
                         lines.append(f"return {literal_value!r}")
                 lines.append("except Exception: pass")
             elif isinstance(
-                literal_value,
-                (int, str, bool, NoneType),  # type: ignore
+                literal_value, (int, str, bool, NoneType)  # type: ignore
             ):
                 with lines.indent(f"if value == {literal_value!r}:"):
                     lines.append(f"return {literal_value!r}")
@@ -301,11 +301,11 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
     def __init__(
         self,
         discriminator: Discriminator,
-        base_variants: Optional[tuple[type, ...]] = None,
+        base_variants: tuple[type, ...] | None = None,
     ):
         self.discriminator = discriminator
         self.base_variants = base_variants or tuple()
-        self._variants_attr: Optional[str] = None
+        self._variants_attr: str | None = None
 
     def get_method_prefix(self) -> str:
         return ""
@@ -392,8 +392,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
 
         if spec.builder.dialect:
             spec.builder.ensure_object_imported(
-                spec.builder.dialect,
-                clean_id(type_name(spec.builder.dialect)),
+                spec.builder.dialect, clean_id(type_name(spec.builder.dialect))
             )
         if spec.builder.default_dialect:
             spec.builder.ensure_object_imported(
@@ -559,12 +558,11 @@ class SubtypeUnpackerBuilder(DiscriminatedUnionUnpackerBuilder):
 
 
 def _unpack_with_annotated_serialization_strategy(
-    spec: ValueSpec,
-    strategy: SerializationStrategy,
+    spec: ValueSpec, strategy: SerializationStrategy
 ) -> Expression:
     strategy_type = type(strategy)
     try:
-        value_type: Union[type, Any] = get_function_arg_annotation(
+        value_type: type | Any = get_function_arg_annotation(
             strategy.deserialize, arg_pos=0
         )
     except (KeyError, ValueError):
@@ -592,7 +590,7 @@ def _unpack_with_annotated_serialization_strategy(
 
 def get_overridden_deserialization_method(
     spec: ValueSpec,
-) -> Optional[Union[Callable, str, ExpressionWrapper]]:
+) -> Callable | str | ExpressionWrapper | None:
     deserialize_option = spec.field_ctx.metadata.get("deserialize")
     if deserialize_option is not None:
         return deserialize_option
@@ -611,8 +609,7 @@ def get_overridden_deserialization_method(
                 if strategy.__use_annotations__ or is_generic(type(strategy)):
                     return ExpressionWrapper(
                         _unpack_with_annotated_serialization_strategy(
-                            spec=spec,
-                            strategy=strategy,
+                            spec=spec, strategy=strategy
                         )
                     )
                 deserialize_option = strategy.deserialize
@@ -623,7 +620,7 @@ def get_overridden_deserialization_method(
 @register
 def unpack_type_with_overridden_deserialization(
     spec: ValueSpec,
-) -> Optional[Expression]:
+) -> Expression | None:
     deserialization_method = get_overridden_deserialization_method(spec)
     if deserialization_method is pass_through:
         return spec.expression
@@ -635,9 +632,7 @@ def unpack_type_with_overridden_deserialization(
         return f"{spec.cls_attrs_name}.{overridden_fn}({spec.expression})"
 
 
-def _unpack_annotated_serializable_type(
-    spec: ValueSpec,
-) -> Optional[Expression]:
+def _unpack_annotated_serializable_type(spec: ValueSpec) -> Expression | None:
     try:
         # noinspection PyProtectedMember
         # noinspection PyUnresolvedReferences
@@ -671,7 +666,7 @@ def _unpack_annotated_serializable_type(
 
 
 @register
-def unpack_serializable_type(spec: ValueSpec) -> Optional[Expression]:
+def unpack_serializable_type(spec: ValueSpec) -> Expression | None:
     try:
         if not issubclass(spec.origin_type, SerializableType):
             return None
@@ -685,7 +680,7 @@ def unpack_serializable_type(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def unpack_generic_serializable_type(spec: ValueSpec) -> Optional[Expression]:
+def unpack_generic_serializable_type(spec: ValueSpec) -> Expression | None:
     with suppress(TypeError):
         if issubclass(spec.origin_type, GenericSerializableType):
             type_arg_names = ", ".join(
@@ -701,7 +696,7 @@ def unpack_generic_serializable_type(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def unpack_dataclass(spec: ValueSpec) -> Optional[Expression]:
+def unpack_dataclass(spec: ValueSpec) -> Expression | None:
     if is_dataclass(spec.origin_type):
         for annotation in spec.annotations:
             if isinstance(annotation, Discriminator):
@@ -755,26 +750,25 @@ def unpack_dataclass(spec: ValueSpec) -> Optional[Expression]:
         else:
             method_name_alias = f"{cls_alias}_{method_name}"
             spec.builder.ensure_object_imported(
-                getattr(spec.attrs, method_name),
-                method_name_alias,
+                getattr(spec.attrs, method_name), method_name_alias
             )
             return f"{method_name_alias}({method_args})"
 
 
 @register
-def unpack_final(spec: ValueSpec) -> Optional[Expression]:
+def unpack_final(spec: ValueSpec) -> Expression | None:
     if is_final(spec.type):
         return UnpackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
 
 
 @register
-def unpack_any(spec: ValueSpec) -> Optional[Expression]:
+def unpack_any(spec: ValueSpec) -> Expression | None:
     if spec.type is Any:
         return spec.expression
 
 
 @register
-def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
+def unpack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
     if is_special_typing_primitive(spec.origin_type):
         if is_union(spec.type):
             resolved_type_params = spec.builder.get_field_resolved_type_params(
@@ -897,7 +891,7 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def unpack_number(spec: ValueSpec) -> Optional[Expression]:
+def unpack_number(spec: ValueSpec) -> Expression | None:
     if spec.origin_type in (int, float):
         return TypeMatchEligibleExpression(
             f"{type_name(spec.origin_type)}({spec.expression})"
@@ -905,19 +899,19 @@ def unpack_number(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def unpack_bool(spec: ValueSpec) -> Optional[Expression]:
+def unpack_bool(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is bool:
         return TypeMatchEligibleExpression(f"bool({spec.expression})")
 
 
 @register
-def unpack_none(spec: ValueSpec) -> Optional[Expression]:
+def unpack_none(spec: ValueSpec) -> Expression | None:
     if spec.origin_type in (NoneType, None):
         return TypeMatchEligibleExpression("None")
 
 
 @register
-def unpack_date_objects(spec: ValueSpec) -> Optional[Expression]:
+def unpack_date_objects(spec: ValueSpec) -> Expression | None:
     if spec.origin_type in (datetime.datetime, datetime.date, datetime.time):
         deserialize_option = get_overridden_deserialization_method(spec)
         if deserialize_option is not None:
@@ -952,14 +946,13 @@ def unpack_date_objects(spec: ValueSpec) -> Optional[Expression]:
             return f"{datetime_parser}({spec.expression}){suffix}"
         method = f"__datetime_{spec.origin_type.__name__}_fromisoformat"
         spec.builder.ensure_object_imported(
-            getattr(datetime, spec.origin_type.__name__).fromisoformat,
-            method,
+            getattr(datetime, spec.origin_type.__name__).fromisoformat, method
         )
         return f"{method}({spec.expression})"
 
 
 @register
-def unpack_timedelta(spec: ValueSpec) -> Optional[Expression]:
+def unpack_timedelta(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is datetime.timedelta:
         method = "__datetime_timedelta"
         spec.builder.ensure_object_imported(datetime.timedelta, method)
@@ -967,14 +960,14 @@ def unpack_timedelta(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def unpack_timezone(spec: ValueSpec) -> Optional[Expression]:
+def unpack_timezone(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is datetime.timezone:
         spec.builder.ensure_object_imported(parse_timezone)
         return f"parse_timezone({spec.expression})"
 
 
 @register
-def unpack_zone_info(spec: ValueSpec) -> Optional[Expression]:
+def unpack_zone_info(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is zoneinfo.ZoneInfo:
         method = "__zoneinfo_ZoneInfo"
         spec.builder.ensure_object_imported(zoneinfo.ZoneInfo, method)
@@ -982,7 +975,7 @@ def unpack_zone_info(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def unpack_uuid(spec: ValueSpec) -> Optional[Expression]:
+def unpack_uuid(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is uuid.UUID:
         method = "__uuid_UUID"
         spec.builder.ensure_object_imported(uuid.UUID, method)
@@ -990,7 +983,7 @@ def unpack_uuid(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def unpack_ipaddress(spec: ValueSpec) -> Optional[Expression]:
+def unpack_ipaddress(spec: ValueSpec) -> Expression | None:
     if spec.origin_type in (
         ipaddress.IPv4Address,
         ipaddress.IPv6Address,
@@ -1005,14 +998,14 @@ def unpack_ipaddress(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def unpack_decimal(spec: ValueSpec) -> Optional[Expression]:
+def unpack_decimal(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is Decimal:
         spec.builder.ensure_object_imported(Decimal)
         return f"Decimal({spec.expression})"
 
 
 @register
-def unpack_fraction(spec: ValueSpec) -> Optional[Expression]:
+def unpack_fraction(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is Fraction:
         spec.builder.ensure_object_imported(Fraction)
         return f"Fraction({spec.expression})"
@@ -1033,8 +1026,8 @@ def unpack_tuple(spec: ValueSpec, args: tuple[type, ...]) -> Expression:
         )
         return f"tuple([{unpacker} for value in {spec.expression}])"
     else:
-        arg_indexes: list[Union[int, tuple[int, Union[int, None]]]] = []
-        unpack_idx: Optional[int] = None
+        arg_indexes: list[int | tuple[int, int | None]] = []
+        unpack_idx: int | None = None
         for arg_idx, type_arg in enumerate(args):
             if is_unpack(type_arg):
                 if unpack_idx is not None:
@@ -1062,9 +1055,7 @@ def unpack_tuple(spec: ValueSpec, args: tuple[type, ...]) -> Expression:
                 u_expr = f"{spec.expression}[{_arg_idx}]"
             unpacker = UnpackerRegistry.get(
                 spec.copy(
-                    type=args[_idx],
-                    expression=u_expr,
-                    could_be_none=True,
+                    type=args[_idx], expression=u_expr, could_be_none=True
                 )
             )
             if unpacker != "*()":  # workaround for empty tuples
@@ -1235,7 +1226,7 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
 
 
 @register
-def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
+def unpack_collection(spec: ValueSpec) -> Expression | None:
     if not issubclass(spec.origin_type, Collection):
         return None
     elif issubclass(spec.origin_type, enum.Enum):
@@ -1244,7 +1235,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
     args = get_args(spec.type)
 
     def inner_expr(
-        arg_num: int = 0, v_name: str = "value", v_type: Optional[type] = None
+        arg_num: int = 0, v_name: str = "value", v_type: type | None = None
     ) -> Expression:
         if v_type:
             return UnpackerRegistry.get(
@@ -1335,7 +1326,7 @@ def unpack_collection(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def unpack_pathlike(spec: ValueSpec) -> Optional[Expression]:
+def unpack_pathlike(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is os.PathLike:
         spec.builder.ensure_module_imported(pathlib)
         return f"{type_name(pathlib.PurePath)}({spec.expression})"
@@ -1345,14 +1336,14 @@ def unpack_pathlike(spec: ValueSpec) -> Optional[Expression]:
 
 
 @register
-def unpack_enum(spec: ValueSpec) -> Optional[Expression]:
+def unpack_enum(spec: ValueSpec) -> Expression | None:
     if issubclass(spec.origin_type, enum.Enum):
         field_type = spec.builder.get_type_name_identifier(spec.origin_type)
         return f"{field_type}({spec.expression})"
 
 
 @register
-def unpack_pattern(spec: ValueSpec) -> Optional[Expression]:
+def unpack_pattern(spec: ValueSpec) -> Expression | None:
     if spec.origin_type in (typing.Pattern, re.Pattern):
         method = "__re_compile"
         spec.builder.ensure_object_imported(re.compile, method)

@@ -116,16 +116,16 @@ class CodeBuilder:
         self,
         cls: typing.Type,
         type_args: typing.Tuple[typing.Type, ...] = (),
-        dialect: typing.Optional[typing.Type[Dialect]] = None,
+        dialect: typing.Type[Dialect] | None = None,
         first_method: str = "from_dict",
         allow_postponed_evaluation: bool = True,
         format_name: str = "dict",
-        decoder: typing.Optional[typing.Any] = None,
-        encoder: typing.Optional[typing.Any] = None,
-        encoder_kwargs: typing.Optional[dict[str, typing.Any]] = None,
-        default_dialect: typing.Optional[typing.Type[Dialect]] = None,
+        decoder: typing.Any | None = None,
+        encoder: typing.Any | None = None,
+        encoder_kwargs: dict[str, typing.Any] | None = None,
+        default_dialect: typing.Type[Dialect] | None = None,
         attrs: typing.Any = None,
-        attrs_registry: typing.Optional[dict[typing.Any, typing.Any]] = None,
+        attrs_registry: dict[typing.Any, typing.Any] | None = None,
     ):
         self.cls = cls
         self.lines: CodeLines = CodeLines()
@@ -224,10 +224,8 @@ class CodeBuilder:
 
     def get_type_name_identifier(
         self,
-        typ: typing.Optional[typing.Type],
-        resolved_type_params: typing.Optional[
-            dict[typing.Type, typing.Type]
-        ] = None,
+        typ: typing.Type | None,
+        resolved_type_params: dict[typing.Type, typing.Type] | None = None,
     ) -> str:
         field_type = type_name(typ, resolved_type_params=resolved_type_params)
 
@@ -306,9 +304,7 @@ class CodeBuilder:
         self.globals.setdefault(package, importlib.import_module(package))
 
     def ensure_object_imported(
-        self,
-        obj: typing.Any,
-        name: typing.Optional[str] = None,
+        self, obj: typing.Any, name: str | None = None
     ) -> None:
         self.globals.setdefault(name or obj.__name__, obj)
 
@@ -317,8 +313,7 @@ class CodeBuilder:
 
     @contextmanager
     def indent(
-        self,
-        expr: typing.Optional[str] = None,
+        self, expr: str | None = None
     ) -> typing.Generator[None, None, None]:
         with self.lines.indent(expr):
             yield
@@ -351,10 +346,7 @@ class CodeBuilder:
             f"default_dialect={type_name(self.default_dialect)}"
             f").add_unpack_method()"
         )
-        unpacker_args = [
-            "d",
-            self.get_unpack_method_flags(pass_decoder=True),
-        ]
+        unpacker_args = ["d", self.get_unpack_method_flags(pass_decoder=True)]
         unpacker_args_s = ", ".join(filter(None, unpacker_args))
         self.add_line(f"return cls.{method_name}({unpacker_args_s})")
 
@@ -595,9 +587,7 @@ class CodeBuilder:
     @lru_cache()
     @typing.no_type_check
     def get_config(
-        self,
-        cls: typing.Optional[typing.Type] = None,
-        look_in_parents: bool = True,
+        self, cls: typing.Type | None = None, look_in_parents: bool = True
     ) -> typing.Type[BaseConfig]:
         if cls is None:
             cls = self.cls
@@ -615,7 +605,7 @@ class CodeBuilder:
 
     def get_discriminator(
         self, look_in_parents: bool = False
-    ) -> typing.Optional[Discriminator]:
+    ) -> Discriminator | None:
         if look_in_parents:
             classes = self.cls.__mro__
         else:
@@ -629,9 +619,7 @@ class CodeBuilder:
         return None
 
     def get_pack_method_flags(
-        self,
-        cls: typing.Optional[typing.Type] = None,
-        pass_encoder: bool = False,
+        self, cls: typing.Type | None = None, pass_encoder: bool = False
     ) -> str:
         pluggable_flags = []
         if pass_encoder and self.encoder is not None:
@@ -651,9 +639,7 @@ class CodeBuilder:
         return ", ".join(pluggable_flags)
 
     def get_unpack_method_flags(
-        self,
-        cls: typing.Optional[typing.Type] = None,
-        pass_decoder: bool = False,
+        self, cls: typing.Type | None = None, pass_decoder: bool = False
     ) -> str:
         pluggable_flags = []
         if pass_decoder and self.decoder is not None:
@@ -665,9 +651,7 @@ class CodeBuilder:
         return ", ".join(pluggable_flags)
 
     def get_pack_method_default_flag_values(
-        self,
-        cls: typing.Optional[typing.Type] = None,
-        pass_encoder: bool = False,
+        self, cls: typing.Type | None = None, pass_encoder: bool = False
     ) -> str:
         pos_param_names = []
         pos_param_values = []
@@ -758,7 +742,7 @@ class CodeBuilder:
         return pluggable_flags_str
 
     def is_code_generation_option_enabled(
-        self, option: str, cls: typing.Optional[typing.Type] = None
+        self, option: str, cls: typing.Type | None = None
     ) -> bool:
         if cls is None:
             cls = self.cls
@@ -769,7 +753,7 @@ class CodeBuilder:
         cls,
         type_args: typing.Iterable = (),
         format_name: str = "dict",
-        decoder: typing.Optional[typing.Any] = None,
+        decoder: typing.Any | None = None,
     ) -> InternalMethodName:
         if format_name != "dict" and decoder is not None:
             return InternalMethodName.from_public(f"from_{format_name}")
@@ -786,7 +770,7 @@ class CodeBuilder:
         cls,
         type_args: typing.Tuple[typing.Type, ...] = (),
         format_name: str = "dict",
-        encoder: typing.Optional[typing.Any] = None,
+        encoder: typing.Any | None = None,
     ) -> InternalMethodName:
         if format_name != "dict" and encoder is not None:
             return InternalMethodName.from_public(f"to_{format_name}")
@@ -1006,7 +990,7 @@ class CodeBuilder:
     def _pack_method_set_value(
         self,
         fname: str,
-        alias: typing.Optional[str],
+        alias: str | None,
         by_alias_feature: bool,
         packed_value: str,
         omit_default: bool,
@@ -1035,7 +1019,7 @@ class CodeBuilder:
     def __pack_method_set_value(
         self,
         fname: str,
-        alias: typing.Optional[str],
+        alias: str | None,
         by_alias_feature: bool,
         packed_value: str,
     ) -> None:
@@ -1084,7 +1068,7 @@ class CodeBuilder:
         )
 
     def _get_encoder_kwargs(
-        self, cls: typing.Optional[typing.Type] = None
+        self, cls: typing.Type | None = None
     ) -> dict[str, typing.Any]:
         result = {}
         for encoder_param, value in self.encoder_kwargs.items():
@@ -1156,7 +1140,7 @@ class CodeBuilder:
         ftype: typing.Type,
         config: typing.Type[BaseConfig],
         force_value: bool = False,
-    ) -> typing.Tuple[str, typing.Optional[str], bool]:
+    ) -> typing.Tuple[str, str | None, bool]:
         metadata = self.metadatas.get(fname, {})
         alias = self.__get_field_alias(fname, ftype, metadata, config)
         could_be_none = (
@@ -1171,10 +1155,7 @@ class CodeBuilder:
                 type=ftype,
                 expression=value,
                 builder=self,
-                field_ctx=FieldContext(
-                    name=fname,
-                    metadata=metadata,
-                ),
+                field_ctx=FieldContext(name=fname, metadata=metadata),
                 could_be_none=False,
                 no_copy_collections=self.get_dialect_or_config_option(
                     "no_copy_collections", ()
@@ -1189,7 +1170,7 @@ class CodeBuilder:
         ftype: typing.Type,
         metadata: typing.Mapping[str, typing.Any],
         config: typing.Type[BaseConfig],
-    ) -> typing.Optional[str]:
+    ) -> str | None:
         alias = metadata.get("alias")
         if alias is None and is_annotated(ftype):
             annotations = get_type_annotations(ftype)
@@ -1212,7 +1193,7 @@ class CodeBuilder:
     def _get_strategy_for_type(
         strategies: typing.Mapping[typing.Any, SerializationStrategyValueType],
         ftype: typing.Type,
-    ) -> typing.Optional[SerializationStrategyValueType]:
+    ) -> SerializationStrategyValueType | None:
         result = strategies.get(ftype)
         if result is not None:
             return result
@@ -1253,10 +1234,7 @@ class CodeBuilder:
             )
 
     def get_dialect_or_config_option(
-        self,
-        option: str,
-        default: typing.Any,
-        cls: typing.Optional[typing.Type] = None,
+        self, option: str, default: typing.Any, cls: typing.Type | None = None
     ) -> typing.Any:
         for ns in (
             self.dialect,
@@ -1329,7 +1307,7 @@ class FieldUnpackerCodeBlockBuilder:
         ftype: typing.Type,
         metadata: typing.Mapping,
         *,
-        alias: typing.Optional[str] = None,
+        alias: str | None = None,
     ) -> FieldUnpackerCodeBlock:
         default = self.parent.get_field_default(fname)
         has_default = default is not MISSING
@@ -1352,10 +1330,7 @@ class FieldUnpackerCodeBlockBuilder:
                 type=ftype,
                 expression="value",
                 builder=self.parent,
-                field_ctx=FieldContext(
-                    name=fname,
-                    metadata=metadata,
-                ),
+                field_ctx=FieldContext(name=fname, metadata=metadata),
                 could_be_none=False if could_be_none else True,
             )
         )
@@ -1433,8 +1408,7 @@ class FieldUnpackerCodeBlockBuilder:
 
     @contextmanager
     def indent(
-        self,
-        expr: typing.Optional[str] = None,
+        self, expr: str | None = None
     ) -> typing.Generator[None, None, None]:
         with self.lines.indent(expr):
             yield

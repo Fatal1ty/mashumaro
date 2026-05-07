@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Type, TypeVar, Union, final
+from typing import Any, Type, TypeVar, final
 
 import orjson
 
@@ -8,7 +8,7 @@ from mashumaro.mixins.dict import DataClassDictMixin
 
 T = TypeVar("T", bound="DataClassORJSONMixin")
 
-EncodedData = Union[str, bytes, bytearray]
+EncodedData = str | bytes | bytearray
 Encoder = Callable[[Any], EncodedData]
 Decoder = Callable[[EncodedData], dict[Any, Any]]
 

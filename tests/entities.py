@@ -282,9 +282,7 @@ MyUntypedNamedTuple = namedtuple("MyUntypedNamedTuple", ("i", "f"))
 
 
 MyUntypedNamedTupleWithDefaults = namedtuple(
-    "MyUntypedNamedTupleWithDefaults",
-    ("i", "f"),
-    defaults=(1, 2.0),
+    "MyUntypedNamedTupleWithDefaults", ("i", "f"), defaults=(1, 2.0)
 )
 
 

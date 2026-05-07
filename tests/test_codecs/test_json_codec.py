@@ -13,10 +13,7 @@ from mashumaro.dialect import Dialect
 
 class MyDialect(Dialect):
     serialization_strategy = {
-        date: {
-            "serialize": date.toordinal,
-            "deserialize": date.fromordinal,
-        },
+        date: {"serialize": date.toordinal, "deserialize": date.fromordinal}
     }
 
 
@@ -69,11 +66,6 @@ def test_post_encoder_func():
         post_encoder_func=lambda v: json.dumps(v, separators=(",", ":")),
     )
     assert (
-        encoder.encode(
-            [
-                date(2023, 9, 22),
-                date(2023, 9, 23),
-            ]
-        )
+        encoder.encode([date(2023, 9, 22), date(2023, 9, 23)])
         == '["2023-09-22","2023-09-23"]'
     )

@@ -90,10 +90,7 @@ def test_jsonschema_for_mutual_recursive_type_aliases_with_refs() -> None:
 def test_type_alias_non_recursive_inlines_when_all_refs_false() -> None:
     schema = build_json_schema(X, all_refs=False)
     assert schema.to_dict() == {
-        "anyOf": [
-            {"type": "integer"},
-            {"type": "string"},
-        ]
+        "anyOf": [{"type": "integer"}, {"type": "string"}]
     }
 
 
@@ -101,14 +98,7 @@ def test_type_alias_non_recursive_uses_defs_when_all_refs_true() -> None:
     schema = build_json_schema(X, all_refs=True)
     assert schema.to_dict() == {
         "$ref": "#/$defs/X",
-        "$defs": {
-            "X": {
-                "anyOf": [
-                    {"type": "integer"},
-                    {"type": "string"},
-                ]
-            }
-        },
+        "$defs": {"X": {"anyOf": [{"type": "integer"}, {"type": "string"}]}},
     }
 
 
@@ -118,10 +108,7 @@ def test_type_alias_placeholder_not_leaking_into_context_defs() -> None:
     ctx = Context()
     schema = build_json_schema(X, context=ctx, all_refs=False)
     assert schema.to_dict() == {
-        "anyOf": [
-            {"type": "integer"},
-            {"type": "string"},
-        ]
+        "anyOf": [{"type": "integer"}, {"type": "string"}]
     }
     assert ctx.definitions == {}
 
