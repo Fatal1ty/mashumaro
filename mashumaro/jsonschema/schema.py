@@ -277,6 +277,8 @@ def get_schema(
             if with_dialect_uri:
                 schema.schema = ctx.dialect.uri
             break
+    if schema is not None:
+        apply_schema_annotations(instance, schema)
     for plugin in ctx.plugins:
         try:
             new_schema = plugin.get_schema(instance, ctx, schema)
@@ -296,6 +298,23 @@ def _get_schema_or_none(instance: Instance, ctx: Context) -> JSONSchema | None:
     schema = get_schema(instance, ctx)
     if isinstance(schema, EmptyJSONSchema):
         return None
+    return schema
+
+
+def apply_schema_annotations(
+    instance: Instance, schema: JSONSchema
+) -> JSONSchema:
+    for annotation in instance.annotations:
+        if isinstance(annotation, JSONSchema):
+            annotation_dict = replace(annotation).to_dict()
+            for key in annotation_dict.keys():
+                if key in ("$schema", "$ref", "$defs"):
+                    continue
+                if key in ("const", "default"):
+                    value = annotation_dict[key]
+                else:
+                    value = getattr(annotation, key)
+                setattr(schema, key, value)
     return schema
 
 
