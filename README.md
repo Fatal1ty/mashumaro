@@ -3073,6 +3073,78 @@ print(
 ```
 </details>
 
+For more complex field-level schema customization, `Annotated` can also be
+used with a `JSONSchema` instance. In that case, explicitly set schema
+attributes are applied on top of the automatically generated schema. This is
+especially useful for content-related keywords such as `contentEncoding`,
+`contentMediaType`, and `contentSchema`:
+
+```python
+from dataclasses import dataclass
+from typing import Annotated
+
+from mashumaro.jsonschema import build_json_schema
+from mashumaro.jsonschema.models import JSONSchema, JSONSchemaInstanceType
+
+
+@dataclass
+class Upload:
+    file: Annotated[
+        bytes,
+        JSONSchema(
+            contentEncoding="base64",
+            contentMediaType="application/pdf",
+        ),
+    ]
+    metadata: Annotated[
+        str,
+        JSONSchema(
+            contentMediaType="application/json",
+            contentSchema=JSONSchema(
+                type=JSONSchemaInstanceType.OBJECT,
+            ),
+        ),
+    ]
+
+
+print(build_json_schema(Upload).to_json())
+```
+
+<details>
+<summary>Click to show the result</summary>
+
+```json
+{
+    "type": "object",
+    "title": "Upload",
+    "properties": {
+        "file": {
+            "type": "string",
+            "format": "base64",
+            "contentEncoding": "base64",
+            "contentMediaType": "application/pdf"
+        },
+        "metadata": {
+            "type": "string",
+            "contentMediaType": "application/json",
+            "contentSchema": {
+                "type": "object"
+            }
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "file",
+        "metadata"
+    ]
+}
+```
+</details>
+
+This overlay mechanism is intended for regular schema keywords. Structural
+keywords such as `$schema`, `$ref`, and `$defs` are not applied from
+`Annotated[..., JSONSchema(...)]`.
+
 The [`$schema`](https://json-schema.org/draft/2020-12/json-schema-core.html#name-the-schema-keyword)
 keyword can be added by setting `with_dialect_uri` to True:
 
@@ -3466,8 +3538,13 @@ print(schema.to_json())
 
 ### Extending JSON Schema
 
-Using a `Config` class it is possible to override some parts of the schema.
-Currently, you can do the following:
+For field-level schema customization, prefer using
+`Annotated[..., JSONSchema(...)]` as shown above. It keeps schema overrides
+close to the field type and is the recommended way to add extra keywords such
+as `description`, `contentMediaType`, or `contentSchema`.
+
+Using a `Config` class is still useful when you need to override schema parts
+at the dataclass level. Currently, you can do the following:
 * override some field schemas using the "properties" key
 * change `additionalProperties` using the "additionalProperties" key
 
