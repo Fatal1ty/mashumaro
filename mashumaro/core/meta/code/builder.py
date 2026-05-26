@@ -10,10 +10,8 @@ from contextlib import contextmanager
 
 # noinspection PyProtectedMember
 from dataclasses import _FIELDS  # type: ignore
-from dataclasses import MISSING, Field, is_dataclass
+from dataclasses import KW_ONLY, MISSING, Field, is_dataclass
 from functools import lru_cache
-
-from dataclasses import KW_ONLY
 
 import typing_extensions
 

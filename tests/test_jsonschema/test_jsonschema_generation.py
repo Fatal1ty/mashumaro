@@ -1543,3 +1543,121 @@ def test_jsonschema_for_dataclass_with_slots():
         additionalProperties=False,
         required=["no_default"],
     )
+
+
+def test_jsonschema_annotation_overlay_for_content_keywords():
+    assert build_json_schema(
+        Annotated[
+            bytes,
+            JSONSchema(contentEncoding="base64", contentMediaType="image/png"),
+        ]
+    ) == JSONSchema(
+        type=JSONSchemaInstanceType.STRING,
+        format=JSONSchemaInstanceFormatExtension.BASE64,
+        contentEncoding="base64",
+        contentMediaType="image/png",
+    )
+
+
+def test_jsonschema_annotation_overlay_for_content_schema():
+    payload_schema = JSONObjectSchema(
+        properties={"value": JSONSchema(type=JSONSchemaInstanceType.INTEGER)},
+        additionalProperties=False,
+        required=["value"],
+    )
+
+    assert build_json_schema(
+        Annotated[
+            str,
+            JSONSchema(
+                contentMediaType="application/json",
+                contentSchema=payload_schema,
+            ),
+        ]
+    ) == JSONSchema(
+        type=JSONSchemaInstanceType.STRING,
+        contentMediaType="application/json",
+        contentSchema=payload_schema,
+    )
+
+
+def test_jsonschema_annotation_overlay_combines_with_constraints():
+    assert build_json_schema(
+        Annotated[
+            str,
+            MinLength(1),
+            JSONSchema(
+                contentMediaType="text/plain", description="Request body"
+            ),
+        ]
+    ) == JSONSchema(
+        type=JSONSchemaInstanceType.STRING,
+        minLength=1,
+        contentMediaType="text/plain",
+        description="Request body",
+    )
+
+
+def test_jsonschema_annotation_overlay_preserves_serialized_none_values():
+    assert build_json_schema(
+        Annotated[str, JSONSchema(const=None, default=None)]
+    ) == JSONSchema(
+        type=JSONSchemaInstanceType.STRING, const=None, default=None
+    )
+
+
+def test_jsonschema_annotation_overlay_for_dataclass_field():
+    @dataclass
+    class Upload:
+        file: Annotated[
+            bytes,
+            JSONSchema(
+                contentEncoding="base64", contentMediaType="application/pdf"
+            ),
+        ]
+
+    assert build_json_schema(Upload) == JSONObjectSchema(
+        title="Upload",
+        properties={
+            "file": JSONSchema(
+                type=JSONSchemaInstanceType.STRING,
+                format=JSONSchemaInstanceFormatExtension.BASE64,
+                contentEncoding="base64",
+                contentMediaType="application/pdf",
+            )
+        },
+        additionalProperties=False,
+        required=["file"],
+    )
+
+
+def test_jsonschema_annotation_overlay_last_wins():
+    assert build_json_schema(
+        Annotated[
+            str,
+            JSONSchema(description="First description"),
+            JSONSchema(description="Second description"),
+        ]
+    ) == JSONSchema(
+        type=JSONSchemaInstanceType.STRING, description="Second description"
+    )
+
+
+def test_jsonschema_annotation_overlay_ignores_structural_keywords():
+    assert build_json_schema(
+        Annotated[
+            str,
+            JSONSchema(
+                schema="https://json-schema.org/draft/2020-12/schema",
+                reference="#/$defs/UploadedFile",
+                definitions={
+                    "UploadedFile": JSONSchema(
+                        type=JSONSchemaInstanceType.STRING
+                    )
+                },
+                description="Plain string",
+            ),
+        ]
+    ) == JSONSchema(
+        type=JSONSchemaInstanceType.STRING, description="Plain string"
+    )

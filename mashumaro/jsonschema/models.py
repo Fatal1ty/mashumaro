@@ -154,6 +154,10 @@ class JSONSchema(DataClassJSONMixin):
     minProperties: int | None = None
     required: list[str] | None = None
     dependentRequired: dict[str, set[str]] | None = None
+    # A Vocabulary for the Contents of String-Encoded Data
+    contentEncoding: str | None = None
+    contentMediaType: str | None = None
+    contentSchema: "JSONSchema | None" = None
 
     class Config(BaseConfig):
         omit_none = True
