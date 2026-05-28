@@ -3,6 +3,7 @@ import collections.abc
 import datetime
 import enum
 import ipaddress
+import logging
 import os
 import pathlib
 import re
@@ -184,6 +185,7 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
         return method_name
 
     def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
+        spec.builder.ensure_object_imported(logging)
         if not spec.field_ctx.unpacker and self.method_name:
             spec.field_ctx.unpacker = self._get_call_expr(
                 spec, self.method_name
@@ -226,14 +228,24 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
             if do_try:
                 with lines.indent("try:"):
                     lines.extend(unpacker_block)
-                lines.append("except Exception: pass")
+                with lines.indent("except Exception:"):
+                    lines.append(
+                        "logging.exception("
+                        f"'Failed to unpack field \"{spec.field_ctx.name}\": "
+                        "%s', value)"
+                    )
             else:
                 lines.extend(unpacker_block)
             unpackers.add((condition, unpacker))
         for fallback_unpacker in fallback_unpackers:
             with lines.indent("try:"):
                 lines.append(f"return {fallback_unpacker}")
-            lines.append("except Exception: pass")
+            with lines.indent("except Exception:"):
+                lines.append(
+                    "logging.exception("
+                    f"'Failed fallback unpack for field "
+                    f"\"{spec.field_ctx.name}\": %s', value)"
+                )
         field_type = spec.builder.get_type_name_identifier(
             typ=spec.type,
             resolved_type_params=spec.builder.get_field_resolved_type_params(
@@ -269,6 +281,7 @@ class LiteralUnpackerBuilder(AbstractUnpackerBuilder):
         return "literal"
 
     def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
+        spec.builder.ensure_object_imported(logging)
         for literal_value in get_literal_values(spec.type):
             if isinstance(literal_value, enum.Enum):
                 lit_type = type(literal_value)
@@ -288,7 +301,13 @@ class LiteralUnpackerBuilder(AbstractUnpackerBuilder):
                 with lines.indent("try:"):
                     with lines.indent(f"if {unpacker} == {literal_value!r}:"):
                         lines.append(f"return {literal_value!r}")
-                lines.append("except Exception: pass")
+                with lines.indent("except Exception:"):
+                    lines.append(
+                        "logging.exception("
+                        f"'Failed to match literal bytes value %s "
+                         f"for field \"{spec.field_ctx.name}\": %s', "
+                        f"{literal_value!r}, value)"
+                    )
             elif isinstance(
                 literal_value, (int, str, bool, NoneType)  # type: ignore
             ):
@@ -368,6 +387,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
     def _add_body(self, spec: ValueSpec, lines: CodeLines) -> None:
         discriminator = self.discriminator
 
+        spec.builder.ensure_object_imported(logging)
         variants_attr = self._get_variants_attr(spec)
         variants_map = self._get_variants_map(spec)
         variants_attr_holder = self._get_variants_attr_holder(spec)
@@ -470,7 +490,12 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                     self._add_build_variant_unpacker(
                         spec, lines, variant_method_name, variant_method_call
                     )
-                lines.append("except Exception: pass")
+                with lines.indent("except Exception:"):
+                    lines.append(
+                        "logging.exception("
+                        f"'Failed to unpack variant for field "
+                    f"\"{spec.field_ctx.name}\": %s', value)"
+                    )
             lines.append(
                 f"raise SuitableVariantNotFoundError({variants_type_expr}) "
                 "from None"
@@ -497,6 +522,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         variant_method_name: str,
         variant_method_call: str,
     ) -> None:
+        spec.builder.ensure_object_imported(logging)
         if spec.builder.is_nailed:
             spec.builder.ensure_object_imported(get_class_that_defines_method)
             lines.append(
@@ -515,7 +541,12 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                 if not self.discriminator.field:
                     with lines.indent("try:"):
                         lines.append(f"return variant.{variant_method_call}")
-                    lines.append("except Exception: pass")
+                    with lines.indent("except Exception:"):
+                        lines.append(
+                            "logging.exception("
+                            f"'Failed to build variant unpacker for field "
+                             f"\"{spec.field_ctx.name}\" (nailed): %s', value)"
+                        )
         else:
             spec.builder.ensure_object_imported(AttrsHolder)
             attrs = f"attrs_{random_hex()}"
@@ -533,7 +564,12 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             if not self.discriminator.field:
                 with lines.indent("try:"):
                     lines.append(f"return {attrs}.{variant_method_call}")
-                lines.append("except Exception: pass")
+                with lines.indent("except Exception:"):
+                    lines.append(
+                        "logging.exception("
+                        f"'Failed to build variant unpacker for field "
+                         f"\"{spec.field_ctx.name}\" (non-nailed): %s', value)"
+                    )
 
     def _add_register_variant_tags(
         self, lines: CodeLines, variant_tagger_expr: str

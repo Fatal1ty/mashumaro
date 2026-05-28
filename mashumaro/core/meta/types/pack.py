@@ -1,6 +1,7 @@
 import datetime
 import enum
 import ipaddress
+import logging
 import os
 import re
 import sys
@@ -324,6 +325,7 @@ def pack_union(
         lines.append(f"def {method_name}({method_args}):")
     packers: list[str] = []
     packer_arg_types: dict[str, list[type]] = {}
+    spec.builder.ensure_object_imported(logging)
     for type_arg in args:
         packer = PackerRegistry.get(
             spec.copy(type=type_arg, expression="value", owner=spec.type)
@@ -369,7 +371,11 @@ def pack_union(
                 with lines.indent("try:"):
                     lines.append(f"return {packer}")
                 with lines.indent("except Exception:"):
-                    lines.append("pass")
+                    lines.append(
+                        "logging.exception("
+                        f"'Failed to pack field \"{spec.field_ctx.name}\": "
+                        "%s', value)"
+                    )
         field_type = spec.builder.get_type_name_identifier(
             typ=spec.type,
             resolved_type_params=spec.builder.get_field_resolved_type_params(
