@@ -79,14 +79,14 @@ class TOMLEncoder(Generic[T]):
         code_builder.add_encode_method(shape_type, self, tomli_w.dumps)
 
     @final
-    def encode(self, obj: T) -> bytes: ...
+    def encode(self, obj: T) -> str: ...
 
 
 def toml_decode(data: EncodedData, shape_type: Type[T]) -> T:
     return TOMLDecoder(shape_type).decode(data)
 
 
-def toml_encode(obj: T, shape_type: Type[T] | Any) -> bytes:
+def toml_encode(obj: T, shape_type: Type[T] | Any) -> str:
     return TOMLEncoder(shape_type).encode(obj)
 
 
