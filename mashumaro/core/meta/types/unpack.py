@@ -60,6 +60,7 @@ from mashumaro.core.meta.helpers import (
     is_unpack,
     iter_all_subclasses,
     not_none_type_arg,
+    resolve_type_alias_type,
     resolve_type_params,
     substitute_type_params,
     type_name,
@@ -195,6 +196,7 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
         type_arg_unpackers = []
         type_match_statements = 0
         for type_arg in self.union_args:
+            type_arg = resolve_type_alias_type(type_arg)
             unpacker = UnpackerRegistry.get(
                 spec.copy(type=type_arg, expression="value", owner=spec.type)
             )
@@ -874,15 +876,12 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
             evaluated = evaluate_forward_ref(spec.type)
             if evaluated is not None:
                 return UnpackerRegistry.get(spec.copy(type=evaluated))
-        elif is_type_alias_type(spec.type):
-            return UnpackerRegistry.get(spec.copy(type=spec.type.__value__))
-        elif is_type_alias_type(get_type_origin(spec.type)):
-            origin = get_type_origin(spec.type)
-            type_params = getattr(origin, "__type_params__", ())
-            args = get_args(spec.type)
-            param_map = dict(zip(type_params, args))
-            resolved = substitute_type_params(origin.__value__, param_map)
-            return UnpackerRegistry.get(spec.copy(type=resolved))
+        elif is_type_alias_type(spec.type) or is_type_alias_type(
+            get_type_origin(spec.type)
+        ):
+            return UnpackerRegistry.get(
+                spec.copy(type=resolve_type_alias_type(spec.type))
+            )
         elif is_readonly(spec.type):
             return UnpackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
         raise UnserializableDataError(

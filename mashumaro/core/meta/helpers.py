@@ -43,6 +43,7 @@ __all__ = [
     "is_dataclass_dict_mixin_subclass",
     "collect_type_params",
     "resolve_type_params",
+    "resolve_type_alias_type",
     "substitute_type_params",
     "get_generic_name",
     "get_name_error_name",
@@ -639,6 +640,20 @@ def substitute_type_params(typ: Type, substitutions: dict[Type, Type]) -> Type:
                 return typ[tuple(new_type_args)]
         if is_hashable(typ):
             return substitutions.get(typ, typ)
+        else:
+            return typ
+
+
+def resolve_type_alias_type(typ: Type) -> Type:
+    while True:
+        if is_type_alias_type(typ):
+            typ = typ.__value__
+        elif is_type_alias_type(get_type_origin(typ)):
+            origin = get_type_origin(typ)
+            type_params = getattr(origin, "__type_params__", ())
+            args = get_args(typ)
+            param_map = dict(zip(type_params, args))
+            typ = substitute_type_params(origin.__value__, param_map)
         else:
             return typ
 
