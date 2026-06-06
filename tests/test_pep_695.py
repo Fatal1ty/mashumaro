@@ -1,11 +1,14 @@
 from dataclasses import dataclass
 from datetime import date
+from typing import Annotated, Callable, TypeAliasType
 
 import pytest
+from typing_extensions import TypeVar
 
 from mashumaro import DataClassDictMixin
 from mashumaro.codecs import BasicDecoder, BasicEncoder
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
+from mashumaro.core.meta.helpers import resolve_type_alias_type
 from mashumaro.exceptions import MissingField
 from tests.entities_pep_695 import (
     Boxed,
@@ -215,3 +218,86 @@ def test_parameterized_type_alias_type_in_union():
     obj2 = MyClass(x=[1, 2, 3], y="a")
     assert obj2.to_dict() == {"x": [1, 2, 3], "y": "a"}
     assert MyClass.from_dict({"x": [1, 2, 3], "y": "a"}) == obj2
+
+
+def test_resolve_cyclic_type_alias_type():
+    type A = B
+    type B = A
+
+    with pytest.raises(TypeError, match="Cannot resolve recursive"):
+        resolve_type_alias_type(A)
+
+    with pytest.raises(TypeError, match="Cannot resolve recursive"):
+
+        @dataclass
+        class MyClass(DataClassDictMixin):
+            x: A | int
+
+
+def test_resolve_cyclic_parameterized_type_alias_type():
+    type ListOf[T] = ListOf[T]
+
+    with pytest.raises(TypeError, match="Cannot resolve recursive"):
+        resolve_type_alias_type(ListOf[int])
+
+
+def test_resolve_growing_recursive_type_alias_type():
+    type G[T] = G[list[T]]
+
+    with pytest.raises(TypeError, match="Cannot resolve recursive"):
+        resolve_type_alias_type(G[int])
+
+
+def test_resolve_type_alias_type_with_wrong_number_of_type_args():
+    type Pair[K, V] = dict[K, V]
+
+    # subscription itself doesn't validate the number of args
+    with pytest.raises(TypeError, match="Too few arguments"):
+        resolve_type_alias_type(Pair[int])
+    with pytest.raises(TypeError, match="Too many arguments"):
+        resolve_type_alias_type(Pair[int, str, bytes])
+
+
+def test_resolve_type_alias_type_with_defaulted_type_params():
+    K = TypeVar("K")
+    V = TypeVar("V", default=str)
+    Pair = TypeAliasType("Pair", dict[K, V], type_params=(K, V))
+
+    assert resolve_type_alias_type(Pair[int]) == dict[int, str]
+    assert resolve_type_alias_type(Pair[int, bytes]) == dict[int, bytes]
+
+
+def test_type_alias_type_with_defaulted_type_param_in_union():
+    K = TypeVar("K")
+    V = TypeVar("V", default=str)
+    Pair = TypeAliasType("Pair", dict[K, V], type_params=(K, V))
+
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: Pair[int] | None = None
+
+    assert MyClass(x={1: "a"}).to_dict() == {"x": {1: "a"}}
+    assert MyClass.from_dict({"x": {1: "a"}}) == MyClass(x={1: "a"})
+
+
+def test_annotated_type_alias_type_in_union():
+    type BareAlias = int
+
+    annotated = Annotated[BareAlias, "meta"]
+    assert resolve_type_alias_type(annotated) == annotated
+
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: str | Annotated[BareAlias, "meta"]
+
+    # deserialization of annotated union members is a pre-existing
+    # limitation unrelated to type aliases, so only packing is checked here
+    assert MyClass(x="a").to_dict() == {"x": "a"}
+    assert MyClass(x=5).to_dict() == {"x": 5}
+
+
+def test_resolve_param_spec_type_alias_type_arity_not_checked():
+    type CB[**P] = Callable[P, int]
+
+    # ParamSpec subscription arity is flexible, resolution is best effort
+    resolve_type_alias_type(CB[int, str])

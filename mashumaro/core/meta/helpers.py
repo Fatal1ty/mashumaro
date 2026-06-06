@@ -645,17 +645,57 @@ def substitute_type_params(typ: Type, substitutions: dict[Type, Type]) -> Type:
 
 
 def resolve_type_alias_type(typ: Type) -> Type:
+    seen = set()
+    steps = 0
     while True:
+        if is_hashable(typ):
+            if typ in seen:  # cyclic alias, e.g. "type A = B; type B = A"
+                break
+            seen.add(typ)
         if is_type_alias_type(typ):
             typ = typ.__value__
-        elif is_type_alias_type(get_type_origin(typ)):
+        elif not is_annotated(typ) and is_type_alias_type(
+            get_type_origin(typ)
+        ):
             origin = get_type_origin(typ)
             type_params = getattr(origin, "__type_params__", ())
             args = get_args(typ)
             param_map = dict(zip(type_params, args))
+            # subscription arity can only be checked for plain type vars:
+            # TypeVarTuple and ParamSpec allow a variable number of args
+            if all(is_type_var(p) for p in type_params):
+                if len(args) > len(type_params):
+                    raise TypeError(
+                        f"Too many arguments for {type_name(origin)}; "
+                        f"actual {len(args)}, expected {len(type_params)}"
+                    )
+                for type_param in type_params[len(args) :]:
+                    if not type_var_has_default(type_param):
+                        raise TypeError(
+                            f"Too few arguments for {type_name(origin)}; "
+                            f"actual {len(args)}, "
+                            f"expected {len(type_params)}"
+                        )
+                    default = get_type_var_default(type_param)
+                    param_map[type_param] = substitute_type_params(
+                        default, param_map
+                    )
             typ = substitute_type_params(origin.__value__, param_map)
         else:
             return typ
+        # the number of steps is bounded so that unresolvable recursive
+        # aliases with non-repeating values, e.g. "type G[T] = G[list[T]]",
+        # terminate
+        steps += 1
+        if steps > 64:
+            break
+    if is_type_alias_type(typ) or (
+        not is_annotated(typ) and is_type_alias_type(get_type_origin(typ))
+    ):
+        raise TypeError(
+            f"Cannot resolve recursive type alias {type_name(typ)}"
+        )
+    return typ
 
 
 def get_name_error_name(e: NameError) -> str:
