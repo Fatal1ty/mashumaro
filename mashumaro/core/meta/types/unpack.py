@@ -31,7 +31,7 @@ import typing_extensions
 from typing_extensions import NotRequired
 
 from mashumaro.core.const import PY_311_MIN
-from mashumaro.core.helpers import parse_timezone
+from mashumaro.core.helpers import parse_bool, parse_timezone
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
     get_args,
@@ -901,7 +901,8 @@ def unpack_number(spec: ValueSpec) -> Expression | None:
 @register
 def unpack_bool(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is bool:
-        return TypeMatchEligibleExpression(f"bool({spec.expression})")
+        spec.builder.ensure_object_imported(parse_bool)
+        return TypeMatchEligibleExpression(f"parse_bool({spec.expression})")
 
 
 @register

@@ -1,7 +1,8 @@
 import datetime
 import re
+from typing import Any
 
-__all__ = ["parse_timezone", "ConfigValue", "UTC_OFFSET_PATTERN"]
+__all__ = ["parse_timezone", "parse_bool", "ConfigValue", "UTC_OFFSET_PATTERN"]
 
 
 UTC_OFFSET_PATTERN = r"^UTC(([+-][0-2][0-9]):([0-5][0-9]))?$"
@@ -24,6 +25,20 @@ def parse_timezone(s: str) -> datetime.timezone:
         )
     else:
         return datetime.timezone.utc
+
+
+def parse_bool(value: Any) -> bool:
+    # When a bool is used as a mapping key, JSON serialization turns it
+    # into the string "true"/"false" (object keys must be strings), so the
+    # value coming back from the decoder is that string rather than a real
+    # bool. Plain bool(value) would treat both "true" and "false" as True,
+    # collapsing the keys, so the strings are mapped back explicitly here.
+    if isinstance(value, str):
+        if value == "true":
+            return True
+        if value == "false":
+            return False
+    return bool(value)
 
 
 class ConfigValue:

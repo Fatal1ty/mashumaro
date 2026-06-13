@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List
+from typing import Dict, List
 
 import pytest
 
@@ -84,6 +84,18 @@ def test_json_bytes():
 
     dumped = r'{"x": "MTIz\n"}'
     instance = DataClass(b"123")
+
+    assert instance.to_json() == dumped
+    assert DataClass.from_json(dumped) == instance
+
+
+def test_json_dict_with_bool_keys():
+    @dataclass
+    class DataClass(DataClassJSONMixin):
+        x: Dict[bool, str]
+
+    instance = DataClass(x={True: "a", False: "b"})
+    dumped = json.dumps({"x": {True: "a", False: "b"}})
 
     assert instance.to_json() == dumped
     assert DataClass.from_json(dumped) == instance
