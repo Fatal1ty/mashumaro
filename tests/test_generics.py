@@ -11,6 +11,7 @@ from tests.entities import MyGenericDataClass, SerializableTypeGenericList
 
 T = TypeVar("T")
 S = TypeVar("S")
+K = TypeVar("K")
 P = TypeVar("P", Mapping[int, int], List[float])
 
 
@@ -279,3 +280,25 @@ def test_nested_generic_no_inf_recursion(lazy):
         fieldD=A(field=1.2), fieldC=B(fieldB=A(field=2)), fieldB=A(field=2)
     )
     assert D.from_dict(obj.to_dict()) == obj
+
+
+def test_vars_order_when_generic_presented_in_bases() -> None:
+    @dataclass
+    class Base(DataClassDictMixin, Generic[T]):
+        kind: str = "base"
+
+    class NotSerializable:
+        pass
+
+    @dataclass
+    class Extended(Base[K], Generic[S, K]):
+        payload: S | None = None
+
+    @dataclass
+    class Sub(Extended[Base, NotSerializable]):
+        pass
+
+    assert Sub(payload=Base()).to_dict() == {
+        "kind": "base",
+        "payload": {"kind": "base"},
+    }

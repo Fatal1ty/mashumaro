@@ -551,11 +551,17 @@ def resolve_type_params(
     result = {typ: resolved_type_params}
     type_params = []
 
+    # According to the docs, if Generic[...] is present, then the order
+    # of variables is always determined by their order in Generic[...]
     for base in get_orig_bases(typ):
-        base_type_params = collect_type_params(base)
-        for type_param in base_type_params:
-            if type_param not in type_params:
-                type_params.append(type_param)
+        if get_type_origin(base) is typing.Generic:
+            type_params = list(collect_type_params(base))
+    if not type_params:
+        for base in get_orig_bases(typ):
+            base_type_params = collect_type_params(base)
+            for type_param in base_type_params:
+                if type_param not in type_params:
+                    type_params.append(type_param)
 
     _check_generic(typ, type_params, type_args)
 

@@ -259,3 +259,25 @@ def test_generic_serializable_type_getitem():
     class DataClass(DataClassDictMixin):
         # Simply specializing the type would lead to an AttributeError.
         x: GenericSerializableType[int]
+
+
+def test_vars_order_when_generic_presented_in_bases_pep_695() -> None:
+    @dataclass
+    class Base[T](DataClassDictMixin):
+        kind: str = "base"
+
+    class NotSerializable:
+        pass
+
+    @dataclass
+    class Extended[S: Base, K](Base[K]):
+        payload: S | None = None
+
+    @dataclass
+    class Sub(Extended[Base, NotSerializable]):
+        pass
+
+    assert Sub(payload=Base()).to_dict() == {
+        "kind": "base",
+        "payload": {"kind": "base"},
+    }
