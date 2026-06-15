@@ -1,10 +1,14 @@
 from dataclasses import dataclass
 from datetime import date
+from typing import Annotated, Callable, TypeAliasType
 
 import pytest
+from typing_extensions import TypeVar
 
 from mashumaro import DataClassDictMixin
 from mashumaro.codecs import BasicDecoder, BasicEncoder
+from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
+from mashumaro.core.meta.helpers import resolve_type_alias_type
 from mashumaro.exceptions import MissingField
 from tests.entities_pep_695 import (
     Boxed,
@@ -144,3 +148,156 @@ def test_recursive_generic_alias_with_serializable_type():
         DataClassWithRecursiveGenericAlias.from_dict({"x": ("hello", 7)})
         == obj2
     )
+
+
+def test_type_alias_type_nested_in_union():
+    # https://github.com/Fatal1ty/mashumaro/issues/330
+    type UniqueIdentifier = str
+    type UniqueIdentifierList = list[UniqueIdentifier]
+    type UniqueIdentifierOrList = UniqueIdentifier | UniqueIdentifierList
+
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: UniqueIdentifierOrList | None = None
+
+    assert MyClass(x="a").to_dict() == {"x": "a"}
+    assert MyClass(x=["a", "b"]).to_dict() == {"x": ["a", "b"]}
+    assert MyClass().to_dict() == {"x": None}
+    assert MyClass.from_dict({"x": "a"}) == MyClass(x="a")
+    assert MyClass.from_dict({"x": ["a", "b"]}) == MyClass(x=["a", "b"])
+    assert MyClass.from_dict({"x": None}) == MyClass()
+
+
+@pytest.mark.parametrize("lazy", [False, True])
+def test_type_alias_type_nested_in_union_with_omit_none_flag(lazy):
+    type UniqueIdentifier = str
+    type UniqueIdentifierList = list[UniqueIdentifier]
+    type UniqueIdentifierOrList = UniqueIdentifier | UniqueIdentifierList
+
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: UniqueIdentifierOrList | None = None
+
+        class Config(BaseConfig):
+            code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
+            lazy_compilation = lazy
+
+    assert MyClass(x="a").to_dict(omit_none=True) == {"x": "a"}
+    assert MyClass(x=["a", "b"]).to_dict(omit_none=True) == {"x": ["a", "b"]}
+    assert MyClass().to_dict(omit_none=True) == {}
+    assert MyClass.from_dict({"x": ["a", "b"]}) == MyClass(x=["a", "b"])
+
+
+def test_type_alias_type_nested_in_union_with_codecs():
+    type UniqueIdentifier = str
+    type UniqueIdentifierList = list[UniqueIdentifier]
+    type UniqueIdentifierOrList = UniqueIdentifier | UniqueIdentifierList
+
+    decoder = BasicDecoder(UniqueIdentifierOrList)
+    encoder = BasicEncoder(UniqueIdentifierOrList)
+
+    assert decoder.decode("a") == "a"
+    assert decoder.decode(["a", "b"]) == ["a", "b"]
+    assert encoder.encode("a") == "a"
+    assert encoder.encode(["a", "b"]) == ["a", "b"]
+
+
+def test_parameterized_type_alias_type_in_union():
+    type Identity[T] = T
+    type ListOf[T] = list[T]
+
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: date | ListOf[int]
+        y: int | Identity[str]
+
+    obj1 = MyClass(x=date(2024, 4, 15), y=42)
+    assert obj1.to_dict() == {"x": "2024-04-15", "y": 42}
+    assert MyClass.from_dict({"x": "2024-04-15", "y": 42}) == obj1
+
+    obj2 = MyClass(x=[1, 2, 3], y="a")
+    assert obj2.to_dict() == {"x": [1, 2, 3], "y": "a"}
+    assert MyClass.from_dict({"x": [1, 2, 3], "y": "a"}) == obj2
+
+
+def test_resolve_cyclic_type_alias_type():
+    type A = B
+    type B = A
+
+    with pytest.raises(TypeError, match="Cannot resolve recursive"):
+        resolve_type_alias_type(A)
+
+    with pytest.raises(TypeError, match="Cannot resolve recursive"):
+
+        @dataclass
+        class MyClass(DataClassDictMixin):
+            x: A | int
+
+
+def test_resolve_cyclic_parameterized_type_alias_type():
+    type ListOf[T] = ListOf[T]
+
+    with pytest.raises(TypeError, match="Cannot resolve recursive"):
+        resolve_type_alias_type(ListOf[int])
+
+
+def test_resolve_growing_recursive_type_alias_type():
+    type G[T] = G[list[T]]
+
+    with pytest.raises(TypeError, match="Cannot resolve recursive"):
+        resolve_type_alias_type(G[int])
+
+
+def test_resolve_type_alias_type_with_wrong_number_of_type_args():
+    type Pair[K, V] = dict[K, V]
+
+    # subscription itself doesn't validate the number of args
+    with pytest.raises(TypeError, match="Too few arguments"):
+        resolve_type_alias_type(Pair[int])
+    with pytest.raises(TypeError, match="Too many arguments"):
+        resolve_type_alias_type(Pair[int, str, bytes])
+
+
+def test_resolve_type_alias_type_with_defaulted_type_params():
+    K = TypeVar("K")
+    V = TypeVar("V", default=str)
+    Pair = TypeAliasType("Pair", dict[K, V], type_params=(K, V))
+
+    assert resolve_type_alias_type(Pair[int]) == dict[int, str]
+    assert resolve_type_alias_type(Pair[int, bytes]) == dict[int, bytes]
+
+
+def test_type_alias_type_with_defaulted_type_param_in_union():
+    K = TypeVar("K")
+    V = TypeVar("V", default=str)
+    Pair = TypeAliasType("Pair", dict[K, V], type_params=(K, V))
+
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: Pair[int] | None = None
+
+    assert MyClass(x={1: "a"}).to_dict() == {"x": {1: "a"}}
+    assert MyClass.from_dict({"x": {1: "a"}}) == MyClass(x={1: "a"})
+
+
+def test_annotated_type_alias_type_in_union():
+    type BareAlias = int
+
+    annotated = Annotated[BareAlias, "meta"]
+    assert resolve_type_alias_type(annotated) == annotated
+
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: str | Annotated[BareAlias, "meta"]
+
+    # deserialization of annotated union members is a pre-existing
+    # limitation unrelated to type aliases, so only packing is checked here
+    assert MyClass(x="a").to_dict() == {"x": "a"}
+    assert MyClass(x=5).to_dict() == {"x": 5}
+
+
+def test_resolve_param_spec_type_alias_type_arity_not_checked():
+    type CB[**P] = Callable[P, int]
+
+    # ParamSpec subscription arity is flexible, resolution is best effort
+    resolve_type_alias_type(CB[int, str])

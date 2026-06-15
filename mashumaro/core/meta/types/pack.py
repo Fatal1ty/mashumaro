@@ -47,6 +47,7 @@ from mashumaro.core.meta.helpers import (
     is_union,
     is_unpack,
     not_none_type_arg,
+    resolve_type_alias_type,
     resolve_type_params,
     substitute_type_params,
     type_name,
@@ -325,6 +326,7 @@ def pack_union(
     packers: list[str] = []
     packer_arg_types: dict[str, list[type]] = {}
     for type_arg in args:
+        type_arg = resolve_type_alias_type(type_arg)
         packer = PackerRegistry.get(
             spec.copy(type=type_arg, expression="value", owner=spec.type)
         )
@@ -549,15 +551,12 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
             evaluated = evaluate_forward_ref(spec.type)
             if evaluated is not None:
                 return PackerRegistry.get(spec.copy(type=evaluated))
-        elif is_type_alias_type(spec.type):
-            return PackerRegistry.get(spec.copy(type=spec.type.__value__))
-        elif is_type_alias_type(get_type_origin(spec.type)):
-            origin = get_type_origin(spec.type)
-            type_params = getattr(origin, "__type_params__", ())
-            args = get_args(spec.type)
-            param_map = dict(zip(type_params, args))
-            resolved = substitute_type_params(origin.__value__, param_map)
-            return PackerRegistry.get(spec.copy(type=resolved))
+        elif is_type_alias_type(spec.type) or is_type_alias_type(
+            get_type_origin(spec.type)
+        ):
+            return PackerRegistry.get(
+                spec.copy(type=resolve_type_alias_type(spec.type))
+            )
         elif is_readonly(spec.type):
             return PackerRegistry.get(spec.copy(type=get_args(spec.type)[0]))
         raise UnserializableDataError(
