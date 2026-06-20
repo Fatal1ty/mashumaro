@@ -16,6 +16,8 @@ from tests.entities_pep_695 import (
     GenericPassthroughSerializable,
 )
 
+type ScalarAlias = int
+
 
 def test_type_alias_type_with_dataclass_dict_mixin():
     type MyDate = date
@@ -37,6 +39,15 @@ def test_type_alias_type_with_codecs():
     obj = date(2024, 4, 15)
     assert decoder.decode("2024-04-15") == obj
     assert encoder.encode(obj) == "2024-04-15"
+
+
+def test_type_alias_type_with_union_value_packer():
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: ScalarAlias | list[int]
+
+    assert MyClass(1).to_dict() == {"x": 1}
+    assert MyClass([1, 2]).to_dict() == {"x": [1, 2]}
 
 
 @pytest.mark.parametrize("deferred_ann", [False, True])

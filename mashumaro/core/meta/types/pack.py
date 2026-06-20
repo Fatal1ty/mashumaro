@@ -292,6 +292,12 @@ def pack_any(spec: ValueSpec) -> Expression | None:
         return spec.expression
 
 
+def _resolve_type_alias_type(t: type) -> type:
+    while is_type_alias_type(t):
+        t = t.__value__  # type: ignore[attr-defined]
+    return t
+
+
 def pack_union(
     spec: ValueSpec, args: tuple[type, ...], prefix: str = "union"
 ) -> Expression:
@@ -330,7 +336,7 @@ def pack_union(
         )
         if packer not in packers:
             if packer == "value" and not issubclass(
-                get_type_origin(type_arg), Collection
+                get_type_origin(_resolve_type_alias_type(type_arg)), Collection
             ):
                 packers.insert(0, packer)
             else:
@@ -344,6 +350,7 @@ def pack_union(
         for packer in packers:
             packer_arg_type_names = []
             for packer_arg_type in packer_arg_types[packer]:
+                packer_arg_type = _resolve_type_alias_type(packer_arg_type)
                 if is_generic(packer_arg_type):
                     packer_arg_type = get_type_origin(packer_arg_type)
                 packer_arg_type_name = clean_id(type_name(packer_arg_type))
@@ -359,7 +366,7 @@ def pack_union(
             else:
                 packer_arg_type_check = f"is {packer_arg_type_names[0]}"
             if packer == "value" and not issubclass(
-                packer_arg_type, Collection
+                _resolve_type_alias_type(packer_arg_type), Collection
             ):
                 with lines.indent(
                     f"if value.__class__ {packer_arg_type_check}:"
