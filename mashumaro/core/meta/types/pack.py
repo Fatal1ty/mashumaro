@@ -350,6 +350,7 @@ def pack_union(
         for packer in packers:
             packer_arg_type_names = []
             for packer_arg_type in packer_arg_types[packer]:
+                packer_arg_type = _resolve_type_alias_type(packer_arg_type)
                 if is_generic(packer_arg_type):
                     packer_arg_type = get_type_origin(packer_arg_type)
                 packer_arg_type_name = clean_id(type_name(packer_arg_type))
