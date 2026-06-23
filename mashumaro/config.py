@@ -51,6 +51,8 @@ class BaseConfig:
     omit_none: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     omit_default: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     orjson_options: int | None = 0
+    yamlrocks_loads_options: int | None = 0
+    yamlrocks_dumps_options: int | None = 0
     json_schema: dict[str, Any] = {}
     discriminator: Discriminator | None = None
     lazy_compilation: bool = False

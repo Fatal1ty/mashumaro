@@ -4,6 +4,7 @@ pyyaml>=3.13
 tomli-w>=1.0
 tomli>=1.1.0;python_version<'3.11'
 orjson>=3.10.10
+yamlrocks>=0.2.1
 
 # tests
 mypy>=2.0
