@@ -491,7 +491,7 @@ class CodeBuilder:
                                 kw_args.append(field_block.fname)
                             else:
                                 pos_args.append(field_block.fname)
-                with self.indent("except AttributeError:"):
+                with self.indent("except (AttributeError, TypeError):"):
                     with self.indent("if not isinstance(d, dict):"):
                         self.add_line(
                             "raise ValueError('Argument for "
@@ -1329,6 +1329,7 @@ class FieldUnpackerCodeBlockBuilder:
                 could_be_none=False if could_be_none else True,
             )
         )
+        fetched_via_subscript = False
         if self.parent.get_config().allow_deserialization_not_by_alias:
             if unpacked_value != "value":
                 self.add_line(f"value = d.get('{alias}', MISSING)")
@@ -1346,24 +1347,36 @@ class FieldUnpackerCodeBlockBuilder:
                     self.add_line(f"__{fname} = d.get('{fname}', MISSING)")
                 packed_value = f"__{fname}"
                 unpacked_value = packed_value
-        else:
+        elif not has_default:
+            # Required field: fetch via subscript. On the happy path this is
+            # noticeably faster than d.get(key, MISSING) followed by an
+            # identity check, and the field is present the vast majority of
+            # the time. A missing key raises KeyError, which we turn into a
+            # MissingField; a non-dict argument raises TypeError, which the
+            # outer guard translates into the "should be a dict" error.
+            key = alias or fname
             if unpacked_value != "value":
-                self.add_line(f"value = d.get('{alias or fname}', MISSING)")
-                packed_value = "value"
-            elif has_default:
-                self.add_line(f"value = d.get('{alias or fname}', MISSING)")
                 packed_value = "value"
             else:
-                self.add_line(
-                    f"__{fname} = d.get('{alias or fname}', MISSING)"
-                )
                 packed_value = f"__{fname}"
                 unpacked_value = packed_value
-        if not has_default:
-            with self.indent(f"if {packed_value} is MISSING:"):
+            with self.indent("try:"):
+                self.add_line(f"{packed_value} = d['{key}']")
+            with self.indent("except KeyError:"):
                 self.add_line(
                     f"raise MissingField('{fname}',{field_type},cls) from None"
                 )
+            fetched_via_subscript = True
+        else:
+            self.add_line(f"value = d.get('{alias or fname}', MISSING)")
+            packed_value = "value"
+        if not has_default:
+            if not fetched_via_subscript:
+                with self.indent(f"if {packed_value} is MISSING:"):
+                    self.add_line(
+                        f"raise MissingField('{fname}',{field_type},cls)"
+                        " from None"
+                    )
             if packed_value != unpacked_value:
                 if could_be_none:
                     with self.indent(f"if {packed_value} is not None:"):
