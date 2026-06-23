@@ -193,6 +193,40 @@ def test_deserialize_dataclass_from_wrong_value_type():
     )
 
 
+def test_deserialize_dataclass_from_subscriptable_non_dict():
+    # Required fields are fetched with d['key'], so a non-dict argument that
+    # happens to be subscriptable (raising TypeError instead of AttributeError)
+    # must still report the "should be a dict" error.
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: str
+
+    for wrong in ([1, 2, 3], "not a dict"):
+        with pytest.raises(ValueError) as exc_info:
+            MyClass.from_dict(wrong)
+        assert str(exc_info.value) == (
+            f"Argument for {type_name(MyClass)}."
+            f"__mashumaro_from_dict__ method should be a dict instance"
+        )
+
+
+def test_deserialize_required_field_from_dict_subclass():
+    # The subscript fetch for required fields must keep working for dict
+    # subclasses, and a missing key must still raise MissingField.
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: str
+
+    class MyDict(dict):
+        pass
+
+    assert MyClass.from_dict(MyDict(x="foo")) == MyClass(x="foo")
+
+    with pytest.raises(MissingField) as exc_info:
+        MyClass.from_dict(MyDict())
+    assert exc_info.value.field_name == "x"
+
+
 def test_extra_keys_error():
     @dataclass
     class MyClass(DataClassDictMixin):
