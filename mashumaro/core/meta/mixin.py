@@ -34,11 +34,13 @@ def compile_mixin_unpacker(
     format_name: str = "dict",
     dialect: Type[Dialect] | None = None,
     decoder: Any = None,
+    decoder_kwargs: dict[str, dict[str, tuple[str, Any]]] | None = None,
 ) -> None:
     builder = CodeBuilder(
         cls=cls,
         format_name=format_name,
         decoder=decoder,
+        decoder_kwargs=decoder_kwargs,
         default_dialect=dialect,
     )
     config = builder.get_config()

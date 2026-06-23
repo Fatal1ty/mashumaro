@@ -116,6 +116,7 @@ class CodeBuilder:
         allow_postponed_evaluation: bool = True,
         format_name: str = "dict",
         decoder: typing.Any | None = None,
+        decoder_kwargs: dict[str, typing.Any] | None = None,
         encoder: typing.Any | None = None,
         encoder_kwargs: dict[str, typing.Any] | None = None,
         default_dialect: typing.Type[Dialect] | None = None,
@@ -140,6 +141,7 @@ class CodeBuilder:
         self.allow_postponed_evaluation = allow_postponed_evaluation
         self.format_name = format_name
         self.decoder = decoder
+        self.decoder_kwargs = decoder_kwargs or {}
         self.encoder = encoder
         self.encoder_kwargs = encoder_kwargs or {}
 
@@ -338,6 +340,7 @@ class CodeBuilder:
             f"allow_postponed_evaluation=False,"
             f"format_name='{self.format_name}',"
             f"decoder={type_name(self.decoder)},"
+            f"decoder_kwargs={self._get_decoder_kwargs()},"
             f"default_dialect={type_name(self.default_dialect)}"
             f").add_unpack_method()"
         )
@@ -365,7 +368,7 @@ class CodeBuilder:
             self._add_unpack_method_lines_lazy(method_name)
         else:
             if self.decoder is not None:
-                self.add_line("d = decoder(d)")
+                self.add_line(self._decoder_call_line())
             discr = self.get_discriminator()
             if discr:
                 if not discr.include_subtypes:
@@ -513,9 +516,17 @@ class CodeBuilder:
             else:
                 self.add_line(f"return {cls_inst}")
 
+    def _decoder_call_line(self) -> str:
+        if self.decoder_kwargs:
+            decoder_options = ", ".join(
+                f"{k}={v[0]}" for k, v in self.decoder_kwargs.items()
+            )
+            return f"d = decoder(d, {decoder_options})"
+        return "d = decoder(d)"
+
     def _add_unpack_method_with_dialect_lines(self, method_name: str) -> None:
         if self.decoder is not None:
-            self.add_line("d = decoder(d)")
+            self.add_line(self._decoder_call_line())
         unpacker_args = ", ".join(
             filter(None, ("cls", "d", self.get_unpack_method_flags()))
         )
@@ -639,6 +650,8 @@ class CodeBuilder:
         pluggable_flags = []
         if pass_decoder and self.decoder is not None:
             pluggable_flags.append("decoder=decoder")
+            for value in self._get_decoder_kwargs(cls).values():
+                pluggable_flags.append(f"{value[0]}={value[0]}")
         for option, flag in ((ADD_DIALECT_SUPPORT, "dialect"),):
             if self.is_code_generation_option_enabled(option, cls):
                 if self.is_code_generation_option_enabled(option):
@@ -716,6 +729,9 @@ class CodeBuilder:
         if pass_decoder and self.decoder is not None:
             pos_param_names.append("decoder")
             pos_param_values.append(type_name(self.decoder))
+            for value in self._get_decoder_kwargs().values():
+                kw_param_names.append(value[0])
+                kw_param_values.append(value[1])
 
         kw_param_names.append("dialect")
         kw_param_values.append("None")
@@ -1072,6 +1088,20 @@ class CodeBuilder:
             if isinstance(packer_value, ConfigValue):
                 packer_value = getattr(self.get_config(cls), packer_value.name)
             result[encoder_param] = (packer_param, packer_value)
+        return result
+
+    def _get_decoder_kwargs(
+        self, cls: typing.Type | None = None
+    ) -> dict[str, typing.Any]:
+        result = {}
+        for decoder_param, value in self.decoder_kwargs.items():
+            unpacker_param = value[0]
+            unpacker_value = value[1]
+            if isinstance(unpacker_value, ConfigValue):
+                unpacker_value = getattr(
+                    self.get_config(cls), unpacker_value.name
+                )
+            result[decoder_param] = (unpacker_param, unpacker_value)
         return result
 
     def _add_pack_method_definition(self, method_name: str) -> None:

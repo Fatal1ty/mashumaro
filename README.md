@@ -41,6 +41,8 @@ Table of contents
         * [json library](#json-library)
         * [orjson library](#orjson-library)
     * [YAML](#yaml)
+        * [pyyaml library](#pyyaml-library)
+        * [YAMLRocks library](#yamlrocks-library)
     * [TOML](#toml)
     * [MessagePack](#messagepack)
 * [Customization](#customization)
@@ -68,6 +70,7 @@ Table of contents
         * [`allow_postponed_evaluation` config option](#allow_postponed_evaluation-config-option)
         * [`dialect` config option](#dialect-config-option)
         * [`orjson_options` config option](#orjson_options-config-option)
+        * [`yamlrocks_loads_options` and `yamlrocks_dumps_options` config options](#yamlrocks_loads_options-and-yamlrocks_dumps_options-config-options)
         * [`discriminator` config option](#discriminator-config-option)
         * [`lazy_compilation` config option](#lazy_compilation-config-option)
         * [`sort_keys` config option](#sort_keys-config-option)
@@ -608,9 +611,14 @@ MyModel(...).to_jsonb()
 ### YAML
 
 [YAML](https://yaml.org) is a human-friendly data serialization language for
-all programming languages. In order to use this format, the
-[`pyyaml`](https://pypi.org/project/PyYAML/) package must be installed.
-You can install it manually or using an extra option for `mashumaro`:
+all programming languages. mashumaro can produce and consume YAML through
+either the [`pyyaml`](https://pypi.org/project/PyYAML/) library or the
+faster, Rust-backed [YAMLRocks](https://yaml.rocks/) library.
+
+#### pyyaml library
+
+In order to use the [`pyyaml`](https://pypi.org/project/PyYAML/) package, it
+must be installed manually or using an extra option for `mashumaro`:
 
 ```shell
 pip install mashumaro[yaml]
@@ -653,6 +661,98 @@ class MyModel(DataClassYAMLMixin):
 
 MyModel.from_yaml(...)
 MyModel(...).to_yaml()
+```
+
+#### YAMLRocks library
+
+[YAMLRocks](https://yaml.rocks/) is a Rust-backed YAML 1.2 library that is
+faster than `pyyaml`. In order to use it, it must be installed manually or
+using an extra option for `mashumaro`:
+
+```shell
+pip install mashumaro[yamlrocks]
+```
+
+The following data types will be handled by
+[YAMLRocks](https://yaml.rocks/) by default:
+* [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime)
+* [`date`](https://docs.python.org/3/library/datetime.html#datetime.date)
+* [`time`](https://docs.python.org/3/library/datetime.html#datetime.time)
+* [`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)
+
+YAMLRocks encodes to `bytes`. As with `DataClassORJSONMixin`, `to_yaml`
+returns a decoded `str` (so it stays a drop-in for `DataClassYAMLMixin`),
+while `to_yamlb` returns the raw `bytes`. `from_yaml` accepts both `str`
+and `bytes`.
+
+Efficient decoder and encoder can be used as follows:
+```python
+from mashumaro.codecs.yamlrocks import YAMLRocksDecoder, YAMLRocksEncoder
+
+decoder = YAMLRocksDecoder(<shape_type>, ...)
+decoder.decode(...)
+
+encoder = YAMLRocksEncoder(<shape_type>, ...)
+encoder.encode(...)
+```
+
+Convenient functions can be used as follows:
+```python
+from mashumaro.codecs.yamlrocks import yaml_decode, yaml_encode
+
+yaml_decode(..., <shape_type>)
+yaml_encode(..., <shape_type>)
+```
+
+Convenient function aliases are recommended to be used as follows:
+```python
+import mashumaro.codecs.yamlrocks as yaml_codec
+
+yaml_codec.decode(...<shape_type>)
+yaml_codec.encode(..., <shape_type>)
+```
+
+Mixin can be used as follows:
+```python
+from mashumaro.mixins.yamlrocks import DataClassYAMLRocksMixin
+
+@dataclass
+class MyModel(DataClassYAMLRocksMixin):
+    ...
+
+MyModel.from_yaml(...)
+MyModel(...).to_yaml()   # str
+MyModel(...).to_yamlb()  # bytes
+```
+
+YAMLRocks parses YAML 1.2 by default, where scalars such as `yes`, `no`,
+`on` and `off` stay strings. If you need YAML 1.1 semantics (for example to
+read documents written for `pyyaml`), set the
+[`yamlrocks_loads_options`](#yamlrocks_loads_options-and-yamlrocks_dumps_options-config-options)
+config option. The full list of options is documented in the
+[YAMLRocks options reference](https://yaml.rocks/reference/options/):
+
+```python
+import yamlrocks
+from mashumaro.config import BaseConfig
+
+@dataclass
+class MyModel(DataClassYAMLRocksMixin):
+    class Config(BaseConfig):
+        yamlrocks_loads_options = yamlrocks.OPT_YAML_1_1
+```
+
+With the codec, pass `pre_decoder_func` for decoding and `post_encoder_func`
+for encoding instead:
+
+```python
+import yamlrocks
+from mashumaro.codecs.yamlrocks import YAMLRocksDecoder
+
+decoder = YAMLRocksDecoder(
+    <shape_type>,
+    pre_decoder_func=lambda d: yamlrocks.loads(d, option=yamlrocks.OPT_YAML_1_1),
+)
 ```
 
 ### TOML
@@ -1706,6 +1806,36 @@ class MyClass(DataClassORJSONMixin):
 assert MyClass({1: 2}).to_json() == {"1": 2}
 ```
 
+#### `yamlrocks_loads_options` and `yamlrocks_dumps_options` config options
+
+These options change the default options passed to the `yamlrocks.loads`
+decoder and the `yamlrocks.dumps` encoder used in
+[`DataClassYAMLRocksMixin`](#yamlrocks-library). `yamlrocks_loads_options`
+applies on `from_yaml` (for example to parse YAML 1.1), and
+`yamlrocks_dumps_options` applies on `to_yaml`/`to_yamlb` (for example to sort
+mapping keys). The full list of options is documented in the
+[YAMLRocks options reference](https://yaml.rocks/reference/options/).
+
+```python
+import yamlrocks
+from dataclasses import dataclass
+from mashumaro.config import BaseConfig
+from mashumaro.mixins.yamlrocks import DataClassYAMLRocksMixin
+
+@dataclass
+class MyClass(DataClassYAMLRocksMixin):
+    b: str
+    a: str
+
+    class Config(BaseConfig):
+        yamlrocks_loads_options = yamlrocks.OPT_YAML_1_1
+        yamlrocks_dumps_options = yamlrocks.OPT_SORT_KEYS
+
+# loads parses YAML 1.1 (yes -> True), dumps sorts keys
+assert MyClass.from_yaml("b: yes\na: no") == MyClass("True", "False")
+assert MyClass("x", "y").to_yaml() == "a: y\nb: x\n"
+```
+
 #### `discriminator` config option
 
 This option is described in the
@@ -2103,6 +2233,7 @@ assert data["simple_set"] is obj.simple_set
 This option is enabled for `list` and `dict` in the default dialects that
 belong to mixins and codecs for the following formats:
 * [JSON (orjson library)](#orjson-library)
+* [YAML (YAMLRocks library)](#yamlrocks-library)
 * [TOML](#toml)
 * [MessagePack](#messagepack)
 

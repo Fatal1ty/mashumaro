@@ -33,6 +33,7 @@ Repository = "https://github.com/Fatal1ty/mashumaro"
 orjson = ["orjson"]
 msgpack = ["msgpack>=0.5.6"]
 yaml = ["pyyaml>=3.13"]
+yamlrocks = ["yamlrocks"]
 toml = [
     "tomli-w>=1.0",
     "tomli>=1.1.0;python_version<'3.11'",
@@ -57,6 +58,7 @@ module = [
     'mashumaro.mixins.dict',
     'mashumaro.mixins.msgpack',
     'mashumaro.mixins.toml',
+    'mashumaro.mixins.yamlrocks',
     'mashumaro.codecs.*',
 ]
 disable_error_code = 'empty-body'
