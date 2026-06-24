@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any, Literal, Type, TypedDict
 
 from mashumaro.core.const import Sentinel
@@ -43,7 +43,7 @@ class BaseConfig:
     debug: bool = False
     code_generation_options: list[CodeGenerationOption] = []
     serialization_strategy: dict[Any, SerializationStrategyValueType] = {}
-    aliases: dict[str, str] = {}
+    aliases: dict[str, str | Sequence[str]] = {}
     serialize_by_alias: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     namedtuple_as_dict: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     allow_postponed_evaluation: bool = True

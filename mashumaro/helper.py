@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any, TypeVar
 
 from typing_extensions import Literal
@@ -28,7 +28,7 @@ def field_options(
     serialize: AnySerializationEngine | Callable[[Any], Any] | None = None,
     deserialize: AnyDeserializationEngine | Callable[[Any], Any] | None = None,
     serialization_strategy: SerializationStrategy | None = None,
-    alias: str | None = None,
+    alias: str | Sequence[str] | None = None,
     **kwargs: Any,
 ) -> dict[str, Any]:
     return {

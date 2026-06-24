@@ -432,12 +432,16 @@ class CodeBuilder:
                     kw_only_fields.add(fname)
 
                 metadata = self.metadatas.get(fname, {})
-                alias = self.__get_field_alias(fname, ftype, metadata, config)
+                aliases = self.__get_field_aliases(
+                    fname, ftype, metadata, config
+                )
 
-                filtered_fields.append((fname, alias, ftype))
+                filtered_fields.append((fname, aliases, ftype))
             if filtered_fields:
                 if config.forbid_extra_keys:
-                    allowed_keys = {f[1] or f[0] for f in filtered_fields}
+                    allowed_keys = set()
+                    for f in filtered_fields:
+                        allowed_keys |= set(f[1]) if f[1] else {f[0]}
 
                     # If a discriminator with a field is set via config,
                     # we should allow this field to be present in the input
@@ -462,7 +466,7 @@ class CodeBuilder:
                         )
 
                 with self.indent("try:"):
-                    for fname, alias, ftype in filtered_fields:
+                    for fname, aliases, ftype in filtered_fields:
                         self.add_type_modules(ftype)
                         metadata = self.metadatas.get(fname, {})
                         field_block = FieldUnpackerCodeBlockBuilder(
@@ -471,7 +475,7 @@ class CodeBuilder:
                             fname=fname,
                             ftype=ftype,
                             metadata=metadata,
-                            alias=alias,
+                            aliases=aliases,
                         )
                         if field_block.in_kwargs:
                             add_kwargs = True
@@ -1137,7 +1141,9 @@ class CodeBuilder:
         force_value: bool = False,
     ) -> typing.Tuple[str, str | None, bool]:
         metadata = self.metadatas.get(fname, {})
-        alias = self.__get_field_alias(fname, ftype, metadata, config)
+        aliases = self.__get_field_aliases(fname, ftype, metadata, config)
+        # Serialization writes to the first (primary) alias.
+        alias = aliases[0] if aliases else None
         could_be_none = (
             ftype in (typing.Any, type(None), None)
             or is_type_var_any(self.get_real_type(fname, ftype))
@@ -1160,21 +1166,28 @@ class CodeBuilder:
         return packer, alias, could_be_none
 
     @staticmethod
-    def __get_field_alias(
+    def __get_field_aliases(
         fname: str,
         ftype: typing.Type,
         metadata: typing.Mapping[str, typing.Any],
         config: typing.Type[BaseConfig],
-    ) -> str | None:
+    ) -> tuple[str, ...]:
         alias = metadata.get("alias")
         if alias is None and is_annotated(ftype):
-            annotations = get_type_annotations(ftype)
-            for ann in annotations:
-                if isinstance(ann, Alias):
-                    alias = ann.name
+            names = [
+                ann.name
+                for ann in get_type_annotations(ftype)
+                if isinstance(ann, Alias)
+            ]
+            if names:
+                alias = names
         if alias is None:
             alias = config.aliases.get(fname)
-        return alias
+        if alias is None:
+            return ()
+        if isinstance(alias, str):
+            return (alias,)
+        return tuple(alias)
 
     @typing.no_type_check
     def iter_serialization_strategies(
@@ -1302,7 +1315,7 @@ class FieldUnpackerCodeBlockBuilder:
         ftype: typing.Type,
         metadata: typing.Mapping,
         *,
-        alias: str | None = None,
+        aliases: tuple[str, ...] = (),
     ) -> FieldUnpackerCodeBlock:
         default = self.parent.get_field_default(fname)
         has_default = default is not MISSING
@@ -1329,36 +1342,26 @@ class FieldUnpackerCodeBlockBuilder:
                 could_be_none=False if could_be_none else True,
             )
         )
-        if self.parent.get_config().allow_deserialization_not_by_alias:
-            if unpacked_value != "value":
-                self.add_line(f"value = d.get('{alias}', MISSING)")
-                with self.indent("if value is MISSING:"):
-                    self.add_line(f"value = d.get('{fname}', MISSING)")
-                packed_value = "value"
-            elif has_default:
-                self.add_line(f"value = d.get('{alias}', MISSING)")
-                with self.indent("if value is MISSING:"):
-                    self.add_line(f"value = d.get('{fname}', MISSING)")
-                packed_value = "value"
-            else:
-                self.add_line(f"__{fname} = d.get('{alias}', MISSING)")
-                with self.indent(f"if __{fname} is MISSING:"):
-                    self.add_line(f"__{fname} = d.get('{fname}', MISSING)")
-                packed_value = f"__{fname}"
-                unpacked_value = packed_value
+        # Keys to try, in order: each alias, then the field name itself when
+        # there are no aliases or deserialization not by alias is allowed.
+        if aliases:
+            keys = list(aliases)
+            if self.parent.get_config().allow_deserialization_not_by_alias:
+                keys.append(fname)
         else:
-            if unpacked_value != "value":
-                self.add_line(f"value = d.get('{alias or fname}', MISSING)")
-                packed_value = "value"
-            elif has_default:
-                self.add_line(f"value = d.get('{alias or fname}', MISSING)")
-                packed_value = "value"
-            else:
-                self.add_line(
-                    f"__{fname} = d.get('{alias or fname}', MISSING)"
-                )
-                packed_value = f"__{fname}"
-                unpacked_value = packed_value
+            keys = [fname]
+        # Drop duplicates (for example the field name repeated as an alias)
+        # while preserving order, so we never emit a redundant lookup.
+        keys = list(dict.fromkeys(keys))
+        if unpacked_value != "value" or has_default:
+            packed_value = "value"
+        else:
+            packed_value = f"__{fname}"
+            unpacked_value = packed_value
+        self.add_line(f"{packed_value} = d.get('{keys[0]}', MISSING)")
+        for key in keys[1:]:
+            with self.indent(f"if {packed_value} is MISSING:"):
+                self.add_line(f"{packed_value} = d.get('{key}', MISSING)")
         if not has_default:
             with self.indent(f"if {packed_value} is MISSING:"):
                 self.add_line(
