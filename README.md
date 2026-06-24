@@ -1304,6 +1304,16 @@ class DataClass(DataClassDictMixin):
 x = DataClass.from_dict({"FieldA": 1, "#invalid": 2})  # DataClass(a=1, b=2)
 ```
 
+A sequence of names assigns [multiple aliases](#field-aliases) to a field. They
+are tried in order on deserialization, and the first one is used on
+serialization:
+
+```python
+@dataclass
+class DataClass(DataClassDictMixin):
+    a: int = field(metadata=field_options(alias=["FieldA", "field_a"]))
+```
+
 ### Config options
 
 If inheritance is not an empty word for you, you'll fall in love with the
@@ -1461,6 +1471,17 @@ class DataClass(DataClassDictMixin):
         }
 
 DataClass.from_dict({"FieldA": 1, "FieldB": 2})  # DataClass(a=1, b=2)
+```
+
+A value may be a sequence of names to assign [multiple aliases](#field-aliases)
+to a field, tried in order on deserialization:
+
+```python
+class Config(BaseConfig):
+    aliases = {
+        "a": ["FieldA", "field_a"],
+        "b": "FieldB",
+    }
 ```
 
 #### `serialize_by_alias` config option
@@ -1968,6 +1989,32 @@ class DataClass:
 > If you want to deserialize all the fields by its names along with aliases,
 > there is [a config option](#allow_deserialization_not_by_alias-config-option)
 > for that.
+
+A field may also have more than one alias. Pass a sequence of names instead of
+a single string, or use several `Alias(...)` annotations. On deserialization
+the aliases are tried in order; the first one present in the input is used.
+Serialization uses the first (primary) alias.
+
+```python
+from dataclasses import dataclass, field
+from typing import Annotated
+from mashumaro import DataClassDictMixin, field_options
+from mashumaro.config import BaseConfig
+from mashumaro.types import Alias
+
+@dataclass
+class DataClass(DataClassDictMixin):
+    # any of these three forms accepts multiple aliases
+    a: Annotated[int, Alias("id"), Alias("ID")]
+    b: int = field(metadata=field_options(alias=["b", "bee"]))
+    c: int = 0
+
+    class Config(BaseConfig):
+        aliases = {"c": ["c", "cee"]}
+
+DataClass.from_dict({"id": 1, "b": 2, "cee": 3})  # DataClass(a=1, b=2, c=3)
+DataClass.from_dict({"ID": 1, "bee": 2})  # DataClass(a=1, b=2, c=0)
+```
 
 ### Dialects
 

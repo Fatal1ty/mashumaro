@@ -12,7 +12,7 @@ from mashumaro.config import (
     TO_DICT_ADD_OMIT_NONE_FLAG,
     BaseConfig,
 )
-from mashumaro.exceptions import MissingField
+from mashumaro.exceptions import ExtraKeysError, MissingField
 from mashumaro.types import Alias
 
 
@@ -356,3 +356,111 @@ def test_order_of_metadata_and_annotated():
     instance = DataClass(42)
     assert DataClass.from_dict({"bar": 42}) == instance
     assert instance.to_dict() == {"bar": 42}
+
+
+def test_multiple_aliases_field_option():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(metadata={"alias": ["id", "product_id"]})
+
+    assert DataClass.from_dict({"id": 1}) == DataClass(1)
+    assert DataClass.from_dict({"product_id": 2}) == DataClass(2)
+    # the field name is not an accepted key unless explicitly allowed
+    with pytest.raises(MissingField):
+        DataClass.from_dict({"x": 3})
+
+
+def test_multiple_aliases_config_option():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int
+
+        class Config(BaseConfig):
+            aliases = {"x": ["id", "product_id"]}
+
+    assert DataClass.from_dict({"id": 1}) == DataClass(1)
+    assert DataClass.from_dict({"product_id": 2}) == DataClass(2)
+
+
+def test_multiple_aliases_annotated():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Annotated[int, Alias("id"), Alias("product_id")]
+
+    assert DataClass.from_dict({"id": 1}) == DataClass(1)
+    assert DataClass.from_dict({"product_id": 2}) == DataClass(2)
+
+
+def test_multiple_aliases_missing():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(metadata={"alias": ["id", "product_id"]})
+
+    with pytest.raises(MissingField):
+        DataClass.from_dict({"other": 1})
+
+
+def test_multiple_aliases_with_default():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(default=99, metadata={"alias": ["id", "product_id"]})
+
+    assert DataClass.from_dict({"product_id": 2}) == DataClass(2)
+    assert DataClass.from_dict({}) == DataClass(99)
+
+
+def test_multiple_aliases_serialize_uses_first():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(metadata={"alias": ["id", "product_id"]})
+
+        class Config(BaseConfig):
+            code_generation_options = [TO_DICT_ADD_BY_ALIAS_FLAG]
+
+    # serialization writes to the first (primary) alias
+    assert DataClass(5).to_dict(by_alias=True) == {"id": 5}
+    assert DataClass(5).to_dict() == {"x": 5}
+
+
+def test_multiple_aliases_allow_deserialization_not_by_alias():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(metadata={"alias": ["id", "product_id"]})
+
+        class Config(BaseConfig):
+            allow_deserialization_not_by_alias = True
+
+    assert DataClass.from_dict({"id": 1}) == DataClass(1)
+    assert DataClass.from_dict({"product_id": 2}) == DataClass(2)
+    # the field name is accepted as a fallback
+    assert DataClass.from_dict({"x": 3}) == DataClass(3)
+
+
+def test_multiple_aliases_forbid_extra_keys():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(metadata={"alias": ["id", "product_id"]})
+
+        class Config(BaseConfig):
+            forbid_extra_keys = True
+
+    # every alias is an allowed key
+    assert DataClass.from_dict({"id": 1}) == DataClass(1)
+    assert DataClass.from_dict({"product_id": 2}) == DataClass(2)
+    with pytest.raises(ExtraKeysError):
+        DataClass.from_dict({"id": 1, "unexpected": 2})
+
+
+def test_multiple_aliases_field_name_listed_as_alias():
+    # The field name itself may appear among the aliases; combined with
+    # allow_deserialization_not_by_alias it must not matter how often a key
+    # repeats, and decoding by any of them works.
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(metadata={"alias": ["x", "id"]})
+
+        class Config(BaseConfig):
+            allow_deserialization_not_by_alias = True
+
+    assert DataClass.from_dict({"x": 1}) == DataClass(1)
+    assert DataClass.from_dict({"id": 2}) == DataClass(2)

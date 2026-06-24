@@ -139,6 +139,10 @@ class Instance:
         if alias is None:
             aliases_config = self.get_owner_config().aliases
             alias = aliases_config.get(self.name)  # type: ignore
+        # A field may declare several aliases; the schema uses the first
+        # (primary) one, matching what serialization writes.
+        if alias is not None and not isinstance(alias, str):
+            alias = alias[0]
         if alias is None:
             alias = self.name
         return alias
