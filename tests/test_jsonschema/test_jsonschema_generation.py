@@ -142,6 +142,20 @@ class DataClassWithThirdPartyType:
         }
 
 
+def test_jsonschema_uses_first_of_multiple_aliases():
+    @dataclass
+    class MyClass:
+        a: int = field(metadata={"alias": ["aa", "aaa"]})
+        b: int = 0
+
+        class Config:
+            aliases = {"b": ["bb", "bbb"]}
+
+    schema = build_json_schema(MyClass)
+    assert set(schema.properties) == {"aa", "bb"}
+    assert schema.required == ["aa"]
+
+
 def test_jsonschema_for_dataclass():
     @dataclass
     class MyClass:
