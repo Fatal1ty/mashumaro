@@ -284,9 +284,12 @@ def type_name(
             return typ.__name__
         return f"{typ.__module__}.{typ.__name__}"
     if is_type_var_tuple(typ):
-        if short:
+        if type(typ).__module__ == "typing":
+            # Python 3.15+ prefixes TypeVarTuple's repr with a variance
+            # marker (e.g. "~Ts") like TypeVar; strip it to keep the
+            # pre-3.15 bare name.
             return typ.__name__
-        return f"{typ.__module__}.{typ.__name__}"
+        return str(typ)
     try:
         if short:
             return typ.__qualname__  # type: ignore
