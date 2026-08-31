@@ -283,6 +283,10 @@ def type_name(
         if short:
             return typ.__name__
         return f"{typ.__module__}.{typ.__name__}"
+    if is_type_var_tuple(typ):
+        if short:
+            return typ.__name__
+        return f"{typ.__module__}.{typ.__name__}"
     try:
         if short:
             return typ.__qualname__  # type: ignore
