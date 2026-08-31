@@ -14,7 +14,7 @@ pytest-cov>=2.10.1
 pytest-xdist>=3.5.0
 coveralls>=3.0.0
 black==26.3.1
-ruff>=0.0.285
+ruff>=0.0.285,<0.16
 codespell>=2.2.2
 
 # third party features
@@ -26,7 +26,7 @@ pyperf>=2.6.1
 termtables>=0.2.3
 pytablewriter[html]>=0.58.0
 cattrs==24.1.2
-pydantic==2.12.0
+pydantic==2.14.0b1
 dacite==1.7.0  # see https://github.com/konradhalas/dacite/issues/236#issuecomment-1613987368
 marshmallow>=3.19.0
 dataclasses-json==0.6.7
