@@ -162,6 +162,15 @@ def test_is_type_var_any():
     assert not is_type_var_any(TMyDataClass)
 
 
+def test_type_name_with_constraints_and_default():
+    TConstrainedDefault = typing_extensions.TypeVar(
+        "TConstrainedDefault", str, int, default=int
+    )
+
+    assert type_name(TConstrainedDefault) == "int"
+    assert type_name(TConstrainedDefault, short=True) == "int"
+
+
 def test_type_name():
     assert type_name(TAny) == "typing.Any"
     assert type_name(TInt) == "int"

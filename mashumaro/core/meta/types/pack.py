@@ -487,14 +487,16 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
         elif is_type_var_any(spec.type):
             return spec.expression
         elif is_type_var(spec.type):
+            if type_var_has_default(spec.type):
+                pv = PackerRegistry.get(
+                    spec.copy(type=get_type_var_default(spec.type))
+                )
+                return expr_or_maybe_none(spec, pv)
             constraints = getattr(spec.type, "__constraints__")
             if constraints:
                 return pack_union(spec, constraints, "type_var")
             else:
-                if type_var_has_default(spec.type):
-                    bound = get_type_var_default(spec.type)
-                else:
-                    bound = getattr(spec.type, "__bound__")
+                bound = getattr(spec.type, "__bound__")
                 # act as if it was Optional[bound]
                 pv = PackerRegistry.get(spec.copy(type=bound))
                 return expr_or_maybe_none(spec, pv)
