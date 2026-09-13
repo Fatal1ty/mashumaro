@@ -723,6 +723,48 @@ def test_by_supertypes_and_subtypes():
         )
 
 
+def test_subtype_priority_after_supertype_unpacker_generated():
+    @dataclass
+    class Parent:
+        x: int
+
+    @dataclass
+    class Child(Parent):
+        y: int
+
+    @dataclass
+    class Other:
+        z: int
+
+    @dataclass
+    class BySupertypes(DataClassDictMixin):
+        value: Annotated[
+            Union[Parent, Other], Discriminator(include_supertypes=True)
+        ]
+
+    @dataclass
+    class BySupertypesAndSubtypes(DataClassDictMixin):
+        value: Annotated[
+            Union[Parent, Other],
+            Discriminator(include_supertypes=True, include_subtypes=True),
+        ]
+
+    value = {"x": 1, "y": 2}
+
+    assert BySupertypes.from_dict({"value": value}).value == Parent(x=1)
+    assert BySupertypesAndSubtypes.from_dict({"value": value}).value == Child(
+        x=1, y=2
+    )
+
+    @dataclass
+    class LaterChild(Parent):
+        z: int
+
+    assert BySupertypesAndSubtypes.from_dict(
+        {"value": {"x": 1, "z": 3}}
+    ).value == LaterChild(x=1, z=3)
+
+
 def test_tuple_with_discriminated_elements():
     decoder = BasicDecoder(_ByFieldAndByFieldWithSubtypesInOneField)
 

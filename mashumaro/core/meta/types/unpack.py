@@ -306,6 +306,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         self.discriminator = discriminator
         self.base_variants = base_variants or tuple()
         self._variants_attr: str | None = None
+        self._unpackers_attr: str | None = None
 
     def get_method_prefix(self) -> str:
         return ""
@@ -327,6 +328,19 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             return f"{typ_name}.{variants_attr}"
         else:
             return f"{spec.cls_attrs_name}.{variants_attr}"
+
+    def _get_unpackers_attr(self, spec: ValueSpec) -> str:
+        if self._unpackers_attr is None:
+            self._unpackers_attr = (
+                f"__mashumaro_{spec.field_ctx.name}_unpackers_"
+                f"{random_hex()}__"
+            )
+        return self._unpackers_attr
+
+    def _get_unpackers_map(self, spec: ValueSpec) -> str:
+        unpackers_attr = self._get_unpackers_attr(spec)
+        typ_name = spec.builder.get_type_name_identifier(spec.builder.cls)
+        return f"{typ_name}.{unpackers_attr}"
 
     def _get_variant_names(self, spec: ValueSpec) -> list[str]:
         base_variants = self.base_variants or (spec.origin_type,)
@@ -373,15 +387,21 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         variants_attr_holder = self._get_variants_attr_holder(spec)
         variants = self._get_variant_names_iterable(spec)
         variants_type_expr = spec.builder.get_type_name_identifier(spec.type)
-
-        if variants_attr not in variants_attr_holder.__dict__:
-            setattr(variants_attr_holder, variants_attr, {})
         variant_method_name = spec.builder.get_unpack_method_name(
             format_name=spec.builder.format_name
         )
+
+        if variants_attr not in variants_attr_holder.__dict__:
+            setattr(variants_attr_holder, variants_attr, {})
         variant_method_call = self._get_variant_method_call(
             variant_method_name, spec
         )
+        if not discriminator.field and spec.builder.is_nailed:
+            unpackers_attr = self._get_unpackers_attr(spec)
+            if unpackers_attr not in variants_attr_holder.__dict__:
+                setattr(variants_attr_holder, unpackers_attr, {})
+            lines.append(f"unpackers = {self._get_unpackers_map(spec)}")
+            unpacker_call = self._get_variant_method_call("unpacker", spec)
         if discriminator.variant_tagger_fn:
             spec.builder.ensure_object_imported(
                 discriminator.variant_tagger_fn, "variant_tagger_fn"
@@ -454,23 +474,34 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                     )
         else:
             with lines.indent(f"for variant in {variants}:"):
-                with lines.indent("try:"):
-                    if spec.builder.is_nailed:
-                        lines.append(f"return variant.{variant_method_call}")
-                    else:
+                if spec.builder.is_nailed:
+                    with lines.indent("try:"):
+                        lines.append("unpacker = unpackers[variant]")
+                    with lines.indent("except KeyError:"):
+                        self._add_build_nailed_variant_unpacker(
+                            spec, lines, variant_method_name
+                        )
+                        lines.append(
+                            f"unpacker = variant.{variant_method_name}"
+                        )
+                        lines.append("unpackers[variant] = unpacker")
+                    with lines.indent("try:"):
+                        lines.append(f"return {unpacker_call}")
+                    lines.append("except Exception: pass")
+                else:
+                    with lines.indent("try:"):
                         lines.append(
                             f"return {spec.attrs_registry_name}"
                             f"[variant].{variant_method_call}"
                         )
-                if spec.builder.is_nailed:
-                    exc_to_catch = "AttributeError"
-                else:
-                    exc_to_catch = "(KeyError, AttributeError)"
-                with lines.indent(f"except {exc_to_catch}:"):
-                    self._add_build_variant_unpacker(
-                        spec, lines, variant_method_name, variant_method_call
-                    )
-                lines.append("except Exception: pass")
+                    with lines.indent("except (KeyError, AttributeError):"):
+                        self._add_build_variant_unpacker(
+                            spec,
+                            lines,
+                            variant_method_name,
+                            variant_method_call,
+                        )
+                    lines.append("except Exception: pass")
             lines.append(
                 f"raise SuitableVariantNotFoundError({variants_type_expr}) "
                 "from None"
@@ -498,24 +529,9 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         variant_method_call: str,
     ) -> None:
         if spec.builder.is_nailed:
-            spec.builder.ensure_object_imported(get_class_that_defines_method)
-            lines.append(
-                "if get_class_that_defines_method("
-                f"'{variant_method_name}',variant) != variant:"
+            self._add_build_nailed_variant_unpacker(
+                spec, lines, variant_method_name
             )
-            with lines.indent():
-                spec.builder.ensure_object_imported(spec.builder.__class__)
-                lines.append(
-                    "CodeBuilder(variant, "
-                    "dialect=_dialect, "
-                    f"format_name={repr(spec.builder.format_name)}, "
-                    "default_dialect=_default_dialect)"
-                    ".add_unpack_method()"
-                )
-                if not self.discriminator.field:
-                    with lines.indent("try:"):
-                        lines.append(f"return variant.{variant_method_call}")
-                    lines.append("except Exception: pass")
         else:
             spec.builder.ensure_object_imported(AttrsHolder)
             attrs = f"attrs_{random_hex()}"
@@ -534,6 +550,21 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                 with lines.indent("try:"):
                     lines.append(f"return {attrs}.{variant_method_call}")
                 lines.append("except Exception: pass")
+
+    @staticmethod
+    def _add_build_nailed_variant_unpacker(
+        spec: ValueSpec, lines: CodeLines, variant_method_name: str
+    ) -> None:
+        lines.append(f"if '{variant_method_name}' not in variant.__dict__:")
+        with lines.indent():
+            spec.builder.ensure_object_imported(spec.builder.__class__)
+            lines.append(
+                "CodeBuilder(variant, "
+                "dialect=_dialect, "
+                f"format_name={repr(spec.builder.format_name)}, "
+                "default_dialect=_default_dialect)"
+                ".add_unpack_method()"
+            )
 
     def _add_register_variant_tags(
         self, lines: CodeLines, variant_tagger_expr: str
