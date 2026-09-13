@@ -39,6 +39,7 @@ from uuid import UUID
 from zoneinfo import ZoneInfo
 
 import pytest
+import typing_extensions
 from typing_extensions import Annotated, Literal, TypeVarTuple, Unpack
 
 from mashumaro.config import BaseConfig
@@ -231,6 +232,10 @@ def test_jsonschema_for_literal():
 
 
 def test_jsonschema_for_special_typing_primitives():
+    TConstrainedDefault = typing_extensions.TypeVar(
+        "TConstrainedDefault", str, int, default=int
+    )
+
     assert build_json_schema(Union[int, str]) == JSONSchema(
         anyOf=[
             JSONSchema(type=JSONSchemaInstanceType.INTEGER),
@@ -247,6 +252,9 @@ def test_jsonschema_for_special_typing_primitives():
             JSONSchema(type=JSONSchemaInstanceType.INTEGER),
             JSONSchema(type=JSONSchemaInstanceType.STRING),
         ]
+    )
+    assert build_json_schema(TConstrainedDefault) == JSONSchema(
+        type=JSONSchemaInstanceType.INTEGER
     )
     assert build_json_schema(T_Optional_int) == JSONSchema(
         anyOf=[

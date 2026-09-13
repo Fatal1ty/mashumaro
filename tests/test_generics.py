@@ -3,6 +3,7 @@ from datetime import date, datetime
 from typing import Any, Generic, List, Mapping, Optional, TypeVar
 
 import pytest
+import typing_extensions
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
@@ -165,6 +166,30 @@ def test_loose_generic_info_with_bound():
     assert obj == B(x=[1.1, 3.3])
     obj = B.from_dict({"x": ["1.1", "2.2", "3.3", "4.4"]})
     assert obj == B(x=[1.1, 2.2, 3.3, 4.4])
+
+
+def test_loose_generic_info_with_constraints_and_default():
+    DateOrString = typing_extensions.TypeVar(
+        "DateOrString", str, date, default=date
+    )
+
+    @dataclass
+    class Constrained(Generic[DateOrString], DataClassDictMixin):
+        value: DateOrString
+
+    @dataclass
+    class StringConstrained(Constrained[str]):
+        pass
+
+    assert Constrained.from_dict({"value": "2023-01-01"}) == Constrained(
+        value=date(2023, 1, 1)
+    )
+    assert Constrained(value=date(2023, 1, 1)).to_dict() == {
+        "value": "2023-01-01"
+    }
+    assert StringConstrained.from_dict(
+        {"value": "2023-01-01"}
+    ) == StringConstrained(value="2023-01-01")
 
 
 def test_loose_generic_info_in_first_generic():

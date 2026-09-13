@@ -258,6 +258,12 @@ def type_name(
             )
         elif is_type_var_any(typ):
             return _typing_name("Any", short)
+        if type_var_has_default(typ):
+            return type_name(
+                typ=get_type_var_default(typ),
+                short=short,
+                resolved_type_params=resolved_type_params,
+            )
         constraints = getattr(typ, "__constraints__")
         if constraints:
             args_str = ", ".join(
@@ -270,12 +276,8 @@ def type_name(
             )
             return f"{_typing_name('Union', short)}[{args_str}]"
         else:
-            if type_var_has_default(typ):
-                bound = get_type_var_default(typ)
-            else:
-                bound = getattr(typ, "__bound__")
             return type_name(
-                typ=bound,
+                typ=getattr(typ, "__bound__"),
                 short=short,
                 resolved_type_params=resolved_type_params,
             )

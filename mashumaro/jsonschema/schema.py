@@ -34,6 +34,7 @@ from mashumaro.core.meta.helpers import (
     get_function_return_annotation,
     get_literal_values,
     get_type_origin,
+    get_type_var_default,
     is_annotated,
     is_generic,
     is_literal,
@@ -53,6 +54,7 @@ from mashumaro.core.meta.helpers import (
     is_unpack,
     resolve_type_params,
     type_name,
+    type_var_has_default,
 )
 from mashumaro.core.meta.types.common import NoneType, clean_id
 from mashumaro.helper import pass_through
@@ -486,6 +488,10 @@ def on_special_typing_primitive(
     elif is_type_var_any(instance.type):
         return EmptyJSONSchema()
     elif is_type_var(instance.type):
+        if type_var_has_default(instance.type):
+            return get_schema(
+                instance.derive(type=get_type_var_default(instance.type)), ctx
+            )
         constraints = getattr(instance.type, "__constraints__")
         if constraints:
             return JSONSchema(
