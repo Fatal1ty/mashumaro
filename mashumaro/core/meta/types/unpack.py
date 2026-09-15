@@ -739,17 +739,15 @@ def unpack_dataclass(spec: ValueSpec) -> Expression | None:
             type_args, spec.builder.format_name
         )
         method_loc = spec.origin_type if spec.builder.is_nailed else spec.attrs
-        if get_class_that_defines_method(
-            method_name, method_loc
-        ) != method_loc and (
-            spec.origin_type is not spec.builder.cls
-            or spec.builder.get_unpack_method_name(
-                type_args=type_args,
-                format_name=spec.builder.format_name,
-                decoder=spec.builder.decoder,
-            )
-            != method_name
-        ):
+        method_is_defined = (
+            get_class_that_defines_method(method_name, method_loc)
+            == method_loc
+        )
+        method_is_in_progress = (
+            not method_is_defined
+            and (method_loc, method_name) in spec.builder.methods_in_progress
+        )
+        if not method_is_defined and not method_is_in_progress:
             builder = spec.builder.__class__(
                 spec.origin_type,
                 type_args,
@@ -763,6 +761,7 @@ def unpack_dataclass(spec: ValueSpec) -> Expression | None:
                 allow_postponed_evaluation=(
                     spec.builder.allow_postponed_evaluation
                 ),
+                methods_in_progress=spec.builder.methods_in_progress,
             )
             builder.add_unpack_method()
         method_args = ", ".join(
@@ -779,6 +778,8 @@ def unpack_dataclass(spec: ValueSpec) -> Expression | None:
             spec.builder.ensure_object_imported(spec.origin_type, cls_alias)
             return f"{cls_alias}.{method_name}({method_args})"
         else:
+            if method_is_in_progress:
+                return f"{spec.cls_attrs_name}.{method_name}({method_args})"
             method_name_alias = f"{cls_alias}_{method_name}"
             spec.builder.ensure_object_imported(
                 getattr(spec.attrs, method_name), method_name_alias
@@ -854,9 +855,16 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
             method_loc = (
                 spec.builder.cls if spec.builder.is_nailed else spec.attrs
             )
+            method_is_in_progress = (
+                get_class_that_defines_method(method_name, method_loc)
+                != method_loc
+                and (method_loc, method_name)
+                in spec.builder.methods_in_progress
+            )
             if (
                 get_class_that_defines_method(method_name, method_loc)
                 != method_loc
+                and not method_is_in_progress
                 # not hasattr(spec.builder.cls, method_name)
                 and spec.builder.get_unpack_method_name(
                     format_name=spec.builder.format_name,
@@ -875,6 +883,7 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
                         if not spec.builder.is_nailed
                         else None
                     ),
+                    methods_in_progress=spec.builder.methods_in_progress,
                 )
                 builder.add_unpack_method()
             method_args = ", ".join(

@@ -242,17 +242,15 @@ def pack_dataclass(spec: ValueSpec) -> Expression | None:
             type_args, spec.builder.format_name
         )
         method_loc = spec.origin_type if spec.builder.is_nailed else spec.attrs
-        if get_class_that_defines_method(
-            method_name, method_loc
-        ) != method_loc and (
-            spec.origin_type is not spec.builder.cls
-            or spec.builder.get_pack_method_name(
-                type_args=type_args,
-                format_name=spec.builder.format_name,
-                encoder=spec.builder.encoder,
-            )
-            != method_name
-        ):
+        method_is_defined = (
+            get_class_that_defines_method(method_name, method_loc)
+            == method_loc
+        )
+        method_is_in_progress = (
+            not method_is_defined
+            and (method_loc, method_name) in spec.builder.methods_in_progress
+        )
+        if not method_is_defined and not method_is_in_progress:
             builder = spec.builder.__class__(
                 spec.origin_type,
                 type_args,
@@ -266,12 +264,18 @@ def pack_dataclass(spec: ValueSpec) -> Expression | None:
                 allow_postponed_evaluation=(
                     spec.builder.allow_postponed_evaluation
                 ),
+                methods_in_progress=spec.builder.methods_in_progress,
             )
             builder.add_pack_method()
         flags = spec.builder.get_pack_method_flags(spec.type)
         if spec.builder.is_nailed:
             return f"{spec.expression}.{method_name}({flags})"
         else:
+            if method_is_in_progress:
+                return (
+                    f"{spec.cls_attrs_name}.{method_name}"
+                    f"({spec.expression})"
+                )
             cls_alias = clean_id(type_name(spec.origin_type))
             method_name_alias = f"{cls_alias}_{method_name}"
             spec.builder.ensure_object_imported(
@@ -513,9 +517,16 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
             method_loc = (
                 spec.builder.cls if spec.builder.is_nailed else spec.attrs
             )
+            method_is_in_progress = (
+                get_class_that_defines_method(method_name, method_loc)
+                != method_loc
+                and (method_loc, method_name)
+                in spec.builder.methods_in_progress
+            )
             if (
                 get_class_that_defines_method(method_name, method_loc)
                 != method_loc
+                and not method_is_in_progress
                 # not hasattr(self.cls, method_name)
                 and spec.builder.get_pack_method_name(
                     format_name=spec.builder.format_name,
@@ -534,6 +545,7 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
                         if not spec.builder.is_nailed
                         else None
                     ),
+                    methods_in_progress=spec.builder.methods_in_progress,
                 )
                 builder.add_pack_method()
             flags = spec.builder.get_pack_method_flags(spec.builder.cls)

@@ -121,6 +121,9 @@ class CodeBuilder:
         default_dialect: typing.Type[Dialect] | None = None,
         attrs: typing.Any = None,
         attrs_registry: dict[typing.Any, typing.Any] | None = None,
+        methods_in_progress: (
+            set[tuple[typing.Any, InternalMethodName]] | None
+        ) = None,
     ):
         self.cls = cls
         self.lines: CodeLines = CodeLines()
@@ -151,6 +154,10 @@ class CodeBuilder:
             self.attrs_registry = attrs_registry
         else:
             self.attrs_registry = {}
+        if methods_in_progress is not None:
+            self.methods_in_progress = methods_in_progress
+        else:
+            self.methods_in_progress = set()
 
     def reset(self) -> None:
         self.lines.reset()
@@ -312,6 +319,19 @@ class CodeBuilder:
     ) -> typing.Generator[None, None, None]:
         with self.lines.indent(expr):
             yield
+
+    @contextmanager
+    def method_in_progress(
+        self, method_name: InternalMethodName
+    ) -> typing.Generator[None, None, None]:
+        method_key = (self.attrs, method_name)
+        method_was_in_progress = method_key in self.methods_in_progress
+        self.methods_in_progress.add(method_key)
+        try:
+            yield
+        finally:
+            if not method_was_in_progress:
+                self.methods_in_progress.remove(method_key)
 
     def compile(self) -> None:
         code = self.lines.as_text()
@@ -542,6 +562,10 @@ class CodeBuilder:
             format_name=self.format_name,
             decoder=self.decoder,
         )
+        with self.method_in_progress(method_name):
+            self._add_unpack_method(method_name)
+
+    def _add_unpack_method(self, method_name: InternalMethodName) -> None:
         if self.decoder is not None:
             self.add_type_modules(self.decoder)
         dialects_feature = self.is_code_generation_option_enabled(
@@ -1090,6 +1114,10 @@ class CodeBuilder:
             format_name=self.format_name,
             encoder=self.encoder,
         )
+        with self.method_in_progress(method_name):
+            self._add_pack_method(method_name)
+
+    def _add_pack_method(self, method_name: InternalMethodName) -> None:
         if self.encoder is not None:
             self.add_type_modules(self.encoder)
         dialects_feature = self.is_code_generation_option_enabled(

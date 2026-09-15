@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Generic, List, Optional, TypeVar, Union
 
@@ -38,6 +38,36 @@ class MyDialect(Dialect):
 class GenericDataClass(Generic[T]):
     x: T
     y: List[T]
+
+
+@dataclass
+class RecursiveDataClass:
+    x: str = ""
+    children: "list[RecursiveDataClass]" = field(default_factory=list)
+
+
+@dataclass
+class MutuallyRecursiveA:
+    b: Optional["MutuallyRecursiveB"] = None
+
+
+@dataclass
+class MutuallyRecursiveB:
+    a: Optional[MutuallyRecursiveA] = None
+
+
+@dataclass
+class RecursiveGenericDataClass(Generic[T]):
+    value: T
+    children: "list[RecursiveGenericDataClass[T]]" = field(
+        default_factory=list
+    )
+
+
+@dataclass
+class RecursiveGenericWrapper:
+    integers: RecursiveGenericDataClass[int]
+    strings: RecursiveGenericDataClass[str]
 
 
 @pytest.mark.parametrize(
@@ -229,5 +259,48 @@ def test_with_two_generic_dataclass_fields():
         x1=MyGenericDataClass("2023-11-15"),
         x2=MyGenericDataClass(date(2023, 11, 15)),
     )
+    assert decoder.decode(data) == obj
+    assert encoder.encode(obj) == data
+
+
+def test_recursive_dataclass():
+    decoder = BasicDecoder(RecursiveDataClass)
+    encoder = BasicEncoder(RecursiveDataClass)
+    data = {"x": "root", "children": [{"x": "child", "children": []}]}
+    obj = RecursiveDataClass("root", [RecursiveDataClass("child")])
+
+    assert decoder.decode(data) == obj
+    assert encoder.encode(obj) == data
+    assert not hasattr(RecursiveDataClass, "__mashumaro_from_dict__")
+    assert not hasattr(RecursiveDataClass, "__mashumaro_to_dict__")
+
+
+def test_mutually_recursive_dataclasses():
+    decoder = BasicDecoder(MutuallyRecursiveA)
+    encoder = BasicEncoder(MutuallyRecursiveA)
+    data = {"b": {"a": {"b": None}}}
+    obj = MutuallyRecursiveA(MutuallyRecursiveB(MutuallyRecursiveA()))
+
+    assert decoder.decode(data) == obj
+    assert encoder.encode(obj) == data
+
+
+def test_recursive_generic_dataclasses():
+    decoder = BasicDecoder(RecursiveGenericWrapper)
+    encoder = BasicEncoder(RecursiveGenericWrapper)
+    data = {
+        "integers": {"value": 1, "children": [{"value": 2, "children": []}]},
+        "strings": {
+            "value": "a",
+            "children": [{"value": "b", "children": []}],
+        },
+    }
+    obj = RecursiveGenericWrapper(
+        integers=RecursiveGenericDataClass(1, [RecursiveGenericDataClass(2)]),
+        strings=RecursiveGenericDataClass(
+            "a", [RecursiveGenericDataClass("b")]
+        ),
+    )
+
     assert decoder.decode(data) == obj
     assert encoder.encode(obj) == data
