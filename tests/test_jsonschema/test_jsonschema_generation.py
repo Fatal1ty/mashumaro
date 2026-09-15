@@ -109,7 +109,11 @@ from tests.entities import (
     TypedDictRequiredAndOptionalKeys,
     TypedDictRequiredKeys,
     TypedDictRequiredKeysWithOptional,
+    TypedDictWithExplicitRequired,
     TypedDictWithReadOnly,
+    TypedDictClosed,
+    TypedDictNotClosed,
+    TypedDictWithExtraItems,
 )
 from tests.test_pep_655 import (
     TypedDictCorrectNotRequired,
@@ -714,6 +718,40 @@ def test_jsonschema_for_typeddict():
             "y": JSONSchema(type=JSONSchemaInstanceType.NUMBER),
         },
         additionalProperties=False,
+    )
+    assert build_json_schema(
+        TypedDictWithExplicitRequired
+    ) == JSONObjectSchema(
+        properties={
+            "x": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            "y": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        },
+        required=["x"],
+        additionalProperties=False,
+    )
+    assert build_json_schema(TypedDictClosed) == JSONObjectSchema(
+        properties={
+            "x": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            "y": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        },
+        required=["x", "y"],
+        additionalProperties=False,
+    )
+    assert build_json_schema(TypedDictNotClosed) == JSONObjectSchema(
+        properties={
+            "x": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            "y": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        },
+        required=["x", "y"],
+        additionalProperties=True,
+    )
+    assert build_json_schema(TypedDictWithExtraItems) == JSONObjectSchema(
+        properties={
+            "x": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            "y": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        },
+        required=["x", "y"],
+        additionalProperties=JSONSchema(type=JSONSchemaInstanceType.STRING),
     )
     assert build_json_schema(GenericTypedDict) == JSONObjectSchema(
         properties={

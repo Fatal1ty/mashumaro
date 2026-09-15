@@ -13,7 +13,13 @@ except ImportError:  # pragma: no cover
         pass
 
 
-from typing_extensions import NamedTuple, ReadOnly, TypedDict, TypeVar
+from typing_extensions import (
+    NamedTuple,
+    ReadOnly,
+    Required,
+    TypedDict,
+    TypeVar,
+)
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import TO_DICT_ADD_OMIT_NONE_FLAG, BaseConfig
@@ -256,6 +262,26 @@ class TypedDictOptionalKeysWithOptional(TypedDict, total=False):
 
 class TypedDictWithReadOnly(TypedDict):
     x: ReadOnly[int]
+
+
+class TypedDictWithExplicitRequired(TypedDict, total=False):
+    x: Required[int]
+    y: int
+
+
+class TypedDictClosed(TypedDict, closed=True):
+    x: int
+    y: int
+
+
+class TypedDictNotClosed(TypedDict, closed=False):
+    x: int
+    y: int
+
+
+class TypedDictWithExtraItems(TypedDict, extra_items=str):
+    x: int
+    y: int
 
 
 class GenericTypedDict(TypedDict, Generic[T]):
