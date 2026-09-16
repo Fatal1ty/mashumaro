@@ -32,7 +32,6 @@ import token
 import tokenize
 import tomllib
 
-
 OG_IMAGE = "og.jpg"
 FAVICON = "favicon.svg"
 PYTHON_CLASSIFIER_PREFIX = "Programming Language :: Python :: "
@@ -85,9 +84,7 @@ def load_project_metadata(web_dir: str) -> dict[str, str]:
     }
 
 
-def substitute_project_metadata(
-    text: str, metadata: dict[str, str]
-) -> str:
+def substitute_project_metadata(text: str, metadata: dict[str, str]) -> str:
     for name, value in metadata.items():
         text = text.replace(f"{{{{{name}}}}}", value)
     return text
@@ -379,8 +376,8 @@ def parse_markdown_to_html(
         token_pattern = re.compile(
             r'("(?:\\.|[^"\\])*")(?=\s*:)|'
             r'("(?:\\.|[^"\\])*")|'
-            r'(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)|'
-            r'\b(true|false|null)\b'
+            r"(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)|"
+            r"\b(true|false|null)\b"
         )
         output: list[str] = []
         last = 0
@@ -582,8 +579,10 @@ def parse_markdown_to_html(
                     ch = highlight_json(ct)
                 else:
                     ch = html_module.escape(ct)
-                ll = "signature" if normalized_lang == "text" else (
-                    normalized_lang or "python"
+                ll = (
+                    "signature"
+                    if normalized_lang == "text"
+                    else (normalized_lang or "python")
                 )
                 language_class = re.sub(
                     r"[^a-z0-9_-]+", "-", normalized_lang or "python"
@@ -673,7 +672,7 @@ def parse_markdown_to_html(
         result.append(
             f'<p class="doc-p">'
             f'{inline(" ".join(paragraph_line.strip() for paragraph_line in pl))}'
-            f'</p>\n'
+            f"</p>\n"
         )
     flush_list()
     flush_bq()
@@ -699,7 +698,9 @@ def build() -> None:
         sys.exit(1)
     og_image_path = os.path.join(web_dir, OG_IMAGE)
     if not os.path.isfile(og_image_path):
-        print(f"Error: {OG_IMAGE} not found at {og_image_path}", file=sys.stderr)
+        print(
+            f"Error: {OG_IMAGE} not found at {og_image_path}", file=sys.stderr
+        )
         sys.exit(1)
     favicon_path = os.path.join(web_dir, FAVICON)
     if not os.path.isfile(favicon_path):
@@ -713,9 +714,9 @@ def build() -> None:
         with open(os.path.join(docs_dir, fname), encoding="utf-8") as f:
             content = substitute_project_metadata(f.read(), project_metadata)
         t, g, explicit_slug, hc, headings = parse_markdown_to_html(content)
-        slug = explicit_slug or re.sub(
-            r"[^a-z0-9]+", "-", t.lower()
-        ).strip("-")
+        slug = explicit_slug or re.sub(r"[^a-z0-9]+", "-", t.lower()).strip(
+            "-"
+        )
         sections.append(
             {
                 "title": t,
@@ -734,7 +735,9 @@ def build() -> None:
     for section in sections:
         slug = str(section["slug"])
         if slug in section_index:
-            print(f"Error: duplicate documentation slug {slug}", file=sys.stderr)
+            print(
+                f"Error: duplicate documentation slug {slug}", file=sys.stderr
+            )
             sys.exit(1)
         section_index[slug] = set(
             re.findall(r' id="([^"]+)"', str(section["html"]))
@@ -749,7 +752,7 @@ def build() -> None:
             if target_slug not in section_index:
                 print(
                     f'Error: {section["title"]} links to unknown doc '
-                    f'{target_slug}',
+                    f"{target_slug}",
                     file=sys.stderr,
                 )
                 sys.exit(1)
@@ -759,7 +762,7 @@ def build() -> None:
             ):
                 print(
                     f'Error: {section["title"]} links to unknown heading '
-                    f'{target_slug}#{target_heading}',
+                    f"{target_slug}#{target_heading}",
                     file=sys.stderr,
                 )
                 sys.exit(1)
@@ -815,13 +818,13 @@ def build() -> None:
                 '<div class="doc-toc doc-toc-inline" role="navigation" '
                 'aria-label="On this page">'
                 '<div class="doc-toc-title">On this page</div>'
-                f'{toc_items}</div>\n'
+                f"{toc_items}</div>\n"
             )
             desktop_toc = (
                 '<aside class="doc-toc doc-toc-desktop" '
                 'aria-label="On this page">'
                 '<div class="doc-toc-title">On this page</div>'
-                f'{toc_items}</aside>\n'
+                f"{toc_items}</aside>\n"
             )
         panel_html = str(s["html"])
         if inline_toc:
@@ -831,7 +834,7 @@ def build() -> None:
         panels += (
             f'      <div class="doc-panel" id="doc-{s["slug"]}">\n'
             f'        <article class="doc-main">\n{panel_html}\n'
-            f'        </article>\n{desktop_toc}      </div>\n'
+            f"        </article>\n{desktop_toc}      </div>\n"
         )
 
     search_entries = []
@@ -854,9 +857,7 @@ def build() -> None:
                         f'{s["title"]} › '
                         f'{re.sub(r"[`*_]", "", str(heading["title"]))}'
                     ),
-                    "text": re.sub(
-                        r"[`*_]", "", str(heading["title"])
-                    ),
+                    "text": re.sub(r"[`*_]", "", str(heading["title"])),
                     "heading": heading["id"],
                 }
             )
@@ -865,8 +866,7 @@ def build() -> None:
         tmpl = substitute_project_metadata(f.read(), project_metadata)
 
     for match in re.finditer(
-        r'onclick="[^"]*\bshowDocs\(\s*[\'\"]([^\'\"]+)[\'\"]\s*\)',
-        tmpl,
+        r'onclick="[^"]*\bshowDocs\(\s*[\'\"]([^\'\"]+)[\'\"]\s*\)', tmpl
     ):
         target_slug = match.group(1)
         if target_slug not in section_index:
