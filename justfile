@@ -26,6 +26,9 @@ test-with-coverage:
 benchmark:
     ./benchmark/run.sh
 
+docs:
+    python web/build.py
+
 clean:
     rm -rf benchmark/data/results
     rm -f benchmark/data/spec_dump.json
