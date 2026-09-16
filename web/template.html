@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mashumaro — Fast Python Serialization</title>
+<meta name="description" content="Turn typed Python data into JSON, MessagePack, YAML, or TOML with a single line of code. No schemas, no boilerplate — just your types.">
+<link rel="icon" href="https://mashumaro.io/favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://mashumaro.io/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Mashumaro">
+<meta property="og:title" content="Mashumaro — Serialize anything. Ridiculously fast.">
+<meta property="og:description" content="Turn typed Python data into JSON, MessagePack, YAML, or TOML with a single line of code. No schemas, no boilerplate — just your types.">
+<meta property="og:url" content="https://mashumaro.io/">
+<meta property="og:image" content="https://mashumaro.io/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mashumaro — Serialize anything. Ridiculously fast.">
+<meta name="twitter:description" content="Turn typed Python data into JSON, MessagePack, YAML, or TOML with a single line of code. No schemas, no boilerplate — just your types.">
+<meta name="twitter:image" content="https://mashumaro.io/og.jpg">
+<meta name="theme-color" content="#09090b">
+<script>
+(function() {
+  var mode = 'auto';
+  try {
+    var savedMode = localStorage.getItem('mashumaro-theme');
+    if (savedMode === 'auto' || savedMode === 'light' || savedMode === 'dark') mode = savedMode;
+  } catch (e) {}
+  var systemIsLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  var theme = mode === 'auto' ? (systemIsLight ? 'light' : 'dark') : mode;
+  document.documentElement.setAttribute('data-theme-mode', mode);
+  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.style.colorScheme = theme;
+  var themeMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeMeta) themeMeta.setAttribute('content', theme === 'light' ? '#f7f7f4' : '#09090b');
+})();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#09090b;--bg2:#18171d;--bg-card:#1c1b21;--bg-code:#111114;--border:#29282f;--border-h:#45414f;--text:#fafafa;--text2:#a7a3af;--text3:#75717d;--accent:#a78bfa;--accent-d:#7c3aed;--accent-hover:#c4b5fd;--accent-glow:rgba(167,139,250,.15);--green:#4ade80;--blue:#60a5fa;--orange:#fb923c;--pink:#f472b6;--cyan:#22d3ee;--yellow:#facc15;--nav-bg:rgba(9,9,11,.82);--surface-soft:rgba(255,255,255,.035);--card-shadow:rgba(0,0,0,.32);--card-shadow-soft:0 18px 55px rgba(0,0,0,.22);--code-shadow:0 24px 80px rgba(0,0,0,.32);--nav-shadow:0 8px 32px rgba(0,0,0,.12);--button-shadow:rgba(124,58,237,.4);--grid-line:rgba(167,139,250,.035);--landing-bg:radial-gradient(circle at 50% 0,rgba(124,58,237,.12),transparent 36rem),radial-gradient(circle at 8% 32%,rgba(34,211,238,.035),transparent 30rem),radial-gradient(circle at 92% 70%,rgba(244,114,182,.035),transparent 32rem),#09090b;--hero-glow:radial-gradient(circle at 50% 38%,rgba(124,58,237,.22),transparent 48%),radial-gradient(circle at 24% 48%,rgba(34,211,238,.07),transparent 32%),radial-gradient(circle at 76% 44%,rgba(244,114,182,.08),transparent 34%);--card-gradient:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.012));--cta-bg:radial-gradient(circle at 50% 0,rgba(124,58,237,.19),transparent 55%),linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.012));--sidebar-bg:linear-gradient(180deg,#0d0d10,#09090b);--docs-bg:radial-gradient(circle at 72% 0,rgba(124,58,237,.045),transparent 30rem),#09090b;--r:12px;--rs:8px;--sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;--mono:'JetBrains Mono','Fira Code',monospace}
+html[data-theme="light"]{--bg:#f7f7f4;--bg2:#eeefec;--bg-card:#fffefb;--bg-code:#f0f1ee;--border:#dcddd8;--border-h:#aaa5b7;--text:#222329;--text2:#585a63;--text3:#6f7178;--accent:#6549b8;--accent-d:#53379b;--accent-hover:#432b7c;--accent-glow:rgba(101,73,184,.09);--green:#0b7954;--blue:#2861ad;--orange:#b9572b;--pink:#ad416c;--cyan:#14747c;--yellow:#8f6b08;--nav-bg:rgba(250,250,247,.9);--surface-soft:rgba(64,61,74,.045);--card-shadow:rgba(37,34,45,.13);--card-shadow-soft:0 18px 55px rgba(37,34,45,.075);--code-shadow:0 28px 80px rgba(37,34,45,.12);--nav-shadow:0 8px 32px rgba(37,34,45,.055);--button-shadow:rgba(83,55,155,.24);--grid-line:rgba(74,69,89,.045);--landing-bg:radial-gradient(circle at 50% 0,rgba(101,73,184,.09),transparent 36rem),radial-gradient(circle at 6% 30%,rgba(20,116,124,.045),transparent 30rem),radial-gradient(circle at 94% 62%,rgba(185,87,43,.04),transparent 34rem),linear-gradient(180deg,#fbfbf8 0%,#f7f7f4 52%,#f4f5f2 100%);--hero-glow:radial-gradient(circle at 50% 36%,rgba(101,73,184,.14),transparent 48%),radial-gradient(circle at 20% 48%,rgba(20,116,124,.055),transparent 32%),radial-gradient(circle at 80% 45%,rgba(185,87,43,.05),transparent 34%);--card-gradient:linear-gradient(145deg,rgba(255,254,251,.98),rgba(247,247,243,.9));--cta-bg:radial-gradient(circle at 50% 0,rgba(101,73,184,.12),transparent 56%),radial-gradient(circle at 12% 80%,rgba(20,116,124,.045),transparent 35%),linear-gradient(145deg,rgba(255,254,251,.98),rgba(245,245,240,.94));--sidebar-bg:linear-gradient(180deg,#fbfbf8,#f1f1ed);--docs-bg:radial-gradient(circle at 76% 0,rgba(101,73,184,.04),transparent 32rem),#f8f8f5}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background-color .2s,color .2s}
+::selection{background:var(--accent-d);color:#fff}
+a{color:var(--accent);text-decoration:none;transition:color .2s}a:hover{color:var(--accent-hover)}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);background:var(--nav-bg);border-bottom:1px solid var(--border);box-shadow:var(--nav-shadow)}
+.nav-inner{max-width:1200px;margin:0 auto;padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-weight:800;font-size:1.2rem;letter-spacing:-0.02em;color:var(--text);cursor:pointer}.nav-logo span{color:var(--accent)}
+.nav-links{display:flex;gap:2rem;list-style:none}.nav-links a{color:var(--text2);font-size:.875rem;font-weight:500;transition:color .2s}.nav-links a:hover{color:var(--text)}
+.nav-right{display:flex;align-items:center;gap:1rem}
+.nav-cta{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1.25rem;background:var(--text);color:var(--bg);border-radius:999px;font-size:.8rem;font-weight:600;transition:opacity .2s}.nav-cta:hover{opacity:.9;color:var(--bg)}.nav-cta svg{width:16px;height:16px}
+.theme-control{display:flex}
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;padding:0;border:1px solid var(--border);border-radius:999px;background:var(--bg2);color:var(--text2);cursor:pointer;box-shadow:0 6px 18px color-mix(in srgb,var(--card-shadow) 60%,transparent);transition:color .2s,border-color .2s,background .2s,transform .2s}.theme-toggle:hover{color:var(--accent);border-color:var(--border-h);background:var(--bg-card);transform:translateY(-1px)}.theme-toggle svg{width:17px;height:17px}.theme-mode-icon{display:none}html[data-theme-mode="auto"] .theme-icon-auto,html[data-theme-mode="light"] .theme-icon-light,html[data-theme-mode="dark"] .theme-icon-dark{display:block}
+.mobile-menu-btn{display:none;background:none;border:none;color:var(--text2);cursor:pointer;padding:.5rem;border-radius:var(--rs);transition:color .2s}.mobile-menu-btn:hover{color:var(--text)}.mobile-menu-btn svg{width:24px;height:24px}
+
+/* BUTTONS */
+.btn-primary{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 2rem;background:var(--accent-d);color:#fff;border-radius:999px;font-weight:600;font-size:.95rem;transition:all .2s;border:none;cursor:pointer}.btn-primary:hover{background:var(--accent);color:#fff;transform:translateY(-1px);box-shadow:0 8px 30px var(--button-shadow)}
+.btn-secondary{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 2rem;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:999px;font-weight:600;font-size:.95rem;transition:all .2s;cursor:pointer}.btn-secondary:hover{background:var(--bg-card);border-color:var(--border-h);color:var(--text);transform:translateY(-1px)}
+
+/* LANDING */
+#landing{display:block;position:relative;isolation:isolate;background:var(--landing-bg);overflow:hidden}
+#landing::before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);background-size:48px 48px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.72),transparent 38%,rgba(0,0,0,.2) 72%,transparent);-webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.72),transparent 38%,rgba(0,0,0,.2) 72%,transparent)}
+#landing>section,#landing>.divider,#landing>footer{position:relative;z-index:1}
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 6rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-18%;left:0;width:100%;height:920px;background:var(--hero-glow);filter:saturate(115%);pointer-events:none}
+.hero-content{position:relative;z-index:2;max-width:800px}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.42rem 1rem;background:color-mix(in srgb,var(--bg-card) 74%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:999px;box-shadow:0 10px 32px color-mix(in srgb,var(--card-shadow) 52%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-size:.8rem;color:var(--text2);margin-bottom:2rem}.hero-badge strong{color:var(--accent);font-weight:650}
+.hero h1{font-size:clamp(3rem,7vw,5rem);font-weight:900;letter-spacing:-0.04em;line-height:1.05;margin-bottom:1.5rem}
+.hero h1 .gradient{background:linear-gradient(135deg,var(--accent),var(--pink),var(--orange));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{font-size:1.2rem;color:var(--text2);max-width:600px;margin:0 auto 2.5rem;line-height:1.7}
+.hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.install-cmd{margin-top:2.5rem;display:inline-flex;align-items:center;gap:.75rem;padding:.75rem 1.5rem;background:color-mix(in srgb,var(--bg-code) 92%,transparent);border:1px solid var(--border);border-radius:var(--rs);box-shadow:0 16px 42px color-mix(in srgb,var(--card-shadow) 62%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font-family:var(--mono);font-size:.9rem;color:var(--text2);cursor:pointer;transition:border-color .2s,box-shadow .2s}.install-cmd:hover{border-color:var(--border-h);box-shadow:0 20px 52px color-mix(in srgb,var(--card-shadow) 75%,transparent)}.install-cmd .dollar{color:var(--text3);user-select:none}.install-cmd code{color:var(--green)}.install-cmd .copy-hint{color:var(--text3);font-size:.75rem;font-family:var(--sans)}
+
+section.landing-section{padding:7rem 2rem;max-width:1200px;margin:0 auto}
+.section-label{display:inline-block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--accent);margin-bottom:1rem}
+.section-title{font-size:clamp(2rem,4vw,2.75rem);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin-bottom:1rem}
+.section-desc{font-size:1.1rem;color:var(--text2);max-width:640px;line-height:1.7}
+.divider{max-width:1120px;margin:0 auto;height:1px;background:linear-gradient(90deg,transparent,var(--border) 16%,color-mix(in srgb,var(--accent) 22%,var(--border)) 50%,var(--border) 84%,transparent)}
+
+/* FEATURES */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1.25rem;margin-top:4rem}
+.feature-card{position:relative;overflow:hidden;padding:2rem;background:var(--card-gradient);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--card-shadow-soft);transition:all .3s}.feature-card::before{content:'';position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--cyan),transparent);opacity:.38}.feature-card:hover{border-color:var(--border-h);transform:translateY(-4px);box-shadow:0 22px 60px var(--card-shadow)}
+.feature-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem;box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 12%,transparent),0 8px 22px color-mix(in srgb,currentColor 10%,transparent)}
+.fi-1{background:rgba(74,222,128,.12);color:var(--green)}.fi-2{background:rgba(96,165,250,.12);color:var(--blue)}.fi-3{background:rgba(251,146,60,.12);color:var(--orange)}.fi-4{background:rgba(167,139,250,.12);color:var(--accent)}.fi-5{background:rgba(244,114,182,.12);color:var(--pink)}.fi-6{background:rgba(34,211,238,.12);color:var(--cyan)}
+.feature-card h3{font-size:1.1rem;font-weight:700;margin-bottom:.5rem}.feature-card p{color:var(--text2);font-size:.92rem;line-height:1.6}
+
+/* CODE TABS */
+.code-section{margin-top:4rem;border-radius:0;box-shadow:none}.code-tabs{display:flex;gap:0;padding:0;background:transparent;border:0;border-radius:0;backdrop-filter:none;-webkit-backdrop-filter:none}
+.code-tab{padding:.75rem 1.5rem;font-size:.85rem;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--sans)}.code-tab:hover{color:var(--text2)}.code-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.code-panel{display:none}.code-panel.active{display:block}
+.code-block{background:var(--bg-code);border:1px solid var(--border);border-radius:0;overflow:hidden}
+.code-block-header{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;border-bottom:1px solid var(--border)}
+.code-block-title{font-size:.8rem;color:var(--text3);font-family:var(--mono)}
+.code-block pre{padding:1.5rem;overflow-x:auto;font-family:var(--mono);font-size:.85rem;line-height:1.75}
+.code-block code{font-family:var(--mono)}
+.kw{color:var(--accent);font-weight:500}.fn{color:var(--blue)}.st{color:var(--green)}.cm{color:var(--text3);font-style:italic}.cl{color:var(--yellow)}.dc{color:var(--orange)}.nb{color:var(--cyan)}.nr{color:var(--pink)}.py-op{color:var(--text3)}.py-self{color:var(--pink);font-style:italic}.py-attr{color:var(--blue)}.py-mod{color:var(--cyan)}.py-key{color:var(--blue)}
+.sh-cmd{color:var(--green);font-weight:600}.sh-sub{color:var(--cyan)}.sh-flag{color:var(--orange)}.sh-var{color:var(--pink)}.sh-op{color:var(--text3)}
+.copy-code-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .55rem;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--text3);font-family:var(--sans);font-size:.72rem;line-height:1;cursor:pointer;transition:color .15s,background .15s,border-color .15s}.copy-code-btn:hover{color:var(--text);background:var(--surface-soft);border-color:var(--border)}.copy-code-btn svg{width:14px;height:14px}.copy-code-btn .copy-code-done{display:none}.copy-code-btn.copied{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,transparent);background:color-mix(in srgb,var(--green) 8%,transparent)}.copy-code-btn.copied .copy-code-default{display:none}.copy-code-btn.copied .copy-code-done{display:inline}
+
+/* FORMATS */
+.formats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-top:3rem}
+.format-chip{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:.75rem;padding:2rem 1.5rem;background:var(--card-gradient);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 12px 34px color-mix(in srgb,var(--card-shadow) 45%,transparent);transition:all .3s;text-align:center}.format-chip::after{content:'';position:absolute;inset:auto 28% -38px;height:40px;background:var(--accent-glow);filter:blur(30px);border-radius:50%;opacity:.2}.format-chip:hover{border-color:var(--border-h);transform:translateY(-4px);box-shadow:0 20px 48px color-mix(in srgb,var(--card-shadow) 70%,transparent)}
+.format-name{font-weight:700;font-size:1rem}.format-sub{font-size:.78rem;color:var(--text3)}
+.format-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem}
+
+/* HOW IT WORKS */
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:4rem}
+.how-step{text-align:center;padding:2rem 1.5rem;background:transparent;border:0;border-radius:0;box-shadow:none}
+.how-num{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--accent-glow);color:var(--accent);font-weight:800;font-size:1.1rem;margin-bottom:1.5rem}
+.how-step h3{font-weight:700;font-size:1.05rem;margin-bottom:.5rem}.how-step p{color:var(--text2);font-size:.9rem;line-height:1.6}
+
+/* TYPE CLOUD */
+.type-cloud-flat{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:3rem}
+.tt{display:inline-block;padding:.45rem .9rem;background:color-mix(in srgb,var(--bg-card) 88%,transparent);border:1px solid var(--border);border-radius:999px;box-shadow:0 5px 16px color-mix(in srgb,var(--card-shadow) 28%,transparent);font-family:var(--mono);font-size:.82rem;color:var(--text2);transition:border-color .2s,color .2s,transform .2s,background .2s;cursor:default}.tt:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);transform:translateY(-1px)}
+
+/* CUSTOMIZATION */
+.custom-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.25rem;margin-top:3rem}
+.custom-card{position:relative;overflow:hidden;padding:2rem;background:var(--card-gradient);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--card-shadow-soft);transition:all .3s;display:flex;flex-direction:column}.custom-card:hover{border-color:var(--border-h);transform:translateY(-4px);box-shadow:0 22px 60px var(--card-shadow)}
+.custom-card h3{font-size:1.05rem;font-weight:700;margin-bottom:.5rem}
+.custom-card p{color:var(--text2);font-size:.9rem;line-height:1.6;flex:1}
+.custom-card p code{font-family:var(--mono);font-size:.8rem;background:var(--bg-code);padding:.1rem .35rem;border-radius:3px;color:var(--accent)}
+.custom-card-link{display:inline-block;margin-top:1rem;font-size:.85rem;font-weight:600;color:var(--accent);transition:color .2s}.custom-card-link:hover{color:var(--accent-hover)}
+
+/* CTA */
+.cta-section{max-width:1120px;margin:5rem auto;padding:6rem 2rem;text-align:center;overflow:visible;background:transparent;border:0;border-radius:0;box-shadow:none}.cta-section::before{content:none}.cta-section>*{position:relative;z-index:1}.cta-section h2{font-size:clamp(2rem,4vw,3rem);font-weight:900;letter-spacing:-0.03em;margin-bottom:1rem}.cta-section p{color:var(--text2);font-size:1.1rem;max-width:500px;margin:0 auto 2.5rem}
+.cta-buttons{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.copy-icon{display:inline-flex;align-items:center;color:var(--text3);transition:color .2s}.install-cmd:hover .copy-icon{color:var(--text2)}
+.install-cmd.copied .copy-icon svg{display:none}
+.install-cmd.copied::after{content:'\2713';color:var(--green);font-size:.9rem;font-weight:600;animation:copiedFade .4s ease}
+@keyframes copiedFade{0%{opacity:0;transform:scale(0.5)}50%{opacity:1;transform:scale(1.2)}100%{opacity:1;transform:scale(1)}}
+footer{border-top:1px solid var(--border);padding:3rem 2rem;text-align:center;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}footer p{color:var(--text3);font-size:.85rem}footer a{color:var(--text2)}
+.fade-in{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}.fade-in.visible{opacity:1;transform:translateY(0)}
+
+/* DOCS */
+#docs-view{display:none;padding-top:64px}#docs-view.active{display:flex}#landing.hidden{display:none}
+.docs-sidebar{position:fixed;top:64px;left:0;bottom:0;width:280px;background:var(--sidebar-bg);border-right:1px solid var(--border);overflow-y:auto;padding:1.5rem 0;z-index:50;transition:transform .3s ease}
+.sidebar-search{padding:0 1rem 1rem}
+.sidebar-search input{width:100%;padding:.6rem .85rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);color:var(--text);font-size:.85rem;font-family:var(--sans);outline:none;transition:border-color .2s}.sidebar-search input:focus{border-color:var(--accent)}.sidebar-search input::placeholder{color:var(--text3)}
+.sidebar-link{display:block;padding:.45rem 1.5rem;font-size:.875rem;color:var(--text2);transition:all .15s;cursor:pointer;text-decoration:none;border-left:2px solid transparent}.sidebar-link:hover{color:var(--text);background:var(--bg2)}.sidebar-link.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-glow)}.sidebar-link.search-hidden{display:none}
+.sidebar-group{margin-top:.75rem}
+.sidebar-group-label{padding:.35rem 1.5rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);user-select:none;margin-bottom:.15rem}
+.sidebar-link-nested{padding-left:2rem;font-size:.84rem}
+.docs-content{margin-left:280px;flex:1;min-height:calc(100vh - 64px);max-height:calc(100vh - 64px);overflow-y:auto;padding:3rem 4rem 6rem;max-width:calc(100% - 280px);background:var(--docs-bg)}
+.doc-panel{display:none;max-width:800px}.doc-panel.active{display:block}.doc-main{min-width:0}
+.doc-toc{margin:0 0 2rem;padding:1rem 1.25rem;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface-soft);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.35rem 1rem}
+.doc-toc-desktop{display:none}
+.doc-toc-title{grid-column:1/-1;color:var(--text);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem}
+.doc-toc-link{font-size:.82rem;color:var(--text2);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:2px solid transparent;transition:color .15s,border-color .15s,background .15s}.doc-toc-link:hover{color:var(--accent)}.doc-toc-link.active{color:var(--accent);border-left-color:var(--accent);background:var(--accent-glow);font-weight:600}
+.doc-toc-link-level-3{font-size:.76rem;margin-left:.75rem;color:var(--text3)}
+.doc-toc-inline .doc-toc-link-has-children{grid-column:1/-1}
+.search-results{display:none;padding:.5rem 1rem}.search-results.active{display:block}
+.search-result-item{display:block;padding:.4rem .5rem;font-size:.8rem;color:var(--text2);cursor:pointer;border-radius:4px}.search-result-item:hover,.search-result-item.selected{background:var(--bg2);color:var(--text)}.search-result-item.selected{outline:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.search-result-item mark{background:rgba(167,139,250,.3);color:var(--accent);padding:0 2px;border-radius:2px}
+.doc-search-hit{color:inherit;background:transparent;border-radius:4px;scroll-margin-block:28px;animation:searchMatchHighlight 1800ms ease-out}
+@keyframes searchMatchHighlight{0%{background:rgba(167,139,250,.38);box-shadow:0 0 0 3px rgba(167,139,250,.2)}70%{background:rgba(167,139,250,.2);box-shadow:0 0 0 3px rgba(167,139,250,.08)}100%{background:rgba(167,139,250,0);box-shadow:0 0 0 7px rgba(167,139,250,0)}}
+.doc-h1{font-size:2rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.doc-h2{font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;margin-top:3rem;margin-bottom:.75rem}
+.doc-h3{font-size:1.15rem;font-weight:600;margin-top:2rem;margin-bottom:.5rem}
+.doc-h4{font-size:1rem;font-weight:600;margin-top:1.5rem;margin-bottom:.5rem;color:var(--text2)}
+
+/* Heading anchors */
+.doc-h1,.doc-h2,.doc-h3,.doc-h4{position:relative;scroll-margin-top:24px}
+.doc-h-text{display:inline}
+.doc-anchor{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-left:.5rem;border-radius:8px;border:1px solid transparent;color:var(--text3);background:transparent;vertical-align:middle;opacity:0;transform:translateY(-1px);transition:opacity .15s, color .15s, background .15s, border-color .15s}
+.doc-anchor svg{width:16px;height:16px}
+.doc-h1:hover .doc-anchor,.doc-h2:hover .doc-anchor,.doc-h3:hover .doc-anchor,.doc-h4:hover .doc-anchor{opacity:1}
+.doc-anchor:hover{opacity:1;color:var(--text);background:var(--surface-soft);border-color:var(--border)}
+.doc-anchor.copied{opacity:1;color:var(--green);border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.08)}
+
+.doc-p{color:var(--text2);font-size:.925rem;line-height:1.75;margin-bottom:1rem}
+.doc-p code,.doc-list li code,.doc-table td code,.doc-table th code{font-family:var(--mono);font-size:.82rem;background:var(--bg-code);padding:.15rem .4rem;border-radius:4px;color:var(--accent)}
+.doc-list{margin-bottom:1rem;padding-left:1.5rem}.doc-list li{color:var(--text2);font-size:.925rem;line-height:1.75;margin-bottom:.25rem}
+.doc-callout{margin:1rem 0;padding:1rem 1.25rem;background:var(--accent-glow);border:1px solid rgba(167,139,250,.2);border-radius:var(--rs)}.doc-callout p{color:var(--text2);font-size:.875rem;margin:0}
+.doc-code{margin:1rem 0 1.5rem;border-radius:var(--rs);overflow:hidden;border:1px solid var(--border);box-shadow:0 10px 32px color-mix(in srgb,var(--card-shadow) 35%,transparent)}
+.doc-code-header{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.5rem 1rem;background:var(--surface-soft);border-bottom:1px solid var(--border);font-size:.75rem;color:var(--text3);font-family:var(--mono)}
+.doc-code pre{padding:1.25rem;overflow-x:auto;font-family:var(--mono);font-size:.82rem;line-height:1.7;background:var(--bg-code);margin:0}
+.doc-code code{font-family:var(--mono)}
+.doc-table-wrap{overflow-x:auto;margin:1rem 0}
+.doc-table{width:100%;border-collapse:collapse;font-size:.875rem}.doc-table th{text-align:left;padding:.6rem 1rem;border-bottom:2px solid var(--border);color:var(--text);font-weight:600}.doc-table td{padding:.6rem 1rem;border-bottom:1px solid var(--border);color:var(--text2)}
+.nav-links a.active-doc-link{color:var(--accent)}
+.doc-main a[target="_blank"]{border-bottom:1px dotted color-mix(in srgb,var(--accent) 55%,transparent);transition:color .2s,border-color .2s}.doc-main a[target="_blank"]:hover{border-bottom-style:solid;border-bottom-color:var(--accent-hover)}.doc-main a[target="_blank"]:has(>code){border-bottom:0}.doc-main a[target="_blank"]>code{border-bottom:1px dotted color-mix(in srgb,var(--accent) 55%,transparent);transition:border-color .2s}.doc-main a[target="_blank"]:hover>code{border-bottom-style:solid;border-bottom-color:var(--accent-hover)}
+a.doc-xref{color:var(--accent);border-bottom:1px dashed color-mix(in srgb,var(--accent) 30%,transparent);transition:all .2s}a.doc-xref:hover{color:var(--accent-hover);border-bottom-color:color-mix(in srgb,var(--accent) 60%,transparent)}
+
+/* Deeplink highlight */
+.doc-h1.hl,.doc-h2.hl,.doc-h3.hl,.doc-h4.hl{border-radius:10px}
+.doc-h1.hl,.doc-h2.hl,.doc-h3.hl,.doc-h4.hl{
+  animation:docHighlight 1400ms ease-out;
+}
+@keyframes docHighlight{
+  0%{box-shadow:0 0 0 0 rgba(167,139,250,.0);background:rgba(167,139,250,.0)}
+  15%{box-shadow:0 0 0 4px rgba(167,139,250,.22);background:rgba(167,139,250,.08)}
+  100%{box-shadow:0 0 0 10px rgba(167,139,250,.0);background:rgba(167,139,250,.0)}
+}
+
+/* MOBILE OVERLAY */
+.mobile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:105;opacity:0;transition:opacity .3s}.mobile-overlay.active{display:block;opacity:1}
+.sidebar-close{display:none;position:absolute;top:.75rem;right:.75rem;background:none;border:none;color:var(--text3);cursor:pointer;padding:.25rem;border-radius:4px;font-size:1.5rem;line-height:1}.sidebar-close:hover{color:var(--text)}
+
+/* MOBILE NAV PANEL (landing) */
+.mobile-nav-panel{position:fixed;top:0;left:0;bottom:0;width:300px;background:var(--bg);border-right:1px solid var(--border);z-index:110;transform:translateX(-100%);transition:transform .3s ease;padding:80px 0 2rem;overflow-y:auto}
+.mobile-nav-panel.open{transform:translateX(0)}
+.mobile-nav-link{display:block;padding:.75rem 1.5rem;font-size:1rem;font-weight:500;color:var(--text2);text-decoration:none;transition:all .15s}.mobile-nav-link:hover{color:var(--text);background:var(--bg2)}
+.mobile-nav-divider{height:1px;background:var(--border);margin:.75rem 1.5rem}
+
+@media(min-width:1240px){
+.docs-content{padding-left:2rem;padding-right:2rem}
+.doc-panel{max-width:1064px}
+.doc-panel.active{display:grid;grid-template-columns:minmax(0,800px) 220px;gap:2.75rem;align-items:start}
+.doc-toc-inline{display:none}
+.doc-toc-desktop{display:flex;position:sticky;top:1.5rem;max-height:calc(100vh - 112px);overflow-y:auto;flex-direction:column;gap:.1rem;margin:0;padding:.25rem 0 .25rem 1rem;border:0;border-left:1px solid var(--border);border-radius:0;background:transparent;scrollbar-width:thin}
+.doc-toc-desktop .doc-toc-title{margin:0 0 .55rem;padding-left:.55rem}
+.doc-toc-desktop .doc-toc-link{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.4;padding:.32rem .55rem;border-radius:0 6px 6px 0}
+.doc-toc-desktop .doc-toc-link-level-3{margin-left:.75rem;padding-top:.25rem;padding-bottom:.25rem}
+}
+
+@media(max-width:768px){
+.nav-links{display:none}
+.mobile-menu-btn{display:block}
+.features-grid{grid-template-columns:1fr}
+.how-grid{grid-template-columns:1fr;gap:1rem}
+.formats-row{grid-template-columns:repeat(2,1fr)}
+.custom-grid{grid-template-columns:1fr}
+section.landing-section{padding:4rem 1.25rem}
+.cta-section{margin:3rem 1.25rem;padding:4.5rem 1.5rem}
+.docs-sidebar{transform:translateX(-100%);width:300px;z-index:110;top:0;padding-top:80px}
+.docs-sidebar.mobile-open{transform:translateX(0)}
+.sidebar-close{display:block}
+.docs-content{margin-left:0;max-width:100%;max-height:none;overflow-y:visible;padding:1.5rem}
+.doc-h1,.doc-h2,.doc-h3,.doc-h4{scroll-margin-top:88px}
+}
+@media(max-width:640px){.docs-content{padding:1.25rem}}
+@media(max-width:640px){.doc-toc{grid-template-columns:1fr}}
+@media(max-width:480px){.nav-inner{padding:0 1rem}.nav-right{gap:.5rem}.nav-cta{padding:.5rem .85rem}.theme-toggle{width:36px;height:36px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.fade-in{transition:none}.theme-toggle,.copy-code-btn{transition:none}}
+</style>
+</head>
+<body>
+<nav>
+<div class="nav-inner">
+<div style="display:flex;align-items:center;gap:.75rem">
+<button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+<div class="nav-logo" onclick="onLogoClick()">mashu<span>maro</span></div>
+</div>
+<ul class="nav-links">
+<li><a href="#features" onclick="showLanding()">Features</a></li>
+<li><a href="#examples" onclick="showLanding()">Examples</a></li>
+<li><a href="#formats" onclick="showLanding()">Formats</a></li>
+<li><a href="#how" onclick="showLanding()">How It Works</a></li>
+<li><a href="javascript:void(0)" id="nav-docs-link" onclick="showDocs()">Documentation</a></li>
+</ul>
+<div class="nav-right">
+<div class="theme-control">
+<button class="theme-toggle" id="theme-toggle" type="button" aria-label="Theme: Auto" title="Theme: Auto">
+<svg class="theme-mode-icon theme-icon-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg>
+<svg class="theme-mode-icon theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></svg>
+<svg class="theme-mode-icon theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
+</div>
+<a href="https://github.com/Fatal1ty/mashumaro" class="nav-cta" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg> GitHub</a>
+</div>
+</div>
+</nav>
+
+<!-- MOBILE OVERLAY (shared) -->
+<div class="mobile-overlay" id="mobile-overlay"></div>
+
+<!-- MOBILE NAV (landing sections) -->
+<div class="mobile-nav-panel" id="mobile-nav-panel">
+<button class="sidebar-close" onclick="closeMobileMenu()" style="display:block">&times;</button>
+<a href="#features" class="mobile-nav-link" onclick="mobileNavTo('#features')">Features</a>
+<a href="#examples" class="mobile-nav-link" onclick="mobileNavTo('#examples')">Examples</a>
+<a href="#formats" class="mobile-nav-link" onclick="mobileNavTo('#formats')">Formats</a>
+<a href="#how" class="mobile-nav-link" onclick="mobileNavTo('#how')">How It Works</a>
+<a href="#types" class="mobile-nav-link" onclick="mobileNavTo('#types')">Type Support</a>
+<a href="#customization" class="mobile-nav-link" onclick="mobileNavTo('#customization')">Customization</a>
+<div class="mobile-nav-divider"></div>
+<a href="javascript:void(0)" class="mobile-nav-link" style="color:var(--accent)" onclick="closeMobileMenu();showDocs()">Documentation &#8594;</a>
+</div>
+
+<div id="landing">
+<section class="hero">
+<div class="hero-content">
+<div class="hero-badge"><strong>v{{PACKAGE_VERSION}}</strong><span>/</span>Python {{PYTHON_VERSION_RANGE}}</div>
+<h1>Serialize anything.<br><span class="gradient">Ridiculously fast.</span></h1>
+<p>Turn typed Python data into JSON, MessagePack, YAML, or TOML with a single line of code. No schemas, no boilerplate &mdash; just your types.</p>
+<div class="hero-actions">
+<a href="javascript:void(0)" class="btn-primary" onclick="showDocs()">Get Started</a>
+<a href="https://github.com/Fatal1ty/mashumaro" class="btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
+</div>
+<div class="install-cmd" onclick="copyCmd(this, 'pip install mashumaro')"><span class="dollar">$</span><code>pip install mashumaro</code><span class="copy-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span></div>
+</div>
+</section>
+<div class="divider"></div>
+
+<section class="landing-section" id="features">
+<div class="section-label">Features</div>
+<h2 class="section-title">Everything you need,<br>nothing you don't</h2>
+<p class="section-desc">Built for developers who value clean APIs, type safety, and performance. Mashumaro generates optimized code for your exact schema at compile time.</p>
+<div class="features-grid">
+<div class="feature-card fade-in"><div class="feature-icon fi-1"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><h3>Seriously Fast</h3><p>Generates specialized encoder and decoder functions for your exact data schema. No runtime introspection, no overhead.</p></div>
+<div class="feature-card fade-in"><div class="feature-icon fi-2"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div><h3>Comprehensive Type Coverage</h3><p>Supports generics, enums, datetime, paths, UUIDs, IP addresses, TypedDict, NamedTuple, and much more out of the box.</p></div>
+<div class="feature-card fade-in"><div class="feature-icon fi-3"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><h3>Multi-Format Out of the Box</h3><p>JSON, YAML, TOML, and MessagePack. Each format has preconfigured codecs and mixin classes ready to use.</p></div>
+<div class="feature-card fade-in"><div class="feature-icon fi-4"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><h3>Deeply Customizable</h3><p>Per-field methods, reusable strategies, config inheritance, field aliases, and pluggable dialects.</p></div>
+<div class="feature-card fade-in"><div class="feature-icon fi-5"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><h3>JSON Schema Generation</h3><p>Automatically generate JSON Schema from dataclasses for validation, documentation, and interoperability.</p></div>
+<div class="feature-card fade-in"><div class="feature-icon fi-6"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div><h3>Lifecycle Hooks</h3><p>Tap into the serialization pipeline with pre/post hooks. Transform data without polluting your model logic.</p></div>
+</div>
+</section>
+<div class="divider"></div>
+
+<section class="landing-section" id="examples">
+<div class="section-label">Examples</div>
+<h2 class="section-title">Two lines of code.<br>That's all it takes.</h2>
+<p class="section-desc">Inherit a mixin or create a codec. Mashumaro stays out of your way while handling all the complexity.</p>
+<div class="code-section">
+<div class="code-tabs">
+<button class="code-tab active" data-panel="panel-mixin">Mixin</button>
+<button class="code-tab" data-panel="panel-codec">Codec</button>
+<button class="code-tab" data-panel="panel-custom">Custom</button>
+</div>
+<div class="code-panel active" id="panel-mixin">
+<div class="code-block"><div class="code-block-header"><span class="code-block-title">mixin_example.py</span></div><pre><code><span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+<span class="kw">from</span> datetime <span class="kw">import</span> datetime
+<span class="kw">from</span> mashumaro.mixins.json <span class="kw">import</span> DataClassJSONMixin
+
+<span class="dc">@dataclass</span>
+<span class="kw">class</span> <span class="cl">Event</span>(DataClassJSONMixin):
+    name: str
+    timestamp: datetime
+    attendees: list[str]
+    is_virtual: bool = <span class="nr">False</span>
+
+<span class="cm"># Serialize to JSON</span>
+event = Event(
+    name=<span class="st">"PyCon"</span>,
+    timestamp=datetime(2026, 5, 13, 9, 0),
+    attendees=[<span class="st">"Alice"</span>, <span class="st">"Bob"</span>],
+)
+json_str = event.to_json()
+<span class="cm"># Deserialize back</span>
+restored = Event.from_json(json_str)</code></pre></div>
+</div>
+<div class="code-panel" id="panel-codec">
+<div class="code-block"><div class="code-block-header"><span class="code-block-title">codec_example.py</span></div><pre><code><span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+<span class="kw">from</span> mashumaro.codecs.json <span class="kw">import</span> JSONDecoder, JSONEncoder
+
+<span class="dc">@dataclass</span>
+<span class="kw">class</span> <span class="cl">Coordinate</span>:
+    lat: float
+    lon: float
+    city: str
+
+<span class="cm"># Create typed encoder/decoder once, reuse everywhere</span>
+encoder = JSONEncoder(list[Coordinate])
+decoder = JSONDecoder(list[Coordinate])
+
+waypoints = [
+    Coordinate(52.52, 13.40, <span class="st">"Berlin"</span>),
+    Coordinate(48.86, 2.35, <span class="st">"Paris"</span>),
+]
+json_str = encoder.encode(waypoints)
+restored = decoder.decode(json_str)</code></pre></div>
+</div>
+<div class="code-panel" id="panel-custom">
+<div class="code-block"><div class="code-block-header"><span class="code-block-title">custom_example.py</span></div><pre><code><span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+<span class="kw">from</span> datetime <span class="kw">import</span> datetime
+<span class="kw">from</span> mashumaro <span class="kw">import</span> DataClassDictMixin
+<span class="kw">from</span> mashumaro.config <span class="kw">import</span> BaseConfig
+<span class="kw">from</span> mashumaro.types <span class="kw">import</span> SerializationStrategy
+
+<span class="kw">class</span> <span class="cl">Timestamp</span>(SerializationStrategy):
+    <span class="kw">def</span> <span class="fn">serialize</span>(self, value: datetime) -> float:
+        <span class="kw">return</span> value.timestamp()
+
+    <span class="kw">def</span> <span class="fn">deserialize</span>(self, value: float) -> datetime:
+        <span class="kw">return</span> datetime.fromtimestamp(value)
+
+<span class="dc">@dataclass</span>
+<span class="kw">class</span> <span class="cl">Event</span>(DataClassDictMixin):
+    created_at: datetime
+
+    <span class="kw">class</span> <span class="cl">Config</span>(BaseConfig):
+        serialization_strategy = {datetime: Timestamp()}</code></pre></div>
+</div>
+</div>
+</section>
+<div class="divider"></div>
+
+<section class="landing-section" id="formats">
+<div class="section-label">Serialization Formats</div>
+<h2 class="section-title">One library, every format</h2>
+<p class="section-desc">Each format ships with a mixin class for dataclasses and a codec pair for arbitrary types.</p>
+<div class="formats-row">
+<div class="format-chip fade-in"><div class="format-dot" style="background:rgba(96,165,250,.15);color:var(--blue)">{ }</div><div class="format-name">JSON</div><div class="format-sub">Built-in &amp; orjson</div></div>
+<div class="format-chip fade-in"><div class="format-dot" style="background:rgba(251,146,60,.15);color:var(--orange)">Y</div><div class="format-name">YAML</div><div class="format-sub">PyYAML</div></div>
+<div class="format-chip fade-in"><div class="format-dot" style="background:rgba(250,204,21,.15);color:var(--yellow)">T</div><div class="format-name">TOML</div><div class="format-sub">tomli / tomllib</div></div>
+<div class="format-chip fade-in"><div class="format-dot" style="background:rgba(244,114,182,.15);color:var(--pink)">MP</div><div class="format-name">MessagePack</div><div class="format-sub">msgpack</div></div>
+<div class="format-chip fade-in"><div class="format-dot" style="background:rgba(74,222,128,.15);color:var(--green)">{d}</div><div class="format-name">Basic</div><div class="format-sub">Basic Python objects</div></div>
+</div>
+</section>
+<div class="divider"></div>
+
+<section class="landing-section" id="how">
+<div style="text-align:center">
+<div class="section-label">Under the Hood</div>
+<h2 class="section-title">How Mashumaro works</h2>
+<p class="section-desc" style="margin:0 auto">Instead of reflecting on types at every call, Mashumaro analyzes your schema once and generates optimized Python code.</p>
+</div>
+<div class="how-grid">
+<div class="how-step fade-in"><div class="how-num">1</div><h3>Analyze Schema</h3><p>Inspects your dataclass fields and type annotations to understand the complete data shape.</p></div>
+<div class="how-step fade-in"><div class="how-num">2</div><h3>Generate Code</h3><p>A specialized encoder and decoder are compiled for your exact schema at import time or on codec creation.</p></div>
+<div class="how-step fade-in"><div class="how-num">3</div><h3>Execute Instantly</h3><p>Every subsequent call runs pre-compiled code. No type checking, no branching &mdash; just direct execution.</p></div>
+</div>
+</section>
+<div class="divider"></div>
+
+<section class="landing-section" id="types">
+<div class="section-label">Type Support</div>
+<h2 class="section-title">If Python has it,<br>Mashumaro handles it</h2>
+<p class="section-desc">From basic primitives to deeply nested generics &mdash; every type is handled automatically with zero configuration.</p>
+<div class="type-cloud-flat">
+<span class="tt">str</span><span class="tt">int</span><span class="tt">float</span><span class="tt">bool</span><span class="tt">bytes</span><span class="tt">list</span><span class="tt">dict</span><span class="tt">tuple</span><span class="tt">set</span><span class="tt">frozenset</span><span class="tt">Optional</span><span class="tt">Union</span><span class="tt">Literal</span><span class="tt">Annotated</span>
+<span class="tt">TypeVar</span><span class="tt">TypeVarTuple</span><span class="tt">NewType</span><span class="tt">Final</span><span class="tt">Self</span><span class="tt">TypedDict</span><span class="tt">NamedTuple</span><span class="tt">Enum</span><span class="tt">IntEnum</span><span class="tt">StrEnum</span><span class="tt">Flag</span><span class="tt">datetime</span><span class="tt">date</span>
+<span class="tt">time</span><span class="tt">timedelta</span><span class="tt">timezone</span><span class="tt">ZoneInfo</span><span class="tt">Path</span><span class="tt">PurePath</span><span class="tt">UUID</span><span class="tt">Decimal</span><span class="tt">Fraction</span><span class="tt">IPv4Address</span><span class="tt">IPv6Address</span><span class="tt">IPv4Network</span>
+<span class="tt">re.Pattern</span><span class="tt">Deque</span><span class="tt">OrderedDict</span><span class="tt">DefaultDict</span><span class="tt">Counter</span><span class="tt">ChainMap</span><span class="tt">Sequence</span><span class="tt">Mapping</span><span class="tt">MappingProxyType</span>
+</div>
+<div style="margin-top:3rem">
+<a href="javascript:void(0)" class="btn-secondary" onclick="showDocs('supported-types')" style="font-size:.85rem;padding:.65rem 1.5rem">View full type reference &#8594;</a>
+</div>
+</section>
+<div class="divider"></div>
+
+<section class="landing-section" id="customization">
+<div class="section-label">Customization</div>
+<h2 class="section-title">Your data, your rules</h2>
+<p class="section-desc">Control every aspect of how your data is serialized &mdash; from individual fields to entire type hierarchies.</p>
+<div class="custom-grid">
+<div class="custom-card fade-in"><div class="feature-icon fi-4"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><h3>Config Options</h3><p>Set global behaviors like <code>omit_none</code>, <code>omit_default</code>, field aliases, discriminated unions, and key sorting from a single inner class.</p><a href="javascript:void(0)" class="custom-card-link" onclick="showDocs('config-options')">Explore Config &#8594;</a></div>
+<div class="custom-card fade-in"><div class="feature-icon fi-1"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><h3>Field Options</h3><p>Override serialization per field &mdash; custom encoders, aliases, pass-through mode, and alternative datetime parsers.</p><a href="javascript:void(0)" class="custom-card-link" onclick="showDocs('field-options')">See Field Options &#8594;</a></div>
+<div class="custom-card fade-in"><div class="feature-icon fi-2"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div><h3>Serialization Strategy</h3><p>Reusable conversion rules for any type. Apply globally via Config or per-field. Perfect for third-party types you can't modify.</p><a href="javascript:void(0)" class="custom-card-link" onclick="showDocs('serializationstrategy')">Learn Strategies &#8594;</a></div>
+<div class="custom-card fade-in"><div class="feature-icon fi-3"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><h3>Dialects</h3><p>Context-dependent serialization schemes that can be switched at call time. Same model, different output depending on the consumer.</p><a href="javascript:void(0)" class="custom-card-link" onclick="showDocs('dialects')">Discover Dialects &#8594;</a></div>
+<div class="custom-card fade-in"><div class="feature-icon fi-5"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div><h3>Lifecycle Hooks</h3><p>Intercept data before and after serialization/deserialization. Normalize input, redact fields, validate constraints.</p><a href="javascript:void(0)" class="custom-card-link" onclick="showDocs('serialization-hooks')">View Hooks &#8594;</a></div>
+<div class="custom-card fade-in"><div class="feature-icon fi-6"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><h3>SerializableType</h3><p>Full control interface for your own custom classes. Define exactly how instances are packed and unpacked.</p><a href="javascript:void(0)" class="custom-card-link" onclick="showDocs('serializabletype')">Read More &#8594;</a></div>
+</div>
+</section>
+<div class="divider"></div>
+
+<section class="cta-section">
+<h2>Ready to serialize?</h2>
+<p>Install Mashumaro and start building. It takes seconds to set up and works with your existing codebase.</p>
+<div class="cta-buttons"><a href="javascript:void(0)" class="btn-primary" onclick="showDocs()">Read the Docs</a>
+<a href="https://github.com/Fatal1ty/mashumaro" class="btn-secondary" target="_blank" rel="noopener">View on GitHub</a></div>
+<div style="margin-top:1.5rem"><div class="install-cmd" onclick="copyCmd(this, 'pip install mashumaro')"><span class="dollar">$</span><code>pip install mashumaro</code><span class="copy-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span></div></div>
+</section>
+<footer><p>Mashumaro is open-source software licensed under <a href="https://opensource.org/licenses/Apache-2.0" target="_blank" rel="noopener">Apache 2.0</a>. Created by <a href="https://github.com/Fatal1ty" target="_blank" rel="noopener">Alexander Tikhonov</a>.</p></footer>
+</div>
+
+<div id="docs-view">
+<aside class="docs-sidebar" id="docs-sidebar">
+<button class="sidebar-close" id="sidebar-close-btn">&times;</button>
+<div class="sidebar-search"><input type="text" id="doc-search" placeholder="Search docs... (Ctrl+K)" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="search-results" aria-expanded="false"></div>
+<div class="search-results" id="search-results" role="listbox"></div>
+<div id="sidebar-nav">
+{{SIDEBAR_ITEMS}}
+</div>
+</aside>
+<main class="docs-content" id="docs-content">
+{{DOC_PANELS}}
+</main>
+</div>
+
+<script>
+const searchData = {{SEARCH_JSON}};
+let isDocsView = false;
+var themeToggle = document.getElementById('theme-toggle');
+var themeModes = ['auto', 'light', 'dark'];
+var systemThemeQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+
+function resolveTheme(mode) {
+  if (mode === 'light' || mode === 'dark') return mode;
+  return systemThemeQuery && systemThemeQuery.matches ? 'light' : 'dark';
+}
+
+function updateThemeControls(mode, resolvedTheme) {
+  var displayMode = mode.charAt(0).toUpperCase() + mode.slice(1);
+  var label = 'Theme: ' + displayMode;
+  themeToggle.setAttribute('aria-label', label);
+  themeToggle.setAttribute('title', label);
+}
+
+function applyThemeMode(mode, persist) {
+  if (mode !== 'auto' && mode !== 'light' && mode !== 'dark') mode = 'auto';
+  var resolvedTheme = resolveTheme(mode);
+  document.documentElement.setAttribute('data-theme-mode', mode);
+  document.documentElement.setAttribute('data-theme', resolvedTheme);
+  document.documentElement.style.colorScheme = resolvedTheme;
+  var themeMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeMeta) themeMeta.setAttribute('content', resolvedTheme === 'light' ? '#f7f7f4' : '#09090b');
+  if (persist) {
+    try { localStorage.setItem('mashumaro-theme', mode); } catch (e) {}
+  }
+  updateThemeControls(mode, resolvedTheme);
+}
+
+applyThemeMode(document.documentElement.getAttribute('data-theme-mode') || 'auto', false);
+themeToggle.addEventListener('click', function() {
+  var currentMode = document.documentElement.getAttribute('data-theme-mode') || 'auto';
+  var currentIndex = themeModes.indexOf(currentMode);
+  var nextMode = themeModes[(currentIndex + 1) % themeModes.length];
+  applyThemeMode(nextMode, true);
+});
+if (systemThemeQuery) {
+  var onSystemThemeChange = function() {
+    if (document.documentElement.getAttribute('data-theme-mode') === 'auto') applyThemeMode('auto', false);
+  };
+  if (systemThemeQuery.addEventListener) systemThemeQuery.addEventListener('change', onSystemThemeChange);
+  else if (systemThemeQuery.addListener) systemThemeQuery.addListener(onSystemThemeChange);
+}
+
+function onLogoClick() {
+  // If we're in docs, logo acts as "back to home".
+  if (isDocsView) {
+    showLanding();
+    return;
+  }
+  // If we're already on landing, logo scrolls to the top.
+  // Use smooth scroll but keep it robust for older browsers.
+  try {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (e) {
+    window.scrollTo(0, 0);
+  }
+  // Ensure URL is clean (no docs hash) even if something external changed it.
+  history.pushState(null, '', window.location.pathname);
+}
+
+function showLanding() {
+  document.getElementById('landing').classList.remove('hidden');
+  document.getElementById('docs-view').classList.remove('active');
+  document.getElementById('nav-docs-link').classList.remove('active-doc-link');
+  isDocsView = false;
+  closeMobileMenu();
+  history.pushState(null, '', window.location.pathname);
+}
+
+function showDocs(slug) {
+  document.getElementById('landing').classList.add('hidden');
+  document.getElementById('docs-view').classList.add('active');
+  document.getElementById('nav-docs-link').classList.add('active-doc-link');
+  isDocsView = true;
+  closeMobileMenu();
+  if (slug) {
+    // keep default behavior (scroll to top)
+    activateDoc(slug, { scrollToTop: true });
+    history.pushState({doc: slug}, '', '#/docs/' + slug);
+  } else {
+    var first = document.querySelector('.sidebar-link');
+    if (first) {
+      var s = first.getAttribute('data-doc');
+      activateDoc(s, { scrollToTop: true });
+      history.pushState({doc: s}, '', '#/docs/' + s);
+    }
+  }
+}
+
+function activateDoc(slug, opts) {
+  opts = opts || {};
+  var scrollToTop = (opts.scrollToTop !== false);
+
+  var panel = document.getElementById('doc-' + slug);
+  if (!panel) return false;
+  document.querySelectorAll('.doc-panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.sidebar-link').forEach(function(l) { l.classList.remove('active'); });
+  panel.classList.add('active');
+  var link = document.querySelector('.sidebar-link[data-doc="' + slug + '"]');
+  if (link) link.classList.add('active');
+  if (scrollToTop) scrollDocToTop();
+  scheduleTocUpdate();
+  return true;
+}
+
+function scrollDocToTop() {
+  var dc = document.getElementById('docs-content');
+  if (docsUseDocumentScroll()) window.scrollTo(0, 0);
+  else if (dc) dc.scrollTop = 0;
+}
+
+function docsUseDocumentScroll() {
+  return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+}
+
+var tocUpdateFrame = 0;
+
+function updateActiveToc() {
+  tocUpdateFrame = 0;
+  if (!isDocsView) return;
+  var dc = document.getElementById('docs-content');
+  var panel = document.querySelector('.doc-panel.active');
+  if (!dc || !panel) return;
+  var headings = Array.prototype.slice.call(panel.querySelectorAll('.doc-main h2[id],.doc-main h3[id]'));
+  if (!headings.length) return;
+
+  var threshold = docsUseDocumentScroll()
+    ? 88
+    : dc.getBoundingClientRect().top + 104;
+  var current = headings[0].id;
+  headings.forEach(function(heading) {
+    if (heading.getBoundingClientRect().top <= threshold) current = heading.id;
+  });
+
+  var slug = (panel.id || '').replace(/^doc-/, '');
+  panel.querySelectorAll('.doc-toc-link').forEach(function(link) {
+    var active = link.getAttribute('data-doc') === slug &&
+      link.getAttribute('data-heading') === current;
+    link.classList.toggle('active', active);
+    if (active) link.setAttribute('aria-current', 'location');
+    else link.removeAttribute('aria-current');
+  });
+
+  var desktopToc = panel.querySelector('.doc-toc-desktop');
+  var activeLink = desktopToc && desktopToc.querySelector('.doc-toc-link.active');
+  if (desktopToc && activeLink) {
+    var linkTop = activeLink.offsetTop;
+    var linkBottom = linkTop + activeLink.offsetHeight;
+    if (linkTop < desktopToc.scrollTop) desktopToc.scrollTop = linkTop;
+    else if (linkBottom > desktopToc.scrollTop + desktopToc.clientHeight) {
+      desktopToc.scrollTop = linkBottom - desktopToc.clientHeight;
+    }
+  }
+}
+
+function scheduleTocUpdate() {
+  if (tocUpdateFrame) return;
+  tocUpdateFrame = requestAnimationFrame(updateActiveToc);
+}
+
+function parseDocsRoute(hash) {
+  // Supports: "#/docs/<slug>" and "#/docs/<slug>#<headingId>"
+  // Some messaging apps encode the second hash as %23.
+  // Note: window.location.hash will contain the whole thing.
+  if (!hash || hash.indexOf('#/docs/') !== 0) return null;
+  var rest = hash.slice(7);
+  try {
+    rest = decodeURIComponent(rest);
+  } catch (e) {
+    // Keep the undecoded route when it contains a malformed escape sequence.
+  }
+  var parts = rest.split('#');
+  return {
+    slug: parts[0] || '',
+    heading: parts.length > 1 ? parts.slice(1).join('#') : ''
+  };
+}
+
+function highlightHeading(headingId) {
+  if (!headingId) return;
+  var panel = document.querySelector('.doc-panel.active');
+  if (!panel) return;
+  var selId = (window.CSS && CSS.escape) ? CSS.escape(headingId) : headingId.replace(/([ #;?%&,.+*~\\':!^$\[\]()=>|\/])/g, '\\$1');
+  var target = panel.querySelector('#' + selId);
+  if (!target) return;
+
+  // Ensure animation restarts even if user clicks same link multiple times
+  target.classList.remove('hl');
+  // Force reflow
+  void target.offsetWidth;
+  target.classList.add('hl');
+  setTimeout(function() { target.classList.remove('hl'); }, 1600);
+}
+
+function scrollToHeading(headingId) {
+  if (!headingId) return;
+  var panel = document.querySelector('.doc-panel.active');
+  if (!panel) return;
+  // Escape for CSS selector
+  var selId = (window.CSS && CSS.escape) ? CSS.escape(headingId) : headingId.replace(/([ #;?%&,.+*~\\':!^$\[\]()=>|\/])/g, '\\$1');
+  var target = panel.querySelector('#' + selId);
+  if (!target) return;
+
+  // Prefer scrolling inside docs-content container
+  var dc = document.getElementById('docs-content');
+  if (dc && dc.contains(target)) {
+    // Ensure layout has updated
+    target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+}
+
+function showDocsAt(slug, headingId, push) {
+  if (!slug) return;
+  document.getElementById('landing').classList.add('hidden');
+  document.getElementById('docs-view').classList.add('active');
+  document.getElementById('nav-docs-link').classList.add('active-doc-link');
+  isDocsView = true;
+  closeMobileMenu();
+
+  // Don't scroll to top if we are going to a heading
+  if (!activateDoc(slug, { scrollToTop: !headingId })) {
+    var first = document.querySelector('.sidebar-link');
+    if (!first) return;
+    slug = first.getAttribute('data-doc');
+    headingId = '';
+    activateDoc(slug, { scrollToTop: true });
+    history.replaceState({doc: slug}, '', '#/docs/' + slug);
+  }
+
+  if (push) {
+    var next = '#/docs/' + slug + (headingId ? ('#' + headingId) : '');
+    history.pushState({doc: slug, heading: headingId || ''}, '', next);
+  }
+
+  if (headingId) {
+    // Delay a tick to ensure panel is visible
+    setTimeout(function() {
+      scrollToHeading(headingId);
+      // Highlight slightly after scroll starts
+      setTimeout(function() { highlightHeading(headingId); }, 120);
+    }, 0);
+  }
+}
+
+/* MOBILE MENU (hamburger) */
+function toggleMobileMenu() {
+  if (isDocsView) {
+    toggleDocsSidebar();
+  } else {
+    var panel = document.getElementById('mobile-nav-panel');
+    var overlay = document.getElementById('mobile-overlay');
+    if (panel.classList.contains('open')) {
+      closeMobileMenu();
+    } else {
+      panel.classList.add('open');
+      overlay.classList.add('active');
+    }
+  }
+}
+
+function closeMobileMenu() {
+  document.getElementById('mobile-nav-panel').classList.remove('open');
+  document.getElementById('mobile-overlay').classList.remove('active');
+  closeSidebar();
+}
+
+function mobileNavTo(hash) {
+  closeMobileMenu();
+  showLanding();
+  setTimeout(function() {
+    var el = document.querySelector(hash);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  }, 100);
+}
+
+/* DOCS SIDEBAR (mobile) */
+function toggleDocsSidebar() {
+  var sb = document.getElementById('docs-sidebar');
+  var ov = document.getElementById('mobile-overlay');
+  if (sb.classList.contains('mobile-open')) {
+    closeSidebar();
+  } else {
+    sb.classList.add('mobile-open');
+    ov.classList.add('active');
+  }
+}
+
+function closeSidebar() {
+  document.getElementById('docs-sidebar').classList.remove('mobile-open');
+  document.getElementById('mobile-overlay').classList.remove('active');
+}
+
+/* EVENT LISTENERS */
+document.getElementById('mobile-menu-btn').addEventListener('click', toggleMobileMenu);
+document.getElementById('mobile-overlay').addEventListener('click', closeMobileMenu);
+document.getElementById('sidebar-close-btn').addEventListener('click', closeSidebar);
+document.getElementById('docs-content').addEventListener('scroll', scheduleTocUpdate, { passive: true });
+window.addEventListener('scroll', scheduleTocUpdate, { passive: true });
+window.addEventListener('resize', scheduleTocUpdate);
+
+document.querySelectorAll('.sidebar-link').forEach(function(link) {
+  link.addEventListener('click', function(e) {
+    e.preventDefault();
+    var slug = link.getAttribute('data-doc');
+    activateDoc(slug, { scrollToTop: true });
+    history.pushState({doc: slug}, '', '#/docs/' + slug);
+    closeSidebar();
+  });
+});
+
+document.addEventListener('click', function(e) {
+  var xref = e.target.closest('.doc-xref');
+  if (xref) {
+    e.preventDefault();
+    var slug = xref.getAttribute('data-doc');
+    var heading = xref.getAttribute('data-heading') || '';
+    if (heading) {
+      showDocsAt(slug, heading, true);
+    } else {
+      showDocs(slug);
+    }
+    return;
+  }
+
+  var anchor = e.target.closest('.doc-anchor');
+  if (anchor) {
+    e.preventDefault();
+    var headingId = anchor.getAttribute('data-heading-id') || (anchor.getAttribute('href') || '').replace(/^#/, '');
+    if (!headingId) return;
+
+    var panel = anchor.closest('.doc-panel');
+    if (!panel) return;
+    var slug = (panel.id || '').replace(/^doc-/, '');
+    if (!slug) return;
+
+    var url = window.location.origin + window.location.pathname + '#/docs/' + slug + '#' + headingId;
+
+    function markCopied() {
+      anchor.classList.add('copied');
+      setTimeout(function() { anchor.classList.remove('copied'); }, 900);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(markCopied).catch(function() {
+        // Fallback: still update URL
+        markCopied();
+      });
+    } else {
+      markCopied();
+    }
+
+    // Update address bar so user can copy from it too
+    history.pushState({doc: slug, heading: headingId}, '', '#/docs/' + slug + '#' + headingId);
+    showDocsAt(slug, headingId, false);
+  }
+});
+
+/* SEARCH */
+var searchInput = document.getElementById('doc-search');
+var searchResults = document.getElementById('search-results');
+var sidebarNav = document.getElementById('sidebar-nav');
+var searchSelectedIndex = -1;
+var searchHighlightTimer = 0;
+
+function clearSearchHighlight() {
+  if (searchHighlightTimer) {
+    clearTimeout(searchHighlightTimer);
+    searchHighlightTimer = 0;
+  }
+  document.querySelectorAll('.doc-search-hit').forEach(function(mark) {
+    var parent = mark.parentNode;
+    if (!parent) return;
+    parent.replaceChild(document.createTextNode(mark.textContent || ''), mark);
+    parent.normalize();
+  });
+}
+
+function highlightSearchMatch(query) {
+  clearSearchHighlight();
+  query = (query || '').trim();
+  if (!query) return;
+
+  var panel = document.querySelector('.doc-panel.active .doc-main');
+  if (!panel) return;
+  var queryLower = query.toLowerCase();
+  var walker = document.createTreeWalker(panel, 4);
+  var textNodes = [];
+  var fullText = '';
+  var textNode;
+  while ((textNode = walker.nextNode())) {
+    var parent = textNode.parentElement;
+    if (!parent || parent.closest('.doc-toc,.doc-anchor')) continue;
+    var value = textNode.nodeValue || '';
+    textNodes.push({node: textNode, start: fullText.length, end: fullText.length + value.length});
+    fullText += value;
+  }
+
+  var index = fullText.toLowerCase().indexOf(queryLower);
+  if (index < 0) return;
+  var matchEnd = index + query.length;
+  var startInfo = textNodes.find(function(info) {
+    return info.start <= index && info.end > index;
+  });
+  var endInfo = textNodes.find(function(info) {
+    return info.start < matchEnd && info.end >= matchEnd;
+  });
+  if (!startInfo || !endInfo) return;
+
+  var marks = [];
+  textNodes.forEach(function(info) {
+    var localStart = Math.max(0, index - info.start);
+    var localEnd = Math.min(info.end - info.start, matchEnd - info.start);
+    if (localStart >= localEnd) return;
+    var matchNode = info.node;
+    if (localStart > 0) matchNode = matchNode.splitText(localStart);
+    var matchLength = localEnd - localStart;
+    if (matchLength < matchNode.nodeValue.length) matchNode.splitText(matchLength);
+    var mark = document.createElement('mark');
+    mark.className = 'doc-search-hit';
+    matchNode.parentNode.replaceChild(mark, matchNode);
+    mark.appendChild(matchNode);
+    marks.push(mark);
+  });
+  if (!marks.length) return;
+  var target = marks[0];
+  target.scrollIntoView({ block: 'center', behavior: 'auto' });
+  searchHighlightTimer = setTimeout(clearSearchHighlight, 1900);
+}
+
+function setSearchSelection(index) {
+  var items = Array.prototype.slice.call(searchResults.querySelectorAll('.search-result-item'));
+  if (!items.length) {
+    searchSelectedIndex = -1;
+    searchInput.removeAttribute('aria-activedescendant');
+    return;
+  }
+  searchSelectedIndex = (index + items.length) % items.length;
+  items.forEach(function(item, itemIndex) {
+    var selected = itemIndex === searchSelectedIndex;
+    item.classList.toggle('selected', selected);
+    item.setAttribute('aria-selected', selected ? 'true' : 'false');
+  });
+  var selectedItem = items[searchSelectedIndex];
+  searchInput.setAttribute('aria-activedescendant', selectedItem.id);
+  selectedItem.scrollIntoView({ block: 'nearest' });
+}
+
+function clearSearch() {
+  searchInput.value = '';
+  searchSelectedIndex = -1;
+  searchResults.classList.remove('active');
+  searchResults.innerHTML = '';
+  searchInput.setAttribute('aria-expanded', 'false');
+  searchInput.removeAttribute('aria-activedescendant');
+  sidebarNav.style.display = '';
+}
+
+function selectSearchResult(item) {
+  if (!item) return;
+  var slug = item.getAttribute('data-doc');
+  var heading = item.getAttribute('data-heading') || '';
+  var query = searchInput.value.trim();
+  showDocsAt(slug, heading, false);
+  history.pushState({doc: slug, heading: heading}, '', '#/docs/' + slug + (heading ? ('#' + heading) : ''));
+  clearSearch();
+  closeSidebar();
+  if (!heading && query) {
+    setTimeout(function() { highlightSearchMatch(query); }, 80);
+  }
+}
+
+searchInput.addEventListener('input', function() {
+  var q = searchInput.value.trim().toLowerCase();
+  searchSelectedIndex = -1;
+  searchInput.removeAttribute('aria-activedescendant');
+  if (!q) {
+    searchResults.classList.remove('active');
+    searchResults.innerHTML = '';
+    searchInput.setAttribute('aria-expanded', 'false');
+    sidebarNav.style.display = '';
+    return;
+  }
+  sidebarNav.style.display = 'none';
+  var results = searchData.filter(function(d) {
+    return d.title.toLowerCase().indexOf(q) >= 0 || d.text.toLowerCase().indexOf(q) >= 0;
+  });
+  searchResults.innerHTML = results.slice(0, 12).map(function(r, resultIndex) {
+    var idx = r.text.toLowerCase().indexOf(q);
+    var snippet = '';
+    if (idx >= 0) {
+      var start = Math.max(0, idx - 30);
+      var end = Math.min(r.text.length, idx + q.length + 40);
+      snippet = (start > 0 ? '...' : '') +
+        r.text.slice(start, idx) +
+        '<mark>' + r.text.slice(idx, idx + q.length) + '</mark>' +
+        r.text.slice(idx + q.length, end) +
+        (end < r.text.length ? '...' : '');
+    }
+    return '<div class="search-result-item" id="search-result-' + resultIndex + '" role="option" aria-selected="false" data-doc="' + r.slug + '" data-heading="' + (r.heading || '') + '"><strong>' + r.title + '</strong>' + (snippet ? '<br><small>' + snippet + '</small>' : '') + '</div>';
+  }).join('');
+  searchResults.classList.add('active');
+  searchInput.setAttribute('aria-expanded', 'true');
+});
+
+searchInput.addEventListener('keydown', function(e) {
+  var items = searchResults.querySelectorAll('.search-result-item');
+  if (e.key === 'ArrowDown' && items.length) {
+    e.preventDefault();
+    setSearchSelection(searchSelectedIndex + 1);
+  } else if (e.key === 'ArrowUp' && items.length) {
+    e.preventDefault();
+    setSearchSelection(searchSelectedIndex < 0 ? items.length - 1 : searchSelectedIndex - 1);
+  } else if (e.key === 'Enter' && items.length) {
+    e.preventDefault();
+    selectSearchResult(items[searchSelectedIndex < 0 ? 0 : searchSelectedIndex]);
+  } else if (e.key === 'Escape' && searchResults.classList.contains('active')) {
+    e.preventDefault();
+    clearSearch();
+  }
+});
+
+searchResults.addEventListener('click', function(e) {
+  var item = e.target.closest('.search-result-item');
+  if (item) selectSearchResult(item);
+});
+
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    if (!isDocsView) showDocs();
+    setTimeout(function() { searchInput.focus(); }, 100);
+  }
+});
+
+window.addEventListener('popstate', function() {
+  var hash = window.location.hash;
+  var route = parseDocsRoute(hash);
+  if (route) {
+    showDocsAt(route.slug, route.heading, false);
+  } else {
+    showLanding();
+  }
+});
+
+/* INITIAL ROUTE */
+(function() {
+  var hash = window.location.hash;
+  var route = parseDocsRoute(hash);
+  if (route) {
+    showDocsAt(route.slug, route.heading, false);
+  }
+})();
+
+/* CODE TABS */
+document.querySelectorAll('.code-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    var group = tab.closest('.code-section');
+    group.querySelectorAll('.code-tab').forEach(function(t) { t.classList.remove('active'); });
+    group.querySelectorAll('.code-panel').forEach(function(p) { p.classList.remove('active'); });
+    tab.classList.add('active');
+    group.querySelector('#' + tab.dataset.panel).classList.add('active');
+  });
+});
+
+/* COPY CODE */
+function writeTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise(function(resolve, reject) {
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      if (document.execCommand('copy')) resolve();
+      else reject(new Error('Copy command was rejected'));
+    } catch (error) {
+      reject(error);
+    } finally {
+      textarea.remove();
+    }
+  });
+}
+
+document.querySelectorAll('.doc-code, .code-block').forEach(function(block) {
+  var header = block.querySelector('.doc-code-header, .code-block-header');
+  var code = block.querySelector('pre code');
+  if (!header || !code || header.querySelector('.copy-code-btn')) return;
+
+  var button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'copy-code-btn';
+  button.setAttribute('aria-label', 'Copy code');
+  button.setAttribute('title', 'Copy code');
+  button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="copy-code-default">Copy</span><span class="copy-code-done">Copied</span>';
+  button.addEventListener('click', function() {
+    writeTextToClipboard(code.textContent || '').then(function() {
+      button.classList.add('copied');
+      button.setAttribute('aria-label', 'Code copied');
+      button.setAttribute('title', 'Code copied');
+      setTimeout(function() {
+        button.classList.remove('copied');
+        button.setAttribute('aria-label', 'Copy code');
+        button.setAttribute('title', 'Copy code');
+      }, 1400);
+    }).catch(function() {
+      button.setAttribute('aria-label', 'Could not copy code');
+      button.setAttribute('title', 'Could not copy code');
+    });
+  });
+  header.appendChild(button);
+});
+
+/* FADE-IN */
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(function(el) { observer.observe(el); });
+
+/* COPY COMMAND */
+function copyCmd(el, text) {
+  navigator.clipboard.writeText(text);
+  el.classList.add('copied');
+  setTimeout(function() { el.classList.remove('copied'); }, 1200);
+}
+</script>
+</body></html>

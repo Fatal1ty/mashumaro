@@ -1,0 +1,39 @@
+name: docs
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build and deploy documentation
+    if: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    environment:
+      name: website
+      url: https://mashumaro.io/
+
+    steps:
+      - name: Checkout release
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: Build documentation
+        run: python web/build.py
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy web/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }} --branch=master
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
