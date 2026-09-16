@@ -9,7 +9,7 @@ on:
 jobs:
   deploy:
     name: Build and deploy documentation
-    if: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME != '' }}
+    if: ${{ vars.CLOUDFLARE_WORKER_NAME != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -30,10 +30,10 @@ jobs:
       - name: Build documentation
         run: python web/build.py
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy web/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME }} --branch=master
+          command: deploy --name=${{ vars.CLOUDFLARE_WORKER_NAME }} --assets=web/dist --compatibility-date=2026-09-16 --yes
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
