@@ -35,5 +35,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --name=${{ vars.CLOUDFLARE_WORKER_NAME }} --assets=web/dist --compatibility-date=2026-09-16 --yes
+          command: deploy --name=${{ vars.CLOUDFLARE_WORKER_NAME }} --assets=web/dist --compatibility-date=2026-09-16
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
