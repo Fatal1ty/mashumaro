@@ -19,13 +19,13 @@ All types of contributions are encouraged and valued. See the [Table of Contents
   - [Reporting Bugs](#reporting-bugs)
   - [Suggesting Enhancements](#suggesting-enhancements)
   - [Your First Code Contribution](#your-first-code-contribution)
-  - [Improving The Documentation](#improving-the-documentation)
+  - [Improving the Documentation](#improving-the-documentation)
 
 
 
 ## I Have a Question
 
-> If you want to ask a question, we assume that you have read the available [Documentation](https://github.com/Fatal1ty/mashumaro/blob/master/README.md).
+> If you want to ask a question, we assume that you have read the available [documentation](https://mashumaro.io/#/docs/getting-started).
 
 Before you ask a question, it is best to search for existing [Issues](https://github.com/Fatal1ty/mashumaro/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question in this issue. It is also advisable to search the internet for answers first.
 
@@ -33,7 +33,8 @@ If you then still feel the need to ask a question and need clarification, we rec
 
 - Open an [Issue](https://github.com/Fatal1ty/mashumaro/issues/new).
 - Provide as much context as you can about what you're running into.
-- Provide project and platform versions (nodejs, npm, etc), depending on what seems relevant.
+- Provide the mashumaro and Python versions, your operating system, and any
+  optional serialization dependencies involved.
 - Tag your issue with the `question` tag
 
 We will then take care of the issue as soon as possible.
@@ -51,7 +52,7 @@ We will then take care of the issue as soon as possible.
 A good bug report shouldn't leave others needing to chase you up for more information. Therefore, we ask you to investigate carefully, collect information and describe the issue in detail in your report. Please complete the following steps in advance to help us fix any potential bug as fast as possible.
 
 - Make sure that you are using the latest version.
-- Determine if your bug is really a bug and not an error on your side e.g. using incompatible environment components/versions (Make sure that you have read the [documentation](https://github.com/Fatal1ty/mashumaro/blob/master/README.md). If you are looking for support, you might want to check [this section](#i-have-a-question)).
+- Determine if your bug is really a bug and not an error on your side e.g. using incompatible environment components/versions (Make sure that you have read the [documentation](https://mashumaro.io/#/docs/getting-started). If you are looking for support, you might want to check [this section](#i-have-a-question)).
 - To see if other users have experienced (and potentially already solved) the same issue you are having, check if there is not already a bug report existing for your bug or error in the [bug tracker](https://github.com/Fatal1ty/mashumaro/issues?q=label%3Abug).
 - Also make sure to search the internet (including Stack Overflow) to see if users outside the GitHub community have discussed the issue.
 - Collect information about the bug:
@@ -88,7 +89,7 @@ This section guides you through submitting an enhancement suggestion for mashuma
 #### Before Submitting an Enhancement
 
 - Make sure that you are using the latest version.
-- Read the [documentation](https://github.com/Fatal1ty/mashumaro/blob/master/README.md) carefully and find out if the functionality is already covered, maybe by an individual configuration.
+- Read the [documentation](https://mashumaro.io/#/docs/getting-started) carefully and find out if the functionality is already covered, maybe by an individual configuration.
 - Perform a [search](https://github.com/Fatal1ty/mashumaro/issues) to see if the enhancement has already been suggested. If it has, add a comment to the existing issue instead of opening a new one.
 - Find out whether your idea fits with the scope and aims of the project. It's up to you to make a strong case to convince the project's developers of the merits of this feature. Keep in mind that we want features that will be useful to the majority of our users and not just a small subset. If you're just targeting a minority of users, consider writing an add-on/plugin library.
 
@@ -191,12 +192,46 @@ just test-with-coverage
 
 We use GitHub Actions to provide "continuous integration" testing for all pull requests. When submitting a pull request, please check that all tests are passing and fix any issues that may arise.
 
-### Improving The Documentation
+### Improving the Documentation
 
-We welcome contributions to improve the documentation of this project. Whether it's fixing typos, clarifying instructions, adding examples, or creating new sections, your help is greatly appreciated. Here are some ways you can contribute to improving the documentation:
+The published documentation is available at
+[mashumaro.io](https://mashumaro.io/#/docs/getting-started). Its source files
+are in [`web/docs`](../web/docs), and the landing page is defined in
+[`web/template.html`](../web/template.html). Update the documentation whenever
+a change affects public behavior, supported types, configuration, or examples.
+The `README.md` is also used as the package description on PyPI, so keep its
+overview and compatibility information in sync when those details change.
 
-1. Fixing Typos and Grammar: If you notice any typos or grammatical errors in the documentation, feel free to submit a pull request with the corrections.
-2. Clarifying Instructions: If you find any instructions that are unclear or ambiguous, you can suggest improvements to make them more understandable for other users.
-3. Adding Examples: Providing code examples or step-by-step guides can be very helpful for users trying to understand how to use the project. Feel free to add examples where needed.
-4. Creating New Sections: If you think there are important topics missing from the documentation, you can create new sections to cover those topics.
-5. Updating Outdated Information: If any information in the documentation is outdated or no longer accurate, please update it with the correct information.
+Documentation pages are Markdown files named with a numeric prefix that
+controls their order in the sidebar. Each page starts with YAML front matter:
+
+```markdown
+---
+title: New Topic
+group: Customization
+slug: new-topic
+---
+```
+
+`title` is required. `group` is optional and places the page under a sidebar
+heading. `slug` is also optional; when omitted, it is derived from the title.
+Use documentation routes for links between pages, for example
+`[Field options](#/docs/field-options)`. The build checks that referenced pages
+and headings exist.
+
+Build the site from the repository root before submitting a documentation
+change:
+
+```shell
+just docs
+```
+
+The generated site is written to `web/dist/`. To preview it locally, run:
+
+```shell
+python -m http.server --directory web/dist 8000
+```
+
+Then open <http://localhost:8000>. The `web/dist/` directory is generated and
+must not be committed. Production deployment is handled by the documentation
+workflow when a release is published.
