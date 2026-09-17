@@ -271,6 +271,7 @@ for other less popular built-in types:
 * [`ipaddress.IPv6Interface`](https://docs.python.org/3/library/ipaddress.html#ipaddress.IPv6Interface)
 * [`typing.Pattern`](https://docs.python.org/3/library/typing.html#typing.Pattern)
 * [`re.Pattern`](https://docs.python.org/3/library/re.html#re.Pattern)
+* [`slice`](https://docs.python.org/3/library/functions.html#slice)
 
 for backported types from [`typing-extensions`](https://github.com/python/typing_extensions):
 * [`OrderedDict`](https://docs.python.org/3/library/typing.html#typing.OrderedDict)

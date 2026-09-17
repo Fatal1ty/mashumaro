@@ -330,6 +330,20 @@ def test_jsonschema_for_timedelta():
     )
 
 
+def test_jsonschema_for_slice():
+    int_or_null = JSONSchema(
+        anyOf=[
+            JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            JSONSchema(type=JSONSchemaInstanceType.NULL),
+        ]
+    )
+    assert build_json_schema(slice) == JSONArraySchema(
+        prefixItems=[int_or_null, int_or_null, int_or_null],
+        minItems=3,
+        maxItems=3,
+    )
+
+
 def test_jsonschema_for_timezone():
     assert build_json_schema(datetime.timezone) == JSONSchema(
         type=JSONSchemaInstanceType.STRING, pattern=UTC_OFFSET_PATTERN

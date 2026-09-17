@@ -63,6 +63,28 @@ def test_to_msg_pack_datetime():
     assert DataClass(dt).to_msgpack() == dumped
 
 
+def test_msgpack_slice():
+    @dataclass
+    class DataClass(DataClassMessagePackMixin):
+        x: slice
+
+    instance = DataClass(slice(1, 10, 3))
+    dumped = msgpack.packb({"x": [1, 10, 3]})
+    assert instance.to_msgpack() == dumped
+    assert DataClass.from_msgpack(dumped) == instance
+
+
+def test_msgpack_slice_with_none():
+    @dataclass
+    class DataClass(DataClassMessagePackMixin):
+        x: slice
+
+    instance = DataClass(slice(5))
+    dumped = msgpack.packb({"x": [None, 5, None]})
+    assert instance.to_msgpack() == dumped
+    assert DataClass.from_msgpack(dumped) == instance
+
+
 def test_msgpack_with_bytes():
     @dataclass
     class DataClass(DataClassMessagePackMixin):
