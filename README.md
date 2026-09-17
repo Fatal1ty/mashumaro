@@ -2433,6 +2433,22 @@ disconnected_event = ClientEvent.from_dict(
 assert disconnected_event == ClientDisconnectedEvent(IPv4Address("10.0.0.42"))
 ```
 
+The same is applicable for subclasses without a common field:
+
+```python
+@dataclass
+class Ingredient(DataClassDictMixin):
+    name: str
+
+    class Config:
+        discriminator = Discriminator(include_subtypes=True)
+
+...
+
+celery = Ingredient.from_dict({"name": "celery from my garden", "pieces": 5})
+assert celery == Celery(name="celery from my garden", pieces=5)
+```
+
 > [!NOTE]\
 > A class-level discriminator is activated for a class only when that class
 > defines `Config` in its own namespace and the effective config provides a
@@ -2451,22 +2467,6 @@ reuse the parent configuration:
 class SpecializedClientEvent(ClientEvent):
     class Config(ClientEvent.Config):
         pass
-```
-
-The same is applicable for subclasses without a common field:
-
-```python
-@dataclass
-class Ingredient(DataClassDictMixin):
-    name: str
-
-    class Config:
-        discriminator = Discriminator(include_subtypes=True)
-
-...
-
-celery = Ingredient.from_dict({"name": "celery from my garden", "pieces": 5})
-assert celery == Celery(name="celery from my garden", pieces=5)
 ```
 
 #### Working with union of classes
