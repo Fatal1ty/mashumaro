@@ -50,6 +50,15 @@ def test_type_alias_type_with_union_value_packer():
     assert MyClass([1, 2]).to_dict() == {"x": [1, 2]}
 
 
+def test_type_alias_type_with_union_value_unpacker():
+    @dataclass
+    class MyClass(DataClassDictMixin):
+        x: ScalarAlias | list[int]
+
+    assert MyClass.from_dict({"x": 1}) == MyClass(1)
+    assert MyClass.from_dict({"x": [1, 2]}) == MyClass([1, 2])
+
+
 @pytest.mark.parametrize("deferred_ann", [False, True])
 def test_pep695_generic_serialization_strategy(deferred_ann):
     if deferred_ann:

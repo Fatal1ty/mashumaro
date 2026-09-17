@@ -60,6 +60,7 @@ from mashumaro.core.meta.helpers import (
     is_unpack,
     iter_all_subclasses,
     not_none_type_arg,
+    resolve_type_alias_type,
     resolve_type_params,
     substitute_type_params,
     type_name,
@@ -207,10 +208,15 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
             unpacker_block = CodeLines()
             if isinstance(unpacker, TypeMatchEligibleExpression):
                 do_try = False
+                # A PEP 695 type alias carries the alias name (e.g.
+                # "ScalarAlias"), which is not bound in the generated code's
+                # namespace; resolve it to the underlying type first, as the
+                # packer side already does.
+                match_type = resolve_type_alias_type(type_arg)
                 if type_match_statements > 1:
-                    condition = f"__value_type is {type_arg.__name__}"
+                    condition = f"__value_type is {match_type.__name__}"
                 else:
-                    condition = f"type(value) is {type_arg.__name__}"
+                    condition = f"type(value) is {match_type.__name__}"
                 if (condition, unpacker) in unpackers:  # pragma: no cover
                     # we shouldn't be here because condition is always unique
                     continue
