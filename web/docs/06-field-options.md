@@ -36,7 +36,7 @@ class Event(DataClassDictMixin):
 | `serialize` | Callable, engine name, or `pass_through` | Override packing |
 | `deserialize` | Callable, engine name, or `pass_through` | Override unpacking |
 | `serialization_strategy` | `SerializationStrategy` instance | Override both directions |
-| `alias` | `str` | External field name |
+| `alias` | `str | Sequence[str]` | One external field name or ordered aliases |
 
 Additional keyword arguments are copied into the result, which lets Mashumaro metadata coexist with schema descriptions or another library's metadata.
 
@@ -251,11 +251,37 @@ assert response.to_dict() == {
 }
 ```
 
-Set `allow_deserialization_not_by_alias=True` when both the alias and Python name should be accepted during a migration.
+### Multiple aliases
+
+Pass an ordered sequence when a field must accept more than one external name:
+
+```python
+from mashumaro import field_options
+
+
+@dataclass
+class User(DataClassDictMixin):
+    user_id: int = field(
+        metadata=field_options(alias=["userId", "user_id", "UserID"])
+    )
+
+    class Config:
+        serialize_by_alias = True
+
+
+assert User.from_dict({"userId": 1}) == User(1)
+assert User.from_dict({"user_id": 2}) == User(2)
+assert User.from_dict({"UserID": 3}) == User(3)
+assert User(4).to_dict() == {"userId": 4}
+```
+
+Aliases are tried in declaration order. If an input contains more than one of them, the first matching alias wins. The first alias is also the primary alias used when serializing by alias and as the property name in generated JSON Schema. An empty sequence uses the Python field name.
+
+Set `allow_deserialization_not_by_alias=True` when the Python field name should also be accepted. It is tried after all declared aliases. With `forbid_extra_keys=True`, every declared alias and the optional Python field name count as expected keys.
 
 ### `Annotated` aliases
 
-Aliases can stay next to the type with [`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated) instead of in `field()` metadata:
+Aliases can stay next to the type with [`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated) instead of in `field()` metadata. Repeat `Alias(...)` to declare multiple names; the first one is primary:
 
 ```python
 from typing import Annotated
@@ -265,10 +291,10 @@ from mashumaro.types import Alias
 
 @dataclass
 class User(DataClassDictMixin):
-    user_id: Annotated[int, Alias("userId")]
+    user_id: Annotated[int, Alias("userId"), Alias("UserID")]
 ```
 
-Alias precedence is intentionally local:
+Alias sources are not combined. Precedence is intentionally local:
 
 - `field(metadata={"alias": ...})` wins.
 - Otherwise `Annotated[..., Alias(...)]` wins.

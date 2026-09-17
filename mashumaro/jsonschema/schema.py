@@ -89,7 +89,7 @@ from mashumaro.jsonschema.models import (
     JSONSchemaInstanceType,
     JSONSchemaStringFormat,
 )
-from mashumaro.types import SerializationStrategy
+from mashumaro.types import Alias, SerializationStrategy
 
 try:
     from mashumaro.mixins.orjson import (
@@ -139,8 +139,21 @@ class Instance:
     def alias(self) -> str | None:
         alias = self.metadata.get("alias")
         if alias is None:
+            alias = next(
+                (
+                    annotation.name
+                    for annotation in self.annotations
+                    if isinstance(annotation, Alias)
+                ),
+                None,
+            )
+        if alias is None:
             aliases_config = self.get_owner_config().aliases
             alias = aliases_config.get(self.name)  # type: ignore
+        # A field may declare several aliases; the schema uses the first
+        # (primary) one, matching what serialization writes.
+        if alias is not None and not isinstance(alias, str):
+            alias = next(iter(alias), None)
         if alias is None:
             alias = self.name
         return alias

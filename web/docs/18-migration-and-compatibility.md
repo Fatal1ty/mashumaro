@@ -100,16 +100,18 @@ Whether old readers tolerate the new output depends on their unknown-key policy.
 
 ### Rename a field
 
-Keep one stable output alias and accept the Python name during migration:
+Keep one stable output alias while accepting historical names and the Python field name during migration:
 
 ```python
 class Config(BaseConfig):
-    aliases = {"display_name": "displayName"}
+    aliases = {
+        "display_name": ["displayName", "name", "display_name_v1"]
+    }
     serialize_by_alias = True
     allow_deserialization_not_by_alias = True
 ```
 
-For several historical names, normalize them in `__pre_deserialize__`.
+The first alias, `displayName`, is the canonical output name. The remaining aliases are accepted in order during deserialization, and `display_name` is accepted as the final fallback because `allow_deserialization_not_by_alias` is enabled.
 
 ### Change a field representation
 

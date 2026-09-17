@@ -29,7 +29,7 @@ Inheriting `BaseConfig` is recommended for discoverability, type checking, and d
 | `debug` | `False` | Print generated source code |
 | `code_generation_options` | `[]` | Add optional method parameters/features |
 | `serialization_strategy` | `{}` | Type-to-strategy mapping |
-| `aliases` | `{}` | Field-name-to-alias mapping |
+| `aliases` | `{}` | Field names mapped to one alias or ordered aliases |
 | `serialize_by_alias` | Unset | Emit aliases by default |
 | `allow_deserialization_not_by_alias` | `False` | Accept Python names for aliased fields |
 | `omit_none` | Unset | Omit fields whose value is `None` |
@@ -110,11 +110,13 @@ Define external names centrally:
 class Config(BaseConfig):
     aliases = {
         "user_id": "userId",
-        "created_at": "createdAt",
+        "created_at": ["createdAt", "created_at", "CreatedAt"],
     }
 ```
 
-A per-field metadata alias overrides an `Annotated` alias, which overrides this mapping.
+Each value may be a string or an ordered sequence of strings. During deserialization, aliases are tried in order and the first key present in the input wins. The first alias is the primary name used for alias serialization and generated JSON Schema. An empty sequence uses the Python field name.
+
+A per-field metadata alias overrides an `Annotated` alias, which overrides this mapping. Alias sources are not combined.
 
 ### `serialize_by_alias`
 
@@ -146,7 +148,7 @@ class Config(BaseConfig):
     allow_deserialization_not_by_alias = True
 ```
 
-This is valuable for gradual API migrations. If both names are present, avoid depending on precedence; reject such payloads before conversion or normalize them in `__pre_deserialize__`.
+This is valuable for gradual API migrations. With multiple aliases, the Python field name is tried after every declared alias. If several accepted keys are present, the first declared alias wins.
 
 ## Omission rules
 
@@ -339,7 +341,7 @@ except ExtraKeysError as exc:
     assert exc.target_type is Command
 ```
 
-Alias names count as expected keys. When `allow_deserialization_not_by_alias=True`, both the alias and Python field name are accepted.
+All alias names count as expected keys. When `allow_deserialization_not_by_alias=True`, the Python field name is accepted too.
 
 ## Inheritance pattern
 

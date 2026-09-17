@@ -49,7 +49,23 @@ The essential output is equivalent to:
 }
 ```
 
-Dataclass fields without defaults are required. Defaults are serialized into the schema using the model's serialization rules. Aliases become property names.
+Dataclass fields without defaults are required. Defaults are serialized into the schema using the model's serialization rules. Aliases become property names. When a field has multiple aliases, JSON Schema uses the first (primary) alias, including aliases declared by repeating `Alias(...)` in `Annotated`:
+
+```python
+from typing import Annotated
+
+from mashumaro.types import Alias
+
+
+@dataclass
+class LegacyUser:
+    user_id: Annotated[int, Alias("userId"), Alias("UserID")]
+
+
+schema = build_json_schema(LegacyUser)
+assert set(schema.properties) == {"userId"}
+assert schema.required == ["userId"]
+```
 
 ## Non-dataclass root shapes
 
