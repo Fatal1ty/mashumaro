@@ -208,10 +208,6 @@ class UnionUnpackerBuilder(AbstractUnpackerBuilder):
             unpacker_block = CodeLines()
             if isinstance(unpacker, TypeMatchEligibleExpression):
                 do_try = False
-                # A PEP 695 type alias carries the alias name (e.g.
-                # "ScalarAlias"), which is not bound in the generated code's
-                # namespace; resolve it to the underlying type first, as the
-                # packer side already does.
                 match_type = resolve_type_alias_type(type_arg)
                 if type_match_statements > 1:
                     condition = f"__value_type is {match_type.__name__}"
