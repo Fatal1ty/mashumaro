@@ -112,7 +112,20 @@ event = Event.from_dict({"kind": "deleted", "object_id": 42})
 assert event == Deleted(object_id=42)
 ```
 
-This works for nested `Event` fields and direct `Event.from_dict()` calls. Do not set `include_supertypes=True` on a class-level discriminator: selecting the configured base as its own fallback would recurse. Use `Annotated` on a union/field when supertypes are needed.
+This works for nested `Event` fields and direct `Event.from_dict()` calls.
+
+A class-level discriminator is activated for a class only when that class defines `Config` in its own namespace and the effective config provides a discriminator, either directly or through config inheritance. Other descendants are deserialized as concrete types rather than becoming additional polymorphic entry points. This ensures that, after `Event.from_dict()` selects `Deleted`, the selected class does not run the same discriminator again.
+
+If an intermediate descendant should also dispatch among its own descendants, opt in explicitly by defining its own `Config`. An empty subclass is sufficient to reuse the parent configuration:
+
+```python
+@dataclass
+class AuditedEvent(Event):
+    class Config(Event.Config):
+        pass
+```
+
+Do not set `include_supertypes=True` on a class-level discriminator: selecting the configured base as its own fallback would recurse. Use `Annotated` on a union/field when supertypes are needed.
 
 ## Discriminated unions
 

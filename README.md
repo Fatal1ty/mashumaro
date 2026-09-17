@@ -1312,6 +1312,11 @@ code generation options and other things just in one place. Or in some
 classes in different ways if you need flexibility. Inheritance is always on the
 first place.
 
+The class-level `discriminator` is an exception to this rule. Although the
+`Config` class remains accessible through normal Python inheritance, merely
+inheriting it does not make every descendant a new polymorphic entry point.
+See [Class level discriminator](#class-level-discriminator) for details.
+
 There is a base class `BaseConfig` that you can inherit for the sake of
 convenience, but it's not mandatory.
 
@@ -2426,6 +2431,26 @@ disconnected_event = ClientEvent.from_dict(
     {"type": "disconnected", "client_ip": "10.0.0.42"}
 )
 assert disconnected_event == ClientDisconnectedEvent(IPv4Address("10.0.0.42"))
+```
+
+> [!NOTE]\
+> A class-level discriminator is activated for a class only when that class
+> defines `Config` in its own namespace and the effective config provides a
+> discriminator, either directly or through config inheritance. Other
+> descendants are deserialized as concrete types instead of becoming
+> additional polymorphic entry points. This ensures that, after
+> `ClientEvent.from_dict` selects `ClientDisconnectedEvent`, the selected class
+> does not run the same discriminator again.
+
+If an intermediate descendant should also be a polymorphic entry point, opt in
+explicitly by defining its own `Config`. An empty subclass is sufficient to
+reuse the parent configuration:
+
+```python
+@dataclass
+class SpecializedClientEvent(ClientEvent):
+    class Config(ClientEvent.Config):
+        pass
 ```
 
 The same is applicable for subclasses without a common field:

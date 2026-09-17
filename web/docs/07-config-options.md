@@ -7,6 +7,8 @@ group: Customization
 
 An inner `Config` class defines model-wide serialization behavior. Configuration follows normal [Python class inheritance](https://docs.python.org/3/tutorial/classes.html#inheritance), so a project can create a base mixin and let individual dataclasses override only their exceptions.
 
+The class-level `discriminator` is the exception. The `Config` class remains accessible through normal Python inheritance, but merely inheriting it does not make every descendant a new polymorphic entry point. A descendant can explicitly opt in by defining its own `Config` that declares a discriminator or inherits one from another config class. See [Class-level discriminator](#/docs/discriminator#class-level-discriminator) for details.
+
 ```python
 from mashumaro import DataClassDictMixin
 from mashumaro.config import BaseConfig
