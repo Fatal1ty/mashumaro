@@ -211,6 +211,7 @@ The builder shares one `Context`, so definitions accumulate across calls. Constr
 | Dataclass | Closed object with properties and required keys |
 | `datetime`, `date`, `time` | String with standard format |
 | `UUID`, IP addresses | String with standard format |
+| `slice` | Array of three `integer` or `null` items (`[start, stop, step]`) |
 | `bytes` | String with Mashumaro's `base64` format extension |
 | Paths | String with Mashumaro's `path` format extension |
 

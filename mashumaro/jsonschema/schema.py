@@ -644,6 +644,22 @@ def on_timezone(instance: Instance, ctx: Context) -> JSONSchema | None:
 
 
 @register
+def on_slice(instance: Instance, ctx: Context) -> JSONSchema | None:
+    if instance.origin_type is slice:
+        int_or_null = JSONSchema(
+            anyOf=[
+                JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+                JSONSchema(type=JSONSchemaInstanceType.NULL),
+            ]
+        )
+        return JSONArraySchema(
+            prefixItems=[int_or_null, int_or_null, int_or_null],
+            minItems=3,
+            maxItems=3,
+        )
+
+
+@register
 def on_zone_info(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type is ZoneInfo:
         return JSONSchema(

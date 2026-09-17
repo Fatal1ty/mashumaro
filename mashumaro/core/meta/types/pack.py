@@ -606,6 +606,16 @@ def pack_timezone(spec: ValueSpec) -> Expression | None:
 
 
 @register
+def pack_slice(spec: ValueSpec) -> Expression | None:
+    if spec.origin_type is slice:
+        return (
+            f"[{spec.expression}.start, "
+            f"{spec.expression}.stop, "
+            f"{spec.expression}.step]"
+        )
+
+
+@register
 def pack_zone_info(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is zoneinfo.ZoneInfo:
         return f"str({spec.expression})"

@@ -1011,6 +1011,12 @@ def unpack_timezone(spec: ValueSpec) -> Expression | None:
 
 
 @register
+def unpack_slice(spec: ValueSpec) -> Expression | None:
+    if spec.origin_type is slice:
+        return f"slice(*{spec.expression})"
+
+
+@register
 def unpack_zone_info(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is zoneinfo.ZoneInfo:
         method = "__zoneinfo_ZoneInfo"

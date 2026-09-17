@@ -4,7 +4,7 @@ title: Supported Types
 
 # Supported Types
 
-Mashumaro supports [dataclasses](https://docs.python.org/3/library/dataclasses.html), standard collections, modern [typing constructs](https://docs.python.org/3/library/typing.html), enums, date/time objects, paths, network addresses, decimals, UUIDs, patterns, and user-defined extensions. Support applies recursively: a type can appear at the root of a codec, as a dataclass field, inside a collection, or as a type argument of another supported generic.
+Mashumaro supports [dataclasses](https://docs.python.org/3/library/dataclasses.html), standard collections, modern [typing constructs](https://docs.python.org/3/library/typing.html), enums, date/time objects, slices, paths, network addresses, decimals, UUIDs, patterns, and user-defined extensions. Support applies recursively: a type can appear at the root of a codec, as a dataclass field, inside a collection, or as a type argument of another supported generic.
 
 This chapter describes the **default basic representation**. A format-specific dialect may keep selected native values — notably bytes in MessagePack, date/time values in TOML, and several scalars in orjson.
 
@@ -163,6 +163,26 @@ Mashumaro supports [`pathlib.Path`](https://docs.python.org/3/library/pathlib.ht
 
 [`re.Pattern`](https://docs.python.org/3/library/re.html#re.Pattern), `re.Pattern[str]`, `re.Pattern[bytes]`, and `typing.Pattern` serialize to their `.pattern` value and deserialize with [`re.compile`](https://docs.python.org/3/library/re.html#re.compile). String patterns produce strings; bytes patterns produce bytes.
 
+### Slices
+
+A [`slice`](https://docs.python.org/3/library/functions.html#slice) is serialized as a three-element list `[start, stop, step]`. Each component is an integer or `None`, matching the attributes of the `slice` object. Because the encoded form is a list, a `slice` cannot be used as a mapping key in JSON, TOML, YAML, or MessagePack.
+
+```python
+from dataclasses import dataclass
+
+from mashumaro import DataClassDictMixin
+
+
+@dataclass
+class Window(DataClassDictMixin):
+    rows: slice
+
+
+assert Window(slice(0, 5, 2)).to_dict() == {"rows": [0, 5, 2]}
+assert Window(slice(5)).to_dict() == {"rows": [None, 5, None]}
+assert Window.from_dict({"rows": [1, 10, None]}) == Window(slice(1, 10))
+```
+
 ## Collections
 
 Collection contents are converted recursively. Abstract collection annotations deserialize to a useful concrete implementation.
@@ -219,6 +239,7 @@ The basic codec can convert typed mapping keys recursively, but the final format
 - JSON object keys are strings.
 - TOML keys are strings.
 - YAML and MessagePack can represent more key types, but downstream consumers may not.
+- `slice` is encoded as a list, so it cannot be a mapping key in any of these formats.
 
 For an interoperable JSON/TOML contract, prefer `dict[str, V]` or define a strategy that turns keys into an unambiguous string.
 

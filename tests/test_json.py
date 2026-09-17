@@ -101,3 +101,25 @@ def test_json_datetime():
 
     assert instance.to_json() == dumped
     assert DataClass.from_json(dumped) == instance
+
+
+def test_json_slice():
+    @dataclass
+    class DataClass(DataClassJSONMixin):
+        x: slice
+
+    instance = DataClass(slice(0, 5, 2))
+    dumped = json.dumps({"x": [0, 5, 2]})
+    assert instance.to_json() == dumped
+    assert DataClass.from_json(dumped) == instance
+
+
+def test_json_slice_with_none():
+    @dataclass
+    class DataClass(DataClassJSONMixin):
+        x: slice
+
+    instance = DataClass(slice(None, 5, None))
+    dumped = json.dumps({"x": [None, 5, None]})
+    assert instance.to_json() == dumped
+    assert DataClass.from_json(dumped) == instance

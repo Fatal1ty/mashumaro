@@ -151,6 +151,8 @@ class Fixture:
     TIME_STR = "12:46:55.308495"
     TIMEDELTA = timedelta(3.14159265358979323846)
     TIMEZONE = timezone(timedelta(hours=3))
+    SLICE = slice(0, 5, 2)
+    SLICE_DUMPED = [0, 5, 2]
     UUID = uuid.UUID("3c25dd74-f208-46a2-9606-dd3919e975b7")
     UUID_STR = "3c25dd74-f208-46a2-9606-dd3919e975b7"
     IP4ADDRESS_STR = "127.0.0.1"
@@ -269,6 +271,7 @@ inner_values = [
     (time, Fixture.TIME, Fixture.TIME_STR),
     (timedelta, Fixture.TIMEDELTA, Fixture.TIMEDELTA.total_seconds()),
     (timezone, Fixture.TIMEZONE, "UTC+03:00"),
+    (slice, Fixture.SLICE, Fixture.SLICE_DUMPED),
     (ZoneInfo, ZoneInfo("Europe/Moscow"), "Europe/Moscow"),
     (uuid.UUID, Fixture.UUID, Fixture.UUID_STR),
     (ipaddress.IPv4Address, Fixture.IP4ADDRESS, Fixture.IP4ADDRESS_STR),
