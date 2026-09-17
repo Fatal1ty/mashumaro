@@ -82,7 +82,7 @@ from mashumaro.jsonschema.schema import (
     EmptyJSONSchema,
     Instance,
 )
-from mashumaro.types import Discriminator, SerializationStrategy
+from mashumaro.types import Alias, Discriminator, SerializationStrategy
 from tests.entities import (
     CustomPath,
     GenericNamedTuple,
@@ -147,14 +147,22 @@ def test_jsonschema_uses_first_of_multiple_aliases():
     @dataclass
     class MyClass:
         a: int = field(metadata={"alias": ["aa", "aaa"]})
+        c: Annotated[int, Alias("cc"), Alias("ccc")]
         b: int = 0
+        d: Annotated[int, Alias("annotated_d")] = field(
+            default=0, metadata={"alias": ["dd", "ddd"]}
+        )
 
         class Config:
-            aliases = {"b": ["bb", "bbb"]}
+            aliases = {
+                "b": ["bb", "bbb"],
+                "c": ["config_c", "config_cc"],
+                "d": ["config_d", "config_dd"],
+            }
 
     schema = build_json_schema(MyClass)
-    assert set(schema.properties) == {"aa", "bb"}
-    assert schema.required == ["aa"]
+    assert set(schema.properties) == {"aa", "bb", "cc", "dd"}
+    assert schema.required == ["aa", "cc"]
 
 
 def test_jsonschema_with_empty_aliases_list():
