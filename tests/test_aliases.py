@@ -370,6 +370,16 @@ def test_multiple_aliases_field_option():
         DataClass.from_dict({"x": 3})
 
 
+def test_empty_aliases_field_option():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(metadata={"alias": []})
+
+    assert DataClass.from_dict({"x": 1}) == DataClass(1)
+    with pytest.raises(MissingField):
+        DataClass.from_dict({})
+
+
 def test_multiple_aliases_config_option():
     @dataclass
     class DataClass(DataClassDictMixin):
@@ -380,6 +390,19 @@ def test_multiple_aliases_config_option():
 
     assert DataClass.from_dict({"id": 1}) == DataClass(1)
     assert DataClass.from_dict({"product_id": 2}) == DataClass(2)
+
+
+def test_empty_aliases_config_option():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int
+
+        class Config(BaseConfig):
+            aliases = {"x": []}
+
+    assert DataClass.from_dict({"x": 1}) == DataClass(1)
+    with pytest.raises(MissingField):
+        DataClass.from_dict({})
 
 
 def test_multiple_aliases_annotated():
@@ -406,6 +429,15 @@ def test_multiple_aliases_with_default():
         x: int = field(default=99, metadata={"alias": ["id", "product_id"]})
 
     assert DataClass.from_dict({"product_id": 2}) == DataClass(2)
+    assert DataClass.from_dict({}) == DataClass(99)
+
+
+def test_empty_aliases_with_default():
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: int = field(default=99, metadata={"alias": []})
+
+    assert DataClass.from_dict({"x": 2}) == DataClass(2)
     assert DataClass.from_dict({}) == DataClass(99)
 
 

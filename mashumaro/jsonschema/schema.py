@@ -144,7 +144,7 @@ class Instance:
         # A field may declare several aliases; the schema uses the first
         # (primary) one, matching what serialization writes.
         if alias is not None and not isinstance(alias, str):
-            alias = alias[0]
+            alias = next(iter(alias), None)
         if alias is None:
             alias = self.name
         return alias

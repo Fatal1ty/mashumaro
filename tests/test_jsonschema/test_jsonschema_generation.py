@@ -157,6 +157,20 @@ def test_jsonschema_uses_first_of_multiple_aliases():
     assert schema.required == ["aa"]
 
 
+def test_jsonschema_with_empty_aliases_list():
+    @dataclass
+    class MyClass:
+        a: int = field(metadata={"alias": []})
+        b: int = 0
+
+        class Config:
+            aliases = {"b": []}
+
+    schema = build_json_schema(MyClass)
+    assert set(schema.properties) == {"a", "b"}
+    assert schema.required == ["a"]
+
+
 def test_jsonschema_for_dataclass():
     @dataclass
     class MyClass:
