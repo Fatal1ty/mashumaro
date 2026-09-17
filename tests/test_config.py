@@ -58,6 +58,41 @@ def test_config_without_base_config_base(mocker):
     mocked_print.assert_called()
 
 
+def test_config_without_base_config_base_inheritance():
+    class ParentConfig:
+        forbid_extra_keys = True
+        sort_keys = True
+
+    @dataclass
+    class Parent(DataClassDictMixin):
+        foo: int
+        bar: int
+
+        class Config(ParentConfig):
+            pass
+
+    @dataclass
+    class Child(Parent):
+        class Config(Parent.Config):
+            pass
+
+    @dataclass
+    class ChildWithOverrides(Parent):
+        class Config(Parent.Config):
+            forbid_extra_keys = False
+            sort_keys = False
+
+    child = Child(foo=1, bar=2)
+    assert str(child.to_dict()) == "{'bar': 2, 'foo': 1}"
+    with pytest.raises(ExtraKeysError) as exc_info:
+        Child.from_dict({"foo": 1, "bar": 2, "extra": 3})
+    assert exc_info.value.extra_keys == {"extra"}
+    assert exc_info.value.target_type is Child
+
+    overridden = ChildWithOverrides.from_dict({"foo": 1, "bar": 2, "extra": 3})
+    assert str(overridden.to_dict()) == "{'foo': 1, 'bar': 2}"
+
+
 def test_debug_false_option(mocker):
     mocked_print = mocker.patch("builtins.print")
 
@@ -512,3 +547,44 @@ def test_forbid_extra_keys_with_discriminator_for_subclass():
             {"x": "foo", "__type": "_VariantByField4", "y": "bar"}
         )
     assert exc_info.value.extra_keys == {"y"}
+
+
+def test_plain_config_inheritance_with_discriminator():
+    def tagger(cls: type) -> str:
+        return f"{cls.__module__}.{cls.__qualname__}"
+
+    @dataclass
+    class Root(DataClassDictMixin):
+        name: str = "root"
+
+        class Config:
+            forbid_extra_keys = True
+            discriminator = Discriminator(
+                field="type", include_subtypes=True, variant_tagger_fn=tagger
+            )
+
+        def __post_serialize__(self, data: dict):
+            data["type"] = tagger(type(self))
+            return data
+
+        @classmethod
+        def __pre_deserialize__(cls, data: dict) -> dict:
+            return {key: value for key, value in data.items() if key != "type"}
+
+    @dataclass
+    class Middle(Root):
+        value: int = 0
+
+        class Config(Root.Config):
+            pass
+
+    @dataclass
+    class Child(Middle):
+        extra: int = 0
+
+    child = Child(name="child", value=1, extra=2)
+    serialized = child.to_dict()
+
+    assert Root.from_dict(serialized) == child
+    assert Middle.from_dict(serialized) == child
+    assert Child.from_dict(serialized) == child
