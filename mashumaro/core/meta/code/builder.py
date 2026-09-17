@@ -615,11 +615,7 @@ class CodeBuilder:
         else:
             config_cls = cls.__dict__.get("Config", BaseConfig)
         if not issubclass(config_cls, BaseConfig):
-            config_cls = type(
-                "Config",
-                (BaseConfig, config_cls),
-                {**BaseConfig.__dict__, **config_cls.__dict__},
-            )
+            config_cls = type("Config", (config_cls, BaseConfig), {})
         return config_cls
 
     def get_discriminator(
