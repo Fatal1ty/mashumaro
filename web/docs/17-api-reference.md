@@ -300,21 +300,23 @@ Discriminator(
 ### `Alias`
 
 ```python
-Annotated[int, Alias("externalName")]
+Annotated[int, Alias("externalName"), Alias("legacyName")]
 ```
 
-[`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated) preserves the underlying static type while carrying Mashumaro's runtime metadata.
+[`Annotated`](https://docs.python.org/3/library/typing.html#typing.Annotated) preserves the underlying static type while carrying Mashumaro's runtime metadata. Multiple `Alias` annotations are tried in order during deserialization; the first is used for alias serialization and generated JSON Schema.
 
 ## Field helper
 
 ```text
+from collections.abc import Sequence
+
 from mashumaro import field_options
 
 field_options(
     serialize=None,
     deserialize=None,
     serialization_strategy=None,
-    alias=None,
+    alias: str | Sequence[str] | None = None,
     **extra_metadata,
 ) -> dict
 ```
