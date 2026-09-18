@@ -9,6 +9,7 @@ if not PY_312_MIN:
         "test_recursive_union.py",
         "test_jsonschema/test_jsonschema_pep_695.py",
         "test_type_alias_type_name.py",
+        "test_web_build.py",
     ]
 
 add_unpack_method = patch(

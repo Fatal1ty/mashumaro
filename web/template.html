@@ -874,7 +874,7 @@ function highlightSearchMatch(query) {
   var textNode;
   while ((textNode = walker.nextNode())) {
     var parent = textNode.parentElement;
-    if (!parent || parent.closest('.doc-toc,.doc-anchor')) continue;
+    if (!parent || parent.closest('.doc-toc,.doc-anchor,.doc-callout-title')) continue;
     var value = textNode.nodeValue || '';
     textNodes.push({node: textNode, start: fullText.length, end: fullText.length + value.length});
     fullText += value;

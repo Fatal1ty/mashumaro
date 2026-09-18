@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from web.build import parse_markdown_to_html
+from web.build import html_to_search_text, parse_markdown_to_html
 
 
 @pytest.mark.parametrize(
@@ -36,6 +36,17 @@ def test_markdown_callout_accepts_legacy_line_break_escape() -> None:
 
     assert "doc-callout-note" in html
     assert "Remember this." in html
+
+
+def test_callout_title_is_excluded_from_search_text() -> None:
+    html = parse_markdown_to_html(
+        "> [!WARNING]\n> Searchable recovery instructions."
+    )[3]
+
+    search_text = html_to_search_text(html)
+
+    assert "Warning" not in search_text
+    assert "Searchable recovery instructions." in search_text
 
 
 def test_plain_blockquote_remains_a_quote() -> None:

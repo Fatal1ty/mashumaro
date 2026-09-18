@@ -97,6 +97,17 @@ def substitute_project_metadata(text: str, metadata: dict[str, str]) -> str:
     return text
 
 
+def html_to_search_text(rendered_html: str) -> str:
+    rendered_html = re.sub(
+        r'<div class="doc-callout-title">.*?</div>',
+        "",
+        rendered_html,
+        flags=re.DOTALL,
+    )
+    text = re.sub(r"<[^>]+>", "", rendered_html).replace("\n", " ")
+    return html_module.unescape(re.sub(r"\s+", " ", text).strip())
+
+
 def parse_markdown_to_html(
     md_text: str,
 ) -> tuple[str, str, str, str, list[dict[str, str | int]]]:
@@ -897,8 +908,7 @@ def build() -> None:
 
     search_entries = []
     for s in sections:
-        text = re.sub(r"<[^>]+>", "", s["html"]).replace("\n", " ")
-        text = html_module.unescape(re.sub(r"\s+", " ", text).strip())
+        text = html_to_search_text(str(s["html"]))
         search_entries.append(
             {
                 "slug": s["slug"],
