@@ -315,6 +315,60 @@ encoder = JSONEncoder(Model, post_encoder_func=pretty_json)
 
 The callable receives Mashumaro's basic form, so normal typed conversion is preserved.
 
+## Combine a format mixin with `SerializableType`
+
+A dataclass can use a format mixin for convenient top-level methods while
+implementing [`SerializableType`](#/docs/serializabletype) to define a compact
+representation when it is nested in another model:
+
+```python
+from dataclasses import dataclass
+
+from mashumaro.mixins.json import DataClassJSONMixin
+from mashumaro.types import SerializableType
+
+
+@dataclass
+class Coordinate(
+    DataClassJSONMixin, SerializableType, use_annotations=True
+):
+    x: int
+    y: int
+
+    def _serialize(self) -> str:
+        return f"{self.x},{self.y}"
+
+    @classmethod
+    def _deserialize(cls, value: str) -> "Coordinate":
+        x, y = map(int, value.split(","))
+        return cls(x, y)
+
+
+@dataclass
+class Place(DataClassJSONMixin):
+    name: str
+    location: Coordinate
+
+
+coordinate = Coordinate(10, 20)
+place = Place("warehouse", coordinate)
+
+assert coordinate.to_json() == '{"x": 10, "y": 20}'
+assert Coordinate.from_json(coordinate.to_json()) == coordinate
+
+assert place.to_json() == (
+    '{"name": "warehouse", "location": "10,20"}'
+)
+assert Place.from_json(place.to_json()) == place
+```
+
+The mixin methods serialize `Coordinate` as a top-level dataclass document.
+When a `Coordinate` is used as a field, its explicit `SerializableType`
+contract wins over ordinary dataclass field packing. This combination is useful
+when a reusable type needs standalone format helpers and a stable embedded
+representation. If the compact form belongs to only one external API rather
+than to the type itself, prefer a serialization strategy or dialect.
+
 ## Decimal money as fixed strings
 
 ```python
