@@ -20,6 +20,7 @@ class MessagePackDialect(Dialect):
     serialization_strategy = {
         bytes: pass_through,
         bytearray: {"deserialize": bytearray, "serialize": pass_through},
+        memoryview: {"deserialize": memoryview, "serialize": pass_through},
     }
 
 

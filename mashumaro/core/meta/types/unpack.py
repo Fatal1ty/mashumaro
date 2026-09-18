@@ -28,7 +28,7 @@ from fractions import Fraction
 from typing import Any, ForwardRef, Tuple
 
 import typing_extensions
-from typing_extensions import NotRequired
+from typing_extensions import Buffer, NotRequired
 
 from mashumaro.core.const import PY_311_MIN
 from mashumaro.core.helpers import parse_timezone
@@ -1321,13 +1321,16 @@ def unpack_collection(spec: ValueSpec) -> Expression | None:
                 )
             )
 
-    if issubclass(spec.origin_type, typing.ByteString):  # type: ignore
+    if issubclass(spec.origin_type, Buffer):  # type: ignore
         if spec.origin_type is bytes:
             spec.builder.ensure_object_imported(decodebytes)
             return f"decodebytes({spec.expression}.encode())"
         elif spec.origin_type is bytearray:
             spec.builder.ensure_object_imported(decodebytes)
             return f"bytearray(decodebytes({spec.expression}.encode()))"
+        elif spec.origin_type is memoryview:
+            spec.builder.ensure_object_imported(decodebytes)
+            return f"memoryview(decodebytes({spec.expression}.encode()))"
     elif issubclass(spec.origin_type, str):
         return TypeMatchEligibleExpression(f"str({spec.expression})")
     elif ensure_generic_collection_subclass(spec, list):

@@ -17,7 +17,7 @@ from fractions import Fraction
 from typing import Any, ForwardRef, Tuple
 
 import typing_extensions
-from typing_extensions import NotRequired
+from typing_extensions import Buffer, NotRequired
 
 from mashumaro.core.const import PY_311_MIN
 from mashumaro.core.meta.code.lines import CodeLines
@@ -861,7 +861,7 @@ def pack_collection(spec: ValueSpec) -> Expression | None:
                 return f"{spec.expression}.copy()"
         return f"{{{ke}: {ve} for key, value in {spec.expression}.items()}}"
 
-    if issubclass(spec.origin_type, typing.ByteString):  # type: ignore
+    if issubclass(spec.origin_type, Buffer):  # type: ignore
         spec.builder.ensure_object_imported(encodebytes)
         return f"encodebytes({spec.expression}).decode()"
     elif issubclass(spec.origin_type, str):
