@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from types import MappingProxyType
 from typing import Any, Type, TypeVar, final
 
 import msgpack
@@ -18,13 +17,11 @@ Decoder = Callable[[EncodedData], dict[Any, Any]]
 
 class MessagePackDialect(Dialect):
     no_copy_collections = (list, dict)
-    serialization_strategy = MappingProxyType(
-        {
-            bytes: pass_through,
-            bytearray: {"deserialize": bytearray, "serialize": pass_through},
-            memoryview: {"deserialize": memoryview, "serialize": pass_through},
-        }
-    )
+    serialization_strategy = {
+        bytes: pass_through,
+        bytearray: {"deserialize": bytearray, "serialize": pass_through},
+        memoryview: {"deserialize": memoryview, "serialize": pass_through},
+    }
 
 
 def default_encoder(data: Any) -> EncodedData:
