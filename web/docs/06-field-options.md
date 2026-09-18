@@ -228,7 +228,7 @@ response = APIResponse.from_dict(
 )
 ```
 
-Aliases are used for input by default. Output keeps Python field names unless `serialize_by_alias=True`, a dynamic `by_alias=True` flag is enabled, or a dialect selects alias output.
+Aliases are used for input by default. Output keeps Python field names unless `serialize_by_alias=True`, a dynamic `by_alias=True` flag is enabled, or a dialect selects alias output. A [tagged discriminator](#/docs/discriminator) whose `field` matches an aliased model field also accepts those aliases as tag keys.
 
 ```python
 @dataclass
