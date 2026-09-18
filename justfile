@@ -29,6 +29,7 @@ benchmark:
 docs:
     @python web/build.py
 
+[continue]
 docs-serve:
     @python -m http.server --bind 127.0.0.1 --directory web/dist 8000
 
