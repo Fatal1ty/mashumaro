@@ -20,11 +20,11 @@ from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
 from functools import cached_property
-from typing import Any, ForwardRef, Tuple, Type
+from typing import Any, ForwardRef, Tuple, Type, cast
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from typing_extensions import NotRequired, TypeAlias
+from typing_extensions import NoExtraItems, NotRequired, TypeAlias
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_311_MIN
@@ -817,6 +817,19 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
     all_keys = list(annotations.keys())
     required_keys = set(getattr(instance.type, "__required_keys__", all_keys))
 
+    # PEP 728
+    additional_properties: JSONSchema | bool
+    if (is_closed := getattr(instance.type, "__closed__", None)) is not None:
+        additional_properties = not is_closed
+    elif (
+        extra_items := getattr(instance.type, "__extra_items__", NoExtraItems)
+    ) is not NoExtraItems:
+        additional_properties = get_schema(
+            Instance(cast(Type, extra_items)), ctx=ctx
+        )
+    else:
+        additional_properties = False
+
     # workaround for https://github.com/python/cpython/issues/97727
     for key, annotation in annotations.items():
         if isinstance(annotation, ForwardRef):
@@ -831,7 +844,7 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
         }
         or None,
         required=sorted(required_keys) or None,
-        additionalProperties=False,
+        additionalProperties=additional_properties,
     )
 
 
