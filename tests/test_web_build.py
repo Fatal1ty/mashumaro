@@ -59,19 +59,19 @@ def test_plain_blockquote_remains_a_quote() -> None:
 def test_doc_callouts_follow_prose() -> None:
     docs_dir = Path(__file__).parents[1] / "web" / "docs"
     callout_pattern = re.compile(
-        r"^> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\\?$"
+        r"^> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)]\\?$"
     )
     violations = []
 
     for path in sorted(docs_dir.glob("*.md")):
         previous_content = ""
-        for line_number, line in enumerate(path.read_text().splitlines(), 1):
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8").splitlines(), 1
+        ):
             follows_structural_block = (
                 re.match(r"^#{1,4}\s", previous_content)
-                or previous_content.startswith("```")
-                or previous_content.startswith("|")
+                or previous_content.startswith(("```", "|", ">"))
                 or re.match(r"^(?:[-*]|\d+\.)\s", previous_content)
-                or previous_content.startswith(">")
             )
             if callout_pattern.fullmatch(line) and follows_structural_block:
                 violations.append(f"{path.name}:{line_number}")
