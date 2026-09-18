@@ -21,9 +21,10 @@ This chapter describes the **default basic representation**. A format-specific d
 | `bool` | `bool` | Calls `bool` conversion |
 | `bytes` | Base64 ASCII `str` | Base64-decodes to `bytes` |
 | `bytearray` | Base64 ASCII `str` | Base64-decodes to `bytearray` |
+| `memoryview` | Base64 ASCII `str` | Base64-decodes to a `memoryview` over `bytes` |
 | `Any` | Passed through | Passed through without typed conversion |
 
-The default bytes encoder uses [`base64.encodebytes`](https://docs.python.org/3/library/base64.html#base64.encodebytes), whose output includes a trailing newline:
+The default binary encoder uses [`base64.encodebytes`](https://docs.python.org/3/library/base64.html#base64.encodebytes), whose output includes a trailing newline:
 
 ```python
 from dataclasses import dataclass
@@ -35,17 +36,21 @@ from mashumaro import DataClassDictMixin
 class Payload(DataClassDictMixin):
     body: bytes
     mutable_body: bytearray
+    body_view: memoryview
 
 
-payload = Payload(b"123", bytearray(b"123"))
+payload = Payload(b"123", bytearray(b"123"), memoryview(b"123"))
 assert payload.to_dict() == {
     "body": "MTIz\n",
     "mutable_body": "MTIz\n",
+    "body_view": "MTIz\n",
 }
 assert Payload.from_dict(payload.to_dict()) == payload
 ```
 
 MessagePack overrides this basic behavior and stores binary values natively. For URL-safe or newline-free Base64 JSON, define a [SerializationStrategy](#/docs/serializationstrategy).
+
+The default encoder accepts contiguous, single-byte `memoryview` values. Deserialization creates a new view over decoded `bytes`, so the original exporter's mutability, format, shape, and strides are not preserved.
 
 ### Date and time
 
@@ -495,6 +500,7 @@ Both forms work as `Box[date]` fields and codec roots. See [Generics and Modern 
 |---|---|---|---|---|
 | `bytes` | Base64 string | Base64 string | Base64 string | Native binary |
 | `bytearray` | Base64 string | Base64 string | Base64 string | Native binary, restored as `bytearray` |
+| `memoryview` | Base64 string | Base64 string | Base64 string | Native binary, restored as `memoryview` |
 | `datetime` | ISO string | Passed to orjson | Native TOML datetime | ISO string |
 | `date` | ISO string | Passed to orjson | Native TOML date | ISO string |
 | `time` | ISO string | Passed to orjson | Native TOML time | ISO string |

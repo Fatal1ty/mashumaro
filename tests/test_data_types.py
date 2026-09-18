@@ -132,6 +132,7 @@ class Fixture:
     BYTES = b"123"
     BYTES_BASE64 = "MTIz\n"
     BYTE_ARRAY = bytearray(b"123")
+    MEMORY_VIEW = memoryview(b"123")
     STR = "123"
     ENUM = MyEnum.a
     INT_ENUM = MyIntEnum.a
@@ -255,6 +256,7 @@ inner_values = [
     (collections.abc.MutableSequence, Fixture.LIST, Fixture.LIST),
     (bytes, Fixture.BYTES, Fixture.BYTES_BASE64),
     (bytearray, Fixture.BYTE_ARRAY, Fixture.BYTES_BASE64),
+    (memoryview, Fixture.MEMORY_VIEW, Fixture.BYTES_BASE64),
     (str, Fixture.STR, Fixture.STR),
     (MyEnum, Fixture.ENUM, Fixture.ENUM.value),
     (MyStrEnum, Fixture.STR_ENUM, Fixture.STR_ENUM.value),

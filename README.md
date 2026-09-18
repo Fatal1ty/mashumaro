@@ -241,6 +241,7 @@ for common built-in types:
 * [`str`](https://docs.python.org/3/library/stdtypes.html#str)
 * [`bytes`](https://docs.python.org/3/library/stdtypes.html#bytes)
 * [`bytearray`](https://docs.python.org/3/library/stdtypes.html#bytearray)
+* [`memoryview`](https://docs.python.org/3/library/stdtypes.html#memoryview)
 
 for built-in datetime oriented types (see [more](#deserialize-option) details):
 * [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime)
@@ -735,6 +736,7 @@ The following data types will be handled by
 [`msgpack`](https://pypi.org/project/msgpack/) library by default:
 * [`bytes`](https://docs.python.org/3/library/stdtypes.html#bytes)
 * [`bytearray`](https://docs.python.org/3/library/stdtypes.html#bytearray)
+* [`memoryview`](https://docs.python.org/3/library/stdtypes.html#memoryview)
 
 Efficient decoder and encoder can be used as follows:
 ```python

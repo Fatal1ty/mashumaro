@@ -150,7 +150,7 @@ Mashumaro uses dialects internally for format-native behavior:
 |---|---|
 | `OrjsonDialect` | Passes `datetime`, `date`, `time`, and `UUID` to [orjson](https://github.com/ijl/orjson); avoids copying lists/dicts |
 | `TOMLDialect` | Passes native [TOML](https://toml.io/en/v1.0.0) date/time values, omits `None`, avoids copying lists/dicts |
-| `MessagePackDialect` | Passes bytes/bytearray in [MessagePack](https://msgpack.org/) binary form, avoids copying lists/dicts |
+| `MessagePackDialect` | Passes bytes/bytearray/memoryview in [MessagePack](https://msgpack.org/) binary form, avoids copying lists/dicts |
 
 When a TOML, MessagePack, or orjson codec receives `default_dialect=YourDialect`, the format dialect is merged with your custom dialect so required native behavior remains available.
 

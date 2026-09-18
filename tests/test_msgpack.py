@@ -85,15 +85,22 @@ def test_msgpack_slice_with_none():
     assert DataClass.from_msgpack(dumped) == instance
 
 
-def test_msgpack_with_bytes():
+def test_msgpack_with_binary_types():
     @dataclass
     class DataClass(DataClassMessagePackMixin):
         x: bytes
         y: bytearray
+        z: memoryview
 
-    instance = DataClass(b"123", bytearray(b"456"))
-    dumped = msgpack.packb({"x": b"123", "y": bytearray(b"456")})
-    assert DataClass.from_msgpack(dumped) == instance
+    instance = DataClass(b"123", bytearray(b"456"), memoryview(b"789"))
+    dumped = msgpack.packb(
+        {"x": b"123", "y": bytearray(b"456"), "z": memoryview(b"789")}
+    )
+    loaded = DataClass.from_msgpack(dumped)
+    assert loaded == instance
+    assert type(loaded.x) is bytes
+    assert type(loaded.y) is bytearray
+    assert type(loaded.z) is memoryview
     assert instance.to_msgpack() == dumped
 
 
