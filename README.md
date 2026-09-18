@@ -3440,6 +3440,54 @@ print(builder.get_definitions().to_json())
 ```
 </details>
 
+### `TypedDict` extra items
+
+[PEP 728](https://peps.python.org/pep-0728/) controls whether a `TypedDict`
+accepts keys that are not declared in its class body. Mashumaro maps
+`closed=True` to `"additionalProperties": false`, `closed=False` to
+`"additionalProperties": true`, and `extra_items=T` to the generated schema
+for `T`.
+
+Use either `closed` or `extra_items`, not both. Starting with Python 3.15,
+these options are available on `typing.TypedDict` out of the box. On earlier
+Python versions, import `TypedDict` from `typing_extensions` instead. The
+example below uses the backport for compatibility with older Python versions:
+
+```python
+from typing_extensions import TypedDict
+
+from mashumaro.jsonschema import build_json_schema
+
+
+class ClosedPayload(TypedDict, closed=True):
+    name: str
+
+
+class OpenPayload(TypedDict, closed=False):
+    name: str
+
+
+class StringExtrasPayload(TypedDict, extra_items=str):
+    name: str
+
+
+assert build_json_schema(ClosedPayload).additionalProperties is False
+assert build_json_schema(OpenPayload).additionalProperties is True
+assert build_json_schema(StringExtrasPayload).to_dict()[
+    "additionalProperties"
+] == {"type": "string"}
+```
+
+> [!IMPORTANT]\
+> For a `TypedDict` that specifies neither option,
+> current Mashumaro releases generate `"additionalProperties": false`. This
+> deliberately preserves the schema produced by earlier releases, although
+> PEP 728 defines an ordinary `TypedDict` as open, equivalent to
+> `closed=False`. A future major Mashumaro release will change this default to
+> `"additionalProperties": true`. If a schema is intended to remain closed,
+> declare `closed=True` explicitly now; use `closed=False` to opt into the PEP
+> default today.
+
 ### JSON Schema constraints
 
 Apart from required keywords, that are added automatically for certain data
