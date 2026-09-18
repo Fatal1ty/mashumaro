@@ -26,8 +26,11 @@ test-with-coverage:
 benchmark:
     ./benchmark/run.sh
 
-docs:
+[arg("serve", long, value="true", help="Start the preview server after building")]
+[continue]
+docs serve="false":
     @python web/build.py
+    @if [ "{{ serve }}" = "true" ]; then python -m http.server --bind 127.0.0.1 --directory web/dist 8000; fi
 
 [continue]
 docs-serve:
