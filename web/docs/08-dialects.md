@@ -197,6 +197,8 @@ Choose one source of truth per concern:
 - Put an unchanging representation in config when the model has only one contract.
 - Put a one-field exception in field metadata.
 
+Keep invariant security behavior in model config. A caller-selectable dialect should not be able to weaken an input-validation boundary.
+
 ## Failure modes
 
 - Passing a dialect instance instead of a class raises `BadDialect`.

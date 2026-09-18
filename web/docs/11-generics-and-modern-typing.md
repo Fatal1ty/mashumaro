@@ -225,7 +225,8 @@ assert tree.root.children[0].value == 2
 
 With [postponed annotations](https://docs.python.org/3/library/__future__.html#future-annotations) enabled by default, compilation can wait until referenced types exist.
 
-Calling an inherited mixin method through a runtime generic alias such as `Node[int].from_dict(...)` does not specialize that method with `int`; Python forwards the attribute to the unspecialized origin class. Put the specialized type in a containing model, use `BasicDecoder(Node[int])`, or create a concrete subclass when direct methods are required.
+> [!IMPORTANT]
+> Calling an inherited mixin method through a runtime generic alias such as `Node[int].from_dict(...)` does not specialize that method with `int`; Python forwards the attribute to the unspecialized origin class. Put the specialized type in a containing model, use `BasicDecoder(Node[int])`, or create a concrete subclass when direct methods are required.
 
 ## Generic `SerializableType`
 

@@ -135,7 +135,7 @@ class UnixTimestamp(
 
 As a result, an input string such as `"1723800000"` is converted to `float` before `deserialize()` runs. The return annotation also lets JSON Schema describe the serialized type as a number.
 
-> Annotation processing changes the boundary of your method. Without it, the method sees raw input and its return value is final. With it, Mashumaro applies recursive typed conversion on both sides.
+Annotation processing changes the boundary of your method. Without it, the method sees raw input and its return value is final. With it, Mashumaro applies recursive typed conversion on both sides.
 
 ## Match subclasses
 

@@ -254,7 +254,10 @@ assert build_json_schema(StringExtrasPayload).to_dict()[
 ] == {"type": "string"}
 ```
 
-**Compatibility note.** For a `TypedDict` that specifies neither option, current Mashumaro releases generate `additionalProperties: false`. This deliberately preserves the schema produced by earlier releases, although PEP 728 defines an ordinary `TypedDict` as open, equivalent to `closed=False`. A future major Mashumaro release will change this default to `additionalProperties: true`. If a schema is intended to remain closed, declare `closed=True` explicitly now; use `closed=False` to opt into the PEP default today.
+There is one compatibility exception when neither option is specified:
+
+> [!IMPORTANT]
+> For a `TypedDict` that specifies neither option, current Mashumaro releases generate `additionalProperties: false`. This deliberately preserves the schema produced by earlier releases, although PEP 728 defines an ordinary `TypedDict` as open, equivalent to `closed=False`. A future major Mashumaro release will change this default to `additionalProperties: true`. If a schema is intended to remain closed, declare `closed=True` explicitly now; use `closed=False` to opt into the PEP default today.
 
 ## Constraints with `Annotated`
 
@@ -362,7 +365,8 @@ class Upload:
 
 Overlay values are applied after automatic type generation and combine with constraint annotations. If multiple overlays set the same attribute, the last one wins. Explicit `None` for `const` and `default` is preserved.
 
-Structural keywords [`$schema`](https://json-schema.org/understanding-json-schema/reference/schema#schema), [`$ref`](https://json-schema.org/understanding-json-schema/structuring#dollarref), and [`$defs`](https://json-schema.org/understanding-json-schema/structuring#defs) are ignored in field overlays; they are controlled by builder context and reference options.
+> [!NOTE]
+> Structural keywords [`$schema`](https://json-schema.org/understanding-json-schema/reference/schema#schema), [`$ref`](https://json-schema.org/understanding-json-schema/structuring#dollarref), and [`$defs`](https://json-schema.org/understanding-json-schema/structuring#defs) are ignored in field overlays; they are controlled by builder context and reference options.
 
 ## Field metadata and model overrides
 

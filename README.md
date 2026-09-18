@@ -410,7 +410,7 @@ very large ranges of values.
   <img src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/refs/heads/master/benchmark/charts/dump_light.svg" width="604">
 </picture>
 
-> [!NOTE]\
+> [!NOTE]
 > Benchmark results may vary depending on the specific configuration and
 > parameters used for serialization and deserialization. However, we have made
 > an attempt to use the available options that can speed up and smooth out the
@@ -439,7 +439,7 @@ This library has built-in support for multiple popular formats:
 There are preconfigured codecs and mixin classes. However, you're free
 to override some settings if necessary.
 
-> [!IMPORTANT]\
+> [!IMPORTANT]
 > As for codecs, you are
 > offered to choose between convenience and efficiency. When you need to decode
 > or encode typed data more than once, it's highly recommended to create
@@ -497,7 +497,7 @@ MyModel.from_dict(...)
 MyModel(...).to_dict()
 ```
 
-> [!TIP]\
+> [!TIP]
 > You don't need to inherit `DataClassDictMixin` along with other serialization
 > mixins because it's a base class for them.
 
@@ -904,7 +904,7 @@ Here we add annotations to the only argument of `_deserialize` method and
 to the return value of `_serialize` method as well. The latter is needed for
 correct serialization.
 
-> [!IMPORTANT]\
+> [!IMPORTANT]
 > The importance of explicit passing `use_annotations=True` when defining a
 > class is that otherwise implicit using annotations might break compatibility
 > with old code that wasn't aware of this feature. It will be enabled by
@@ -1046,7 +1046,7 @@ print(example.to_dict())
 Here the passed string value `"1672531200"` will be converted to `float` before being passed to `deserialize` method
 thanks to the `float` annotation.
 
-> [!IMPORTANT]\
+> [!IMPORTANT]
 > As well as for `SerializableType`, the value of `use_annotatons` will be
 > `True` by default in the future major release.
 
@@ -1189,7 +1189,7 @@ with. At this moment there are next serialization engines to choose from:
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict` | How to pack named tuples. By default `as_list` engine is used that means your named tuple class instance will be packed into a list of its values. You can pack it into a dictionary using `as_dict` engine. |
 | `Any`                      | `omit`               | Skip the field during serialization                                                                                                                                                                          |
 
-> [!TIP]\
+> [!TIP]
 > You can pass a field value as is without changes on serialization using
 [`pass_through`](#passing-field-values-as-is).
 
@@ -1234,7 +1234,7 @@ with. At this moment there are next deserialization engines to choose from:
 | `datetime`, `date`, `time` | [`ciso8601`](https://github.com/closeio/ciso8601#supported-subset-of-iso-8601), [`pendulum`](https://github.com/sdispater/pendulum) | How to parse datetime string. By default native [`fromisoformat`](https://docs.python.org/3/library/datetime.html#datetime.datetime.fromisoformat) of corresponding class will be used for `datetime`, `date` and `time` fields. It's the fastest way in most cases, but you can choose an alternative. |
 | `NamedTuple`, `namedtuple` | `as_list`, `as_dict`                                                                                                                | How to unpack named tuples. By default `as_list` engine is used that means your named tuple class instance will be created from a list of its values. You can unpack it from a dictionary using `as_dict` engine.                                                                                       |
 
-> [!TIP]\
+> [!TIP]
 > You can pass a field value as is without changes on deserialization using
 [`pass_through`](#passing-field-values-as-is).
 
@@ -1283,7 +1283,7 @@ for a dataclass field depending on some defined parameters using a reusable
 serialization scheme. You can find an example in the
 [`SerializationStrategy`](#serializationstrategy) chapter.
 
-> [!TIP]\
+> [!TIP]
 > You can pass a field value as is without changes on
 > serialization / deserialization using
 [`pass_through`](#passing-field-values-as-is).
@@ -1745,7 +1745,7 @@ be deferred until they are called first time. This will reduce the import time
 and, in certain instances, may enhance the speed of deserialization
 by leveraging the data that is accessible after the class has been created.
 
-> [!CAUTION]\
+> [!CAUTION]
 > If you need to save a reference to `from_*` or `to_*` method, you should
 > do it after the method is compiled. To be safe, you can always use lambda
 > function:
@@ -1991,7 +1991,7 @@ class DataClass:
         aliases = {"foo_bar": "fooBar"}
 ```
 
-> [!TIP]\
+> [!TIP]
 > If you want to deserialize all the fields by its names along with aliases,
 > there is [a config option](#allow_deserialization_not_by_alias-config-option)
 > for that.
@@ -2220,7 +2220,7 @@ following forms:
 * annotated as Literal: `type: Literal[42] = 42`
 * annotated as StrEnum: `type: ResponseType = ResponseType.OK`
 
-> [!NOTE]\
+> [!NOTE]
 > Keep in mind that by default only Final, Literal and StrEnum fields are
 > processed during serialization.
 
@@ -2251,7 +2251,7 @@ We can improve subclass deserialization using `Discriminator` as annotation
 within `Annotated` type. We will use `field` parameter and set
 `include_subtypes` to `True`.
 
-> [!IMPORTANT]\
+> [!IMPORTANT]
 > The discriminator field should be accessible from the `__dict__` attribute
 > of a specific descendant, i.e. defined at the level of that descendant.
 > A descendant class without a discriminator field will be ignored, but
@@ -2497,7 +2497,7 @@ celery = Ingredient.from_dict({"name": "celery from my garden", "pieces": 5})
 assert celery == Celery(name="celery from my garden", pieces=5)
 ```
 
-> [!NOTE]\
+> [!NOTE]
 > A class-level discriminator is activated for a class only when that class
 > defines `Config` in its own namespace and the effective config provides a
 > discriminator, either directly or through config inheritance. Other
@@ -2575,7 +2575,7 @@ use `Discriminator`, but deserialization will almost be the same as for `Union`
 type without `Discriminator` except that it could be possible to deserialize
 subclasses with `include_subtypes=True`.
 
-> [!IMPORTANT]\
+> [!IMPORTANT]
 > When both `include_subtypes` and `include_supertypes` are enabled,
 > all subclasses will be attempted to be deserialized first,
 > superclasses — at the end.
@@ -3478,7 +3478,7 @@ assert build_json_schema(StringExtrasPayload).to_dict()[
 ] == {"type": "string"}
 ```
 
-> [!IMPORTANT]\
+> [!IMPORTANT]
 > For a `TypedDict` that specifies neither option,
 > current Mashumaro releases generate `"additionalProperties": false`. This
 > deliberately preserves the schema produced by earlier releases, although

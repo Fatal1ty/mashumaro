@@ -17,6 +17,13 @@ Each file must have YAML front matter:
     ---
 
 Cross-reference other doc pages with: [Link Text](#/docs/slug-name)
+
+Highlight important content with GitHub-style callouts:
+
+    > [!WARNING]
+    > The warning text, with optional inline Markdown.
+
+Supported callout types are NOTE, TIP, IMPORTANT, WARNING, and CAUTION.
 """
 
 import builtins
@@ -145,9 +152,60 @@ def parse_markdown_to_html(
     def flush_bq() -> None:
         nonlocal in_bq, bq_lines
         if in_bq and bq_lines:
-            result.append(
-                f'<div class="doc-callout"><p>{inline(" ".join(bq_lines))}</p></div>\n'
+            callout_match = re.fullmatch(
+                r"\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\\?",
+                bq_lines[0],
+                flags=re.IGNORECASE,
             )
+            if callout_match:
+                callout_type = callout_match.group(1).lower()
+                callout_labels = {
+                    "note": "Note",
+                    "tip": "Tip",
+                    "important": "Important",
+                    "warning": "Warning",
+                    "caution": "Caution",
+                }
+                callout_icons = {
+                    "note": (
+                        '<circle cx="12" cy="12" r="9"/>'
+                        '<path d="M12 11v5"/><path d="M12 8h.01"/>'
+                    ),
+                    "tip": (
+                        '<path d="M9 18h6"/><path d="M10 22h4"/>'
+                        '<path d="M8.4 14.5A7 7 0 1 1 15.6 14.5C14.6 15.3 14 16.2 14 18h-4c0-1.8-.6-2.7-1.6-3.5Z"/>'
+                    ),
+                    "important": (
+                        '<circle cx="12" cy="12" r="9"/>'
+                        '<path d="M12 7v6"/><path d="M12 17h.01"/>'
+                    ),
+                    "warning": (
+                        '<path d="M10.3 3.7 2.4 18a2 2 0 0 0 1.8 3h15.6a2 2 0 0 0 1.8-3L13.7 3.7a2 2 0 0 0-3.4 0Z"/>'
+                        '<path d="M12 9v4"/><path d="M12 17h.01"/>'
+                    ),
+                    "caution": (
+                        '<path d="M7.8 2h8.4L22 7.8v8.4L16.2 22H7.8L2 16.2V7.8Z"/>'
+                        '<path d="M12 7v6"/><path d="M12 17h.01"/>'
+                    ),
+                }
+                label = callout_labels[callout_type]
+                body = " ".join(bq_lines[1:]).strip()
+                body_html = f"<p>{inline(body)}</p>" if body else ""
+                result.append(
+                    f'<aside class="doc-callout doc-callout-{callout_type}" '
+                    f'role="note" aria-label="{label}">'
+                    f'<div class="doc-callout-title">'
+                    f'<svg class="doc-callout-icon" viewBox="0 0 24 24" '
+                    f'fill="none" stroke="currentColor" stroke-width="2" '
+                    f'stroke-linecap="round" stroke-linejoin="round" '
+                    f'aria-hidden="true">{callout_icons[callout_type]}</svg>'
+                    f"<span>{label}</span></div>{body_html}</aside>\n"
+                )
+            else:
+                result.append(
+                    f'<blockquote class="doc-quote"><p>'
+                    f'{inline(" ".join(bq_lines))}</p></blockquote>\n'
+                )
             bq_lines, in_bq = [], False
 
     def flush_table() -> None:

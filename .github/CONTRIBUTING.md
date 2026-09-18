@@ -226,10 +226,11 @@ change:
 just docs
 ```
 
-The generated site is written to `web/dist/`. To preview it locally, run:
+The generated site is written to `web/dist/`. To build it and start a local
+preview server in one command, run:
 
 ```shell
-just docs-serve
+just docs --serve
 ```
 
 Then open <http://localhost:8000>. The `web/dist/` directory is generated and

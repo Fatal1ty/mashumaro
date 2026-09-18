@@ -104,6 +104,7 @@ assert trip.to_dict()["itinerary"][1]["day"] == "2026-08-17"
 
 Both annotations matter. The `_deserialize()` parameter tells Mashumaro how to unpack raw data before your method runs. The `_serialize()` return type tells it how to pack the value your method returns.
 
+> [!IMPORTANT]
 > `use_annotations` is intentionally opt-in for compatibility with older code. Missing annotations while it is enabled make the conversion contract incomplete; annotate both directions.
 
 ## Generic owned types

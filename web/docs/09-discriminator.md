@@ -73,7 +73,8 @@ assert isinstance(batch.events[1], Disconnected)
 
 The tag can come from a class attribute or a field declared with [`ClassVar`](https://docs.python.org/3/library/typing.html#typing.ClassVar), [`Final`](https://docs.python.org/3/library/typing.html#typing.Final), [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal), or a string enum. `Literal` and [`StrEnum`](https://docs.python.org/3/library/enum.html#enum.StrEnum) fields are especially convenient because the tag is also naturally included in serialization.
 
-The discriminator attribute is looked up in each descendant's own class namespace rather than inherited. A descendant that does not define it is skipped as a tagged variant, but its descendants are still considered independently and remain eligible if they define the attribute themselves. This prevents an inherited tag from accidentally identifying multiple variants.
+> [!IMPORTANT]
+> The discriminator attribute is looked up in each descendant's own class namespace rather than inherited. A descendant that does not define it is skipped as a tagged variant, but its descendants are still considered independently and remain eligible if they define the attribute themselves. This prevents an inherited tag from accidentally identifying multiple variants.
 
 ## Class-level discriminator
 
@@ -114,7 +115,8 @@ assert event == Deleted(object_id=42)
 
 This works for nested `Event` fields and direct `Event.from_dict()` calls.
 
-A class-level discriminator is activated for a class only when that class defines `Config` in its own namespace and the effective config provides a discriminator, either directly or through config inheritance. Other descendants are deserialized as concrete types rather than becoming additional polymorphic entry points. This ensures that, after `Event.from_dict()` selects `Deleted`, the selected class does not run the same discriminator again.
+> [!NOTE]
+> A class-level discriminator is activated for a class only when that class defines `Config` in its own namespace and the effective config provides a discriminator, either directly or through config inheritance. Other descendants are deserialized as concrete types rather than becoming additional polymorphic entry points. This ensures that, after `Event.from_dict()` selects `Deleted`, the selected class does not run the same discriminator again.
 
 If an intermediate descendant should also dispatch among its own descendants, opt in explicitly by defining its own `Config`. An empty subclass is sufficient to reuse the parent configuration:
 
@@ -301,7 +303,8 @@ only `{"name": "manual escalation"}` can therefore become
 `NotificationTarget("manual escalation")`, while a payload containing `email`
 still selects `EmailTarget`.
 
-This fallback is useful for additive evolution, but it also hides unknown variants. If unknown kinds must be rejected, use a tagged discriminator without a broad supertype fallback.
+> [!WARNING]
+> This fallback is useful for additive evolution, but it also hides unknown variants. If unknown kinds must be rejected, use a tagged discriminator without a broad supertype fallback.
 
 ## Custom tag generation
 

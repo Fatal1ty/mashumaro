@@ -26,7 +26,7 @@ Mashumaro {{PACKAGE_VERSION}} supports **Python {{PYTHON_VERSION_RANGE}}**. For 
 | 3.7 | 3.9.1 | Last compatible release |
 | 3.6 | 3.1.1 | Last compatible release |
 
-> A Python version that has reached [end of life](https://devguide.python.org/versions/) no longer receives fixes from CPython. Pinning an old mashumaro release preserves compatibility, but upgrading Python is the safer choice.
+A Python version that has reached [end of life](https://devguide.python.org/versions/) no longer receives fixes from CPython. Pinning an old mashumaro release preserves compatibility, but upgrading Python is the safer choice.
 
 The dictionary and standard-library JSON APIs need no extra dependencies. Install only the [package extras](https://packaging.python.org/en/latest/tutorials/installing-packages/#installing-extras) required by your wire formats:
 

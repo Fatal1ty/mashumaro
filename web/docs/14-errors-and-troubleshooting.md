@@ -186,7 +186,8 @@ def __post_deserialize__(cls, obj): ...
 
 Serialization hooks are instance methods. Context parameters are legal only with `ADD_SERIALIZATION_CONTEXT`. A wrong signature raises `BadHookSignature` during code generation.
 
-Every hook must return the transformed value. Forgetting `return data`, `return obj`, or `return self` often produces a later error that looks unrelated.
+> [!CAUTION]
+> Every hook must return the transformed value. Forgetting `return data`, `return obj`, or `return self` often produces a later error that looks unrelated.
 
 ## Dialect failures
 

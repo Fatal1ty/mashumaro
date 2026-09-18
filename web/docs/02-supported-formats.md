@@ -178,7 +178,7 @@ binary_payload = record.to_jsonb(
 
 The reusable API is `ORJSONEncoder(shape)` and `ORJSONDecoder(shape)` from `mashumaro.codecs.orjson`. The encoder returns `bytes`; the one-off `json_encode` and `encode` functions do the same.
 
-> orjson is not simply a drop-in speed flag for standard JSON. Its option set, return type, native-type handling, and error behavior come from orjson. Choose the integration as part of your external API contract.
+orjson is not simply a drop-in speed flag for standard JSON. Its option set, return type, native-type handling, and error behavior come from orjson. Choose the integration as part of your external API contract.
 
 ## YAML
 
