@@ -27,7 +27,10 @@ benchmark:
     ./benchmark/run.sh
 
 docs:
-    python web/build.py
+    @python web/build.py
+
+docs-serve:
+    @python -m http.server --bind 127.0.0.1 --directory web/dist 8000
 
 clean:
     rm -rf benchmark/data/results

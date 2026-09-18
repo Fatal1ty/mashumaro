@@ -229,7 +229,7 @@ just docs
 The generated site is written to `web/dist/`. To preview it locally, run:
 
 ```shell
-python -m http.server --directory web/dist 8000
+just docs-serve
 ```
 
 Then open <http://localhost:8000>. The `web/dist/` directory is generated and
