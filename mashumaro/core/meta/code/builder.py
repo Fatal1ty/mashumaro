@@ -452,7 +452,7 @@ class CodeBuilder:
                     kw_only_fields.add(fname)
 
                 metadata = self.metadatas.get(fname, {})
-                aliases = self.__get_field_aliases(
+                aliases = self.get_field_aliases(
                     fname, ftype, metadata, config
                 )
 
@@ -469,6 +469,10 @@ class CodeBuilder:
                     discr = self.get_discriminator(look_in_parents=True)
                     if discr and discr.field:
                         allowed_keys.add(discr.field)
+                        for fname, aliases, _ftype in filtered_fields:
+                            if discr.field == fname or discr.field in aliases:
+                                allowed_keys.update(aliases)
+                                allowed_keys.add(fname)
 
                     if config.allow_deserialization_not_by_alias:
                         allowed_keys |= {f[0] for f in filtered_fields}
@@ -1165,7 +1169,7 @@ class CodeBuilder:
         force_value: bool = False,
     ) -> typing.Tuple[str, str | None, bool]:
         metadata = self.metadatas.get(fname, {})
-        aliases = self.__get_field_aliases(fname, ftype, metadata, config)
+        aliases = self.get_field_aliases(fname, ftype, metadata, config)
         # Serialization writes to the first (primary) alias.
         alias = aliases[0] if aliases else None
         could_be_none = (
@@ -1190,7 +1194,7 @@ class CodeBuilder:
         return packer, alias, could_be_none
 
     @staticmethod
-    def __get_field_aliases(
+    def get_field_aliases(
         fname: str,
         ftype: typing.Type,
         metadata: typing.Mapping[str, typing.Any],
