@@ -97,9 +97,8 @@ from mashumaro.types import (
 )
 
 if sys.version_info >= (3, 14):
-    from typing import evaluate_forward_ref
-
     from annotationlib import get_annotations
+    from typing import evaluate_forward_ref
 else:
     from typing_extensions import evaluate_forward_ref, get_annotations
 
@@ -1398,6 +1397,7 @@ def unpack_buffer(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is Buffer:
         spec.builder.ensure_object_imported(decodebytes)
         return f"decodebytes({spec.expression}.encode())"
+
 
 @register
 def unpack_pathlike(spec: ValueSpec) -> Expression | None:
