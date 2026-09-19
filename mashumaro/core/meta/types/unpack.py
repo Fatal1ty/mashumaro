@@ -97,9 +97,8 @@ from mashumaro.types import (
 )
 
 if sys.version_info >= (3, 14):
-    from typing import evaluate_forward_ref
-
     from annotationlib import get_annotations
+    from typing import evaluate_forward_ref
 else:
     from typing_extensions import evaluate_forward_ref, get_annotations
 
@@ -1321,16 +1320,15 @@ def unpack_collection(spec: ValueSpec) -> Expression | None:
                 )
             )
 
-    if issubclass(spec.origin_type, Buffer):  # type: ignore
-        if spec.origin_type is bytes:
-            spec.builder.ensure_object_imported(decodebytes)
-            return f"decodebytes({spec.expression}.encode())"
-        elif spec.origin_type is bytearray:
-            spec.builder.ensure_object_imported(decodebytes)
-            return f"bytearray(decodebytes({spec.expression}.encode()))"
-        elif spec.origin_type is memoryview:
-            spec.builder.ensure_object_imported(decodebytes)
-            return f"memoryview(decodebytes({spec.expression}.encode()))"
+    if spec.origin_type is bytes:
+        spec.builder.ensure_object_imported(decodebytes)
+        return f"decodebytes({spec.expression}.encode())"
+    elif spec.origin_type is bytearray:
+        spec.builder.ensure_object_imported(decodebytes)
+        return f"bytearray(decodebytes({spec.expression}.encode()))"
+    elif spec.origin_type is memoryview:
+        spec.builder.ensure_object_imported(decodebytes)
+        return f"memoryview(decodebytes({spec.expression}.encode()))"
     elif issubclass(spec.origin_type, str):
         return TypeMatchEligibleExpression(f"str({spec.expression})")
     elif ensure_generic_collection_subclass(spec, list):
@@ -1392,6 +1390,13 @@ def unpack_collection(spec: ValueSpec) -> Expression | None:
         )
     elif ensure_generic_collection_subclass(spec, Sequence):
         return f"[{inner_expr()} for value in {spec.expression}]"
+
+
+@register
+def unpack_buffer(spec: ValueSpec) -> Expression | None:
+    if spec.origin_type is Buffer:
+        spec.builder.ensure_object_imported(decodebytes)
+        return f"decodebytes({spec.expression}.encode())"
 
 
 @register

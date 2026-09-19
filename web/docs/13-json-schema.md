@@ -212,7 +212,7 @@ The builder shares one `Context`, so definitions accumulate across calls. Constr
 | `datetime`, `date`, `time` | String with standard format |
 | `UUID`, IP addresses | String with standard format |
 | `slice` | Array of three `integer` or `null` items (`[start, stop, step]`) |
-| `bytes` | String with Mashumaro's `base64` format extension |
+| `bytes`, `bytearray`, `memoryview`, `Buffer` | String with Mashumaro's `base64` format extension |
 | Paths | String with Mashumaro's `path` format extension |
 
 Mashumaro also defines extension formats for time zones, timedelta, networks, IP interfaces, decimal, fraction, and Base64 where the standard [JSON Schema format vocabulary](https://json-schema.org/draft/2020-12/json-schema-validation#name-defined-formats) has no exact built-in format.

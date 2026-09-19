@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, List
 
 import msgpack
+from typing_extensions import Buffer
 
 from mashumaro import DataClassDictMixin
 from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
@@ -102,6 +103,19 @@ def test_msgpack_with_binary_types():
     assert type(loaded.y) is bytearray
     assert type(loaded.z) is memoryview
     assert instance.to_msgpack() == dumped
+
+
+def test_msgpack_with_buffer():
+    @dataclass
+    class DataClass(DataClassMessagePackMixin):
+        x: Buffer
+
+    for value in (b"123", bytearray(b"123"), memoryview(b"123")):
+        dumped = msgpack.packb({"x": value}, use_bin_type=True)
+        assert DataClass(value).to_msgpack() == dumped
+        loaded = DataClass.from_msgpack(dumped)
+        assert loaded.x == b"123"
+        assert type(loaded.x) is bytes
 
 
 def test_msgpack_with_serialization_strategy():

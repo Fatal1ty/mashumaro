@@ -40,7 +40,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import typing_extensions
-from typing_extensions import Annotated, Literal, TypeVarTuple, Unpack
+from typing_extensions import Annotated, Buffer, Literal, TypeVarTuple, Unpack
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.meta.helpers import type_name
@@ -104,16 +104,16 @@ from tests.entities import (
     TAny,
     TInt,
     TIntStr,
+    TypedDictClosed,
+    TypedDictNotClosed,
     TypedDictOptionalKeys,
     TypedDictOptionalKeysWithOptional,
     TypedDictRequiredAndOptionalKeys,
     TypedDictRequiredKeys,
     TypedDictRequiredKeysWithOptional,
     TypedDictWithExplicitRequired,
-    TypedDictWithReadOnly,
-    TypedDictClosed,
-    TypedDictNotClosed,
     TypedDictWithExtraItems,
+    TypedDictWithReadOnly,
 )
 from tests.test_pep_655 import (
     TypedDictCorrectNotRequired,
@@ -434,8 +434,8 @@ def test_jsonschema_for_fraction():
     )
 
 
-def test_jsonschema_for_bytestring():
-    for instance_type in (ByteString, bytes, bytearray):
+def test_jsonschema_for_binary_types():
+    for instance_type in (ByteString, Buffer, bytes, bytearray, memoryview):
         assert build_json_schema(instance_type) == JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,

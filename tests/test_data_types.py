@@ -43,7 +43,7 @@ from typing import (
 from zoneinfo import ZoneInfo
 
 import pytest
-from typing_extensions import Final, LiteralString
+from typing_extensions import Buffer, Final, LiteralString
 
 from mashumaro import DataClassDictMixin
 from mashumaro.codecs import BasicDecoder, BasicEncoder
@@ -257,6 +257,7 @@ inner_values = [
     (bytes, Fixture.BYTES, Fixture.BYTES_BASE64),
     (bytearray, Fixture.BYTE_ARRAY, Fixture.BYTES_BASE64),
     (memoryview, Fixture.MEMORY_VIEW, Fixture.BYTES_BASE64),
+    (Buffer, Fixture.BYTES, Fixture.BYTES_BASE64),
     (str, Fixture.STR, Fixture.STR),
     (MyEnum, Fixture.ENUM, Fixture.ENUM.value),
     (MyStrEnum, Fixture.STR_ENUM, Fixture.STR_ENUM.value),
@@ -482,6 +483,20 @@ def test_one_level(value_info):
     assert instance_loaded == instance
     assert same_types(instance_dumped, dumped)
     assert same_types(instance_loaded.x, x_value)
+
+
+@pytest.mark.parametrize(
+    "value", [b"123", bytearray(b"123"), memoryview(b"123")]
+)
+def test_buffer(value):
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        x: Buffer
+
+    assert DataClass(value).to_dict() == {"x": Fixture.BYTES_BASE64}
+    loaded = DataClass.from_dict({"x": Fixture.BYTES_BASE64})
+    assert loaded.x == Fixture.BYTES
+    assert type(loaded.x) is bytes
 
 
 @pytest.mark.parametrize("value_info", inner_values)

@@ -22,6 +22,7 @@ This chapter describes the **default basic representation**. A format-specific d
 | `bytes` | Base64 ASCII `str` | Base64-decodes to `bytes` |
 | `bytearray` | Base64 ASCII `str` | Base64-decodes to `bytearray` |
 | `memoryview` | Base64 ASCII `str` | Base64-decodes to a `memoryview` over `bytes` |
+| `Buffer` | Base64 ASCII `str` | Base64-decodes to `bytes` |
 | `Any` | Passed through | Passed through without typed conversion |
 
 The default binary encoder uses [`base64.encodebytes`](https://docs.python.org/3/library/base64.html#base64.encodebytes), whose output includes a trailing newline:
@@ -51,6 +52,8 @@ assert Payload.from_dict(payload.to_dict()) == payload
 MessagePack overrides this basic behavior and stores binary values natively. For URL-safe or newline-free Base64 JSON, define a [SerializationStrategy](#/docs/serializationstrategy).
 
 The default encoder accepts contiguous, single-byte `memoryview` values. Deserialization creates a new view over decoded `bytes`, so the original exporter's mutability, format, shape, and strides are not preserved.
+
+The abstract [`Buffer`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Buffer) annotation accepts buffer-protocol values. Import it from `typing_extensions` on Python 3.10 and 3.11. Because the annotation does not name a concrete buffer implementation, deserialization produces `bytes`.
 
 ### Date and time
 
@@ -501,6 +504,7 @@ Both forms work as `Box[date]` fields and codec roots. See [Generics and Modern 
 | `bytes` | Base64 string | Base64 string | Base64 string | Native binary |
 | `bytearray` | Base64 string | Base64 string | Base64 string | Native binary, restored as `bytearray` |
 | `memoryview` | Base64 string | Base64 string | Base64 string | Native binary, restored as `memoryview` |
+| `Buffer` | Base64 string | Base64 string | Base64 string | Native binary, restored as `bytes` |
 | `datetime` | ISO string | Passed to orjson | Native TOML datetime | ISO string |
 | `date` | ISO string | Passed to orjson | Native TOML date | ISO string |
 | `time` | ISO string | Passed to orjson | Native TOML time | ISO string |
