@@ -11,7 +11,7 @@ group: Advanced
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `field` | `None` | Input key containing the variant tag |
+| `field` | `None` | Input key containing the variant tag. If that key names a model field or one of its [aliases](#/docs/field-options#aliases), mashumaro also tries the same keys the field unpacker uses. |
 | `include_subtypes` | `False` | Include descendants of annotated/configured classes |
 | `include_supertypes` | `False` | Include the listed/annotated classes as fallback variants |
 | `variant_tagger_fn` | `None` | Compute one tag or a list of tags from a variant class |
@@ -114,6 +114,8 @@ assert event == Deleted(object_id=42)
 ```
 
 This works for nested `Event` fields and direct `Event.from_dict()` calls.
+
+If the tag field is aliased, `Discriminator.field` still names the Python attribute used to register variants. Deserialization also accepts the field's aliases as payload keys, with the same fallback as ordinary fields when `allow_deserialization_not_by_alias` is enabled.
 
 > [!NOTE]
 > A class-level discriminator is activated for a class only when that class defines `Config` in its own namespace and the effective config provides a discriminator, either directly or through config inheritance. Other descendants are deserialized as concrete types rather than becoming additional polymorphic entry points. This ensures that, after `Event.from_dict()` selects `Deleted`, the selected class does not run the same discriminator again.

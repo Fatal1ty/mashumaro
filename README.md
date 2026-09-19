@@ -2205,7 +2205,11 @@ a union of dataclasses or their hierarchy will be deserialized.
 It has the following parameters that affects class selection rules:
 
 * `field` — optional name of the input dictionary key (also known as tag)
-  by which all the variants can be distinguished
+  by which all the variants can be distinguished. If this name matches a
+  model field (or one of that field's aliases), deserialization also tries
+  the same payload keys the field unpacker uses. Variant registration still
+  looks up `variant.__dict__[field]`, so keep `field` equal to the Python
+  attribute name.
 * `include_subtypes` — allow to deserialize subclasses
 * `include_supertypes` — allow to deserialize superclasses
 * `variant_tagger_fn` — a custom function used to generate tag values
