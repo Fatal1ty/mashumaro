@@ -3482,10 +3482,10 @@ assert build_json_schema(StringExtrasPayload).to_dict()[
 
 > [!IMPORTANT]
 > For a `TypedDict` that specifies neither option,
-> current Mashumaro releases generate `"additionalProperties": false`. This
+> current mashumaro releases generate `"additionalProperties": false`. This
 > deliberately preserves the schema produced by earlier releases, although
 > PEP 728 defines an ordinary `TypedDict` as open, equivalent to
-> `closed=False`. A future major Mashumaro release will change this default to
+> `closed=False`. A future major mashumaro release will change this default to
 > `"additionalProperties": true`. If a schema is intended to remain closed,
 > declare `closed=True` explicitly now; use `closed=False` to opt into the PEP
 > default today.
