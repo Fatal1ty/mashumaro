@@ -15,7 +15,7 @@ except ImportError:
 import pytest
 
 from mashumaro import DataClassDictMixin
-from mashumaro.core.const import PY_311_MIN
+from mashumaro.core.const import PY_311_MIN, PY_315_MIN
 
 # noinspection PyProtectedMember
 from mashumaro.core.meta.helpers import (
@@ -206,8 +206,7 @@ def test_dataclass_with_mixed_unpack_empty_tuple():
     )
 
 
-@pytest.mark.skipif(not PY_311_MIN, reason="requires python 3.11")
-def test_type_name_for_unpacks_py_311():
+def _assert_type_name_for_unpacks_py_311_common():
     assert _type_name(Tuple[Unpack[Tuple[int, ...]]]) == "Tuple[int, ...]"
     assert _type_name(Tuple[Unpack[Tuple[int, float]]]) == "Tuple[int, float]"
     assert (
@@ -234,14 +233,8 @@ def test_type_name_for_unpacks_py_311():
         )
         == "Tuple[str, Tuple[int, ...], int]"
     )
-    assert _type_name(Tuple[Unpack[Ts]]) == "Tuple[*Ts]"
-    assert _type_name(Tuple[int, Unpack[Ts], int]) == "Tuple[int, *Ts, int]"
-    assert _type_name(Generic[Unpack[Ts]]) == "Generic[*Ts]"
-    assert _type_name(Generic[K, Unpack[Ts], V]) == "Generic[Any, *Ts, Any]"
     assert _type_name(Unpack[Tuple[int]]) == "int"
     assert _type_name(Unpack[Tuple[int, float]]) == "int, float"
-    assert _type_name(Unpack[Ts]) == "*Ts"
-    assert _type_name(Ts) == "Ts"
     assert (
         _type_name(Tuple[Unpack[Ts], K][Unpack[Tuple[int, ...]]])
         == "Tuple[*Tuple[int, ...], int]"
@@ -254,6 +247,32 @@ def test_type_name_for_unpacks_py_311():
         _type_name(Tuple[Unpack[Ts], K][date, Unpack[Tuple[int, ...]]])
         == "Tuple[date, *Tuple[int, ...], int]"
     )
+
+
+@pytest.mark.skipif(
+    not PY_311_MIN or PY_315_MIN, reason="requires python 3.11-3.14"
+)
+def test_type_name_for_unpacks_py_311():
+    _assert_type_name_for_unpacks_py_311_common()
+    assert _type_name(Tuple[Unpack[Ts]]) == "Tuple[*Ts]"
+    assert _type_name(Tuple[int, Unpack[Ts], int]) == "Tuple[int, *Ts, int]"
+    assert _type_name(Generic[Unpack[Ts]]) == "Generic[*Ts]"
+    assert _type_name(Generic[K, Unpack[Ts], V]) == "Generic[Any, *Ts, Any]"
+    assert _type_name(Unpack[Ts]) == "*Ts"
+    assert _type_name(Ts) == "Ts"
+
+
+@pytest.mark.skipif(not PY_315_MIN, reason="requires python 3.15")
+def test_type_name_for_unpacks_py_315():
+    # Python 3.15 adds a variance marker to TypeVarTuple's repr (like
+    # TypeVar's), e.g. "~Ts" instead of "Ts".
+    _assert_type_name_for_unpacks_py_311_common()
+    assert _type_name(Tuple[Unpack[Ts]]) == "Tuple[*~Ts]"
+    assert _type_name(Tuple[int, Unpack[Ts], int]) == "Tuple[int, *~Ts, int]"
+    assert _type_name(Generic[Unpack[Ts]]) == "Generic[*~Ts]"
+    assert _type_name(Generic[K, Unpack[Ts], V]) == "Generic[Any, *~Ts, Any]"
+    assert _type_name(Unpack[Ts]) == "*~Ts"
+    assert _type_name(Ts) == "~Ts"
 
 
 @pytest.mark.skipif(PY_311_MIN, reason="requires python<3.11")
