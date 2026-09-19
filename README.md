@@ -206,6 +206,7 @@ for standard generic types on [PEP 585](https://www.python.org/dev/peps/pep-0585
 * [`collections.ChainMap`](https://docs.python.org/3/library/collections.html#collections.ChainMap)
 * [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)
 * [`collections.abc.MutableSequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableSequence)
+* [`collections.abc.Buffer`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Buffer)
 
 for special primitives from the [`typing`](https://docs.python.org/3/library/typing.html) module:
 * [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
@@ -737,6 +738,7 @@ The following data types will be handled by
 * [`bytes`](https://docs.python.org/3/library/stdtypes.html#bytes)
 * [`bytearray`](https://docs.python.org/3/library/stdtypes.html#bytearray)
 * [`memoryview`](https://docs.python.org/3/library/stdtypes.html#memoryview)
+* [`Buffer`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Buffer)
 
 Efficient decoder and encoder can be used as follows:
 ```python

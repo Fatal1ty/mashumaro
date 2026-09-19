@@ -284,7 +284,7 @@ assert isinstance(payload, bytes)
 assert Blob.from_msgpack(payload) == blob
 ```
 
-`MessagePackDialect` passes `bytes`, `bytearray`, and `memoryview` through as native binary values, then reconstructs the declared mutable/view type explicitly. The default encoder calls [`msgpack.packb(..., use_bin_type=True)`](https://msgpack-python.readthedocs.io/en/stable/api.html#msgpack.packb) and the default decoder calls [`msgpack.unpackb(..., raw=False)`](https://msgpack-python.readthedocs.io/en/stable/api.html#msgpack.unpackb).
+`MessagePackDialect` passes `bytes`, `bytearray`, `memoryview`, and `Buffer` through as native binary values. It reconstructs declared `bytearray` and `memoryview` fields explicitly, while an abstract `Buffer` field is decoded as `bytes`. The default encoder calls [`msgpack.packb(..., use_bin_type=True)`](https://msgpack-python.readthedocs.io/en/stable/api.html#msgpack.packb) and the default decoder calls [`msgpack.unpackb(..., raw=False)`](https://msgpack-python.readthedocs.io/en/stable/api.html#msgpack.unpackb).
 
 Use codec transforms to customize msgpack options without changing the typed layer:
 

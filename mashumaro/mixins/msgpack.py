@@ -2,6 +2,7 @@ from collections.abc import Callable
 from typing import Any, Type, TypeVar, final
 
 import msgpack
+from typing_extensions import Buffer
 
 from mashumaro.dialect import Dialect
 from mashumaro.helper import pass_through
@@ -18,6 +19,7 @@ Decoder = Callable[[EncodedData], dict[Any, Any]]
 class MessagePackDialect(Dialect):
     no_copy_collections = (list, dict)
     serialization_strategy = {
+        Buffer: pass_through,
         bytes: pass_through,
         bytearray: {"deserialize": bytearray, "serialize": pass_through},
         memoryview: {"deserialize": memoryview, "serialize": pass_through},

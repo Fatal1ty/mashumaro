@@ -2,6 +2,7 @@ from datetime import date
 from typing import List
 
 import msgpack
+from typing_extensions import Buffer
 
 from mashumaro.codecs.msgpack import (
     MessagePackDecoder,
@@ -32,6 +33,15 @@ def test_msgpack_encode():
         msgpack_encode([date(2023, 9, 22), date(2023, 9, 23)], List[date])
         == data
     )
+
+
+def test_msgpack_buffer():
+    for value in (b"123", bytearray(b"123"), memoryview(b"123")):
+        data = msgpack.packb(value, use_bin_type=True)
+        assert msgpack_encode(value, Buffer) == data
+        loaded = msgpack_decode(data, Buffer)
+        assert loaded == b"123"
+        assert type(loaded) is bytes
 
 
 def test_decoder_with_default_dialect():

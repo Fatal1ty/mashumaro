@@ -861,7 +861,7 @@ def pack_collection(spec: ValueSpec) -> Expression | None:
                 return f"{spec.expression}.copy()"
         return f"{{{ke}: {ve} for key, value in {spec.expression}.items()}}"
 
-    if issubclass(spec.origin_type, Buffer):  # type: ignore
+    if issubclass(spec.origin_type, (bytes, bytearray, memoryview)):
         spec.builder.ensure_object_imported(encodebytes)
         return f"encodebytes({spec.expression}).decode()"
     elif issubclass(spec.origin_type, str):
@@ -898,6 +898,13 @@ def pack_collection(spec: ValueSpec) -> Expression | None:
     elif ensure_generic_collection_subclass(spec, Sequence):
         ie = inner_expr()
         return _make_sequence_expression(ie)
+
+
+@register
+def pack_buffer(spec: ValueSpec) -> Expression | None:
+    if spec.origin_type is Buffer:
+        spec.builder.ensure_object_imported(encodebytes)
+        return f"encodebytes({spec.expression}).decode()"
 
 
 @register

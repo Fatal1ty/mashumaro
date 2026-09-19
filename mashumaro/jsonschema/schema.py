@@ -24,7 +24,7 @@ from typing import Any, ForwardRef, Tuple, Type, cast
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from typing_extensions import NoExtraItems, NotRequired, TypeAlias
+from typing_extensions import Buffer, NoExtraItems, NotRequired, TypeAlias
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_311_MIN
@@ -898,7 +898,9 @@ def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
 
     args = get_args(instance.type)
 
-    if issubclass(instance.origin_type, ByteString):  # type: ignore[arg-type]
+    if issubclass(
+        instance.origin_type, (ByteString, bytes, bytearray, memoryview)
+    ):
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,
@@ -1006,6 +1008,15 @@ def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
                     else None
                 )
             ),
+        )
+
+
+@register
+def on_buffer(instance: Instance, ctx: Context) -> JSONSchema | None:
+    if instance.origin_type in (Buffer, ByteString):
+        return JSONSchema(
+            type=JSONSchemaInstanceType.STRING,
+            format=JSONSchemaInstanceFormatExtension.BASE64,
         )
 
 
