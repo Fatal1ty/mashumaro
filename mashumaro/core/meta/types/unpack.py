@@ -609,8 +609,6 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         self, spec: ValueSpec
     ) -> tuple[str, ...]:
         field = self.discriminator.field
-        if not field:
-            return ()
         # Discriminator.field remains a payload key. When it names a model
         # field or one of that field's aliases, also try the same keys the
         # field unpacker uses so aliased and unaliased tags both work.
@@ -620,10 +618,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         # has wrapped the class. Read fields from the builder, not from
         # dataclasses.fields().
         builder_config = builder.get_config()
-        try:
-            field_types = builder.get_field_types(include_extras=True)
-        except Exception:
-            field_types = {}
+        field_types = builder.get_field_types(include_extras=True)
         for fname, ftype in field_types.items():
             self._add_discriminator_field_keys(
                 keys,
@@ -635,25 +630,16 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             )
         seen_types = {id(builder.cls)}
         for typ in (spec.origin_type, *self.base_variants):
-            if typ is None:
-                continue
             origin = get_type_origin(typ)
             if id(origin) in seen_types:
                 continue
-            try:
-                origin_is_dataclass = is_dataclass(origin)
-            except TypeError:
-                origin_is_dataclass = False
-            if not origin_is_dataclass:
+            if not is_dataclass(origin):
                 continue
             seen_types.add(id(origin))
             config = builder.get_config(origin)
-            try:
-                hints = typing_extensions.get_type_hints(
-                    origin, include_extras=True
-                )
-            except Exception:
-                hints = {}
+            hints = typing_extensions.get_type_hints(
+                origin, include_extras=True
+            )
             for dataclass_field in dataclass_fields(origin):
                 fname = dataclass_field.name
                 self._add_discriminator_field_keys(
