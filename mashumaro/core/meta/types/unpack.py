@@ -609,6 +609,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         self, spec: ValueSpec
     ) -> tuple[str, ...]:
         field = self.discriminator.field
+        assert field is not None
         # Discriminator.field remains a payload key. When it names a model
         # field or one of that field's aliases, also try the same keys the
         # field unpacker uses so aliased and unaliased tags both work.
