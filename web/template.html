@@ -256,7 +256,7 @@ section.landing-section{padding:4rem 1.25rem}
 <li><a href="#examples" onclick="showLanding()">Examples</a></li>
 <li><a href="#formats" onclick="showLanding()">Formats</a></li>
 <li><a href="#how" onclick="showLanding()">How It Works</a></li>
-<li><a href="javascript:void(0)" id="nav-docs-link" onclick="showDocs()">Documentation</a></li>
+<li><a href="#/docs/" id="nav-docs-link" onclick="showDocs();return false">Documentation</a></li>
 </ul>
 <div class="nav-right">
 <div class="theme-control">
@@ -284,7 +284,7 @@ section.landing-section{padding:4rem 1.25rem}
 <a href="#types" class="mobile-nav-link" onclick="mobileNavTo('#types')">Type Support</a>
 <a href="#customization" class="mobile-nav-link" onclick="mobileNavTo('#customization')">Customization</a>
 <div class="mobile-nav-divider"></div>
-<a href="javascript:void(0)" class="mobile-nav-link" style="color:var(--accent)" onclick="closeMobileMenu();showDocs()">Documentation &#8594;</a>
+<a href="#/docs/" class="mobile-nav-link" style="color:var(--accent)" onclick="closeMobileMenu();showDocs();return false">Documentation &#8594;</a>
 </div>
 
 <div id="landing">
@@ -294,7 +294,7 @@ section.landing-section{padding:4rem 1.25rem}
 <h1>Serialize anything.<br><span class="gradient">Ridiculously fast.</span></h1>
 <p>Turn typed Python data into JSON, MessagePack, YAML, or TOML with a single line of code. No schemas, no boilerplate &mdash; just your types.</p>
 <div class="hero-actions">
-<a href="javascript:void(0)" class="btn-primary" onclick="showDocs()">Get Started</a>
+<a href="#/docs/getting-started" class="btn-primary" onclick="showDocs('getting-started');return false">Get Started</a>
 <a href="https://github.com/Fatal1ty/mashumaro" class="btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
 </div>
 <div class="install-cmd" onclick="copyCmd(this, 'pip install mashumaro')"><span class="dollar">$</span><code>pip install mashumaro</code><span class="copy-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span></div>
@@ -457,7 +457,7 @@ restored = decoder.decode(json_str)</code></pre></div>
 <section class="cta-section">
 <h2>Ready to serialize?</h2>
 <p>Install Mashumaro and start building. It takes seconds to set up and works with your existing codebase.</p>
-<div class="cta-buttons"><a href="javascript:void(0)" class="btn-primary" onclick="showDocs()">Read the Docs</a>
+<div class="cta-buttons"><a href="#/docs/" class="btn-primary" onclick="showDocs();return false">Read the Docs</a>
 <a href="https://github.com/Fatal1ty/mashumaro" class="btn-secondary" target="_blank" rel="noopener">View on GitHub</a></div>
 <div style="margin-top:1.5rem"><div class="install-cmd" onclick="copyCmd(this, 'pip install mashumaro')"><span class="dollar">$</span><code>pip install mashumaro</code><span class="copy-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span></div></div>
 </section>
@@ -567,7 +567,7 @@ function showDocs(slug) {
     if (first) {
       var s = first.getAttribute('data-doc');
       activateDoc(s, { scrollToTop: true });
-      history.pushState({doc: s}, '', '#/docs/' + s);
+      history.pushState({doc: s}, '', '#/docs/');
     }
   }
 }
@@ -644,7 +644,7 @@ function scheduleTocUpdate() {
 }
 
 function parseDocsRoute(hash) {
-  // Supports: "#/docs/<slug>" and "#/docs/<slug>#<headingId>"
+  // Supports: "#/docs/", "#/docs/<slug>", and "#/docs/<slug>#<headingId>"
   // Some messaging apps encode the second hash as %23.
   // Note: window.location.hash will contain the whole thing.
   if (!hash || hash.indexOf('#/docs/') !== 0) return null;
@@ -695,12 +695,19 @@ function scrollToHeading(headingId) {
 }
 
 function showDocsAt(slug, headingId, push) {
-  if (!slug) return;
   document.getElementById('landing').classList.add('hidden');
   document.getElementById('docs-view').classList.add('active');
   document.getElementById('nav-docs-link').classList.add('active-doc-link');
   isDocsView = true;
   closeMobileMenu();
+
+  var isDocsRoot = !slug;
+  if (isDocsRoot) {
+    var rootDoc = document.querySelector('.sidebar-link');
+    if (!rootDoc) return;
+    slug = rootDoc.getAttribute('data-doc');
+    headingId = '';
+  }
 
   // Don't scroll to top if we are going to a heading
   if (!activateDoc(slug, { scrollToTop: !headingId })) {
@@ -713,7 +720,9 @@ function showDocsAt(slug, headingId, push) {
   }
 
   if (push) {
-    var next = '#/docs/' + slug + (headingId ? ('#' + headingId) : '');
+    var next = isDocsRoot
+      ? '#/docs/'
+      : '#/docs/' + slug + (headingId ? ('#' + headingId) : '');
     history.pushState({doc: slug, heading: headingId || ''}, '', next);
   }
 

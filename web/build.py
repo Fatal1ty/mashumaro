@@ -851,14 +851,21 @@ def build() -> None:
 
     sidebar = ""
     for s in ungrouped:
-        sidebar += f'        <a href="#" class="sidebar-link" data-doc="{s["slug"]}">{s["title"]}</a>\n'
+        sidebar += (
+            f'        <a href="#/docs/{s["slug"]}" class="sidebar-link" '
+            f'data-doc="{s["slug"]}">{s["title"]}</a>\n'
+        )
     for gname in groups_order:
         sidebar += '        <div class="sidebar-group">\n'
         sidebar += (
             f'            <div class="sidebar-group-label">{gname}</div>\n'
         )
         for s in groups_dict[gname]:
-            sidebar += f'            <a href="#" class="sidebar-link sidebar-link-nested" data-doc="{s["slug"]}">{s["title"]}</a>\n'
+            sidebar += (
+                f'            <a href="#/docs/{s["slug"]}" '
+                f'class="sidebar-link sidebar-link-nested" '
+                f'data-doc="{s["slug"]}">{s["title"]}</a>\n'
+            )
         sidebar += "        </div>\n"
 
     panels = ""
