@@ -1,4 +1,4 @@
-from typing import Any, Generic, Type, TypeVar, final, overload
+from typing import Any, Generic, TypeVar, final, overload
 
 import orjson
 
@@ -15,21 +15,21 @@ class ORJSONDecoder(Generic[T]):
     @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: type[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
     ): ...
 
     @overload
     def __init__(
-        self, shape_type: Any, *, default_dialect: Type[Dialect] | None = None
+        self, shape_type: Any, *, default_dialect: type[Dialect] | None = None
     ): ...
 
     def __init__(
         self,
-        shape_type: Type[T] | Any,
+        shape_type: type[T] | Any,
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
     ):
         if default_dialect is not None:
             default_dialect = OrjsonDialect.merge(default_dialect)
@@ -48,21 +48,21 @@ class ORJSONEncoder(Generic[T]):
     @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: type[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
     ): ...
 
     @overload
     def __init__(
-        self, shape_type: Any, *, default_dialect: Type[Dialect] | None = None
+        self, shape_type: Any, *, default_dialect: type[Dialect] | None = None
     ): ...
 
     def __init__(
         self,
-        shape_type: Type[T] | Any,
+        shape_type: type[T] | Any,
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
     ):
         if default_dialect is not None:
             default_dialect = OrjsonDialect.merge(default_dialect)
@@ -77,11 +77,11 @@ class ORJSONEncoder(Generic[T]):
     def encode(self, obj: T) -> bytes: ...
 
 
-def json_decode(data: EncodedData, shape_type: Type[T]) -> T:
+def json_decode(data: EncodedData, shape_type: type[T]) -> T:
     return ORJSONDecoder(shape_type).decode(data)
 
 
-def json_encode(obj: T, shape_type: Type[T] | Any) -> bytes:
+def json_encode(obj: T, shape_type: type[T] | Any) -> bytes:
     return ORJSONEncoder(shape_type).encode(obj)
 
 
@@ -92,8 +92,8 @@ encode = json_encode
 __all__ = [
     "ORJSONDecoder",
     "ORJSONEncoder",
-    "json_decode",
-    "json_encode",
     "decode",
     "encode",
+    "json_decode",
+    "json_encode",
 ]

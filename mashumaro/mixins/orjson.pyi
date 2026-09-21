@@ -1,16 +1,17 @@
 from collections.abc import Callable
-from typing import Any, Type, TypeVar, final
+from typing import Any, TypeAlias, TypeVar, final
 
 import orjson
+from typing_extensions import Self
 
 from mashumaro.dialect import Dialect
 from mashumaro.mixins.dict import DataClassDictMixin
 
-T = TypeVar("T", bound="DataClassORJSONMixin")
+T = TypeVar("T", bound=DataClassORJSONMixin)  # noqa: PYI001
 
-EncodedData = str | bytes | bytearray
-Encoder = Callable[[Any], EncodedData]
-Decoder = Callable[[EncodedData], dict[Any, Any]]
+EncodedData: TypeAlias = str | bytes | bytearray
+Encoder: TypeAlias = Callable[[Any], EncodedData]
+Decoder: TypeAlias = Callable[[EncodedData], dict[Any, Any]]
 
 class OrjsonDialect(Dialect):
     serialization_strategy: Any
@@ -19,14 +20,14 @@ class DataClassORJSONMixin(DataClassDictMixin):
     __slots__ = ()
     @final
     def to_jsonb(
-        self: T,
+        self,
         encoder: Encoder = orjson.dumps,
         *,
         orjson_options: int = ...,
         **to_dict_kwargs: Any,
     ) -> bytes: ...
     def to_json(
-        self: T,
+        self,
         encoder: Encoder = orjson.dumps,
         *,
         orjson_options: int = ...,
@@ -35,8 +36,8 @@ class DataClassORJSONMixin(DataClassDictMixin):
     @classmethod
     @final
     def from_json(
-        cls: Type[T],
+        cls,
         data: EncodedData,
         decoder: Decoder = orjson.loads,
         **from_dict_kwargs: Any,
-    ) -> T: ...
+    ) -> Self: ...

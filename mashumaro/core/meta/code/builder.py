@@ -9,8 +9,13 @@ import uuid
 from contextlib import contextmanager
 
 # noinspection PyProtectedMember
-from dataclasses import _FIELDS  # type: ignore
-from dataclasses import KW_ONLY, MISSING, Field, is_dataclass
+from dataclasses import (  # type: ignore[attr-defined]
+    _FIELDS,
+    KW_ONLY,
+    MISSING,
+    Field,
+    is_dataclass,
+)
 from functools import cached_property
 
 import typing_extensions
@@ -109,16 +114,16 @@ class InternalMethodName(str):
 class CodeBuilder:
     def __init__(
         self,
-        cls: typing.Type,
-        type_args: typing.Tuple[typing.Type, ...] = (),
-        dialect: typing.Type[Dialect] | None = None,
+        cls: type,
+        type_args: tuple[type, ...] = (),
+        dialect: type[Dialect] | None = None,
         first_method: str = "from_dict",
         allow_postponed_evaluation: bool = True,
         format_name: str = "dict",
         decoder: typing.Any | None = None,
         encoder: typing.Any | None = None,
         encoder_kwargs: dict[str, typing.Any] | None = None,
-        default_dialect: typing.Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         attrs: typing.Any = None,
         attrs_registry: dict[typing.Any, typing.Any] | None = None,
         methods_in_progress: (
@@ -132,9 +137,7 @@ class CodeBuilder:
         self._config_cache: dict[tuple[type, bool], type[BaseConfig]] = {}
         self._field_default_cache: dict[tuple[str, bool], typing.Any] = {}
 
-        self.resolved_type_params: dict[
-            typing.Type, dict[typing.Type, typing.Type]
-        ] = {}
+        self.resolved_type_params: dict[type, dict[type, type]] = {}
         self.field_classes: dict = {}
         self.initial_type_args = type_args
         if dialect is not None and not is_dialect_subclass(dialect):
@@ -209,9 +212,7 @@ class CodeBuilder:
             self.field_classes[field_name] = cls
         return cls
 
-    def get_real_type(
-        self, field_name: str, field_type: typing.Type
-    ) -> typing.Type:
+    def get_real_type(self, field_name: str, field_type: type) -> type:
         cls = self._get_field_class(field_name)
         return substitute_type_params(
             field_type, self.resolved_type_params[cls]
@@ -219,7 +220,7 @@ class CodeBuilder:
 
     def get_field_resolved_type_params(
         self, field_name: str
-    ) -> dict[typing.Type, typing.Type]:
+    ) -> dict[type, type]:
         cls = self._get_field_class(field_name)
         return self.resolved_type_params[cls]
 
@@ -230,8 +231,8 @@ class CodeBuilder:
 
     def get_type_name_identifier(
         self,
-        typ: typing.Type | None,
-        resolved_type_params: dict[typing.Type, typing.Type] | None = None,
+        typ: type | None,
+        resolved_type_params: dict[type, type] | None = None,
     ) -> str:
         field_type = type_name(typ, resolved_type_params=resolved_type_params)
 
@@ -267,6 +268,7 @@ class CodeBuilder:
             for name, field in self.dataclass_fields.items()
         }
 
+
     def get_field_default(
         self, name: str, call_factory: bool = False
     ) -> typing.Any:
@@ -291,7 +293,7 @@ class CodeBuilder:
         self._field_default_cache[cache_key] = default
         return default
 
-    def add_type_modules(self, *types_: typing.Type) -> None:
+    def add_type_modules(self, *types_: type) -> None:
         for t in types_:
             module = inspect.getmodule(t)
             if not module:
@@ -352,7 +354,7 @@ class CodeBuilder:
             else:
                 print(f"{type_name(self.cls)}:")
             print(code)
-        exec(code, self.globals, self.__dict__)
+        exec(code, self.globals, self.__dict__)  # noqa: S102
 
     def get_declared_hook(self, method_name: str) -> typing.Any:
         cls = get_class_that_defines_method(method_name, self.cls)
@@ -431,13 +433,14 @@ class CodeBuilder:
                 else:
                     self.add_line(f"d = cls.{__PRE_DESERIALIZE__}(d)")
             post_deserialize = self.get_declared_hook(__POST_DESERIALIZE__)
-            if post_deserialize:
-                if not isinstance(post_deserialize, classmethod):
-                    raise BadHookSignature(
-                        f"`{__POST_DESERIALIZE__}` must be a class method "
-                        f"with Callable[[{type_name(self.cls)}], "
-                        f"{type_name(self.cls)}] signature"
-                    )
+            if post_deserialize and not isinstance(
+                post_deserialize, classmethod
+            ):
+                raise BadHookSignature(
+                    f"`{__POST_DESERIALIZE__}` must be a class method "
+                    f"with Callable[[{type_name(self.cls)}], "
+                    f"{type_name(self.cls)}] signature"
+                )
             filtered_fields = []
             pos_args = []
             kw_args = []
@@ -618,9 +621,10 @@ class CodeBuilder:
         else:
             self.add_line(f"def {method_name}(d{kwargs}):")
 
+
     def get_config(
-        self, cls: typing.Type | None = None, look_in_parents: bool = True
-    ) -> typing.Type[BaseConfig]:
+        self, cls: type | None = None, look_in_parents: bool = True
+    ) -> type[BaseConfig]:
         if cls is None:
             cls = self.cls
 
@@ -657,7 +661,7 @@ class CodeBuilder:
         return None
 
     def get_pack_method_flags(
-        self, cls: typing.Type | None = None, pass_encoder: bool = False
+        self, cls: type | None = None, pass_encoder: bool = False
     ) -> str:
         pluggable_flags = []
         if pass_encoder and self.encoder is not None:
@@ -671,25 +675,27 @@ class CodeBuilder:
             (ADD_DIALECT_SUPPORT, "dialect"),
             (ADD_SERIALIZATION_CONTEXT, "context"),
         ):
-            if self.is_code_generation_option_enabled(option, cls):
-                if self.is_code_generation_option_enabled(option):
-                    pluggable_flags.append(f"{flag}={flag}")
+            if self.is_code_generation_option_enabled(
+                option, cls
+            ) and self.is_code_generation_option_enabled(option):
+                pluggable_flags.append(f"{flag}={flag}")
         return ", ".join(pluggable_flags)
 
     def get_unpack_method_flags(
-        self, cls: typing.Type | None = None, pass_decoder: bool = False
+        self, cls: type | None = None, pass_decoder: bool = False
     ) -> str:
         pluggable_flags = []
         if pass_decoder and self.decoder is not None:
             pluggable_flags.append("decoder=decoder")
         for option, flag in ((ADD_DIALECT_SUPPORT, "dialect"),):
-            if self.is_code_generation_option_enabled(option, cls):
-                if self.is_code_generation_option_enabled(option):
-                    pluggable_flags.append(f"{flag}={flag}")
+            if self.is_code_generation_option_enabled(
+                option, cls
+            ) and self.is_code_generation_option_enabled(option):
+                pluggable_flags.append(f"{flag}={flag}")
         return ", ".join(pluggable_flags)
 
     def get_pack_method_default_flag_values(
-        self, cls: typing.Type | None = None, pass_encoder: bool = False
+        self, cls: type | None = None, pass_encoder: bool = False
     ) -> str:
         pos_param_names = []
         pos_param_values = []
@@ -780,7 +786,7 @@ class CodeBuilder:
         return pluggable_flags_str
 
     def is_code_generation_option_enabled(
-        self, option: str, cls: typing.Type | None = None
+        self, option: str, cls: type | None = None
     ) -> bool:
         if cls is None:
             cls = self.cls
@@ -806,7 +812,7 @@ class CodeBuilder:
     @classmethod
     def get_pack_method_name(
         cls,
-        type_args: typing.Tuple[typing.Type, ...] = (),
+        type_args: tuple[type, ...] = (),
         format_name: str = "dict",
         encoder: typing.Any | None = None,
     ) -> InternalMethodName:
@@ -885,9 +891,9 @@ class CodeBuilder:
             aliases = {}
             nullable_fields = set()
             nontrivial_nullable_fields = set()
-            fnames_and_types: typing.Iterable[
-                typing.Tuple[str, typing.Any]
-            ] = field_types.items()
+            fnames_and_types: typing.Iterable[tuple[str, typing.Any]] = (
+                field_types.items()
+            )
             if self.get_config().sort_keys:
                 fnames_and_types = sorted(fnames_and_types, key=lambda x: x[0])
 
@@ -954,9 +960,12 @@ class CodeBuilder:
                                     omit_default and default is not None
                                 ),
                             )
-                        if omit_none and not omit_none_feature:
-                            continue
-                        elif omit_default and default is None:
+                        if (
+                            omit_none
+                            and not omit_none_feature
+                            or omit_default
+                            and default is None
+                        ):
                             continue
                         with self.indent("else:"):
                             if omit_none_feature:
@@ -1106,7 +1115,7 @@ class CodeBuilder:
         )
 
     def _get_encoder_kwargs(
-        self, cls: typing.Type | None = None
+        self, cls: type | None = None
     ) -> dict[str, typing.Any]:
         result = {}
         for encoder_param, value in self.encoder_kwargs.items():
@@ -1179,10 +1188,10 @@ class CodeBuilder:
     def _get_field_packer(
         self,
         fname: str,
-        ftype: typing.Type,
-        config: typing.Type[BaseConfig],
+        ftype: type,
+        config: type[BaseConfig],
         force_value: bool = False,
-    ) -> typing.Tuple[str, str | None, bool]:
+    ) -> tuple[str, str | None, bool]:
         metadata = self.metadatas.get(fname, {})
         aliases = self.__get_field_aliases(fname, ftype, metadata, config)
         # Serialization writes to the first (primary) alias.
@@ -1211,9 +1220,9 @@ class CodeBuilder:
     @staticmethod
     def __get_field_aliases(
         fname: str,
-        ftype: typing.Type,
+        ftype: type,
         metadata: typing.Mapping[str, typing.Any],
-        config: typing.Type[BaseConfig],
+        config: type[BaseConfig],
     ) -> tuple[str, ...]:
         alias = metadata.get("alias")
         if alias is None and is_annotated(ftype):
@@ -1234,7 +1243,7 @@ class CodeBuilder:
 
     @typing.no_type_check
     def iter_serialization_strategies(
-        self, metadata: typing.Mapping, ftype: typing.Type
+        self, metadata: typing.Mapping, ftype: type
     ) -> typing.Iterator[SerializationStrategyValueType]:
         if is_hashable(ftype):
             yield metadata.get("serialization_strategy")
@@ -1243,7 +1252,7 @@ class CodeBuilder:
     @staticmethod
     def _get_strategy_for_type(
         strategies: typing.Mapping[typing.Any, SerializationStrategyValueType],
-        ftype: typing.Type,
+        ftype: type,
     ) -> SerializationStrategyValueType | None:
         result = strategies.get(ftype)
         if result is not None:
@@ -1260,7 +1269,7 @@ class CodeBuilder:
 
     @typing.no_type_check
     def __iter_serialization_strategies(
-        self, ftype: typing.Type
+        self, ftype: type
     ) -> typing.Iterator[SerializationStrategyValueType]:
         if self.dialect is not None:
             yield self._get_strategy_for_type(
@@ -1285,7 +1294,7 @@ class CodeBuilder:
             )
 
     def get_dialect_or_config_option(
-        self, option: str, default: typing.Any, cls: typing.Type | None = None
+        self, option: str, default: typing.Any, cls: type | None = None
     ) -> typing.Any:
         for ns in (
             self.dialect,
@@ -1301,15 +1310,16 @@ class CodeBuilder:
     def get_field_default_literal(self, value: typing.Any) -> str:
         if isinstance(value, enum.IntFlag):
             return str(value.value)
-        elif type(value) in (str, int, bool, NoneType):  # type: ignore
-            return repr(value)
         elif (
-            isinstance(value, float)
-            and not math.isnan(value)
-            and not math.isinf(value)
-        ):
-            return repr(value)
-        elif isinstance(value, tuple) and not is_named_tuple(type(value)):
+            type(value) in (str, int, bool, NoneType)
+            or (
+                isinstance(value, float)
+                and not math.isnan(value)
+                and not math.isinf(value)
+            )
+            or isinstance(value, tuple)
+            and not is_named_tuple(type(value))
+        ):  # type: ignore
             return repr(value)
         else:
             name = f"v_{uuid.uuid4().hex}"
@@ -1355,7 +1365,7 @@ class FieldUnpackerCodeBlockBuilder:
     def build(
         self,
         fname: str,
-        ftype: typing.Type,
+        ftype: type,
         metadata: typing.Mapping,
         *,
         aliases: tuple[str, ...] = (),
@@ -1382,7 +1392,7 @@ class FieldUnpackerCodeBlockBuilder:
                 expression="value",
                 builder=self.parent,
                 field_ctx=FieldContext(name=fname, metadata=metadata),
-                could_be_none=False if could_be_none else True,
+                could_be_none=not could_be_none,
             )
         )
         # Keys to try, in order: each alias, then the field name itself when

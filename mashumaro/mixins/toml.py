@@ -1,8 +1,9 @@
 from collections.abc import Callable
 from datetime import date, datetime, time
-from typing import Any, Type, TypeVar, final
+from typing import Any, TypeVar, final
 
 import tomli_w
+from typing_extensions import Self
 
 from mashumaro.dialect import Dialect
 from mashumaro.helper import pass_through
@@ -24,7 +25,7 @@ Decoder = Callable[[EncodedData], dict[Any, Any]]
 class TOMLDialect(Dialect):
     no_copy_collections = (list, dict)
     omit_none = True
-    serialization_strategy = {
+    serialization_strategy = {  # noqa: RUF012
         datetime: pass_through,
         date: pass_through,
         time: pass_through,
@@ -34,7 +35,7 @@ class TOMLDialect(Dialect):
 class DataClassTOMLMixin(DataClassDictMixin):
     __slots__ = ()
 
-    __mashumaro_builder_params = {
+    __mashumaro_builder_params = {  # noqa: RUF012
         "packer": {
             "format_name": "toml",
             "dialect": TOMLDialect,
@@ -49,14 +50,14 @@ class DataClassTOMLMixin(DataClassDictMixin):
 
     @final
     def to_toml(
-        self: T, encoder: Encoder = tomli_w.dumps, **to_dict_kwargs: Any
+        self, encoder: Encoder = tomli_w.dumps, **to_dict_kwargs: Any
     ) -> EncodedData: ...
 
     @classmethod
     @final
     def from_toml(
-        cls: Type[T],
+        cls,
         data: EncodedData,
         decoder: Decoder = tomllib.loads,
         **from_dict_kwargs: Any,
-    ) -> T: ...
+    ) -> Self: ...

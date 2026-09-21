@@ -1,3 +1,4 @@
+import builtins
 import re
 import uuid
 from abc import ABC, abstractmethod
@@ -5,9 +6,9 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from functools import cached_property
 from types import new_class
-from typing import TYPE_CHECKING, Any, Type, TypeVar
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
 
-from typing_extensions import ParamSpec, TypeAlias
+from typing_extensions import ParamSpec
 
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
@@ -69,15 +70,15 @@ class FieldContext:
 
 @dataclass
 class ValueSpec:
-    type: Type
-    origin_type: Type = field(init=False)
+    type: builtins.type[Any]
+    origin_type: builtins.type[Any] = field(init=False)
     expression: Expression
     builder: CodeBuilder
     field_ctx: FieldContext
     could_be_none: bool = True
-    annotated_type: Type | None = None
-    owner: Type | None = None
-    no_copy_collections: Sequence = tuple()
+    annotated_type: builtins.type[Any] | None = None
+    owner: builtins.type[Any] | None = None
+    no_copy_collections: Sequence = ()
 
     def __setattr__(self, key: str, value: Any) -> None:
         if key == "type":
@@ -174,7 +175,9 @@ class AbstractMethodBuilder(ABC):
         if spec.builder.get_config().debug:
             print(f"{type_name(spec.builder.cls)}:")
             print(lines.as_text())
-        exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+        exec(  # noqa: S102
+            lines.as_text(), spec.builder.globals, spec.builder.__dict__
+        )
 
     @abstractmethod
     def _get_call_expr(self, spec: ValueSpec, method_name: str) -> str:
@@ -228,13 +231,11 @@ class Registry:
 
 
 def ensure_generic_collection(spec: ValueSpec) -> bool:
-    if not is_generic(spec.type):
-        return False
-    return True
+    return is_generic(spec.type)
 
 
 def ensure_mapping_key_type_hashable(
-    spec: ValueSpec, type_args: Sequence[Type]
+    spec: ValueSpec, type_args: Sequence[type[Any]]
 ) -> bool:
     if type_args:
         first_type_arg = type_args[0]
@@ -252,7 +253,7 @@ def ensure_mapping_key_type_hashable(
 
 
 def ensure_generic_collection_subclass(
-    spec: ValueSpec, *checked_types: Type
+    spec: ValueSpec, *checked_types: type[Any]
 ) -> bool:
     return issubclass(
         spec.origin_type, checked_types
@@ -260,7 +261,7 @@ def ensure_generic_collection_subclass(
 
 
 def ensure_generic_mapping(
-    spec: ValueSpec, args: Sequence[Type], checked_type: Type
+    spec: ValueSpec, args: Sequence[type[Any]], checked_type: type[Any]
 ) -> bool:
     return ensure_generic_collection_subclass(
         spec, checked_type

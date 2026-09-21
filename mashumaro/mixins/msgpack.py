@@ -1,8 +1,8 @@
 from collections.abc import Callable
-from typing import Any, Type, TypeVar, final
+from typing import Any, TypeVar, final
 
 import msgpack
-from typing_extensions import Buffer
+from typing_extensions import Buffer, Self
 
 from mashumaro.dialect import Dialect
 from mashumaro.helper import pass_through
@@ -18,7 +18,7 @@ Decoder = Callable[[EncodedData], dict[Any, Any]]
 
 class MessagePackDialect(Dialect):
     no_copy_collections = (list, dict)
-    serialization_strategy = {
+    serialization_strategy = {  # noqa: RUF012
         Buffer: pass_through,
         bytes: pass_through,
         bytearray: {"deserialize": bytearray, "serialize": pass_through},
@@ -37,7 +37,7 @@ def default_decoder(data: EncodedData) -> dict[Any, Any]:
 class DataClassMessagePackMixin(DataClassDictMixin):
     __slots__ = ()
 
-    __mashumaro_builder_params = {
+    __mashumaro_builder_params = {  # noqa: RUF012
         "packer": {
             "format_name": "msgpack",
             "dialect": MessagePackDialect,
@@ -52,14 +52,14 @@ class DataClassMessagePackMixin(DataClassDictMixin):
 
     @final
     def to_msgpack(
-        self: T, encoder: Encoder = default_encoder, **to_dict_kwargs: Any
+        self, encoder: Encoder = default_encoder, **to_dict_kwargs: Any
     ) -> EncodedData: ...
 
     @classmethod
     @final
     def from_msgpack(
-        cls: Type[T],
+        cls,
         data: EncodedData,
         decoder: Decoder = default_decoder,
         **from_dict_kwargs: Any,
-    ) -> T: ...
+    ) -> Self: ...

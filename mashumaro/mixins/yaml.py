@@ -1,7 +1,8 @@
 from collections.abc import Callable
-from typing import Any, Type, TypeVar
+from typing import Any, TypeVar
 
 import yaml
+from typing_extensions import Self
 
 from mashumaro.mixins.dict import DataClassDictMixin
 
@@ -29,15 +30,15 @@ class DataClassYAMLMixin(DataClassDictMixin):
     __slots__ = ()
 
     def to_yaml(
-        self: T, encoder: Encoder = default_encoder, **to_dict_kwargs: Any
+        self, encoder: Encoder = default_encoder, **to_dict_kwargs: Any
     ) -> EncodedData:
         return encoder(self.to_dict(**to_dict_kwargs))
 
     @classmethod
     def from_yaml(
-        cls: Type[T],
+        cls,
         data: EncodedData,
         decoder: Decoder = default_decoder,
         **from_dict_kwargs: Any,
-    ) -> T:
+    ) -> Self:
         return cls.from_dict(decoder(data), **from_dict_kwargs)

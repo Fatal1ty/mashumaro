@@ -1,9 +1,10 @@
 from collections.abc import Callable
 from datetime import date, datetime, time
-from typing import Any, Type, TypeVar, final
+from typing import Any, TypeVar, final
 from uuid import UUID
 
 import orjson
+from typing_extensions import Self
 
 from mashumaro.core.helpers import ConfigValue
 from mashumaro.dialect import Dialect
@@ -20,7 +21,7 @@ Decoder = Callable[[EncodedData], dict[Any, Any]]
 
 class OrjsonDialect(Dialect):
     no_copy_collections = (list, dict)
-    serialization_strategy = {
+    serialization_strategy = {  # noqa: RUF012
         datetime: {"serialize": pass_through},
         date: {"serialize": pass_through},
         time: {"serialize": pass_through},
@@ -31,7 +32,7 @@ class OrjsonDialect(Dialect):
 class DataClassORJSONMixin(DataClassDictMixin):
     __slots__ = ()
 
-    __mashumaro_builder_params = {
+    __mashumaro_builder_params = {  # noqa: RUF012
         "packer": {
             "format_name": "jsonb",
             "dialect": OrjsonDialect,
@@ -49,21 +50,21 @@ class DataClassORJSONMixin(DataClassDictMixin):
 
     @final
     def to_jsonb(
-        self: T,
+        self,
         encoder: Encoder = orjson.dumps,
         *,
         orjson_options: int = ...,
         **to_dict_kwargs: Any,
     ) -> bytes: ...
 
-    def to_json(self: T, **kwargs: Any) -> str:
+    def to_json(self, **kwargs: Any) -> str:
         return self.to_jsonb(**kwargs).decode()
 
     @classmethod
     @final
     def from_json(
-        cls: Type[T],
+        cls,
         data: EncodedData,
         decoder: Decoder = orjson.loads,
         **from_dict_kwargs: Any,
-    ) -> T: ...
+    ) -> Self: ...

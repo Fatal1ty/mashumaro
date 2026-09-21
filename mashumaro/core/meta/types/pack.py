@@ -9,12 +9,13 @@ import uuid
 import zoneinfo
 from base64 import encodebytes
 from collections import ChainMap, Counter, OrderedDict, deque
-from collections.abc import Callable, Collection, Mapping, Sequence, Set
+from collections.abc import Callable, Collection, Mapping, Sequence
+from collections.abc import Set as AbstractSet
 from contextlib import suppress
 from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, ForwardRef, Tuple
+from typing import Any, ForwardRef
 
 import typing_extensions
 from typing_extensions import Buffer, NotRequired
@@ -79,8 +80,9 @@ from mashumaro.types import (
 )
 
 if sys.version_info >= (3, 14):
-    from annotationlib import get_annotations
     from typing import evaluate_forward_ref
+
+    from annotationlib import get_annotations
 else:
     from typing_extensions import evaluate_forward_ref, get_annotations
 
@@ -395,7 +397,9 @@ def pack_union(
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
 
-    exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+    exec(  # noqa: S102
+        lines.as_text(), spec.builder.globals, spec.builder.__dict__
+    )
 
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_pack_method_flags()))
@@ -461,7 +465,9 @@ def pack_literal(spec: ValueSpec) -> Expression:
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
-    exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+    exec(  # noqa: S102
+        lines.as_text(), spec.builder.globals, spec.builder.__dict__
+    )
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_pack_method_flags()))
     )
@@ -495,11 +501,11 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
                     spec.copy(type=get_type_var_default(spec.type))
                 )
                 return expr_or_maybe_none(spec, pv)
-            constraints = getattr(spec.type, "__constraints__")
+            constraints = spec.type.__constraints__
             if constraints:
                 return pack_union(spec, constraints, "type_var")
             else:
-                bound = getattr(spec.type, "__bound__")
+                bound = spec.type.__bound__
                 # act as if it was Optional[bound]
                 pv = PackerRegistry.get(spec.copy(type=bound))
                 return expr_or_maybe_none(spec, pv)
@@ -653,13 +659,12 @@ def pack_fraction(spec: ValueSpec) -> Expression | None:
 
 def pack_tuple(spec: ValueSpec, args: tuple[type, ...]) -> Expression:
     if not args:
-        if spec.type in (Tuple, tuple):
+        if spec.type in (typing.Tuple, tuple):  # noqa: UP006
             args = [Any, ...]  # type: ignore
         else:
             return "[]"
-    elif len(args) == 1 and args[0] == ():
-        if not PY_311_MIN:
-            return "[]"
+    elif len(args) == 1 and args[0] == () and not PY_311_MIN:
+        return "[]"
     if len(args) == 2 and args[1] is Ellipsis:
         packer = PackerRegistry.get(
             spec.copy(type=args[0], expression="value", could_be_none=True)
@@ -807,7 +812,9 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
-    exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+    exec(  # noqa: S102
+        lines.as_text(), spec.builder.globals, spec.builder.__dict__
+    )
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_pack_method_flags()))
     )
@@ -816,9 +823,9 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
 
 @register
 def pack_collection(spec: ValueSpec) -> Expression | None:
-    if not issubclass(spec.origin_type, Collection):
-        return None
-    elif issubclass(spec.origin_type, enum.Enum):
+    if not issubclass(spec.origin_type, Collection) or issubclass(
+        spec.origin_type, enum.Enum
+    ):
         return None
 
     args = get_args(spec.type)
@@ -870,7 +877,7 @@ def pack_collection(spec: ValueSpec) -> Expression | None:
             return pack_named_tuple(spec)
         elif ensure_generic_collection(spec):
             return pack_tuple(spec, args)
-    elif ensure_generic_collection_subclass(spec, list, deque, Set):
+    elif ensure_generic_collection_subclass(spec, list, deque, AbstractSet):
         ie = inner_expr()
         return _make_sequence_expression(ie)
     elif ensure_generic_mapping(spec, args, ChainMap):

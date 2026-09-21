@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Generic, Type, TypeVar, final, overload
+from typing import Any, Generic, TypeVar, final, overload
 
 import msgpack
 
@@ -27,9 +27,9 @@ class MessagePackDecoder(Generic[T]):
     @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: type[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         pre_decoder_func: PreDecoderFunc | None = _default_decoder,
     ): ...
 
@@ -38,15 +38,15 @@ class MessagePackDecoder(Generic[T]):
         self,
         shape_type: Any,
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         pre_decoder_func: PreDecoderFunc | None = _default_decoder,
     ): ...
 
     def __init__(
         self,
-        shape_type: Type[T] | Any,
+        shape_type: type[T] | Any,
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         pre_decoder_func: PreDecoderFunc | None = _default_decoder,
     ):
         if default_dialect is not None:
@@ -66,9 +66,9 @@ class MessagePackEncoder(Generic[T]):
     @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: type[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         post_encoder_func: PostEncoderFunc | None = _default_encoder,
     ): ...
 
@@ -77,15 +77,15 @@ class MessagePackEncoder(Generic[T]):
         self,
         shape_type: Any,
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         post_encoder_func: PostEncoderFunc | None = _default_encoder,
     ): ...
 
     def __init__(
         self,
-        shape_type: Type[T] | Any,
+        shape_type: type[T] | Any,
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         post_encoder_func: PostEncoderFunc | None = _default_encoder,
     ):
         if default_dialect is not None:
@@ -101,11 +101,11 @@ class MessagePackEncoder(Generic[T]):
     def encode(self, obj: T) -> EncodedData: ...
 
 
-def msgpack_decode(data: EncodedData, shape_type: Type[T] | Any) -> T:
+def msgpack_decode(data: EncodedData, shape_type: type[T] | Any) -> T:
     return MessagePackDecoder(shape_type).decode(data)
 
 
-def msgpack_encode(obj: T, shape_type: Type[T] | Any) -> EncodedData:
+def msgpack_encode(obj: T, shape_type: type[T] | Any) -> EncodedData:
     return MessagePackEncoder(shape_type).encode(obj)
 
 
@@ -116,8 +116,8 @@ encode = msgpack_encode
 __all__ = [
     "MessagePackDecoder",
     "MessagePackEncoder",
-    "msgpack_decode",
-    "msgpack_encode",
     "decode",
     "encode",
+    "msgpack_decode",
+    "msgpack_encode",
 ]

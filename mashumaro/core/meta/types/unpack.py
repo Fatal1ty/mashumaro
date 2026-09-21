@@ -13,19 +13,13 @@ import uuid
 import zoneinfo
 from abc import ABC
 from base64 import decodebytes
-from collections.abc import (
-    Callable,
-    Collection,
-    Iterable,
-    Mapping,
-    Sequence,
-    Set,
-)
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
+from collections.abc import Set as AbstractSet
 from contextlib import suppress
 from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, ForwardRef, Tuple
+from typing import Any, ForwardRef
 
 import typing_extensions
 from typing_extensions import Buffer, NotRequired
@@ -97,8 +91,9 @@ from mashumaro.types import (
 )
 
 if sys.version_info >= (3, 14):
-    from annotationlib import get_annotations
     from typing import evaluate_forward_ref
+
+    from annotationlib import get_annotations
 else:
     from typing_extensions import evaluate_forward_ref, get_annotations
 
@@ -112,7 +107,7 @@ except ImportError:  # pragma: no cover
     pendulum: types.ModuleType | None = None  # type: ignore
 
 
-__all__ = ["UnpackerRegistry", "SubtypeUnpackerBuilder"]
+__all__ = ["SubtypeUnpackerBuilder", "UnpackerRegistry"]
 
 
 UnpackerRegistry = Registry()
@@ -286,9 +281,11 @@ class LiteralUnpackerBuilder(AbstractUnpackerBuilder):
                 unpacker = UnpackerRegistry.get(
                     spec.copy(type=bytes, expression="value")
                 )
-                with lines.indent("try:"):
-                    with lines.indent(f"if {unpacker} == {literal_value!r}:"):
-                        lines.append(f"return {literal_value!r}")
+                with (
+                    lines.indent("try:"),
+                    lines.indent(f"if {unpacker} == {literal_value!r}:"),
+                ):
+                    lines.append(f"return {literal_value!r}")
                 lines.append("except Exception: pass")
             elif isinstance(
                 literal_value, (int, str, bool, NoneType)  # type: ignore
@@ -305,7 +302,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         base_variants: tuple[type, ...] | None = None,
     ):
         self.discriminator = discriminator
-        self.base_variants = base_variants or tuple()
+        self.base_variants = base_variants or ()
         self._variants_attr: str | None = None
         self._unpackers_attr: str | None = None
 
@@ -541,7 +538,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             lines.append(
                 "CodeBuilder(variant, "
                 "dialect=_dialect, "
-                f"format_name={repr(spec.builder.format_name)}, "
+                f"format_name={spec.builder.format_name!r}, "
                 "default_dialect=_default_dialect,"
                 f"attrs={attrs},"
                 f"attrs_registry={spec.attrs_registry_name})"
@@ -562,7 +559,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             lines.append(
                 "CodeBuilder(variant, "
                 "dialect=_dialect, "
-                f"format_name={repr(spec.builder.format_name)}, "
+                f"format_name={spec.builder.format_name!r}, "
                 "default_dialect=_default_dialect)"
                 ".add_unpack_method()"
             )
@@ -572,9 +569,11 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
     ) -> None:
         if self.discriminator.variant_tagger_fn:
             lines.append(f"variant_tags = {variant_tagger_expr}")
-            with lines.indent("if type(variant_tags) is list:"):
-                with lines.indent("for varint_tag in variant_tags:"):
-                    lines.append("variants_map[varint_tag] = variant")
+            with (
+                lines.indent("if type(variant_tags) is list:"),
+                lines.indent("for varint_tag in variant_tags:"),
+            ):
+                lines.append("variants_map[varint_tag] = variant")
             with lines.indent("else:"):
                 lines.append("variants_map[variant_tags] = variant")
         else:
@@ -833,11 +832,11 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
                     spec.copy(type=get_type_var_default(spec.type))
                 )
                 return expr_or_maybe_none(spec, uv)
-            constraints = getattr(spec.type, "__constraints__")
+            constraints = spec.type.__constraints__
             if constraints:
                 return TypeVarUnpackerBuilder(constraints).build(spec)
             else:
-                bound = getattr(spec.type, "__bound__")
+                bound = spec.type.__bound__
                 # act as if it was Optional[bound]
                 uv = UnpackerRegistry.get(spec.copy(type=bound))
                 return expr_or_maybe_none(spec, uv)
@@ -1062,13 +1061,12 @@ def unpack_fraction(spec: ValueSpec) -> Expression | None:
 
 def unpack_tuple(spec: ValueSpec, args: tuple[type, ...]) -> Expression:
     if not args:
-        if spec.type in (Tuple, tuple):
+        if spec.type in (typing.Tuple, tuple):  # noqa: UP006
             args = [Any, ...]  # type: ignore
         else:
             return "()"
-    elif len(args) == 1 and args[0] == ():
-        if not PY_311_MIN:
-            return "()"
+    elif len(args) == 1 and args[0] == () and not PY_311_MIN:
+        return "()"
     if len(args) == 2 and args[1] is Ellipsis:
         unpacker = UnpackerRegistry.get(
             spec.copy(type=args[0], expression="value", could_be_none=True)
@@ -1209,7 +1207,9 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
-    exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+    exec(  # noqa: S102
+        lines.as_text(), spec.builder.globals, spec.builder.__dict__
+    )
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_unpack_method_flags()))
     )
@@ -1283,7 +1283,9 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
-    exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+    exec(  # noqa: S102
+        lines.as_text(), spec.builder.globals, spec.builder.__dict__
+    )
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_unpack_method_flags()))
     )
@@ -1292,9 +1294,9 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
 
 @register
 def unpack_collection(spec: ValueSpec) -> Expression | None:
-    if not issubclass(spec.origin_type, Collection):
-        return None
-    elif issubclass(spec.origin_type, enum.Enum):
+    if not issubclass(spec.origin_type, Collection) or issubclass(
+        spec.origin_type, enum.Enum
+    ):
         return None
 
     args = get_args(spec.type)
@@ -1346,7 +1348,7 @@ def unpack_collection(spec: ValueSpec) -> Expression | None:
             return unpack_tuple(spec, args)
     elif ensure_generic_collection_subclass(spec, frozenset):
         return f"frozenset([{inner_expr()} for value in {spec.expression}])"
-    elif ensure_generic_collection_subclass(spec, Set):
+    elif ensure_generic_collection_subclass(spec, AbstractSet):
         return f"set([{inner_expr()} for value in {spec.expression}])"
     elif ensure_generic_mapping(spec, args, collections.ChainMap):
         spec.builder.ensure_module_imported(collections)

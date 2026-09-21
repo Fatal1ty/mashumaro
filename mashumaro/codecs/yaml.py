@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Generic, Type, TypeVar, final, overload
+from typing import Any, Generic, TypeVar, final, overload
 
 import yaml
 
@@ -31,9 +31,9 @@ class YAMLDecoder(Generic[T]):
     @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: type[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         pre_decoder_func: PreDecoderFunc | None = _default_decoder,
     ): ...
 
@@ -42,15 +42,15 @@ class YAMLDecoder(Generic[T]):
         self,
         shape_type: Any,
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         pre_decoder_func: PreDecoderFunc | None = _default_decoder,
     ): ...
 
     def __init__(
         self,
-        shape_type: Type[T] | Any,
+        shape_type: type[T] | Any,
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         pre_decoder_func: PreDecoderFunc | None = _default_decoder,
     ):
         code_builder = CodecCodeBuilder.new(
@@ -66,9 +66,9 @@ class YAMLEncoder(Generic[T]):
     @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: type[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         post_encoder_func: PostEncoderFunc | None = _default_encoder,
     ): ...
 
@@ -77,15 +77,15 @@ class YAMLEncoder(Generic[T]):
         self,
         shape_type: Any,
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         post_encoder_func: PostEncoderFunc | None = _default_encoder,
     ): ...
 
     def __init__(
         self,
-        shape_type: Type[T] | Any,
+        shape_type: type[T] | Any,
         *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         post_encoder_func: PostEncoderFunc | None = _default_encoder,
     ):
         code_builder = CodecCodeBuilder.new(
@@ -97,11 +97,11 @@ class YAMLEncoder(Generic[T]):
     def encode(self, obj: T) -> EncodedData: ...
 
 
-def yaml_decode(data: EncodedData, shape_type: Type[T] | Any) -> T:
+def yaml_decode(data: EncodedData, shape_type: type[T] | Any) -> T:
     return YAMLDecoder(shape_type).decode(data)
 
 
-def yaml_encode(obj: T, shape_type: Type[T] | Any) -> EncodedData:
+def yaml_encode(obj: T, shape_type: type[T] | Any) -> EncodedData:
     return YAMLEncoder(shape_type).encode(obj)
 
 
@@ -112,8 +112,8 @@ encode = yaml_encode
 __all__ = [
     "YAMLDecoder",
     "YAMLEncoder",
-    "yaml_decode",
-    "yaml_encode",
     "decode",
     "encode",
+    "yaml_decode",
+    "yaml_encode",
 ]
