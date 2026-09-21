@@ -84,7 +84,7 @@ class UnsupportedSerializationEngine(UnserializableField):
         holder_class: Type,
         engine: Any,
     ):
-        super(UnsupportedSerializationEngine, self).__init__(
+        super().__init__(
             field_name,
             field_type,
             holder_class,
@@ -100,7 +100,7 @@ class UnsupportedDeserializationEngine(UnserializableField):
         holder_class: Type,
         engine: Any,
     ):
-        super(UnsupportedDeserializationEngine, self).__init__(
+        super().__init__(
             field_name,
             field_type,
             holder_class,

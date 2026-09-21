@@ -15,7 +15,7 @@ PY_310 = sys.version_info.major == 3 and sys.version_info.minor == 10
 PY_311 = sys.version_info.major == 3 and sys.version_info.minor == 11
 PY_312 = sys.version_info.major == 3 and sys.version_info.minor == 12
 PY_313 = sys.version_info.major == 3 and sys.version_info.minor == 13
-PY_314_MIN = sys.version_info.major == 3 and sys.version_info.minor >= 14
+PY_314_MIN = sys.version_info >= (3, 14)
 
 PY_313_MIN = PY_313 or PY_314_MIN
 PY_312_MIN = PY_312 or PY_313_MIN

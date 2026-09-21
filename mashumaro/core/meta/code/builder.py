@@ -62,7 +62,7 @@ from mashumaro.core.meta.types.unpack import (
     UnpackerRegistry,
 )
 from mashumaro.dialect import Dialect
-from mashumaro.exceptions import (  # noqa
+from mashumaro.exceptions import (  # noqa: F401
     BadDialect,
     BadHookSignature,
     ExtraKeysError,
@@ -238,7 +238,7 @@ class CodeBuilder:
         return field_type
 
     @property
-    @lru_cache()
+    @lru_cache
     def dataclass_fields(self) -> dict[str, Field]:
         d = {}
         for ancestor in self.cls.__mro__[-1:0:-1]:
@@ -607,7 +607,7 @@ class CodeBuilder:
         else:
             self.add_line(f"def {method_name}(d{kwargs}):")
 
-    @lru_cache()
+    @lru_cache
     @typing.no_type_check
     def get_config(
         self, cls: typing.Type | None = None, look_in_parents: bool = True
@@ -1363,7 +1363,7 @@ class FieldUnpackerCodeBlockBuilder:
                 expression="value",
                 builder=self.parent,
                 field_ctx=FieldContext(name=fname, metadata=metadata),
-                could_be_none=False if could_be_none else True,
+                could_be_none=not could_be_none,
             )
         )
         # Keys to try, in order: each alias, then the field name itself when

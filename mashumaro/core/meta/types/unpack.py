@@ -305,7 +305,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         base_variants: tuple[type, ...] | None = None,
     ):
         self.discriminator = discriminator
-        self.base_variants = base_variants or tuple()
+        self.base_variants = base_variants or ()
         self._variants_attr: str | None = None
         self._unpackers_attr: str | None = None
 

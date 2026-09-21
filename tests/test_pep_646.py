@@ -490,8 +490,6 @@ def test_dataclass_with_splitting_arbitrary_length_tuples_3():
 
     @dataclass
     class ConcreteDataClass(GenericDataClass[date, Unpack[Tuple[int, ...]]]):
-        pass
-
         class Config:
             debug = True
 

@@ -116,7 +116,7 @@ class Alias:
     def __repr__(self) -> str:
         return f"Alias(name='{self.name}')"
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Alias):
             return False
         return self.name == other.name

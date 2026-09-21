@@ -6,8 +6,8 @@ import sys
 import warnings
 from base64 import encodebytes
 from collections import ChainMap, Counter, deque
+from collections.abc import ByteString  # noqa: PYI057
 from collections.abc import (  # type: ignore[attr-defined]
-    ByteString,
     Callable,
     Collection,
     Iterable,
@@ -321,7 +321,7 @@ def apply_schema_annotations(
     for annotation in instance.annotations:
         if isinstance(annotation, JSONSchema):
             annotation_dict = replace(annotation).to_dict()
-            for key in annotation_dict.keys():
+            for key in annotation_dict:
                 if key in ("$schema", "$ref", "$defs"):
                     continue
                 if key in ("const", "default"):
@@ -389,7 +389,7 @@ def on_type_with_overridden_serialization(
                 return None
             else:
                 instance.update_type(new_type)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             override_with_any(e)
         return get_schema(instance, ctx)
 

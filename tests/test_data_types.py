@@ -999,7 +999,7 @@ def test_invalid_field_value_deserialization_with_rounded_decimal_with_default()
     ],
 )
 def test_serialize_deserialize_options(value_info):
-    x_type, x_value, x_value_dumped = value_info
+    x_type, x_value, _x_value_dumped = value_info
 
     @dataclass
     class DataClass(DataClassDictMixin):

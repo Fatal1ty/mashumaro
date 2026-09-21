@@ -310,7 +310,7 @@ def is_generic(typ: Type) -> bool:
     # noinspection PyUnresolvedReferences
     if (
         issubclass(typ.__class__, typing._BaseGenericAlias)  # type: ignore
-        or type(typ) is types.GenericAlias  # type: ignore  # noqa: E721
+        or type(typ) is types.GenericAlias
     ):
         return True
     else:
@@ -444,9 +444,9 @@ def is_init_var(typ: Type) -> bool:
 
 
 def get_class_that_defines_method(method_name: str, cls: Type) -> Type | None:
-    for cls in cls.__mro__:
-        if method_name in cls.__dict__:
-            return cls
+    for c in cls.__mro__:
+        if method_name in c.__dict__:
+            return c
     return None
 
 
@@ -668,11 +668,11 @@ def is_self(typ: Type) -> bool:
 
 
 def is_required(typ: Type) -> bool:
-    return get_type_origin(typ) is typing_extensions.Required  # noqa
+    return get_type_origin(typ) is typing_extensions.Required
 
 
 def is_not_required(typ: Type) -> bool:
-    return get_type_origin(typ) is typing_extensions.NotRequired  # noqa
+    return get_type_origin(typ) is typing_extensions.NotRequired
 
 
 def get_function_arg_annotation(

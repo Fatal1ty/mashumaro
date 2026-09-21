@@ -73,7 +73,7 @@ def test_pep695_generic_serialization_strategy(deferred_ann):
         )
 
     obj = DataClassWithPEP695SerializationStrategy(
-        set([Leaf(v=1), Leaf(v=2), Leaf(v=3), Leaf(v=4), Leaf(v=5)])
+        {Leaf(v=1), Leaf(v=2), Leaf(v=3), Leaf(v=4), Leaf(v=5)}
     )
     assert obj.to_dict() == {
         "x": [{"v": 1}, {"v": 2}, {"v": 3}, {"v": 4}, {"v": 5}]
