@@ -3,7 +3,7 @@ import ipaddress
 from collections.abc import Sequence
 from dataclasses import MISSING, dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any, Dict, List, TypeAlias  # noqa: UP035
 
 from typing_extensions import Self
 
@@ -118,19 +118,19 @@ class JSONSchema(DataClassJSONMixin):
     format: JSONSchemaInstanceFormat | None = None
     title: str | None = None
     description: str | None = None
-    anyOf: list["JSONSchema"] | None = None
+    anyOf: List["JSONSchema"] | None = None  # noqa: UP006
     reference: str | None = None
-    definitions: dict[str, "JSONSchema"] | None = None
+    definitions: Dict[str, "JSONSchema"] | None = None  # noqa: UP006
     default: Any | None = field(default_factory=lambda: MISSING)
     deprecated: bool | None = None
     examples: list[Any] | None = None
     # Keywords for Objects
-    properties: dict[str, "JSONSchema"] | None = None
-    patternProperties: dict[str, "JSONSchema"] | None = None
+    properties: Dict[str, "JSONSchema"] | None = None  # noqa: UP006
+    patternProperties: Dict[str, "JSONSchema"] | None = None  # noqa: UP006
     additionalProperties: "JSONSchema | bool | None" = None
     propertyNames: "JSONSchema | None" = None
     # Keywords for Arrays
-    prefixItems: list["JSONSchema"] | None = None
+    prefixItems: List["JSONSchema"] | None = None  # noqa: UP006
     items: "JSONSchema | None" = None
     contains: "JSONSchema | None" = None
     # Validation keywords for numeric instances

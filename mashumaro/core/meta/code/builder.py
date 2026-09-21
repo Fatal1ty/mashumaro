@@ -268,7 +268,6 @@ class CodeBuilder:
             for name, field in self.dataclass_fields.items()
         }
 
-
     def get_field_default(
         self, name: str, call_factory: bool = False
     ) -> typing.Any:
@@ -620,7 +619,6 @@ class CodeBuilder:
             self.add_line(f"def {method_name}(cls, d{kwargs}):")
         else:
             self.add_line(f"def {method_name}(d{kwargs}):")
-
 
     def get_config(
         self, cls: type | None = None, look_in_parents: bool = True
