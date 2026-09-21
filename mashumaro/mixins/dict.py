@@ -1,5 +1,7 @@
 from collections.abc import Mapping
-from typing import Any, Type, TypeVar, final
+from typing import Any, final
+
+from typing_extensions import Self
 
 from mashumaro.core.meta.mixin import (
     compile_mixin_packer,
@@ -9,15 +11,12 @@ from mashumaro.core.meta.mixin import (
 __all__ = ["DataClassDictMixin"]
 
 
-T = TypeVar("T", bound="DataClassDictMixin")
-
-
 class DataClassDictMixin:
     __slots__ = ()
 
     __mashumaro_builder_params = {"packer": {}, "unpacker": {}}  # type: ignore
 
-    def __init_subclass__(cls: Type[T], **kwargs: Any):
+    def __init_subclass__(cls, **kwargs: Any):
         super().__init_subclass__(**kwargs)
         for ancestor in cls.__mro__[-1:0:-1]:
             builder_params_ = f"_{ancestor.__name__}__mashumaro_builder_params"
@@ -28,7 +27,7 @@ class DataClassDictMixin:
 
     @final
     def to_dict(
-        self: T,
+        self,
         # *
         # keyword-only arguments that exist with the code generation options:
         # omit_none: bool = False
@@ -40,29 +39,27 @@ class DataClassDictMixin:
     @classmethod
     @final
     def from_dict(
-        cls: Type[T],
+        cls,
         d: Mapping,
         # *
         # keyword-only arguments that exist with the code generation options:
         # dialect: Type[Dialect] = None
         **kwargs: Any,
-    ) -> T: ...
+    ) -> Self: ...
 
     @classmethod
-    def __pre_deserialize__(
-        cls: Type[T], d: dict[Any, Any]
-    ) -> dict[Any, Any]: ...
+    def __pre_deserialize__(cls, d: dict[Any, Any]) -> dict[Any, Any]: ...
 
     @classmethod
-    def __post_deserialize__(cls: Type[T], obj: T) -> T: ...
+    def __post_deserialize__(cls, obj: Self) -> Self: ...
 
     def __pre_serialize__(
-        self: T,
+        self,
         # context: Any = None,  # added with ADD_SERIALIZATION_CONTEXT option
-    ) -> T: ...
+    ) -> Self: ...
 
     def __post_serialize__(
-        self: T,
+        self,
         d: dict[Any, Any],
         # context: Any = None,  # added with ADD_SERIALIZATION_CONTEXT option
     ) -> dict[Any, Any]: ...

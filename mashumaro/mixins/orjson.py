@@ -1,17 +1,15 @@
 from collections.abc import Callable
 from datetime import date, datetime, time
-from typing import Any, Type, TypeVar, final
+from typing import Any, final
 from uuid import UUID
 
 import orjson
+from typing_extensions import Self
 
 from mashumaro.core.helpers import ConfigValue
 from mashumaro.dialect import Dialect
 from mashumaro.helper import pass_through
 from mashumaro.mixins.dict import DataClassDictMixin
-
-T = TypeVar("T", bound="DataClassORJSONMixin")
-
 
 EncodedData = str | bytes | bytearray
 Encoder = Callable[[Any], EncodedData]
@@ -49,21 +47,21 @@ class DataClassORJSONMixin(DataClassDictMixin):
 
     @final
     def to_jsonb(
-        self: T,
+        self,
         encoder: Encoder = orjson.dumps,
         *,
         orjson_options: int = ...,
         **to_dict_kwargs: Any,
     ) -> bytes: ...
 
-    def to_json(self: T, **kwargs: Any) -> str:
+    def to_json(self, **kwargs: Any) -> str:
         return self.to_jsonb(**kwargs).decode()
 
     @classmethod
     @final
     def from_json(
-        cls: Type[T],
+        cls,
         data: EncodedData,
         decoder: Decoder = orjson.loads,
         **from_dict_kwargs: Any,
-    ) -> T: ...
+    ) -> Self: ...

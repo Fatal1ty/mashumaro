@@ -1,15 +1,12 @@
 from collections.abc import Callable
-from typing import Any, Type, TypeVar, final
+from typing import Any, final
 
 import msgpack
-from typing_extensions import Buffer
+from typing_extensions import Buffer, Self
 
 from mashumaro.dialect import Dialect
 from mashumaro.helper import pass_through
 from mashumaro.mixins.dict import DataClassDictMixin
-
-T = TypeVar("T", bound="DataClassMessagePackMixin")
-
 
 EncodedData = bytes
 Encoder = Callable[[Any], EncodedData]
@@ -52,14 +49,14 @@ class DataClassMessagePackMixin(DataClassDictMixin):
 
     @final
     def to_msgpack(
-        self: T, encoder: Encoder = default_encoder, **to_dict_kwargs: Any
+        self, encoder: Encoder = default_encoder, **to_dict_kwargs: Any
     ) -> EncodedData: ...
 
     @classmethod
     @final
     def from_msgpack(
-        cls: Type[T],
+        cls,
         data: EncodedData,
         decoder: Decoder = default_decoder,
         **from_dict_kwargs: Any,
-    ) -> T: ...
+    ) -> Self: ...

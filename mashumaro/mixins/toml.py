@@ -1,8 +1,9 @@
 from collections.abc import Callable
 from datetime import date, datetime, time
-from typing import Any, Type, TypeVar, final
+from typing import Any, final
 
 import tomli_w
+from typing_extensions import Self
 
 from mashumaro.dialect import Dialect
 from mashumaro.helper import pass_through
@@ -12,8 +13,6 @@ try:
     import tomllib
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore
-
-T = TypeVar("T", bound="DataClassTOMLMixin")
 
 
 EncodedData = str
@@ -49,14 +48,14 @@ class DataClassTOMLMixin(DataClassDictMixin):
 
     @final
     def to_toml(
-        self: T, encoder: Encoder = tomli_w.dumps, **to_dict_kwargs: Any
+        self, encoder: Encoder = tomli_w.dumps, **to_dict_kwargs: Any
     ) -> EncodedData: ...
 
     @classmethod
     @final
     def from_toml(
-        cls: Type[T],
+        cls,
         data: EncodedData,
         decoder: Decoder = tomllib.loads,
         **from_dict_kwargs: Any,
-    ) -> T: ...
+    ) -> Self: ...
