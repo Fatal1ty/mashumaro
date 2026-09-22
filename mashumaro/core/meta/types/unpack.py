@@ -541,7 +541,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             lines.append(
                 "CodeBuilder(variant, "
                 "dialect=_dialect, "
-                f"format_name={repr(spec.builder.format_name)}, "
+                f"format_name={spec.builder.format_name!r}, "
                 "default_dialect=_default_dialect,"
                 f"attrs={attrs},"
                 f"attrs_registry={spec.attrs_registry_name})"
@@ -562,7 +562,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             lines.append(
                 "CodeBuilder(variant, "
                 "dialect=_dialect, "
-                f"format_name={repr(spec.builder.format_name)}, "
+                f"format_name={spec.builder.format_name!r}, "
                 "default_dialect=_default_dialect)"
                 ".add_unpack_method()"
             )

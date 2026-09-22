@@ -515,7 +515,7 @@ def test_is_literal():
 def test_get_literal_values():
     assert get_literal_values(typing_extensions.Literal[1, 2, 3]) == (1, 2, 3)
     assert get_literal_values(
-        typing_extensions.Literal[
+        typing_extensions.Literal[  # noqa: RUF041
             1, typing_extensions.Literal[typing_extensions.Literal[2], 3]
         ]
     ) == (1, 2, 3)
@@ -537,10 +537,12 @@ def test_type_name_literal():
             MyFlag.a,
             MyIntFlag.a,
             typing_extensions.Literal[2, 3],
-            typing_extensions.Literal[typing_extensions.Literal["b", "c"]],
+            typing_extensions.Literal[  # noqa: RUF041
+                typing_extensions.Literal["b", "c"]
+            ],
         ]
     ) == (
-        f"typing.Literal[1, 'a', b'\\x00', True, False, None, "
+        "typing.Literal[1, 'a', b'\\x00', True, False, None, "
         "tests.entities.MyEnum.a, tests.entities.MyStrEnum.a, "
         "tests.entities.MyNativeStrEnum.a, tests.entities.MyIntEnum.a, "
         "tests.entities.MyFlag.a, tests.entities.MyIntFlag.a, 2, 3, 'b', 'c']"

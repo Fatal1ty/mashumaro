@@ -135,7 +135,7 @@ class InvalidFieldValue(ValueError):
         s = (
             f'Field "{self.field_name}" of type {self.field_type_name} '
             f"in {self.holder_class_name} has invalid value "
-            f"{repr(self.field_value)}"
+            f"{self.field_value!r}"
         )
         if self.msg:
             s += f": {self.msg}"

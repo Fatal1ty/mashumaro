@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 import pytest
 
@@ -41,8 +40,8 @@ def test_plugin_with_not_implemented_error():
             self,
             instance: Instance,
             ctx: Context,
-            schema: Optional[JSONSchema] = None,
-        ) -> Optional[JSONSchema]:
+            schema: JSONSchema | None = None,
+        ) -> JSONSchema | None:
             raise NotImplementedError
 
     assert build_json_schema(
@@ -87,8 +86,8 @@ def test_third_party_type_plugin():
             self,
             instance: Instance,
             ctx: Context,
-            schema: Optional[JSONSchema] = None,
-        ) -> Optional[JSONSchema]:
+            schema: JSONSchema | None = None,
+        ) -> JSONSchema | None:
             try:
                 if issubclass(instance.type, ThirdPartyType):
                     return third_party_json_schema

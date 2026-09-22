@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, final
+from typing import Any, TypeAlias, final
 
 import orjson
 from typing_extensions import Self
@@ -7,9 +7,9 @@ from typing_extensions import Self
 from mashumaro.dialect import Dialect
 from mashumaro.mixins.dict import DataClassDictMixin
 
-EncodedData = str | bytes | bytearray
-Encoder = Callable[[Any], EncodedData]
-Decoder = Callable[[EncodedData], dict[Any, Any]]
+EncodedData: TypeAlias = str | bytes | bytearray
+Encoder: TypeAlias = Callable[[Any], EncodedData]
+Decoder: TypeAlias = Callable[[EncodedData], dict[Any, Any]]
 
 class OrjsonDialect(Dialect):
     serialization_strategy: Any
