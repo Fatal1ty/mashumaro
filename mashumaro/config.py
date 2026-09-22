@@ -6,11 +6,11 @@ from mashumaro.dialect import Dialect
 from mashumaro.types import Discriminator, SerializationStrategy
 
 __all__ = [
-    "BaseConfig",
-    "TO_DICT_ADD_BY_ALIAS_FLAG",
-    "TO_DICT_ADD_OMIT_NONE_FLAG",
     "ADD_DIALECT_SUPPORT",
     "ADD_SERIALIZATION_CONTEXT",
+    "TO_DICT_ADD_BY_ALIAS_FLAG",
+    "TO_DICT_ADD_OMIT_NONE_FLAG",
+    "BaseConfig",
     "SerializationStrategyValueType",
 ]
 

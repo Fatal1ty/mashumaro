@@ -107,8 +107,8 @@ encode = json_encode
 __all__ = [
     "JSONDecoder",
     "JSONEncoder",
-    "json_decode",
-    "json_encode",
     "decode",
     "encode",
+    "json_decode",
+    "json_encode",
 ]

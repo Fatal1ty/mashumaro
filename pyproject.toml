@@ -85,7 +85,7 @@ target-version = ['py310', 'py311', 'py312']
 line-length = 79
 
 [tool.ruff.lint]
-ignore = ["SIM117", "PYI025", "SIM103"]
+ignore = ["SIM117", "PYI025", "SIM103", "I001", "SIM102", "S102"]
 
 [tool.coverage.report]
 exclude_lines = ["pragma: no cover", "@overload", "@abstractmethod"]

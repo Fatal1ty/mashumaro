@@ -92,8 +92,8 @@ encode = json_encode
 __all__ = [
     "ORJSONDecoder",
     "ORJSONEncoder",
-    "json_decode",
-    "json_encode",
     "decode",
     "encode",
+    "json_decode",
+    "json_encode",
 ]

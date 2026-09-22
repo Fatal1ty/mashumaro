@@ -112,8 +112,8 @@ encode = yaml_encode
 __all__ = [
     "YAMLDecoder",
     "YAMLEncoder",
-    "yaml_decode",
-    "yaml_encode",
     "decode",
     "encode",
+    "yaml_decode",
+    "yaml_encode",
 ]

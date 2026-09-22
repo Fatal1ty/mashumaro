@@ -26,4 +26,4 @@ DRAFT_2020_12 = JSONSchemaDraft202012Dialect()
 OPEN_API_3_1 = OpenAPISchema31Dialect()
 
 
-__all__ = ["JSONSchemaDialect", "DRAFT_2020_12", "OPEN_API_3_1"]
+__all__ = ["DRAFT_2020_12", "OPEN_API_3_1", "JSONSchemaDialect"]

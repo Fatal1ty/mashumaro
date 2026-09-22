@@ -116,8 +116,8 @@ encode = msgpack_encode
 __all__ = [
     "MessagePackDecoder",
     "MessagePackEncoder",
-    "msgpack_decode",
-    "msgpack_encode",
     "decode",
     "encode",
+    "msgpack_decode",
+    "msgpack_encode",
 ]

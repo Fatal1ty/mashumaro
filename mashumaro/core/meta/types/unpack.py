@@ -112,7 +112,7 @@ except ImportError:  # pragma: no cover
     pendulum: types.ModuleType | None = None  # type: ignore
 
 
-__all__ = ["UnpackerRegistry", "SubtypeUnpackerBuilder"]
+__all__ = ["SubtypeUnpackerBuilder", "UnpackerRegistry"]
 
 
 UnpackerRegistry = Registry()

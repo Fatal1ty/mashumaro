@@ -8,12 +8,12 @@ from typing_extensions import Literal
 from mashumaro.core.const import Sentinel
 
 __all__ = [
-    "SerializableType",
-    "GenericSerializableType",
-    "SerializationStrategy",
-    "RoundedDecimal",
-    "Discriminator",
     "Alias",
+    "Discriminator",
+    "GenericSerializableType",
+    "RoundedDecimal",
+    "SerializableType",
+    "SerializationStrategy",
 ]
 
 

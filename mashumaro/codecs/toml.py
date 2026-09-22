@@ -97,8 +97,8 @@ encode = toml_encode
 __all__ = [
     "TOMLDecoder",
     "TOMLEncoder",
-    "toml_decode",
-    "toml_encode",
     "decode",
     "encode",
+    "toml_decode",
+    "toml_encode",
 ]
