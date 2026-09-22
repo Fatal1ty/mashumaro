@@ -11,7 +11,7 @@ from contextlib import contextmanager
 # noinspection PyProtectedMember
 from dataclasses import _FIELDS  # type: ignore
 from dataclasses import KW_ONLY, MISSING, Field, is_dataclass
-from functools import lru_cache
+from functools import cached_property
 
 import typing_extensions
 
@@ -128,6 +128,10 @@ class CodeBuilder:
         self.cls = cls
         self.lines: CodeLines = CodeLines()
         self.globals: dict[str, typing.Any] = {}
+
+        self._config_cache: dict[tuple[type, bool], type[BaseConfig]] = {}
+        self._field_default_cache: dict[tuple[str, bool], typing.Any] = {}
+
         self.resolved_type_params: dict[
             typing.Type, dict[typing.Type, typing.Type]
         ] = {}
@@ -237,8 +241,7 @@ class CodeBuilder:
 
         return field_type
 
-    @property
-    @lru_cache()
+    @cached_property
     def dataclass_fields(self) -> dict[str, Field]:
         d = {}
         for ancestor in self.cls.__mro__[-1:0:-1]:
@@ -264,21 +267,29 @@ class CodeBuilder:
             for name, field in self.dataclass_fields.items()
         }
 
-    @lru_cache(None)
     def get_field_default(
         self, name: str, call_factory: bool = False
     ) -> typing.Any:
+        cache_key = (name, call_factory)
+
+        try:
+            return self._field_default_cache[cache_key]
+        except KeyError:
+            pass
+
         field = self.dataclass_fields.get(name)
-        if field:
-            if field.default is not MISSING:
-                return field.default
-            else:
-                if call_factory and field.default_factory is not MISSING:
-                    return field.default_factory()
-                else:
-                    return field.default_factory
+
+        if field is None:
+            default = self.namespace.get(name, MISSING)
+        elif field.default is not MISSING:
+            default = field.default
+        elif call_factory and field.default_factory is not MISSING:
+            default = field.default_factory()
         else:
-            return self.namespace.get(name, MISSING)
+            default = field.default_factory
+
+        self._field_default_cache[cache_key] = default
+        return default
 
     def add_type_modules(self, *types_: typing.Type) -> None:
         for t in types_:
@@ -607,19 +618,27 @@ class CodeBuilder:
         else:
             self.add_line(f"def {method_name}(d{kwargs}):")
 
-    @lru_cache()
-    @typing.no_type_check
     def get_config(
         self, cls: typing.Type | None = None, look_in_parents: bool = True
     ) -> typing.Type[BaseConfig]:
         if cls is None:
             cls = self.cls
+
+        cache_key = (cls, look_in_parents)
+
+        try:
+            return self._config_cache[cache_key]
+        except KeyError:
+            pass
+
         if look_in_parents:
             config_cls = getattr(cls, "Config", BaseConfig)
         else:
             config_cls = cls.__dict__.get("Config", BaseConfig)
         if not issubclass(config_cls, BaseConfig):
             config_cls = type("Config", (config_cls, BaseConfig), {})
+
+        self._config_cache[cache_key] = config_cls
         return config_cls
 
     def get_discriminator(
