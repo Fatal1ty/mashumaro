@@ -1,5 +1,6 @@
 from collections.abc import Mapping
-from typing import Any, final
+from types import MappingProxyType
+from typing import Any, ClassVar, final
 
 from typing_extensions import Self
 
@@ -14,7 +15,9 @@ __all__ = ["DataClassDictMixin"]
 class DataClassDictMixin:
     __slots__ = ()
 
-    __mashumaro_builder_params = {"packer": {}, "unpacker": {}}  # type: ignore
+    __mashumaro_builder_params: ClassVar[Mapping[str, Any]] = MappingProxyType(
+        {"packer": {}, "unpacker": {}}
+    )
 
     def __init_subclass__(cls, **kwargs: Any):
         super().__init_subclass__(**kwargs)

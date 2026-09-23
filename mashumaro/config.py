@@ -1,4 +1,5 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from types import MappingProxyType
 from typing import Any, Literal, Type, TypedDict
 
 from mashumaro.core.const import Sentinel
@@ -41,9 +42,11 @@ SerializationStrategyValueType = (
 
 class BaseConfig:
     debug: bool = False
-    code_generation_options: list[CodeGenerationOption] = []
-    serialization_strategy: dict[Any, SerializationStrategyValueType] = {}
-    aliases: dict[str, str | Sequence[str]] = {}
+    code_generation_options: Sequence[CodeGenerationOption] = ()
+    serialization_strategy: Mapping[Any, SerializationStrategyValueType] = (
+        MappingProxyType({})
+    )
+    aliases: Mapping[str, str | Sequence[str]] = MappingProxyType({})
     serialize_by_alias: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     namedtuple_as_dict: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     allow_postponed_evaluation: bool = True
@@ -51,7 +54,7 @@ class BaseConfig:
     omit_none: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     omit_default: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     orjson_options: int | None = 0
-    json_schema: dict[str, Any] = {}
+    json_schema: Mapping[str, Any] = MappingProxyType({})
     discriminator: Discriminator | None = None
     lazy_compilation: bool = False
     sort_keys: bool = False

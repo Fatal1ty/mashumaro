@@ -1,5 +1,5 @@
-from collections.abc import Callable, Sequence
-from types import new_class
+from collections.abc import Callable, Mapping, Sequence
+from types import MappingProxyType, new_class
 from typing import Any, Type, cast
 
 from typing_extensions import Literal
@@ -16,7 +16,9 @@ SerializationStrategyValueType = (
 
 
 class Dialect:
-    serialization_strategy: dict[Any, SerializationStrategyValueType] = {}
+    serialization_strategy: Mapping[Any, SerializationStrategyValueType] = (
+        MappingProxyType({})
+    )
     serialize_by_alias: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     namedtuple_as_dict: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     omit_none: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING

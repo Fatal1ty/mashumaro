@@ -3,6 +3,7 @@ import ipaddress
 from collections.abc import Sequence
 from dataclasses import MISSING, dataclass, field
 from enum import Enum
+from types import MappingProxyType
 from typing import Any, Dict, List
 
 from typing_extensions import TYPE_CHECKING, Self, TypeAlias
@@ -162,19 +163,19 @@ class JSONSchema(DataClassJSONMixin):
     class Config(BaseConfig):
         omit_none = True
         serialize_by_alias = True
-        aliases = {
-            "schema": "$schema",
-            "reference": "$ref",
-            "definitions": "$defs",
-        }
-        serialization_strategy = {
-            int: pass_through,
-            float: pass_through,
-            Null: pass_through,
-            JSONSchemaInstanceFormat: {
-                "deserialize": _deserialize_json_schema_instance_format
-            },
-        }
+        aliases = MappingProxyType(
+            {"schema": "$schema", "reference": "$ref", "definitions": "$defs"}
+        )
+        serialization_strategy = MappingProxyType(
+            {
+                int: pass_through,
+                float: pass_through,
+                Null: pass_through,
+                JSONSchemaInstanceFormat: {
+                    "deserialize": _deserialize_json_schema_instance_format
+                },
+            }
+        )
 
     def __pre_serialize__(self) -> Self:
         if self.const is None:

@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from datetime import date, datetime, time
+from types import MappingProxyType
 from typing import Any, final
 from uuid import UUID
 
@@ -18,32 +19,36 @@ Decoder = Callable[[EncodedData], dict[Any, Any]]
 
 class OrjsonDialect(Dialect):
     no_copy_collections = (list, dict)
-    serialization_strategy = {
-        datetime: {"serialize": pass_through},
-        date: {"serialize": pass_through},
-        time: {"serialize": pass_through},
-        UUID: {"serialize": pass_through},
-    }
+    serialization_strategy = MappingProxyType(
+        {
+            datetime: {"serialize": pass_through},
+            date: {"serialize": pass_through},
+            time: {"serialize": pass_through},
+            UUID: {"serialize": pass_through},
+        }
+    )
 
 
 class DataClassORJSONMixin(DataClassDictMixin):
     __slots__ = ()
 
-    __mashumaro_builder_params = {
-        "packer": {
-            "format_name": "jsonb",
-            "dialect": OrjsonDialect,
-            "encoder": orjson.dumps,
-            "encoder_kwargs": {
-                "option": ("orjson_options", ConfigValue("orjson_options"))
+    __mashumaro_builder_params = MappingProxyType(
+        {
+            "packer": {
+                "format_name": "jsonb",
+                "dialect": OrjsonDialect,
+                "encoder": orjson.dumps,
+                "encoder_kwargs": {
+                    "option": ("orjson_options", ConfigValue("orjson_options"))
+                },
             },
-        },
-        "unpacker": {
-            "format_name": "json",
-            "dialect": OrjsonDialect,
-            "decoder": orjson.loads,
-        },
-    }
+            "unpacker": {
+                "format_name": "json",
+                "dialect": OrjsonDialect,
+                "decoder": orjson.loads,
+            },
+        }
+    )
 
     @final
     def to_jsonb(

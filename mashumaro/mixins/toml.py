@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from datetime import date, datetime, time
+from types import MappingProxyType
 from typing import Any, final
 
 import tomli_w
@@ -23,28 +24,28 @@ Decoder = Callable[[EncodedData], dict[Any, Any]]
 class TOMLDialect(Dialect):
     no_copy_collections = (list, dict)
     omit_none = True
-    serialization_strategy = {
-        datetime: pass_through,
-        date: pass_through,
-        time: pass_through,
-    }
+    serialization_strategy = MappingProxyType(
+        {datetime: pass_through, date: pass_through, time: pass_through}
+    )
 
 
 class DataClassTOMLMixin(DataClassDictMixin):
     __slots__ = ()
 
-    __mashumaro_builder_params = {
-        "packer": {
-            "format_name": "toml",
-            "dialect": TOMLDialect,
-            "encoder": tomli_w.dumps,
-        },
-        "unpacker": {
-            "format_name": "toml",
-            "dialect": TOMLDialect,
-            "decoder": tomllib.loads,
-        },
-    }
+    __mashumaro_builder_params = MappingProxyType(
+        {
+            "packer": {
+                "format_name": "toml",
+                "dialect": TOMLDialect,
+                "encoder": tomli_w.dumps,
+            },
+            "unpacker": {
+                "format_name": "toml",
+                "dialect": TOMLDialect,
+                "decoder": tomllib.loads,
+            },
+        }
+    )
 
     @final
     def to_toml(

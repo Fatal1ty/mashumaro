@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from types import MappingProxyType
 from typing import Any, final
 
 import msgpack
@@ -15,12 +16,14 @@ Decoder = Callable[[EncodedData], dict[Any, Any]]
 
 class MessagePackDialect(Dialect):
     no_copy_collections = (list, dict)
-    serialization_strategy = {
-        Buffer: pass_through,
-        bytes: pass_through,
-        bytearray: {"deserialize": bytearray, "serialize": pass_through},
-        memoryview: {"deserialize": memoryview, "serialize": pass_through},
-    }
+    serialization_strategy = MappingProxyType(
+        {
+            Buffer: pass_through,
+            bytes: pass_through,
+            bytearray: {"deserialize": bytearray, "serialize": pass_through},
+            memoryview: {"deserialize": memoryview, "serialize": pass_through},
+        }
+    )
 
 
 def default_encoder(data: Any) -> EncodedData:
@@ -34,18 +37,20 @@ def default_decoder(data: EncodedData) -> dict[Any, Any]:
 class DataClassMessagePackMixin(DataClassDictMixin):
     __slots__ = ()
 
-    __mashumaro_builder_params = {
-        "packer": {
-            "format_name": "msgpack",
-            "dialect": MessagePackDialect,
-            "encoder": default_encoder,
-        },
-        "unpacker": {
-            "format_name": "msgpack",
-            "dialect": MessagePackDialect,
-            "decoder": default_decoder,
-        },
-    }
+    __mashumaro_builder_params = MappingProxyType(
+        {
+            "packer": {
+                "format_name": "msgpack",
+                "dialect": MessagePackDialect,
+                "encoder": default_encoder,
+            },
+            "unpacker": {
+                "format_name": "msgpack",
+                "dialect": MessagePackDialect,
+                "decoder": default_decoder,
+            },
+        }
+    )
 
     @final
     def to_msgpack(
