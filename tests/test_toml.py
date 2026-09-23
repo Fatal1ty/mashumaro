@@ -6,11 +6,6 @@ import tomli_w
 
 from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
 
-try:
-    import tomllib
-except ModuleNotFoundError:
-    import tomli as tomllib  # type: ignore
-
 from mashumaro.dialect import Dialect
 from mashumaro.mixins.toml import DataClassTOMLMixin
 

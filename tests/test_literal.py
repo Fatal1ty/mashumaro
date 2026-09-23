@@ -62,7 +62,7 @@ def test_literal_with_bool():
 def test_literal_with_none():
     @dataclass
     class DataClass(DataClassDictMixin):
-        x: Literal[None]
+        x: Literal[None]  # noqa: PYI061
 
     assert DataClass.from_dict({"x": None}) == DataClass(None)
     assert DataClass(None).to_dict() == {"x": None}

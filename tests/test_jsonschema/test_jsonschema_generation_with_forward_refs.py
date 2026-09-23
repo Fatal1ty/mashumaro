@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import ForwardRef, TypedDict
 
-import pytest
-
 from mashumaro.core.meta.helpers import get_function_arg_annotation
 from mashumaro.jsonschema import build_json_schema
 from mashumaro.jsonschema.models import (

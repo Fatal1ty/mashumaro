@@ -265,7 +265,9 @@ def test_jsonschema_for_literal():
     assert build_json_schema(Literal[True, False]) == JSONSchema(
         enum=[True, False]
     )
-    assert build_json_schema(Literal[1, None]) == JSONSchema(enum=[1, None])
+    assert build_json_schema(Literal[1, None]) == JSONSchema(  # noqa: PYI061
+        enum=[1, None]
+    )
     assert build_json_schema(Literal[MyEnum.a, MyEnum.b]) == JSONSchema(
         enum=["letter a", "letter b"]
     )
