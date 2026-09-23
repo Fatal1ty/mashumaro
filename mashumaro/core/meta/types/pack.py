@@ -495,11 +495,11 @@ def pack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
                     spec.copy(type=get_type_var_default(spec.type))
                 )
                 return expr_or_maybe_none(spec, pv)
-            constraints = getattr(spec.type, "__constraints__")
+            constraints = spec.type.__constraints__
             if constraints:
                 return pack_union(spec, constraints, "type_var")
             else:
-                bound = getattr(spec.type, "__bound__")
+                bound = spec.type.__bound__
                 # act as if it was Optional[bound]
                 pv = PackerRegistry.get(spec.copy(type=bound))
                 return expr_or_maybe_none(spec, pv)
@@ -816,7 +816,7 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
 
 @register
 def pack_collection(spec: ValueSpec) -> Expression | None:
-    if not issubclass(spec.origin_type, Collection):
+    if not issubclass(spec.origin_type, Collection):  # noqa: SIM114
         return None
     elif issubclass(spec.origin_type, enum.Enum):
         return None

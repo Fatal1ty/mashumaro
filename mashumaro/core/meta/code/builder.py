@@ -955,7 +955,7 @@ class CodeBuilder:
                                 ),
                             )
                         if omit_none and not omit_none_feature:
-                            continue
+                            continue  # noqa: SIM114
                         elif omit_default and default is None:
                             continue
                         with self.indent("else:"):
@@ -1301,9 +1301,9 @@ class CodeBuilder:
     def get_field_default_literal(self, value: typing.Any) -> str:
         if isinstance(value, enum.IntFlag):
             return str(value.value)
-        elif type(value) in (str, int, bool, NoneType):  # type: ignore
+        elif type(value) in (str, int, bool, NoneType):  # noqa: SIM114
             return repr(value)
-        elif (
+        elif (  # noqa: SIM114
             isinstance(value, float)
             and not math.isnan(value)
             and not math.isinf(value)

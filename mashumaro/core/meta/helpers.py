@@ -115,7 +115,7 @@ def _get_args_str(
     none_type_as_none: bool = False,
     sep: str = ", ",
 ) -> str:
-    if typ == Tuple[()]:
+    if typ == Tuple[()]:  # noqa: SIM114
         return "()"
     elif typ == tuple[()]:
         return "()"
@@ -174,7 +174,7 @@ def type_name(
 ) -> str:
     if resolved_type_params is None:
         resolved_type_params = {}
-    if typ is None:
+    if typ is None:  # noqa: SIM114
         return "None"
     elif typ is NoneType and none_type_as_none:
         return "None"
@@ -264,7 +264,7 @@ def type_name(
                 short=short,
                 resolved_type_params=resolved_type_params,
             )
-        constraints = getattr(typ, "__constraints__")
+        constraints = typ.__constraints__
         if constraints:
             args_str = ", ".join(
                 type_name(
@@ -277,7 +277,7 @@ def type_name(
             return f"{_typing_name('Union', short)}[{args_str}]"
         else:
             return type_name(
-                typ=getattr(typ, "__bound__"),
+                typ=typ.__bound__,
                 short=short,
                 resolved_type_params=resolved_type_params,
             )
@@ -328,7 +328,7 @@ def is_generic(typ: Type) -> bool:
 def is_typed_dict(typ: Type) -> bool:
     for module in (typing, typing_extensions):
         with suppress(AttributeError):
-            if type(typ) is getattr(module, "_TypedDictMeta"):
+            if type(typ) is module._TypedDictMeta:
                 return True
     return False
 
@@ -337,7 +337,7 @@ def is_readonly(typ: Type) -> bool:
     origin = get_type_origin(typ)
     for module in (typing, typing_extensions):
         with suppress(AttributeError):
-            if origin is getattr(module, "ReadOnly"):
+            if origin is module.ReadOnly:
                 return True
     return False
 
@@ -381,7 +381,7 @@ def is_optional(
 def is_annotated(typ: Type) -> bool:
     for module in (typing, typing_extensions):
         with suppress(AttributeError):
-            if type(typ) is getattr(module, "_AnnotatedAlias"):
+            if type(typ) is module._AnnotatedAlias:
                 return True
     return False
 
@@ -419,11 +419,11 @@ def is_type_var(typ: Type) -> bool:
 
 
 def is_type_var_any(typ: Type) -> bool:
-    if not is_type_var(typ):
+    if not is_type_var(typ):  # noqa: SIM114
         return False
-    elif typ.__constraints__ != ():
+    elif typ.__constraints__ != ():  # noqa: SIM114
         return False
-    elif typ.__bound__ not in (None, Any):
+    elif typ.__bound__ not in (None, Any):  # noqa: SIM114
         return False
     elif type_var_has_default(typ):
         return False
@@ -483,7 +483,7 @@ def collect_type_params(typ: Type) -> Sequence[Type]:
     for type_arg in get_args(typ):
         if type_arg in type_params:
             continue
-        elif is_type_var(type_arg):
+        elif is_type_var(type_arg):  # noqa: SIM114
             type_params.append(type_arg)
         elif is_unpack(type_arg) and is_type_var_tuple(get_args(type_arg)[0]):
             type_params.append(type_arg)
@@ -528,13 +528,13 @@ def _flatten_type_args(
             if is_type_var_tuple(unpacked_type):
                 result.append(type_arg)
             elif is_variable_length_tuple(unpacked_type):
-                if len(type_args) == 1:
+                if len(type_args) == 1:  # noqa: SIM114
                     result.extend(_flatten_type_args(get_args(unpacked_type)))
                 elif allow_ellipsis_if_many_args:
                     result.extend(_flatten_type_args(get_args(unpacked_type)))
                 else:
                     result.append(type_arg)
-            elif unpacked_type == Tuple[()]:
+            elif unpacked_type == Tuple[()]:  # noqa: SIM114
                 if len(type_args) == 1:
                     result.append(())  # type: ignore
             elif unpacked_type == tuple[()]:  # type: ignore
@@ -711,7 +711,7 @@ def get_function_return_annotation(function: Callable[[Any], Any]) -> Type:
 def is_unpack(typ: Type) -> bool:
     for module in (typing, typing_extensions):
         with suppress(AttributeError):
-            if get_type_origin(typ) is getattr(module, "Unpack"):
+            if get_type_origin(typ) is module.Unpack:
                 return True
     return False
 
@@ -719,7 +719,7 @@ def is_unpack(typ: Type) -> bool:
 def is_type_var_tuple(typ: Type) -> bool:
     for module in (typing, typing_extensions):
         with suppress(AttributeError):
-            if type(typ) is getattr(module, "TypeVarTuple"):
+            if type(typ) is module.TypeVarTuple:
                 return True
     return False
 
@@ -782,4 +782,4 @@ def type_var_has_default(typ: Any) -> bool:
 
 
 def get_type_var_default(typ: Any) -> Type:
-    return getattr(typ, "__default__")
+    return typ.__default__

@@ -523,7 +523,7 @@ def test_get_literal_values():
 
 def test_type_name_literal():
     assert type_name(
-        getattr(typing, "Literal")[
+        typing.Literal[
             1,
             "a",
             b"\x00",

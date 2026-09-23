@@ -5,7 +5,6 @@ from typing import List, Optional
 import tomli_w
 
 from mashumaro.config import ADD_DIALECT_SUPPORT, BaseConfig
-
 from mashumaro.dialect import Dialect
 from mashumaro.mixins.toml import DataClassTOMLMixin
 

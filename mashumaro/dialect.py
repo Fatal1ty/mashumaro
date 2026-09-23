@@ -34,7 +34,7 @@ class Dialect:
             else:
                 serialization_strategy[key] = value.copy()
         for key, value in other.serialization_strategy.items():
-            if isinstance(value, SerializationStrategy):
+            if isinstance(value, SerializationStrategy):  # noqa: SIM114
                 serialization_strategy[key] = value
             elif isinstance(
                 serialization_strategy.get(key), SerializationStrategy

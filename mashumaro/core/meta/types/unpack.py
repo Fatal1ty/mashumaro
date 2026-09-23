@@ -833,11 +833,11 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
                     spec.copy(type=get_type_var_default(spec.type))
                 )
                 return expr_or_maybe_none(spec, uv)
-            constraints = getattr(spec.type, "__constraints__")
+            constraints = spec.type.__constraints__
             if constraints:
                 return TypeVarUnpackerBuilder(constraints).build(spec)
             else:
-                bound = getattr(spec.type, "__bound__")
+                bound = spec.type.__bound__
                 # act as if it was Optional[bound]
                 uv = UnpackerRegistry.get(spec.copy(type=bound))
                 return expr_or_maybe_none(spec, uv)
@@ -1292,7 +1292,7 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
 
 @register
 def unpack_collection(spec: ValueSpec) -> Expression | None:
-    if not issubclass(spec.origin_type, Collection):
+    if not issubclass(spec.origin_type, Collection):  # noqa: SIM114
         return None
     elif issubclass(spec.origin_type, enum.Enum):
         return None

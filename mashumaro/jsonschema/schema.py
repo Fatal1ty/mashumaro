@@ -504,7 +504,7 @@ def on_special_typing_primitive(
             return get_schema(
                 instance.derive(type=get_type_var_default(instance.type)), ctx
             )
-        constraints = getattr(instance.type, "__constraints__")
+        constraints = instance.type.__constraints__
         if constraints:
             return JSONSchema(
                 anyOf=[
@@ -513,7 +513,7 @@ def on_special_typing_primitive(
                 ]
             )
         else:
-            bound = getattr(instance.type, "__bound__")
+            bound = instance.type.__bound__
             return get_schema(instance.derive(type=bound), ctx)
     elif is_new_type(instance.type):
         return get_schema(
@@ -890,7 +890,7 @@ def apply_object_constraints(
 
 @register
 def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
-    if not issubclass(instance.origin_type, Collection):
+    if not issubclass(instance.origin_type, Collection):  # noqa: SIM114
         return None
     elif issubclass(instance.origin_type, Enum):
         return None
