@@ -3,6 +3,7 @@ import collections
 import datetime
 import ipaddress
 import os
+import sys
 from base64 import encodebytes
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -15,7 +16,6 @@ from pathlib import (
     PureWindowsPath,
     WindowsPath,
 )
-from typing import ByteString  # noqa: PYI057
 from typing import (
     AbstractSet,
     Any,
@@ -120,6 +120,13 @@ from tests.test_pep_655 import (
     TypedDictCorrectNotRequired,
     TypedDictCorrectRequired,
 )
+
+if sys.version_info < (3, 15):
+    from collections.abc import ByteString  # noqa: PYI057
+
+    _BINARY_TYPES = (ByteString, Buffer, bytes, bytearray, memoryview)
+else:
+    _BINARY_TYPES = (Buffer, bytes, bytearray, memoryview)
 
 Ts = TypeVarTuple("Ts")
 
@@ -447,7 +454,7 @@ def test_jsonschema_for_fraction():
 
 
 def test_jsonschema_for_binary_types():
-    for instance_type in (ByteString, Buffer, bytes, bytearray, memoryview):
+    for instance_type in _BINARY_TYPES:
         assert build_json_schema(instance_type) == JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,
