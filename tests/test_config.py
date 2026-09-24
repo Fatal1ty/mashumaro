@@ -12,6 +12,7 @@ from mashumaro.types import Discriminator, SerializationStrategy
 from .entities import (
     MyDataClassWithOptional,
     MyDataClassWithOptionalAndOmitNoneFlag,
+    MyDataClassWithPEP604Optional,
     MyNamedTuple,
     MyNamedTupleWithDefaults,
     MyNamedTupleWithRequiredAndDefaults,
@@ -128,10 +129,14 @@ def test_no_omit_none_code_generation_flag():
         DataClass().to_dict(omit_none=True)
 
 
-def test_omit_none_flag_for_inner_class_without_it():
+@pytest.mark.parametrize(
+    "optional_inner_class",
+    [MyDataClassWithOptional, MyDataClassWithPEP604Optional],
+)
+def test_omit_none_flag_for_inner_class_without_it(optional_inner_class):
     @dataclass
     class DataClass(DataClassDictMixin):
-        x: Optional[MyDataClassWithOptional] = None
+        x: Optional[optional_inner_class] = None
 
         class Config(BaseConfig):
             code_generation_options = [TO_DICT_ADD_OMIT_NONE_FLAG]
@@ -139,7 +144,7 @@ def test_omit_none_flag_for_inner_class_without_it():
     assert DataClass().to_dict() == {"x": None}
     assert DataClass().to_dict(omit_none=True) == {}
 
-    empty_x = MyDataClassWithOptional()
+    empty_x = optional_inner_class()
     assert DataClass(empty_x).to_dict() == {"x": {"a": None, "b": None}}
     assert DataClass(empty_x).to_dict(omit_none=True) == {
         "x": {"a": None, "b": None}

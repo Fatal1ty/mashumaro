@@ -6,8 +6,8 @@ import sys
 import warnings
 from base64 import encodebytes
 from collections import ChainMap, Counter, deque
+from collections.abc import ByteString  # noqa: PYI057
 from collections.abc import (  # type: ignore[attr-defined]
-    ByteString,
     Callable,
     Collection,
     Iterable,
@@ -20,11 +20,12 @@ from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
 from functools import cached_property
-from typing import Any, ForwardRef, Tuple, Type, cast
+from typing import Tuple  # noqa: UP035
+from typing import Any, ForwardRef, TypeAlias, cast
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from typing_extensions import Buffer, NoExtraItems, NotRequired, TypeAlias
+from typing_extensions import Buffer, NoExtraItems, NotRequired
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_311_MIN
@@ -110,16 +111,18 @@ UTC_OFFSET_PATTERN = r"^UTC([+-][0-2][0-9]:[0-5][0-9])?$"
 
 @dataclass
 class Instance:
-    type: Type
+    # Derived field annotations can contain Required and NotRequired, which
+    # are annotation qualifiers rather than TypeForm values.
+    type: Any
     name: str | None = None
 
     __owner_builder: CodeBuilder | None = None
     __self_builder: CodeBuilder | None = None
 
     # Original type despite custom serialization. To be revised.
-    _original_type: Type = field(init=False)
+    _original_type: Any = field(init=False)
 
-    origin_type: Type = field(init=False)
+    origin_type: Any = field(init=False)
     annotations: list[Annotation] = field(init=False, default_factory=list)
 
     @cached_property
@@ -158,7 +161,7 @@ class Instance:
         return alias
 
     @property
-    def owner_class(self) -> Type | None:
+    def owner_class(self) -> type | None:
         if self.__owner_builder:
             return self.__owner_builder.cls
         return None
@@ -168,7 +171,9 @@ class Instance:
         if isinstance(new_type, ForwardRef):
             changes["type"] = evaluate_forward_ref(new_type)
         new_instance = replace(self, **changes)
-        if is_dataclass(self.origin_type):
+        if isinstance(self.origin_type, type) and is_dataclass(
+            self.origin_type
+        ):
             new_instance.__owner_builder = self.__self_builder
             new_instance.update_type(new_instance.type)
         return new_instance
@@ -181,20 +186,22 @@ class Instance:
             self.type = get_args(self.type)[0]
             self.origin_type = get_type_origin(self.type)
 
-    def update_type(self, new_type: Type) -> None:
+    def update_type(self, new_type: Any) -> None:
         if self.__owner_builder:
             self.type = self.__owner_builder.get_real_type(
                 field_name=self.name, field_type=new_type  # type: ignore
             )
         self.origin_type = get_type_origin(self.type)
-        if is_dataclass(self.origin_type):
+        if isinstance(self.origin_type, type) and is_dataclass(
+            self.origin_type
+        ):
             type_args = get_args(self.type)
             self.__self_builder = CodeBuilder(self.origin_type, type_args)
             self.__self_builder.reset()
         else:
             self.__self_builder = None
 
-    def fields(self) -> Iterable[tuple[str, Type, bool, Any]]:
+    def fields(self) -> Iterable[tuple[str, Any, bool, Any]]:
         for f_name, f_type in self._self_builder.get_field_types(
             include_extras=True
         ).items():
@@ -236,7 +243,7 @@ class Instance:
                 return serialize_option
         return None
 
-    def get_owner_config(self) -> Type[BaseConfig]:
+    def get_owner_config(self) -> type[BaseConfig]:
         if self.__owner_builder:
             return self.__owner_builder.get_config()
         else:
@@ -252,7 +259,7 @@ class Instance:
         else:
             return default
 
-    def get_self_config(self) -> Type[BaseConfig]:
+    def get_self_config(self) -> type[BaseConfig]:
         if self.__self_builder:
             return self.__self_builder.get_config()
         else:
@@ -321,7 +328,7 @@ def apply_schema_annotations(
     for annotation in instance.annotations:
         if isinstance(annotation, JSONSchema):
             annotation_dict = replace(annotation).to_dict()
-            for key in annotation_dict.keys():
+            for key in annotation_dict:
                 if key in ("$schema", "$ref", "$defs"):
                     continue
                 if key in ("const", "default"):
@@ -332,9 +339,7 @@ def apply_schema_annotations(
     return schema
 
 
-def _default(
-    f_type: Type | None, f_value: Any, config_cls: Type[BaseConfig]
-) -> Any:
+def _default(f_type: Any, f_value: Any, config_cls: type[BaseConfig]) -> Any:
     @dataclass
     class CC(DataClassJSONMixin):
         x: f_type = f_value  # type: ignore
@@ -389,14 +394,16 @@ def on_type_with_overridden_serialization(
                 return None
             else:
                 instance.update_type(new_type)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             override_with_any(e)
         return get_schema(instance, ctx)
 
 
 @register
 def on_dataclass(instance: Instance, ctx: Context) -> JSONSchema | None:
-    if is_dataclass(instance.origin_type):
+    if isinstance(instance.origin_type, type) and is_dataclass(
+        instance.origin_type
+    ):
         # When dataclasses reference themselves (typing.Self) or each other,
         # we must break infinite recursion by forcing $ref/$defs.
         origin = instance.origin_type
@@ -504,7 +511,7 @@ def on_special_typing_primitive(
             return get_schema(
                 instance.derive(type=get_type_var_default(instance.type)), ctx
             )
-        constraints = getattr(instance.type, "__constraints__")
+        constraints = instance.type.__constraints__
         if constraints:
             return JSONSchema(
                 anyOf=[
@@ -513,7 +520,7 @@ def on_special_typing_primitive(
                 ]
             )
         else:
-            bound = getattr(instance.type, "__bound__")
+            bound = instance.type.__bound__
             return get_schema(instance.derive(type=bound), ctx)
     elif is_new_type(instance.type):
         return get_schema(
@@ -713,7 +720,7 @@ def on_fraction(instance: Instance, ctx: Context) -> JSONSchema | None:
 def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
     args = get_args(instance.type)
     if not args:
-        if instance.type in (Tuple, tuple):
+        if instance.type in (Tuple, tuple):  # noqa: UP006
             args = [Any, ...]  # type: ignore
         else:
             return JSONArraySchema(maxItems=0)
@@ -824,7 +831,7 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
         extra_items := getattr(instance.type, "__extra_items__", NoExtraItems)
     ) is not NoExtraItems:
         additional_properties = get_schema(
-            Instance(cast(Type, extra_items)), ctx=ctx
+            Instance(cast(type, extra_items)), ctx=ctx
         )
     else:
         additional_properties = False
@@ -890,7 +897,7 @@ def apply_object_constraints(
 
 @register
 def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
-    if not issubclass(instance.origin_type, Collection):
+    if not issubclass(instance.origin_type, Collection):  # noqa: SIM114
         return None
     elif issubclass(instance.origin_type, Enum):
         return None

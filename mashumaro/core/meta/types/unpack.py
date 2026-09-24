@@ -25,10 +25,11 @@ from contextlib import suppress
 from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, ForwardRef, Tuple
+from typing import Tuple  # noqa: UP035
+from typing import Any, ForwardRef
 
 import typing_extensions
-from typing_extensions import Buffer, NotRequired
+from typing_extensions import Buffer, NotRequired, TypeForm
 
 from mashumaro.core.const import PY_311_MIN
 from mashumaro.core.helpers import parse_timezone
@@ -112,7 +113,7 @@ except ImportError:  # pragma: no cover
     pendulum: types.ModuleType | None = None  # type: ignore
 
 
-__all__ = ["UnpackerRegistry", "SubtypeUnpackerBuilder"]
+__all__ = ["SubtypeUnpackerBuilder", "UnpackerRegistry"]
 
 
 UnpackerRegistry = Registry()
@@ -171,7 +172,7 @@ class AbstractUnpackerBuilder(AbstractMethodBuilder, ABC):
 
 
 class UnionUnpackerBuilder(AbstractUnpackerBuilder):
-    def __init__(self, args: tuple[type, ...]):
+    def __init__(self, args: tuple[TypeForm, ...]):
         self.union_args = args
         self.method_name: str | None = None
 
@@ -305,7 +306,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         base_variants: tuple[type, ...] | None = None,
     ):
         self.discriminator = discriminator
-        self.base_variants = base_variants or tuple()
+        self.base_variants = base_variants or ()
         self._variants_attr: str | None = None
         self._unpackers_attr: str | None = None
 
@@ -541,7 +542,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             lines.append(
                 "CodeBuilder(variant, "
                 "dialect=_dialect, "
-                f"format_name={repr(spec.builder.format_name)}, "
+                f"format_name={spec.builder.format_name!r}, "
                 "default_dialect=_default_dialect,"
                 f"attrs={attrs},"
                 f"attrs_registry={spec.attrs_registry_name})"
@@ -562,7 +563,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             lines.append(
                 "CodeBuilder(variant, "
                 "dialect=_dialect, "
-                f"format_name={repr(spec.builder.format_name)}, "
+                f"format_name={spec.builder.format_name!r}, "
                 "default_dialect=_default_dialect)"
                 ".add_unpack_method()"
             )
@@ -594,7 +595,7 @@ def _unpack_with_annotated_serialization_strategy(
 ) -> Expression:
     strategy_type = type(strategy)
     try:
-        value_type: type | Any = get_function_arg_annotation(
+        value_type: Any = get_function_arg_annotation(
             strategy.deserialize, arg_pos=0
         )
     except (KeyError, ValueError):
@@ -729,7 +730,7 @@ def unpack_generic_serializable_type(spec: ValueSpec) -> Expression | None:
 
 @register
 def unpack_dataclass(spec: ValueSpec) -> Expression | None:
-    if is_dataclass(spec.origin_type):
+    if isinstance(spec.origin_type, type) and is_dataclass(spec.origin_type):
         for annotation in spec.annotations:
             if isinstance(annotation, Discriminator):
                 return DiscriminatedUnionUnpackerBuilder(annotation).build(
@@ -833,11 +834,11 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
                     spec.copy(type=get_type_var_default(spec.type))
                 )
                 return expr_or_maybe_none(spec, uv)
-            constraints = getattr(spec.type, "__constraints__")
+            constraints = spec.type.__constraints__
             if constraints:
                 return TypeVarUnpackerBuilder(constraints).build(spec)
             else:
-                bound = getattr(spec.type, "__bound__")
+                bound = spec.type.__bound__
                 # act as if it was Optional[bound]
                 uv = UnpackerRegistry.get(spec.copy(type=bound))
                 return expr_or_maybe_none(spec, uv)
@@ -1062,7 +1063,7 @@ def unpack_fraction(spec: ValueSpec) -> Expression | None:
 
 def unpack_tuple(spec: ValueSpec, args: tuple[type, ...]) -> Expression:
     if not args:
-        if spec.type in (Tuple, tuple):
+        if spec.type in (Tuple, tuple):  # noqa: UP006
             args = [Any, ...]  # type: ignore
         else:
             return "()"
@@ -1292,7 +1293,7 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
 
 @register
 def unpack_collection(spec: ValueSpec) -> Expression | None:
-    if not issubclass(spec.origin_type, Collection):
+    if not issubclass(spec.origin_type, Collection):  # noqa: SIM114
         return None
     elif issubclass(spec.origin_type, enum.Enum):
         return None

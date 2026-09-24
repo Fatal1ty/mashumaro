@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Union
 
 import pytest
 
-from mashumaro import DataClassDictMixin, pass_through
+from mashumaro import DataClassDictMixin
 from mashumaro.codecs.basic import encode
 from mashumaro.config import BaseConfig
 from mashumaro.dialect import Dialect

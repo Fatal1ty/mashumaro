@@ -36,7 +36,7 @@ jobs:
       - name: Run mypy
         run: |
           source .venv/bin/activate
-          mypy mashumaro
+          mypy mashumaro tests/typecheck
       - name: Run black
         run: |
           source .venv/bin/activate

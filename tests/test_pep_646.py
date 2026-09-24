@@ -65,9 +65,7 @@ def test_check_generic():
 
     with pytest.raises(TypeError) as e:
         _check_generic(object, (K, V), (int,))
-    assert (
-        str(e.value) == f"Too few arguments for object; actual 1, expected 2"
-    )
+    assert str(e.value) == "Too few arguments for object; actual 1, expected 2"
 
     with pytest.raises(TypeError) as e:
         _check_generic(object, (K, Unpack[Ts], V), (int,))
@@ -490,8 +488,6 @@ def test_dataclass_with_splitting_arbitrary_length_tuples_3():
 
     @dataclass
     class ConcreteDataClass(GenericDataClass[date, Unpack[Tuple[int, ...]]]):
-        pass
-
         class Config:
             debug = True
 

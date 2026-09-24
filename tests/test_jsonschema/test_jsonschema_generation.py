@@ -14,10 +14,10 @@ from pathlib import (
     PureWindowsPath,
     WindowsPath,
 )
+from typing import ByteString  # noqa: PYI057
 from typing import (
     AbstractSet,
     Any,
-    ByteString,
     ChainMap,
     Counter,
     DefaultDict,
@@ -131,11 +131,14 @@ class ThirdPartyType:
     pass
 
 
+third_party_type_value = ThirdPartyType()
+
+
 @dataclass
 class DataClassWithThirdPartyType:
     a: ThirdPartyType
     b: Optional[ThirdPartyType]
-    c: ThirdPartyType = ThirdPartyType()
+    c: ThirdPartyType = third_party_type_value
     d: Optional[ThirdPartyType] = None
 
     class Config(BaseConfig):
@@ -262,7 +265,9 @@ def test_jsonschema_for_literal():
     assert build_json_schema(Literal[True, False]) == JSONSchema(
         enum=[True, False]
     )
-    assert build_json_schema(Literal[1, None]) == JSONSchema(enum=[1, None])
+    assert build_json_schema(Literal[1, None]) == JSONSchema(  # noqa: PYI061
+        enum=[1, None]
+    )
     assert build_json_schema(Literal[MyEnum.a, MyEnum.b]) == JSONSchema(
         enum=["letter a", "letter b"]
     )
@@ -410,8 +415,14 @@ def test_jsonschema_for_uuid():
         (ipaddress.IPv6Address, JSONSchemaStringFormat.IPV6ADDRESS),
         (ipaddress.IPv4Network, JSONSchemaInstanceFormatExtension.IPV4NETWORK),
         (ipaddress.IPv6Network, JSONSchemaInstanceFormatExtension.IPV6NETWORK),
-        (ipaddress.IPv4Network, JSONSchemaInstanceFormatExtension.IPV4NETWORK),
-        (ipaddress.IPv6Network, JSONSchemaInstanceFormatExtension.IPV6NETWORK),
+        (
+            ipaddress.IPv4Interface,
+            JSONSchemaInstanceFormatExtension.IPV4INTERFACE,
+        ),
+        (
+            ipaddress.IPv6Interface,
+            JSONSchemaInstanceFormatExtension.IPV6INTERFACE,
+        ),
     ),
 )
 def test_jsonschema_for_ipaddress(instance_type, string_format):
@@ -1056,6 +1067,9 @@ def test_overridden_serialization_method_without_signature():
         assert (
             build_json_schema(DataClass).properties["x"] == EmptyJSONSchema()
         )
+    with pytest.warns(
+        UserWarning, match=f"Type Any will be used for {type_name(DataClass)}"
+    ):
         assert (
             build_json_schema(DataClass).properties["y"] == EmptyJSONSchema()
         )
@@ -1488,8 +1502,8 @@ def test_jsonschema_with_custom_instance_format():
             self,
             instance: Instance,
             ctx: Context,
-            schema: Optional[JSONSchema] = None,
-        ) -> Optional[JSONSchema]:
+            schema: JSONSchema | None = None,
+        ) -> JSONSchema | None:
             for annotation in instance.annotations:
                 if isinstance(annotation, JSONSchemaInstanceFormat):
                     schema.format = annotation

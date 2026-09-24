@@ -249,7 +249,9 @@ def test_serialization_strategy_match_subclasses_specific_overrides_base():
     result = obj.to_dict()
     assert result["e1"] == "B"
     assert result["e2"] == 1000
-    MyDataClass.from_dict(result) == MyDataClass(e1=MyEnum.B, e2=MyIntEnum.X)
+    assert MyDataClass.from_dict(result) == MyDataClass(
+        e1=MyEnum.B, e2=MyIntEnum.X
+    )
 
 
 def test_serialization_strategy_no_match_subclasses_by_default():

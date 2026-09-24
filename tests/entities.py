@@ -158,6 +158,12 @@ class MyDataClassWithOptional(DataClassDictMixin):
 
 
 @dataclass
+class MyDataClassWithPEP604Optional(DataClassDictMixin):
+    a: int | None = None
+    b: int | None = None
+
+
+@dataclass
 class MyDataClassWithOptionalAndOmitNoneFlag(DataClassDictMixin):
     a: Optional[int] = None
     b: Optional[int] = None

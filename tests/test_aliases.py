@@ -1,6 +1,4 @@
 from dataclasses import dataclass, field
-from email.policy import default
-from importlib.metadata import metadata
 from typing import Optional
 
 import pytest

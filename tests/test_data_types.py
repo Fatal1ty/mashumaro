@@ -717,19 +717,21 @@ def test_with_optional(value_info):
     @dataclass
     class DataClass(DataClassDictMixin):
         x: Optional[x_type] = None
+        xx: x_type | None = None
 
-    for instance in [DataClass(x_value), DataClass()]:
+    for instance in [DataClass(x_value, x_value), DataClass()]:
         if instance.x is None:
             v_dumped = None
         else:
             v_dumped = x_value_dumped
-        dumped = {"x": v_dumped}
+        dumped = {"x": v_dumped, "xx": v_dumped}
         instance_dumped = instance.to_dict()
         instance_loaded = DataClass.from_dict(dumped)
         assert instance_dumped == dumped
         assert instance_loaded == instance
         assert same_types(instance_dumped, dumped)
         assert same_types(instance_loaded.x, instance.x)
+        assert same_types(instance_loaded.xx, instance.xx)
 
 
 def test_raises_missing_field():
@@ -780,7 +782,7 @@ def test_rounded_decimal(places, rounding):
                 decimal.Decimal: RoundedDecimal(places, rounding)
             }
 
-    digit = decimal.Decimal(0.35)
+    digit = decimal.Decimal("0.35")
     if places is not None:
         exp = decimal.Decimal((0, (1,), -places))
         quantized = digit.quantize(exp, rounding)
@@ -999,7 +1001,7 @@ def test_invalid_field_value_deserialization_with_rounded_decimal_with_default()
     ],
 )
 def test_serialize_deserialize_options(value_info):
-    x_type, x_value, x_value_dumped = value_info
+    x_type, x_value, _x_value_dumped = value_info
 
     @dataclass
     class DataClass(DataClassDictMixin):
