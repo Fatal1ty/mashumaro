@@ -204,7 +204,7 @@ Collection contents are converted recursively. Abstract collection annotations d
 | `collections.deque[T]` | `list` | `deque` |
 | `Sequence[T]`, `MutableSequence[T]` | `list` | `list` |
 | `dict[K, V]`, `Mapping[K, V]`, `MutableMapping[K, V]` | `dict` | `dict` |
-| `frozendict[K, V]` (Python 3.15+) | `dict` | `frozendict` |
+| `frozendict[K, V]` | `dict` | `frozendict` |
 | `OrderedDict[K, V]` | `dict` | `OrderedDict` |
 | `defaultdict[K, V]` | `dict` | `defaultdict` |
 | `Counter[K]` | `dict` | `Counter` |
