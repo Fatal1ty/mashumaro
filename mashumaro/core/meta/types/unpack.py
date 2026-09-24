@@ -22,6 +22,7 @@ from collections.abc import (
     Set,
 )
 from contextlib import suppress
+from dataclasses import fields as dataclass_fields
 from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
@@ -424,13 +425,29 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
 
         if discriminator.field:
             chosen_cls = f"{variants_map}[discriminator]"
+            keys = self._get_discriminator_lookup_keys(spec)
             with lines.indent("try:"):
-                lines.append(f"discriminator = value['{discriminator.field}']")
+                lines.append(f"discriminator = value['{keys[0]}']")
             with lines.indent("except KeyError:"):
-                lines.append(
-                    f"raise MissingDiscriminatorError('{discriminator.field}')"
-                    " from None"
-                )
+                if len(keys) == 1:
+                    lines.append(
+                        f"raise MissingDiscriminatorError("
+                        f"'{discriminator.field}') from None"
+                    )
+                else:
+                    lines.append(
+                        f"discriminator = value.get('{keys[1]}', MISSING)"
+                    )
+                    for key in keys[2:]:
+                        with lines.indent("if discriminator is MISSING:"):
+                            lines.append(
+                                f"discriminator = value.get('{key}', MISSING)"
+                            )
+                    with lines.indent("if discriminator is MISSING:"):
+                        lines.append(
+                            f"raise MissingDiscriminatorError("
+                            f"'{discriminator.field}') from None"
+                        )
             with lines.indent("try:"):
                 if spec.builder.is_nailed:
                     lines.append(f"return {chosen_cls}.{variant_method_call}")
@@ -567,6 +584,75 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
                 "default_dialect=_default_dialect)"
                 ".add_unpack_method()"
             )
+
+    def _add_discriminator_field_keys(
+        self,
+        keys: list[str],
+        field: str,
+        fname: str,
+        ftype: typing.Any,
+        metadata: typing.Mapping[str, typing.Any],
+        config: typing.Any,
+    ) -> None:
+        from mashumaro.core.meta.code.builder import CodeBuilder
+
+        aliases = CodeBuilder.get_field_aliases(fname, ftype, metadata, config)
+        if field != fname and field not in aliases:
+            return
+        field_keys = list(aliases) if aliases else [fname]
+        if aliases and config.allow_deserialization_not_by_alias:
+            field_keys.append(fname)
+        for key in field_keys:
+            if key not in keys:
+                keys.append(key)
+
+    def _get_discriminator_lookup_keys(
+        self, spec: ValueSpec
+    ) -> tuple[str, ...]:
+        field = self.discriminator.field
+        assert field is not None
+        # Discriminator.field remains a payload key. When it names a model
+        # field or one of that field's aliases, also try the same keys the
+        # field unpacker uses so aliased and unaliased tags both work.
+        keys: list[str] = [field]
+        builder = spec.builder
+        # Class-level compilation runs in __init_subclass__, before @dataclass
+        # has wrapped the class. Read fields from the builder, not from
+        # dataclasses.fields().
+        builder_config = builder.get_config()
+        field_types = builder.get_field_types(include_extras=True)
+        for fname, ftype in field_types.items():
+            self._add_discriminator_field_keys(
+                keys,
+                field,
+                fname,
+                ftype,
+                builder.metadatas.get(fname, {}),
+                builder_config,
+            )
+        seen_types = {id(builder.cls)}
+        for typ in (spec.origin_type, *self.base_variants):
+            origin = get_type_origin(typ)
+            if id(origin) in seen_types:
+                continue
+            if not is_dataclass(origin):
+                continue
+            seen_types.add(id(origin))
+            config = builder.get_config(origin)
+            hints = typing_extensions.get_type_hints(
+                origin, include_extras=True
+            )
+            for dataclass_field in dataclass_fields(origin):
+                fname = dataclass_field.name
+                self._add_discriminator_field_keys(
+                    keys,
+                    field,
+                    fname,
+                    hints.get(fname, dataclass_field.type),
+                    dataclass_field.metadata,
+                    config,
+                )
+        return tuple(keys)
 
     def _add_register_variant_tags(
         self, lines: CodeLines, variant_tagger_expr: str
