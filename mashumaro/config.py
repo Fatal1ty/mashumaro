@@ -1,6 +1,6 @@
 from collections.abc import Callable, Mapping, Sequence
 from types import MappingProxyType
-from typing import Any, Literal, Type, TypedDict
+from typing import Any, Literal, TypedDict
 
 from mashumaro.core.const import Sentinel
 from mashumaro.dialect import Dialect
@@ -50,7 +50,7 @@ class BaseConfig:
     serialize_by_alias: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     namedtuple_as_dict: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     allow_postponed_evaluation: bool = True
-    dialect: Type[Dialect] | None = None
+    dialect: type[Dialect] | None = None
     omit_none: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     omit_default: bool | Literal[Sentinel.MISSING] = Sentinel.MISSING
     orjson_options: int | None = 0

@@ -1,9 +1,7 @@
 import decimal
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Type
-
-from typing_extensions import Literal
+from typing import Any, Literal
 
 from mashumaro.core.const import Sentinel
 
@@ -42,11 +40,11 @@ class SerializableType:
 class GenericSerializableType:
     __slots__ = ()
 
-    def _serialize(self, types: list[Type]) -> Any:
+    def _serialize(self, types: list[type]) -> Any:
         raise NotImplementedError
 
     @classmethod
-    def _deserialize(cls, value: Any, types: list[Type]) -> Any:
+    def _deserialize(cls, value: Any, types: list[type]) -> Any:
         raise NotImplementedError
 
 

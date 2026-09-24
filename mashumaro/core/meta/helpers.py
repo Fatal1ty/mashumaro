@@ -3,13 +3,14 @@ import enum
 import inspect
 import types
 import typing
-from collections.abc import Callable, Hashable, Iterable, Iterator
+from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from contextlib import suppress
 
 # noinspection PyProtectedMember
 from dataclasses import _FIELDS  # type: ignore
 from hashlib import md5
-from typing import Any, ClassVar, ForwardRef, Sequence, Tuple, Union, cast
+from typing import Tuple  # noqa: UP035
+from typing import Any, ClassVar, ForwardRef, Union, cast
 
 try:
     from typing import Unpack  # type: ignore[attr-defined]
@@ -114,7 +115,7 @@ def _get_args_str(
     none_type_as_none: bool = False,
     sep: str = ", ",
 ) -> str:
-    if typ == Tuple[()]:  # noqa: SIM114
+    if typ == Tuple[()]:  # noqa: SIM114, UP006
         return "()"
     elif typ == tuple[()]:
         return "()"
@@ -531,7 +532,7 @@ def _flatten_type_args(
                     result.extend(_flatten_type_args(get_args(unpacked_type)))
                 else:
                     result.append(type_arg)
-            elif unpacked_type == Tuple[()]:  # noqa: SIM114
+            elif unpacked_type == Tuple[()]:  # noqa: SIM114, UP006
                 if len(type_args) == 1:
                     result.append(())  # type: ignore
             elif unpacked_type == tuple[()]:  # type: ignore
@@ -600,17 +601,20 @@ def resolve_type_params(
         else:
             if not type_args and is_type_var_tuple(get_args(type_param)[0]):
                 resolved_type_params[type_param] = Unpack[
-                    Tuple[Any, ...]  # type: ignore
+                    Tuple[Any, ...]  # noqa: UP006
                 ]
                 break
             t_args = type_args[unpack_param_idx : len(type_args) + arg_idx + 1]
             if len(t_args) == 1 and t_args[0] == ():
                 x: Any = ()
             elif len(t_args) > 2 and t_args[-1] is Ellipsis:
-                x = (*t_args[:-2], Unpack[Tuple[t_args[-2], ...]])
+                x = (
+                    *t_args[:-2],
+                    Unpack[Tuple[t_args[-2], ...]],  # noqa: UP006
+                )
             else:
                 x = tuple(t_args)
-            resolved_type_params[type_param] = Unpack[Tuple[x]]  # type: ignore
+            resolved_type_params[type_param] = Unpack[Tuple[x]]  # noqa: UP006
             break
 
     if include_bases:

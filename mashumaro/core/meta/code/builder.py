@@ -109,16 +109,16 @@ class InternalMethodName(str):
 class CodeBuilder:
     def __init__(
         self,
-        cls: typing.Type,
-        type_args: typing.Tuple[typing.Type, ...] = (),
-        dialect: typing.Type[Dialect] | None = None,
+        cls: type,
+        type_args: tuple[type, ...] = (),
+        dialect: type[Dialect] | None = None,
         first_method: str = "from_dict",
         allow_postponed_evaluation: bool = True,
         format_name: str = "dict",
         decoder: typing.Any | None = None,
         encoder: typing.Any | None = None,
         encoder_kwargs: dict[str, typing.Any] | None = None,
-        default_dialect: typing.Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         attrs: typing.Any = None,
         attrs_registry: dict[typing.Any, typing.Any] | None = None,
         methods_in_progress: (
@@ -619,8 +619,8 @@ class CodeBuilder:
             self.add_line(f"def {method_name}(d{kwargs}):")
 
     def get_config(
-        self, cls: typing.Type | None = None, look_in_parents: bool = True
-    ) -> typing.Type[BaseConfig]:
+        self, cls: type | None = None, look_in_parents: bool = True
+    ) -> type[BaseConfig]:
         if cls is None:
             cls = self.cls
 
@@ -657,7 +657,7 @@ class CodeBuilder:
         return None
 
     def get_pack_method_flags(
-        self, cls: typing.Type | None = None, pass_encoder: bool = False
+        self, cls: type | None = None, pass_encoder: bool = False
     ) -> str:
         pluggable_flags = []
         if pass_encoder and self.encoder is not None:
@@ -677,7 +677,7 @@ class CodeBuilder:
         return ", ".join(pluggable_flags)
 
     def get_unpack_method_flags(
-        self, cls: typing.Type | None = None, pass_decoder: bool = False
+        self, cls: type | None = None, pass_decoder: bool = False
     ) -> str:
         pluggable_flags = []
         if pass_decoder and self.decoder is not None:
@@ -689,7 +689,7 @@ class CodeBuilder:
         return ", ".join(pluggable_flags)
 
     def get_pack_method_default_flag_values(
-        self, cls: typing.Type | None = None, pass_encoder: bool = False
+        self, cls: type | None = None, pass_encoder: bool = False
     ) -> str:
         pos_param_names = []
         pos_param_values = []
@@ -780,7 +780,7 @@ class CodeBuilder:
         return pluggable_flags_str
 
     def is_code_generation_option_enabled(
-        self, option: str, cls: typing.Type | None = None
+        self, option: str, cls: type | None = None
     ) -> bool:
         if cls is None:
             cls = self.cls
@@ -806,7 +806,7 @@ class CodeBuilder:
     @classmethod
     def get_pack_method_name(
         cls,
-        type_args: typing.Tuple[typing.Type, ...] = (),
+        type_args: tuple[type, ...] = (),
         format_name: str = "dict",
         encoder: typing.Any | None = None,
     ) -> InternalMethodName:
@@ -885,9 +885,9 @@ class CodeBuilder:
             aliases = {}
             nullable_fields = set()
             nontrivial_nullable_fields = set()
-            fnames_and_types: typing.Iterable[
-                typing.Tuple[str, typing.Any]
-            ] = field_types.items()
+            fnames_and_types: typing.Iterable[tuple[str, typing.Any]] = (
+                field_types.items()
+            )
             if self.get_config().sort_keys:
                 fnames_and_types = sorted(fnames_and_types, key=lambda x: x[0])
 
@@ -1106,7 +1106,7 @@ class CodeBuilder:
         )
 
     def _get_encoder_kwargs(
-        self, cls: typing.Type | None = None
+        self, cls: type | None = None
     ) -> dict[str, typing.Any]:
         result = {}
         for encoder_param, value in self.encoder_kwargs.items():
@@ -1179,10 +1179,10 @@ class CodeBuilder:
     def _get_field_packer(
         self,
         fname: str,
-        ftype: typing.Type,
-        config: typing.Type[BaseConfig],
+        ftype: type,
+        config: type[BaseConfig],
         force_value: bool = False,
-    ) -> typing.Tuple[str, str | None, bool]:
+    ) -> tuple[str, str | None, bool]:
         metadata = self.metadatas.get(fname, {})
         aliases = self.__get_field_aliases(fname, ftype, metadata, config)
         # Serialization writes to the first (primary) alias.
@@ -1211,9 +1211,9 @@ class CodeBuilder:
     @staticmethod
     def __get_field_aliases(
         fname: str,
-        ftype: typing.Type,
+        ftype: type,
         metadata: typing.Mapping[str, typing.Any],
-        config: typing.Type[BaseConfig],
+        config: type[BaseConfig],
     ) -> tuple[str, ...]:
         alias = metadata.get("alias")
         if alias is None and is_annotated(ftype):
@@ -1234,7 +1234,7 @@ class CodeBuilder:
 
     @typing.no_type_check
     def iter_serialization_strategies(
-        self, metadata: typing.Mapping, ftype: typing.Type
+        self, metadata: typing.Mapping, ftype: type
     ) -> typing.Iterator[SerializationStrategyValueType]:
         if is_hashable(ftype):
             yield metadata.get("serialization_strategy")
@@ -1243,7 +1243,7 @@ class CodeBuilder:
     @staticmethod
     def _get_strategy_for_type(
         strategies: typing.Mapping[typing.Any, SerializationStrategyValueType],
-        ftype: typing.Type,
+        ftype: type,
     ) -> SerializationStrategyValueType | None:
         result = strategies.get(ftype)
         if result is not None:
@@ -1260,7 +1260,7 @@ class CodeBuilder:
 
     @typing.no_type_check
     def __iter_serialization_strategies(
-        self, ftype: typing.Type
+        self, ftype: type
     ) -> typing.Iterator[SerializationStrategyValueType]:
         if self.dialect is not None:
             yield self._get_strategy_for_type(
@@ -1285,7 +1285,7 @@ class CodeBuilder:
             )
 
     def get_dialect_or_config_option(
-        self, option: str, default: typing.Any, cls: typing.Type | None = None
+        self, option: str, default: typing.Any, cls: type | None = None
     ) -> typing.Any:
         for ns in (
             self.dialect,
@@ -1355,7 +1355,7 @@ class FieldUnpackerCodeBlockBuilder:
     def build(
         self,
         fname: str,
-        ftype: typing.Type,
+        ftype: type,
         metadata: typing.Mapping,
         *,
         aliases: tuple[str, ...] = (),

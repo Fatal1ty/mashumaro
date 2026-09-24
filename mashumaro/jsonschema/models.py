@@ -4,9 +4,9 @@ from collections.abc import Sequence
 from dataclasses import MISSING, dataclass, field
 from enum import Enum
 from types import MappingProxyType
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any, TypeAlias
 
-from typing_extensions import TYPE_CHECKING, Self, TypeAlias
+from typing_extensions import Self
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.meta.helpers import iter_all_subclasses
@@ -119,19 +119,19 @@ class JSONSchema(DataClassJSONMixin):
     format: JSONSchemaInstanceFormat | None = None
     title: str | None = None
     description: str | None = None
-    anyOf: List["JSONSchema"] | None = None
+    anyOf: "list[JSONSchema] | None" = None
     reference: str | None = None
-    definitions: Dict[str, "JSONSchema"] | None = None
+    definitions: "dict[str, JSONSchema] | None" = None
     default: Any | None = field(default_factory=lambda: MISSING)
     deprecated: bool | None = None
     examples: list[Any] | None = None
     # Keywords for Objects
-    properties: Dict[str, "JSONSchema"] | None = None
-    patternProperties: Dict[str, "JSONSchema"] | None = None
+    properties: "dict[str, JSONSchema] | None" = None
+    patternProperties: "dict[str, JSONSchema] | None" = None
     additionalProperties: "JSONSchema | bool | None" = None
     propertyNames: "JSONSchema | None" = None
     # Keywords for Arrays
-    prefixItems: List["JSONSchema"] | None = None
+    prefixItems: "list[JSONSchema] | None" = None
     items: "JSONSchema | None" = None
     contains: "JSONSchema | None" = None
     # Validation keywords for numeric instances

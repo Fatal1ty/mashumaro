@@ -20,11 +20,12 @@ from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
 from functools import cached_property
-from typing import Any, ForwardRef, Tuple, Type, cast
+from typing import Tuple  # noqa: UP035
+from typing import Any, ForwardRef, TypeAlias, cast
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from typing_extensions import Buffer, NoExtraItems, NotRequired, TypeAlias
+from typing_extensions import Buffer, NoExtraItems, NotRequired
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_311_MIN
@@ -160,7 +161,7 @@ class Instance:
         return alias
 
     @property
-    def owner_class(self) -> Type | None:
+    def owner_class(self) -> type | None:
         if self.__owner_builder:
             return self.__owner_builder.cls
         return None
@@ -242,7 +243,7 @@ class Instance:
                 return serialize_option
         return None
 
-    def get_owner_config(self) -> Type[BaseConfig]:
+    def get_owner_config(self) -> type[BaseConfig]:
         if self.__owner_builder:
             return self.__owner_builder.get_config()
         else:
@@ -258,7 +259,7 @@ class Instance:
         else:
             return default
 
-    def get_self_config(self) -> Type[BaseConfig]:
+    def get_self_config(self) -> type[BaseConfig]:
         if self.__self_builder:
             return self.__self_builder.get_config()
         else:
@@ -338,7 +339,7 @@ def apply_schema_annotations(
     return schema
 
 
-def _default(f_type: Any, f_value: Any, config_cls: Type[BaseConfig]) -> Any:
+def _default(f_type: Any, f_value: Any, config_cls: type[BaseConfig]) -> Any:
     @dataclass
     class CC(DataClassJSONMixin):
         x: f_type = f_value  # type: ignore
@@ -719,7 +720,7 @@ def on_fraction(instance: Instance, ctx: Context) -> JSONSchema | None:
 def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
     args = get_args(instance.type)
     if not args:
-        if instance.type in (Tuple, tuple):
+        if instance.type in (Tuple, tuple):  # noqa: UP006
             args = [Any, ...]  # type: ignore
         else:
             return JSONArraySchema(maxItems=0)
@@ -830,7 +831,7 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
         extra_items := getattr(instance.type, "__extra_items__", NoExtraItems)
     ) is not NoExtraItems:
         additional_properties = get_schema(
-            Instance(cast(Type, extra_items)), ctx=ctx
+            Instance(cast(type, extra_items)), ctx=ctx
         )
     else:
         additional_properties = False

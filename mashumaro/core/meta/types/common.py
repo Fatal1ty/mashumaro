@@ -5,9 +5,9 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from functools import cached_property
 from types import new_class
-from typing import TYPE_CHECKING, Any, Type, TypeVar
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
 
-from typing_extensions import ParamSpec, TypeAlias
+from typing_extensions import ParamSpec
 
 from mashumaro.core.meta.code.lines import CodeLines
 from mashumaro.core.meta.helpers import (
@@ -78,7 +78,7 @@ class ValueSpec:
     field_ctx: FieldContext
     could_be_none: bool = True
     annotated_type: Any = None
-    owner: Type | None = None
+    owner: type | None = None
     no_copy_collections: Sequence = ()
 
     def __setattr__(self, key: str, value: Any) -> None:
@@ -236,7 +236,7 @@ def ensure_generic_collection(spec: ValueSpec) -> bool:
 
 
 def ensure_mapping_key_type_hashable(
-    spec: ValueSpec, type_args: Sequence[Type]
+    spec: ValueSpec, type_args: Sequence[type]
 ) -> bool:
     if type_args:
         first_type_arg = type_args[0]
@@ -254,7 +254,7 @@ def ensure_mapping_key_type_hashable(
 
 
 def ensure_generic_collection_subclass(
-    spec: ValueSpec, *checked_types: Type
+    spec: ValueSpec, *checked_types: type
 ) -> bool:
     return issubclass(
         spec.origin_type, checked_types
@@ -262,7 +262,7 @@ def ensure_generic_collection_subclass(
 
 
 def ensure_generic_mapping(
-    spec: ValueSpec, args: Sequence[Type], checked_type: Type
+    spec: ValueSpec, args: Sequence[type], checked_type: type
 ) -> bool:
     return ensure_generic_collection_subclass(
         spec, checked_type

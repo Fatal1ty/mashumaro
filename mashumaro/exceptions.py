@@ -1,4 +1,5 @@
-from typing import Any, Type
+from typing import Any
+
 from typing_extensions import TypeForm
 
 from mashumaro.core.meta.helpers import type_name
@@ -26,7 +27,7 @@ class MissingField(LookupError):
 
 
 class ExtraKeysError(ValueError):
-    def __init__(self, extra_keys: set[str], target_type: Type):
+    def __init__(self, extra_keys: set[str], target_type: type):
         self.extra_keys = extra_keys
         self.target_type = target_type
 
@@ -51,7 +52,7 @@ class UnserializableField(UnserializableDataError):
         self,
         field_name: str,
         field_type: Any,
-        holder_class: Type,
+        holder_class: type,
         msg: str | None = None,
     ):
         self.field_name = field_name
@@ -79,7 +80,7 @@ class UnserializableField(UnserializableDataError):
 
 class UnsupportedSerializationEngine(UnserializableField):
     def __init__(
-        self, field_name: str, field_type: Any, holder_class: Type, engine: Any
+        self, field_name: str, field_type: Any, holder_class: type, engine: Any
     ):
         super().__init__(
             field_name,
@@ -91,7 +92,7 @@ class UnsupportedSerializationEngine(UnserializableField):
 
 class UnsupportedDeserializationEngine(UnserializableField):
     def __init__(
-        self, field_name: str, field_type: Any, holder_class: Type, engine: Any
+        self, field_name: str, field_type: Any, holder_class: type, engine: Any
     ):
         super().__init__(
             field_name,
@@ -107,7 +108,7 @@ class InvalidFieldValue(ValueError):
         field_name: str,
         field_type: Any,
         field_value: Any,
-        holder_class: Type,
+        holder_class: type,
         msg: str | None = None,
     ):
         self.field_name = field_name
@@ -171,7 +172,7 @@ class BadHookSignature(TypeError):
 
 
 class ThirdPartyModuleNotFoundError(ModuleNotFoundError):
-    def __init__(self, module_name: str, field_name: str, holder_class: Type):
+    def __init__(self, module_name: str, field_name: str, holder_class: type):
         self.module_name = module_name
         self.field_name = field_name
         self.holder_class = holder_class
@@ -190,7 +191,7 @@ class ThirdPartyModuleNotFoundError(ModuleNotFoundError):
 
 
 class UnresolvedTypeReferenceError(NameError):
-    def __init__(self, holder_class: Type, unresolved_type_name: str):
+    def __init__(self, holder_class: type, unresolved_type_name: str):
         self.holder_class = holder_class
         self.name = unresolved_type_name
 

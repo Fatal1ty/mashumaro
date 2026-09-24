@@ -1,8 +1,6 @@
 from collections.abc import Callable, Mapping, Sequence
 from types import MappingProxyType, new_class
-from typing import Any, Type, cast
-
-from typing_extensions import Literal
+from typing import Any, Literal, cast
 
 from mashumaro.core.const import Sentinel
 from mashumaro.types import SerializationStrategy
@@ -28,7 +26,7 @@ class Dialect:
     )
 
     @classmethod
-    def merge(cls, other: Type["Dialect"]) -> Type["Dialect"]:
+    def merge(cls, other: type["Dialect"]) -> type["Dialect"]:
         serialization_strategy: dict[Any, SerializationStrategyValueType] = {}
         for key, value in cls.serialization_strategy.items():
             if isinstance(value, SerializationStrategy):
@@ -50,7 +48,7 @@ class Dialect:
                         value
                     )
                 )
-        new_dialect = cast(Type[Dialect], new_class("Dialect", (Dialect,)))
+        new_dialect = cast(type[Dialect], new_class("Dialect", (Dialect,)))
         new_dialect.serialization_strategy = serialization_strategy
         for key in ("omit_none", "omit_default", "no_copy_collections"):
             if (others_value := getattr(other, key)) is not Sentinel.MISSING:

@@ -25,7 +25,8 @@ from contextlib import suppress
 from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, ForwardRef, Tuple
+from typing import Tuple  # noqa: UP035
+from typing import Any, ForwardRef
 
 import typing_extensions
 from typing_extensions import Buffer, NotRequired, TypeForm
@@ -1062,7 +1063,7 @@ def unpack_fraction(spec: ValueSpec) -> Expression | None:
 
 def unpack_tuple(spec: ValueSpec, args: tuple[type, ...]) -> Expression:
     if not args:
-        if spec.type in (Tuple, tuple):
+        if spec.type in (Tuple, tuple):  # noqa: UP006
             args = [Any, ...]  # type: ignore
         else:
             return "()"
