@@ -1,3 +1,4 @@
+import builtins
 import collections
 import collections.abc
 import datetime
@@ -111,6 +112,9 @@ try:
     import pendulum
 except ImportError:  # pragma: no cover
     pendulum: types.ModuleType | None = None  # type: ignore
+
+
+_FROZENDICT_TYPE = getattr(builtins, "frozendict", None)
 
 
 __all__ = ["SubtypeUnpackerBuilder", "UnpackerRegistry"]
@@ -1383,6 +1387,13 @@ def unpack_collection(spec: ValueSpec) -> Expression | None:
         return (
             f'types.MappingProxyType({{{inner_expr(0, "key")}: {inner_expr(1)}'
             f" for key, value in {spec.expression}.items()}})"
+        )
+    elif _FROZENDICT_TYPE is not None and ensure_generic_mapping(
+        spec, args, _FROZENDICT_TYPE
+    ):
+        return (
+            f'frozendict({{{inner_expr(0, "key")}: {inner_expr(1)} '
+            f"for key, value in {spec.expression}.items()}})"
         )
     elif ensure_generic_mapping(spec, args, Mapping):
         return (

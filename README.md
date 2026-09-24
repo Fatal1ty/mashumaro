@@ -198,6 +198,7 @@ for standard generic types on [PEP 585](https://www.python.org/dev/peps/pep-0585
 * [`collections.abc.MutableSet`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableSet)
 * [`collections.deque`](https://docs.python.org/3/library/collections.html#collections.deque)
 * [`dict`](https://docs.python.org/3/library/stdtypes.html#dict)
+* [`frozendict`](https://docs.python.org/3.15/builtins/stdtypes.html#frozendict) (Python 3.15+)
 * [`collections.OrderedDict`](https://docs.python.org/3/library/collections.html#collections.OrderedDict)
 * [`collections.defaultdict`](https://docs.python.org/3/library/collections.html#collections.defaultdict)
 * [`collections.abc.Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)

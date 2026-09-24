@@ -1,3 +1,4 @@
+import builtins
 import collections
 import datetime
 import ipaddress
@@ -1770,4 +1771,16 @@ def test_jsonschema_annotation_overlay_ignores_structural_keywords():
         ]
     ) == JSONSchema(
         type=JSONSchemaInstanceType.STRING, description="Plain string"
+    )
+
+
+@pytest.mark.skipif(
+    not hasattr(builtins, "frozendict"), reason="requires Python 3.15"
+)
+def test_jsonschema_for_frozendict():
+    frozendict = builtins.frozendict
+
+    assert build_json_schema(frozendict[str, int]) == JSONObjectSchema(
+        additionalProperties=JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        propertyNames=JSONSchema(type=JSONSchemaInstanceType.STRING),
     )
