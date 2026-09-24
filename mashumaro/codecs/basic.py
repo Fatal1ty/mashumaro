@@ -1,5 +1,7 @@
 from collections.abc import Callable
-from typing import Any, Generic, Type, TypeVar, final, overload
+from typing import Any, Generic, TypeVar, final
+
+from typing_extensions import TypeForm
 
 from mashumaro.codecs._builder import CodecCodeBuilder
 from mashumaro.core.meta.helpers import get_args
@@ -9,29 +11,11 @@ T = TypeVar("T")
 
 
 class BasicDecoder(Generic[T]):
-    @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: TypeForm[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
-        pre_decoder_func: Callable[[Any], Any] | None = None,
-    ): ...
-
-    @overload
-    def __init__(
-        self,
-        shape_type: Any,
-        *,
-        default_dialect: Type[Dialect] | None = None,
-        pre_decoder_func: Callable[[Any], Any] | None = None,
-    ): ...
-
-    def __init__(
-        self,
-        shape_type: Type[T] | Any,
-        *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         pre_decoder_func: Callable[[Any], Any] | None = None,
     ):
         code_builder = CodecCodeBuilder.new(
@@ -44,29 +28,11 @@ class BasicDecoder(Generic[T]):
 
 
 class BasicEncoder(Generic[T]):
-    @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: TypeForm[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
-        post_encoder_func: Callable[[Any], Any] | None = None,
-    ): ...
-
-    @overload
-    def __init__(
-        self,
-        shape_type: Any,
-        *,
-        default_dialect: Type[Dialect] | None = None,
-        post_encoder_func: Callable[[Any], Any] | None = None,
-    ): ...
-
-    def __init__(
-        self,
-        shape_type: Type[T] | Any,
-        *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         post_encoder_func: Callable[[Any], Any] | None = None,
     ):
         code_builder = CodecCodeBuilder.new(
@@ -78,11 +44,11 @@ class BasicEncoder(Generic[T]):
     def encode(self, obj: T) -> Any: ...
 
 
-def decode(data: Any, shape_type: Type[T] | Any) -> T:
+def decode(data: Any, shape_type: TypeForm[T]) -> T:
     return BasicDecoder(shape_type).decode(data)
 
 
-def encode(obj: T, shape_type: Type[T] | Any) -> Any:
+def encode(obj: T, shape_type: TypeForm[T]) -> Any:
     return BasicEncoder(shape_type).encode(obj)
 
 

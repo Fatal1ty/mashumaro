@@ -28,7 +28,7 @@ from fractions import Fraction
 from typing import Any, ForwardRef, Tuple
 
 import typing_extensions
-from typing_extensions import Buffer, NotRequired
+from typing_extensions import Buffer, NotRequired, TypeForm
 
 from mashumaro.core.const import PY_311_MIN
 from mashumaro.core.helpers import parse_timezone
@@ -171,7 +171,7 @@ class AbstractUnpackerBuilder(AbstractMethodBuilder, ABC):
 
 
 class UnionUnpackerBuilder(AbstractUnpackerBuilder):
-    def __init__(self, args: tuple[type, ...]):
+    def __init__(self, args: tuple[TypeForm, ...]):
         self.union_args = args
         self.method_name: str | None = None
 
@@ -594,7 +594,7 @@ def _unpack_with_annotated_serialization_strategy(
 ) -> Expression:
     strategy_type = type(strategy)
     try:
-        value_type: type | Any = get_function_arg_annotation(
+        value_type: Any = get_function_arg_annotation(
             strategy.deserialize, arg_pos=0
         )
     except (KeyError, ValueError):
@@ -729,7 +729,7 @@ def unpack_generic_serializable_type(spec: ValueSpec) -> Expression | None:
 
 @register
 def unpack_dataclass(spec: ValueSpec) -> Expression | None:
-    if is_dataclass(spec.origin_type):
+    if isinstance(spec.origin_type, type) and is_dataclass(spec.origin_type):
         for annotation in spec.annotations:
             if isinstance(annotation, Discriminator):
                 return DiscriminatedUnionUnpackerBuilder(annotation).build(

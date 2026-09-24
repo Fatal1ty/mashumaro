@@ -17,7 +17,7 @@ from fractions import Fraction
 from typing import Any, ForwardRef, Tuple
 
 import typing_extensions
-from typing_extensions import Buffer, NotRequired
+from typing_extensions import Buffer, NotRequired, TypeForm
 
 from mashumaro.core.const import PY_311_MIN
 from mashumaro.core.meta.code.lines import CodeLines
@@ -235,7 +235,7 @@ def pack_generic_serializable_type(spec: ValueSpec) -> Expression | None:
 
 @register
 def pack_dataclass(spec: ValueSpec) -> Expression | None:
-    if is_dataclass(spec.origin_type):
+    if isinstance(spec.origin_type, type) and is_dataclass(spec.origin_type):
         type_args = get_args(spec.type)
         method_name = spec.builder.get_pack_method_name(
             type_args, spec.builder.format_name
@@ -297,7 +297,7 @@ def pack_any(spec: ValueSpec) -> Expression | None:
 
 
 def pack_union(
-    spec: ValueSpec, args: tuple[type, ...], prefix: str = "union"
+    spec: ValueSpec, args: tuple[TypeForm, ...], prefix: str = "union"
 ) -> Expression:
     if spec.type is spec.owner and spec.field_ctx.packer:
         return spec.field_ctx.packer
@@ -327,14 +327,18 @@ def pack_union(
     else:
         lines.append(f"def {method_name}({method_args}):")
     packers: list[str] = []
-    packer_arg_types: dict[str, list[type]] = {}
+    packer_arg_types: dict[str, list[TypeForm]] = {}
     for type_arg in args:
         packer = PackerRegistry.get(
             spec.copy(type=type_arg, expression="value", owner=spec.type)
         )
         if packer not in packers:
-            if packer == "value" and not issubclass(
-                get_type_origin(resolve_type_alias_type(type_arg)), Collection
+            resolved_origin = get_type_origin(
+                resolve_type_alias_type(type_arg)
+            )
+            if packer == "value" and (
+                not isinstance(resolved_origin, type)
+                or not issubclass(resolved_origin, Collection)
             ):
                 packers.insert(0, packer)
             else:
@@ -363,8 +367,10 @@ def pack_union(
                 )
             else:
                 packer_arg_type_check = f"is {packer_arg_type_names[0]}"
-            if packer == "value" and not issubclass(
-                resolve_type_alias_type(packer_arg_type), Collection
+            resolved_packer_arg_type = resolve_type_alias_type(packer_arg_type)
+            if packer == "value" and (
+                not isinstance(resolved_packer_arg_type, type)
+                or not issubclass(resolved_packer_arg_type, Collection)
             ):
                 with lines.indent(
                     f"if value.__class__ {packer_arg_type_check}:"

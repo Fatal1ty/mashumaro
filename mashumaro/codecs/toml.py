@@ -1,6 +1,7 @@
-from typing import Any, Generic, Type, TypeVar, final, overload
+from typing import Generic, TypeVar, final
 
 import tomli_w
+from typing_extensions import TypeForm
 
 from mashumaro.codecs._builder import CodecCodeBuilder
 from mashumaro.core.meta.helpers import get_args
@@ -17,24 +18,11 @@ EncodedData = str
 
 
 class TOMLDecoder(Generic[T]):
-    @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: TypeForm[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
-    ): ...
-
-    @overload
-    def __init__(
-        self, shape_type: Any, *, default_dialect: Type[Dialect] | None = None
-    ): ...
-
-    def __init__(
-        self,
-        shape_type: Type[T] | Any,
-        *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
     ):
         if default_dialect is not None:
             default_dialect = TOMLDialect.merge(default_dialect)
@@ -50,24 +38,11 @@ class TOMLDecoder(Generic[T]):
 
 
 class TOMLEncoder(Generic[T]):
-    @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: TypeForm[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
-    ): ...
-
-    @overload
-    def __init__(
-        self, shape_type: Any, *, default_dialect: Type[Dialect] | None = None
-    ): ...
-
-    def __init__(
-        self,
-        shape_type: Type[T] | Any,
-        *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
     ):
         if default_dialect is not None:
             default_dialect = TOMLDialect.merge(default_dialect)
@@ -82,11 +57,11 @@ class TOMLEncoder(Generic[T]):
     def encode(self, obj: T) -> str: ...
 
 
-def toml_decode(data: EncodedData, shape_type: Type[T]) -> T:
+def toml_decode(data: EncodedData, shape_type: TypeForm[T]) -> T:
     return TOMLDecoder(shape_type).decode(data)
 
 
-def toml_encode(obj: T, shape_type: Type[T] | Any) -> str:
+def toml_encode(obj: T, shape_type: TypeForm[T]) -> str:
     return TOMLEncoder(shape_type).encode(obj)
 
 
