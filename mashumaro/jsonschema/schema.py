@@ -6,7 +6,6 @@ import sys
 import warnings
 from base64 import encodebytes
 from collections import ChainMap, Counter, deque
-from collections.abc import ByteString  # noqa: PYI057
 from collections.abc import (  # type: ignore[attr-defined]
     Callable,
     Collection,
@@ -98,6 +97,15 @@ try:
     )
 except ImportError:  # pragma: no cover
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
+
+_BASE64_TYPES = (bytes, bytearray, memoryview)
+_BUFFER_ORIGINS = (Buffer,)
+
+if sys.version_info < (3, 15):
+    from collections.abc import ByteString  # noqa: PYI057
+
+    _BASE64_TYPES = (ByteString, *_BASE64_TYPES)
+    _BUFFER_ORIGINS = (Buffer, ByteString)
 
 if sys.version_info >= (3, 14):
     from annotationlib import get_annotations
@@ -904,9 +912,7 @@ def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
 
     args = get_args(instance.type)
 
-    if issubclass(
-        instance.origin_type, (ByteString, bytes, bytearray, memoryview)
-    ):
+    if issubclass(instance.origin_type, _BASE64_TYPES):
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,
@@ -1019,7 +1025,7 @@ def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
 
 @register
 def on_buffer(instance: Instance, ctx: Context) -> JSONSchema | None:
-    if instance.origin_type in (Buffer, ByteString):
+    if instance.origin_type in _BUFFER_ORIGINS:
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,
