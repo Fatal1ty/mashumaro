@@ -204,6 +204,7 @@ Collection contents are converted recursively. Abstract collection annotations d
 | `collections.deque[T]` | `list` | `deque` |
 | `Sequence[T]`, `MutableSequence[T]` | `list` | `list` |
 | `dict[K, V]`, `Mapping[K, V]`, `MutableMapping[K, V]` | `dict` | `dict` |
+| `frozendict[K, V]` (Python 3.15+) | `dict` | `frozendict` |
 | `OrderedDict[K, V]` | `dict` | `OrderedDict` |
 | `defaultdict[K, V]` | `dict` | `defaultdict` |
 | `Counter[K]` | `dict` | `Counter` |
@@ -211,6 +212,8 @@ Collection contents are converted recursively. Abstract collection annotations d
 | `types.MappingProxyType[K, V]` | `dict` | Read-only mapping proxy |
 
 Both legacy names from `typing` and [PEP 585](https://peps.python.org/pep-0585/) built-in generic syntax are supported. On supported Python versions, prefer `list[int]` and `dict[str, User]` unless your project needs a compatibility style.
+
+The built-in [`frozendict`](https://docs.python.org/3.15/builtins/stdtypes.html#frozendict) is available on Python 3.15 and newer. Its keys and values are converted recursively like those of other mappings, while deserialization preserves the immutable `frozendict` type.
 
 ### Tuples
 

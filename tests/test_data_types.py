@@ -1,3 +1,4 @@
+import builtins
 import collections
 import collections.abc
 import decimal
@@ -1494,6 +1495,24 @@ def test_dataclass_with_default_int_flag_omit_default():
 
     assert DataClass().to_dict() == {}
     assert DataClass(MyIntFlag.a, MyIntFlag.b).to_dict() == {}
+
+
+@pytest.mark.skipif(
+    not hasattr(builtins, "frozendict"), reason="requires Python 3.15"
+)
+def test_builtin_frozendict():
+    frozendict = builtins.frozendict
+    shape_type = frozendict[str, int]
+    value = frozendict({"a": 1, "b": 2})
+
+    assert BasicEncoder(shape_type).encode(value) == {"a": 1, "b": 2}
+    loaded = BasicDecoder(shape_type).decode({"a": 1, "b": 2})
+    assert loaded == value
+    assert type(loaded) is frozendict
+
+    untyped = BasicDecoder(frozendict).decode({"a": 1})
+    assert untyped == frozendict({"a": 1})
+    assert type(untyped) is frozendict
 
 
 @pytest.mark.parametrize("value_info", inner_values)
