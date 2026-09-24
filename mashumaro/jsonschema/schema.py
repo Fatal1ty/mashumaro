@@ -98,14 +98,14 @@ try:
 except ImportError:  # pragma: no cover
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
-_BASE64_TYPES = (bytes, bytearray, memoryview)
-_BUFFER_ORIGINS = (Buffer,)
-
 if sys.version_info < (3, 15):
     from collections.abc import ByteString  # noqa: PYI057
 
-    _BASE64_TYPES = (ByteString, *_BASE64_TYPES)
+    _BASE64_TYPES = (ByteString, bytes, bytearray, memoryview)
     _BUFFER_ORIGINS = (Buffer, ByteString)
+else:
+    _BASE64_TYPES = (bytes, bytearray, memoryview)
+    _BUFFER_ORIGINS = (Buffer,)
 
 if sys.version_info >= (3, 14):
     from annotationlib import get_annotations
