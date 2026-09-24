@@ -69,13 +69,15 @@ class FieldContext:
 
 @dataclass
 class ValueSpec:
-    type: Type
-    origin_type: Type = field(init=False)
+    # Field annotations may include qualifiers such as Final, Required,
+    # NotRequired, and Unpack, which are not TypeForm values.
+    type: Any
+    origin_type: Any = field(init=False)
     expression: Expression
     builder: CodeBuilder
     field_ctx: FieldContext
     could_be_none: bool = True
-    annotated_type: Type | None = None
+    annotated_type: Any = None
     owner: Type | None = None
     no_copy_collections: Sequence = ()
 

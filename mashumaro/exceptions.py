@@ -1,10 +1,11 @@
 from typing import Any, Type
+from typing_extensions import TypeForm
 
 from mashumaro.core.meta.helpers import type_name
 
 
 class MissingField(LookupError):
-    def __init__(self, field_name: str, field_type: Type, holder_class: Type):
+    def __init__(self, field_name: str, field_type: Any, holder_class: type):
         self.field_name = field_name
         self.field_type = field_type
         self.holder_class = holder_class
@@ -49,7 +50,7 @@ class UnserializableField(UnserializableDataError):
     def __init__(
         self,
         field_name: str,
-        field_type: Type,
+        field_type: Any,
         holder_class: Type,
         msg: str | None = None,
     ):
@@ -78,11 +79,7 @@ class UnserializableField(UnserializableDataError):
 
 class UnsupportedSerializationEngine(UnserializableField):
     def __init__(
-        self,
-        field_name: str,
-        field_type: Type,
-        holder_class: Type,
-        engine: Any,
+        self, field_name: str, field_type: Any, holder_class: Type, engine: Any
     ):
         super().__init__(
             field_name,
@@ -94,11 +91,7 @@ class UnsupportedSerializationEngine(UnserializableField):
 
 class UnsupportedDeserializationEngine(UnserializableField):
     def __init__(
-        self,
-        field_name: str,
-        field_type: Type,
-        holder_class: Type,
-        engine: Any,
+        self, field_name: str, field_type: Any, holder_class: Type, engine: Any
     ):
         super().__init__(
             field_name,
@@ -112,7 +105,7 @@ class InvalidFieldValue(ValueError):
     def __init__(
         self,
         field_name: str,
-        field_type: Type,
+        field_type: Any,
         field_value: Any,
         holder_class: Type,
         msg: str | None = None,
@@ -153,7 +146,7 @@ class MissingDiscriminatorError(LookupError):
 class SuitableVariantNotFoundError(ValueError):
     def __init__(
         self,
-        variants_type: Type,
+        variants_type: TypeForm,
         discriminator_name: str | None = None,
         discriminator_value: Any = None,
     ):

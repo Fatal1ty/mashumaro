@@ -133,7 +133,7 @@ class CodeBuilder:
         self._field_default_cache: dict[tuple[str, bool], typing.Any] = {}
 
         self.resolved_type_params: dict[
-            typing.Type, dict[typing.Type, typing.Type]
+            typing.Any, dict[typing.Any, typing.Any]
         ] = {}
         self.field_classes: dict = {}
         self.initial_type_args = type_args
@@ -210,8 +210,8 @@ class CodeBuilder:
         return cls
 
     def get_real_type(
-        self, field_name: str, field_type: typing.Type
-    ) -> typing.Type:
+        self, field_name: str, field_type: typing.Any
+    ) -> typing.Any:
         cls = self._get_field_class(field_name)
         return substitute_type_params(
             field_type, self.resolved_type_params[cls]
@@ -219,7 +219,7 @@ class CodeBuilder:
 
     def get_field_resolved_type_params(
         self, field_name: str
-    ) -> dict[typing.Type, typing.Type]:
+    ) -> dict[typing.Any, typing.Any]:
         cls = self._get_field_class(field_name)
         return self.resolved_type_params[cls]
 
@@ -230,8 +230,8 @@ class CodeBuilder:
 
     def get_type_name_identifier(
         self,
-        typ: typing.Type | None,
-        resolved_type_params: dict[typing.Type, typing.Type] | None = None,
+        typ: typing.Any,
+        resolved_type_params: dict[typing.Any, typing.Any] | None = None,
     ) -> str:
         field_type = type_name(typ, resolved_type_params=resolved_type_params)
 
@@ -291,7 +291,7 @@ class CodeBuilder:
         self._field_default_cache[cache_key] = default
         return default
 
-    def add_type_modules(self, *types_: typing.Type) -> None:
+    def add_type_modules(self, *types_: typing.Any) -> None:
         for t in types_:
             module = inspect.getmodule(t)
             if not module:

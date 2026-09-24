@@ -1,6 +1,7 @@
-from typing import Any, Generic, Type, TypeVar, final, overload
+from typing import Generic, TypeVar, final
 
 import orjson
+from typing_extensions import TypeForm
 
 from mashumaro.codecs._builder import CodecCodeBuilder
 from mashumaro.core.meta.helpers import get_args
@@ -12,24 +13,11 @@ EncodedData = str | bytes | bytearray
 
 
 class ORJSONDecoder(Generic[T]):
-    @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: TypeForm[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
-    ): ...
-
-    @overload
-    def __init__(
-        self, shape_type: Any, *, default_dialect: Type[Dialect] | None = None
-    ): ...
-
-    def __init__(
-        self,
-        shape_type: Type[T] | Any,
-        *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
     ):
         if default_dialect is not None:
             default_dialect = OrjsonDialect.merge(default_dialect)
@@ -45,24 +33,11 @@ class ORJSONDecoder(Generic[T]):
 
 
 class ORJSONEncoder(Generic[T]):
-    @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: TypeForm[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
-    ): ...
-
-    @overload
-    def __init__(
-        self, shape_type: Any, *, default_dialect: Type[Dialect] | None = None
-    ): ...
-
-    def __init__(
-        self,
-        shape_type: Type[T] | Any,
-        *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
     ):
         if default_dialect is not None:
             default_dialect = OrjsonDialect.merge(default_dialect)
@@ -77,11 +52,11 @@ class ORJSONEncoder(Generic[T]):
     def encode(self, obj: T) -> bytes: ...
 
 
-def json_decode(data: EncodedData, shape_type: Type[T]) -> T:
+def json_decode(data: EncodedData, shape_type: TypeForm[T]) -> T:
     return ORJSONDecoder(shape_type).decode(data)
 
 
-def json_encode(obj: T, shape_type: Type[T] | Any) -> bytes:
+def json_encode(obj: T, shape_type: TypeForm[T]) -> bytes:
     return ORJSONEncoder(shape_type).encode(obj)
 
 

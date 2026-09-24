@@ -110,16 +110,18 @@ UTC_OFFSET_PATTERN = r"^UTC([+-][0-2][0-9]:[0-5][0-9])?$"
 
 @dataclass
 class Instance:
-    type: Type
+    # Derived field annotations can contain Required and NotRequired, which
+    # are annotation qualifiers rather than TypeForm values.
+    type: Any
     name: str | None = None
 
     __owner_builder: CodeBuilder | None = None
     __self_builder: CodeBuilder | None = None
 
     # Original type despite custom serialization. To be revised.
-    _original_type: Type = field(init=False)
+    _original_type: Any = field(init=False)
 
-    origin_type: Type = field(init=False)
+    origin_type: Any = field(init=False)
     annotations: list[Annotation] = field(init=False, default_factory=list)
 
     @cached_property
@@ -168,7 +170,9 @@ class Instance:
         if isinstance(new_type, ForwardRef):
             changes["type"] = evaluate_forward_ref(new_type)
         new_instance = replace(self, **changes)
-        if is_dataclass(self.origin_type):
+        if isinstance(self.origin_type, type) and is_dataclass(
+            self.origin_type
+        ):
             new_instance.__owner_builder = self.__self_builder
             new_instance.update_type(new_instance.type)
         return new_instance
@@ -181,20 +185,22 @@ class Instance:
             self.type = get_args(self.type)[0]
             self.origin_type = get_type_origin(self.type)
 
-    def update_type(self, new_type: Type) -> None:
+    def update_type(self, new_type: Any) -> None:
         if self.__owner_builder:
             self.type = self.__owner_builder.get_real_type(
                 field_name=self.name, field_type=new_type  # type: ignore
             )
         self.origin_type = get_type_origin(self.type)
-        if is_dataclass(self.origin_type):
+        if isinstance(self.origin_type, type) and is_dataclass(
+            self.origin_type
+        ):
             type_args = get_args(self.type)
             self.__self_builder = CodeBuilder(self.origin_type, type_args)
             self.__self_builder.reset()
         else:
             self.__self_builder = None
 
-    def fields(self) -> Iterable[tuple[str, Type, bool, Any]]:
+    def fields(self) -> Iterable[tuple[str, Any, bool, Any]]:
         for f_name, f_type in self._self_builder.get_field_types(
             include_extras=True
         ).items():
@@ -332,9 +338,7 @@ def apply_schema_annotations(
     return schema
 
 
-def _default(
-    f_type: Type | None, f_value: Any, config_cls: Type[BaseConfig]
-) -> Any:
+def _default(f_type: Any, f_value: Any, config_cls: Type[BaseConfig]) -> Any:
     @dataclass
     class CC(DataClassJSONMixin):
         x: f_type = f_value  # type: ignore
@@ -396,7 +400,9 @@ def on_type_with_overridden_serialization(
 
 @register
 def on_dataclass(instance: Instance, ctx: Context) -> JSONSchema | None:
-    if is_dataclass(instance.origin_type):
+    if isinstance(instance.origin_type, type) and is_dataclass(
+        instance.origin_type
+    ):
         # When dataclasses reference themselves (typing.Self) or each other,
         # we must break infinite recursion by forcing $ref/$defs.
         origin = instance.origin_type
