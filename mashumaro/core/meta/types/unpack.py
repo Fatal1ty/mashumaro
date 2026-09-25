@@ -40,6 +40,7 @@ from mashumaro.core.meta.helpers import (
     get_class_that_defines_method,
     get_function_arg_annotation,
     get_literal_values,
+    get_slice_type_args,
     get_type_origin,
     get_type_var_default,
     is_final,
@@ -1017,7 +1018,15 @@ def unpack_timezone(spec: ValueSpec) -> Expression | None:
 @register
 def unpack_slice(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is slice:
-        return f"slice(*{spec.expression})"
+        unpackers = []
+        for index, type_arg in enumerate(get_slice_type_args(spec.type)):
+            expression = f"{spec.expression}[{index}]"
+            component_spec = spec.copy(
+                type=type_arg, expression=expression, could_be_none=True
+            )
+            unpacker = UnpackerRegistry.get(component_spec)
+            unpackers.append(expr_or_maybe_none(component_spec, unpacker))
+        return f"slice({', '.join(unpackers)})"
 
 
 @register

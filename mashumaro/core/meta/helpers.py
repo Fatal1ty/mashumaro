@@ -33,8 +33,10 @@ __all__ = [
     "get_generic_name",
     "get_literal_values",
     "get_name_error_name",
+    "get_slice_type_args",
     "get_type_annotations",
     "get_type_origin",
+    "get_type_var_default",
     "hash_type_args",
     "is_annotated",
     "is_class_var",
@@ -52,6 +54,7 @@ __all__ = [
     "is_new_type",
     "is_not_required",
     "is_optional",
+    "is_readonly",
     "is_required",
     "is_self",
     "is_special_typing_primitive",
@@ -68,6 +71,7 @@ __all__ = [
     "resolve_type_params",
     "substitute_type_params",
     "type_name",
+    "type_var_has_default",
 ]
 
 
@@ -105,6 +109,26 @@ def get_generic_name(typ: object, short: bool = False) -> str:
 # appear in __args__, so the elements are not necessarily TypeForm values.
 def get_args(typ: object) -> tuple[Any, ...]:
     return getattr(typ, "__args__", ())
+
+
+def get_slice_type_args(typ: object) -> tuple[TypeForm, TypeForm, TypeForm]:
+    """Return slice type arguments with the typeshed defaults applied."""
+    args = get_args(typ)
+    if not args:
+        return Any, Any, Any
+    elif len(args) == 1:
+        start_type = args[0]
+        return start_type, start_type, start_type
+    elif len(args) == 2:
+        start_type, stop_type = args
+        step_type = cast(TypeForm, Union[args])  # noqa: UP007
+        return start_type, stop_type, step_type
+    elif len(args) == 3:
+        return cast(tuple[TypeForm, TypeForm, TypeForm], args)
+    else:
+        raise TypeError(
+            f"slice accepts at most 3 type arguments, got {len(args)}"
+        )
 
 
 def _get_args_str(

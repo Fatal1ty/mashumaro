@@ -173,7 +173,7 @@ Mashumaro supports [`pathlib.Path`](https://docs.python.org/3/library/pathlib.ht
 
 ### Slices
 
-A [`slice`](https://docs.python.org/3/library/functions.html#slice) is serialized as a three-element list `[start, stop, step]`. Each component is an integer or `None`, matching the attributes of the `slice` object. Because the encoded form is a list, a `slice` cannot be used as a mapping key in JSON, TOML, YAML, or MessagePack.
+A [`slice`](https://docs.python.org/3/library/functions.html#slice) is serialized as a three-element list `[start, stop, step]`. Because the encoded form is a list, a `slice` cannot be used as a mapping key in JSON, TOML, YAML, or MessagePack.
 
 ```python
 from dataclasses import dataclass
@@ -189,6 +189,31 @@ class Window(DataClassDictMixin):
 assert Window(slice(0, 5, 2)).to_dict() == {"rows": [0, 5, 2]}
 assert Window(slice(5)).to_dict() == {"rows": [None, 5, None]}
 assert Window.from_dict({"rows": [1, 10, None]}) == Window(slice(1, 10))
+```
+
+On Python 3.15+, `slice` is generic. Mashumaro recursively converts each component according to its type argument and follows the type-parameter defaults used by type checkers:
+
+| Annotation | Effective component types |
+|---|---|
+| `slice` | `slice[Any, Any, Any]` |
+| `slice[A]` | `slice[A, A, A]` |
+| `slice[A, B]` | `slice[A, B, A \| B]` |
+| `slice[A, B, C]` | `slice[A, B, C]` |
+
+Other arities are rejected. Each component may also be `None`. A common example is a date range whose step is a `timedelta`:
+
+```python
+from datetime import date, timedelta
+
+from mashumaro.codecs import BasicDecoder, BasicEncoder
+
+
+Slice = slice[date, date, timedelta]
+value = slice(date(2026, 1, 1), date(2026, 1, 3), timedelta(days=1))
+dumped = ["2026-01-01", "2026-01-03", 86400.0]
+
+assert BasicEncoder(Slice).encode(value) == dumped
+assert BasicDecoder(Slice).decode(dumped) == value
 ```
 
 ## Collections
