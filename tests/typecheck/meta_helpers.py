@@ -4,6 +4,7 @@ from typing_extensions import TypeForm, TypeVar, assert_type
 
 from mashumaro.core.meta.helpers import (
     get_literal_values,
+    get_slice_type_args,
     get_type_annotations,
     get_type_var_default,
     is_annotated,
@@ -70,3 +71,6 @@ def check_type_form_helpers() -> None:
     assert_type(is_variable_length_tuple(tuple[int, ...]), bool)
     assert_type(is_hashable_type(int), bool)
     assert_type(get_type_var_default(T), TypeForm)
+    assert_type(
+        get_slice_type_args(slice), tuple[TypeForm, TypeForm, TypeForm]
+    )

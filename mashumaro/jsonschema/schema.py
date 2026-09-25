@@ -20,7 +20,7 @@ from enum import Enum
 from fractions import Fraction
 from functools import cached_property
 from typing import Tuple  # noqa: UP035
-from typing import Any, ForwardRef, TypeAlias, cast
+from typing import Any, ForwardRef, TypeAlias, Union, cast
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -33,6 +33,7 @@ from mashumaro.core.meta.helpers import (
     get_args,
     get_function_return_annotation,
     get_literal_values,
+    get_slice_type_args,
     get_type_origin,
     get_type_var_default,
     is_annotated,
@@ -660,16 +661,19 @@ def on_timezone(instance: Instance, ctx: Context) -> JSONSchema | None:
 @register
 def on_slice(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type is slice:
-        int_or_null = JSONSchema(
-            anyOf=[
-                JSONSchema(type=JSONSchemaInstanceType.INTEGER),
-                JSONSchema(type=JSONSchemaInstanceType.NULL),
-            ]
-        )
+        component_schemas: list[JSONSchema] = []
+        for type_arg in get_slice_type_args(instance.type):
+            component_schema: JSONSchema
+            if type_arg is Any:
+                component_schema = EmptyJSONSchema()
+            else:
+                nullable_type = type_arg | None
+                component_schema = get_schema(
+                    instance.derive(type=nullable_type), ctx
+                )
+            component_schemas.append(component_schema)
         return JSONArraySchema(
-            prefixItems=[int_or_null, int_or_null, int_or_null],
-            minItems=3,
-            maxItems=3,
+            prefixItems=component_schemas, minItems=3, maxItems=3
         )
 
 

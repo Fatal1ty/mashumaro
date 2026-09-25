@@ -27,6 +27,7 @@ from mashumaro.core.meta.helpers import (
     get_class_that_defines_method,
     get_function_return_annotation,
     get_literal_values,
+    get_slice_type_args,
     get_type_origin,
     get_type_var_default,
     is_final,
@@ -614,11 +615,17 @@ def pack_timezone(spec: ValueSpec) -> Expression | None:
 @register
 def pack_slice(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is slice:
-        return (
-            f"[{spec.expression}.start, "
-            f"{spec.expression}.stop, "
-            f"{spec.expression}.step]"
-        )
+        packers = []
+        for attr, type_arg in zip(
+            ("start", "stop", "step"), get_slice_type_args(spec.type)
+        ):
+            expression = f"{spec.expression}.{attr}"
+            component_spec = spec.copy(
+                type=type_arg, expression=expression, could_be_none=True
+            )
+            packer = PackerRegistry.get(component_spec)
+            packers.append(expr_or_maybe_none(component_spec, packer))
+        return f"[{', '.join(packers)}]"
 
 
 @register

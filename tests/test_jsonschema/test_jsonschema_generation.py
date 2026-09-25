@@ -4,6 +4,7 @@ import datetime
 import ipaddress
 import os
 import sys
+import types
 from base64 import encodebytes
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -384,14 +385,52 @@ def test_jsonschema_for_timedelta():
 
 
 def test_jsonschema_for_slice():
-    int_or_null = JSONSchema(
-        anyOf=[
-            JSONSchema(type=JSONSchemaInstanceType.INTEGER),
-            JSONSchema(type=JSONSchemaInstanceType.NULL),
-        ]
-    )
     assert build_json_schema(slice) == JSONArraySchema(
-        prefixItems=[int_or_null, int_or_null, int_or_null],
+        prefixItems=[EmptyJSONSchema(), EmptyJSONSchema(), EmptyJSONSchema()],
+        minItems=3,
+        maxItems=3,
+    )
+
+
+def test_jsonschema_for_generic_slice():
+    date_schema = JSONSchema(
+        type=JSONSchemaInstanceType.STRING, format=JSONSchemaStringFormat.DATE
+    )
+    timedelta_schema = JSONSchema(
+        type=JSONSchemaInstanceType.NUMBER,
+        format=JSONSchemaInstanceFormatExtension.TIMEDELTA,
+    )
+    null_schema = JSONSchema(type=JSONSchemaInstanceType.NULL)
+    date_or_null = JSONSchema(anyOf=[date_schema, null_schema])
+    timedelta_or_null = JSONSchema(anyOf=[timedelta_schema, null_schema])
+    date_or_timedelta_or_null = JSONSchema(
+        anyOf=[date_schema, timedelta_schema, null_schema]
+    )
+
+    assert build_json_schema(
+        types.GenericAlias(slice, (datetime.date,))
+    ) == JSONArraySchema(
+        prefixItems=[date_or_null, date_or_null, date_or_null],
+        minItems=3,
+        maxItems=3,
+    )
+    assert build_json_schema(
+        types.GenericAlias(slice, (datetime.date, datetime.timedelta))
+    ) == JSONArraySchema(
+        prefixItems=[
+            date_or_null,
+            timedelta_or_null,
+            date_or_timedelta_or_null,
+        ],
+        minItems=3,
+        maxItems=3,
+    )
+    assert build_json_schema(
+        types.GenericAlias(
+            slice, (datetime.date, datetime.date, datetime.timedelta)
+        )
+    ) == JSONArraySchema(
+        prefixItems=[date_or_null, date_or_null, timedelta_or_null],
         minItems=3,
         maxItems=3,
     )
