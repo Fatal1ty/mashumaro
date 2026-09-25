@@ -20,7 +20,7 @@ from enum import Enum
 from fractions import Fraction
 from functools import cached_property
 from typing import Tuple  # noqa: UP035
-from typing import Any, ForwardRef, TypeAlias, Union, cast
+from typing import Any, ForwardRef, TypeAlias, cast
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
