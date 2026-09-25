@@ -130,7 +130,7 @@ def test_generic_slice_with_resolved_type_var():
 
     @dataclass
     class GenericSlice(Generic[T]):
-        value: slice[T]
+        value: slice[T]  # pragma: no cover
 
     @dataclass
     class DateSlice(GenericSlice[date], DataClassDictMixin):
