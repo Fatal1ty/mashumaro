@@ -154,8 +154,6 @@ A useful benchmark separates:
 
 Use representative payloads and a benchmark runner such as [`pyperf`](https://pyperf.readthedocs.io/en/stable/); follow its [guidance for reproducible runs](https://pyperf.readthedocs.io/en/stable/run_benchmark.html) and use enough processes to reduce noise. Compare exact semantics — bytes versus strings, validation strictness, omission, aliases, datetime handling, and unknown keys — before comparing numbers.
 
-The repository benchmark uses real nested models and logarithmic charts. Results are workload- and configuration-dependent, so treat published comparisons as orientation rather than a guarantee for your application.
-
 ## Performance checklist
 
 - Reuse encoders and decoders.
