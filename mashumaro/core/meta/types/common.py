@@ -176,7 +176,7 @@ class AbstractMethodBuilder(ABC):
         if spec.builder.get_config().debug:
             print(f"{type_name(spec.builder.cls)}:")
             print(lines.as_text())
-        exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+        spec.builder.exec_generated_code(lines.as_text())
 
     @abstractmethod
     def _get_call_expr(self, spec: ValueSpec, method_name: str) -> str:

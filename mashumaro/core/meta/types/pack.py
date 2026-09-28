@@ -403,7 +403,7 @@ def pack_union(
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
 
-    exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+    spec.builder.exec_generated_code(lines.as_text())
 
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_pack_method_flags()))
@@ -469,7 +469,7 @@ def pack_literal(spec: ValueSpec) -> Expression:
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
-    exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+    spec.builder.exec_generated_code(lines.as_text())
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_pack_method_flags()))
     )
@@ -821,7 +821,7 @@ def pack_typed_dict(spec: ValueSpec) -> Expression:
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
-    exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+    spec.builder.exec_generated_code(lines.as_text())
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_pack_method_flags()))
     )

@@ -1223,7 +1223,7 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
-    exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+    spec.builder.exec_generated_code(lines.as_text())
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_unpack_method_flags()))
     )
@@ -1297,7 +1297,7 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
     if spec.builder.get_config().debug:
         print(f"{type_name(spec.builder.cls)}:")
         print(lines.as_text())
-    exec(lines.as_text(), spec.builder.globals, spec.builder.__dict__)
+    spec.builder.exec_generated_code(lines.as_text())
     method_args = ", ".join(
         filter(None, (spec.expression, spec.builder.get_unpack_method_flags()))
     )
