@@ -1735,7 +1735,7 @@ class MyClass(DataClassORJSONMixin):
     class Config(BaseConfig):
         orjson_options = orjson.OPT_NON_STR_KEYS
 
-assert MyClass({1: 2}).to_json() == {"1": 2}
+assert MyClass({1: 2}).to_json() == '{"x":{"1":2}}'
 ```
 
 #### `discriminator` config option
