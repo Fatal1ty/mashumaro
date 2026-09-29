@@ -290,6 +290,10 @@ class TypedDictWithExtraItems(TypedDict, extra_items=str):
     y: int
 
 
+class TypedDictInheritedExtraItems(TypedDictWithExtraItems):
+    z: int
+
+
 class GenericTypedDict(TypedDict, Generic[T]):
     x: T
     y: int

@@ -107,6 +107,7 @@ from tests.entities import (
     TInt,
     TIntStr,
     TypedDictClosed,
+    TypedDictInheritedExtraItems,
     TypedDictNotClosed,
     TypedDictOptionalKeys,
     TypedDictOptionalKeysWithOptional,
@@ -859,6 +860,15 @@ def test_jsonschema_for_typeddict():
             "y": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
         },
         required=["x", "y"],
+        additionalProperties=JSONSchema(type=JSONSchemaInstanceType.STRING),
+    )
+    assert build_json_schema(TypedDictInheritedExtraItems) == JSONObjectSchema(
+        properties={
+            "x": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            "y": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            "z": JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        },
+        required=["x", "y", "z"],
         additionalProperties=JSONSchema(type=JSONSchemaInstanceType.STRING),
     )
     assert build_json_schema(GenericTypedDict) == JSONObjectSchema(

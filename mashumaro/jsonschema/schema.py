@@ -10,6 +10,7 @@ from collections.abc import (  # type: ignore[attr-defined]
     Callable,
     Collection,
     Iterable,
+    Iterator,
     Mapping,
     Sequence,
     Set,
@@ -33,6 +34,7 @@ from mashumaro.core.meta.helpers import (
     get_args,
     get_function_return_annotation,
     get_literal_values,
+    get_orig_bases,
     get_slice_type_args,
     get_type_origin,
     get_type_var_default,
@@ -822,6 +824,14 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
         )
 
 
+def _iter_typed_dict_lineage(typ: type) -> Iterator[Any]:
+    yield typ
+    for base in get_orig_bases(typ):
+        base = get_type_origin(base)
+        if is_typed_dict(base):
+            yield from _iter_typed_dict_lineage(base)
+
+
 def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
     resolved = resolve_type_params(
         instance.origin_type, get_args(instance.type)
@@ -836,17 +846,18 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
     required_keys = set(getattr(instance.type, "__required_keys__", all_keys))
 
     # PEP 728
-    additional_properties: JSONSchema | bool
-    if (is_closed := getattr(instance.type, "__closed__", None)) is not None:
-        additional_properties = not is_closed
-    elif (
-        extra_items := getattr(instance.type, "__extra_items__", NoExtraItems)
-    ) is not NoExtraItems:
-        additional_properties = get_schema(
-            Instance(cast(type, extra_items)), ctx=ctx
-        )
-    else:
-        additional_properties = False
+    additional_properties: JSONSchema | bool = False
+    for typed_dict in _iter_typed_dict_lineage(instance.origin_type):
+        if (is_closed := getattr(typed_dict, "__closed__", None)) is not None:
+            additional_properties = not is_closed
+            break
+        elif (
+            extra_items := getattr(typed_dict, "__extra_items__", NoExtraItems)
+        ) is not NoExtraItems:
+            additional_properties = get_schema(
+                Instance(cast(type, extra_items)), ctx=ctx
+            )
+            break
 
     # workaround for https://github.com/python/cpython/issues/97727
     for key, annotation in annotations.items():
