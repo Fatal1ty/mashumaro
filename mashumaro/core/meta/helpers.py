@@ -44,6 +44,7 @@ __all__ = [
     "get_type_var_default",
     "hash_type_args",
     "is_annotated",
+    "is_bottom_type",
     "is_class_var",
     "is_dataclass_dict_mixin",
     "is_dataclass_dict_mixin_subclass",
@@ -412,6 +413,15 @@ def is_annotated(typ: object) -> bool:
             if type(typ) is module._AnnotatedAlias:
                 return True
     return False
+
+
+def is_bottom_type(typ: Any) -> bool:
+    while True:
+        typ = resolve_type_alias_type(typ)
+        if is_readonly(typ) or is_annotated(typ):
+            typ = get_args(typ)[0]
+        else:
+            return typ is typing_extensions.Never or typ is typing.NoReturn
 
 
 def get_type_annotations(typ: TypeForm) -> Sequence[Any]:

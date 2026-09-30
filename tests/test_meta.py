@@ -26,6 +26,7 @@ from mashumaro.core.meta.helpers import (
     get_type_var_default,
     hash_type_args,
     is_annotated,
+    is_bottom_type,
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
     is_dialect_subclass,
@@ -86,6 +87,49 @@ TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 def test_is_init_var():
     assert is_init_var(InitVar[int])
     assert not is_init_var(int)
+
+
+@pytest.mark.parametrize(
+    "typ",
+    [
+        typing_extensions.Never,
+        typing.NoReturn,
+        typing_extensions.ReadOnly[typing_extensions.Never],
+        typing_extensions.Annotated[typing_extensions.Never, 42],
+        typing_extensions.ReadOnly[
+            typing_extensions.Annotated[typing_extensions.Never, 42]
+        ],
+        typing_extensions.Annotated[
+            typing_extensions.ReadOnly[typing_extensions.Never], 42
+        ],
+    ],
+)
+def test_is_bottom_type(typ):
+    assert is_bottom_type(typ)
+
+
+@pytest.mark.parametrize(
+    "typ",
+    [
+        int,
+        list[typing_extensions.Never],
+        typing_extensions.Annotated[list[typing_extensions.Never], 42],
+        typing_extensions.ReadOnly[int],
+    ],
+)
+def test_is_not_bottom_type(typ):
+    assert not is_bottom_type(typ)
+
+
+def test_is_bottom_type_alias():
+    if type_alias_type := getattr(typing, "TypeAliasType", None):
+        bottom_alias = type_alias_type(
+            "BottomAlias",
+            typing_extensions.Annotated[
+                typing_extensions.ReadOnly[typing_extensions.Never], 42
+            ],
+        )
+        assert is_bottom_type(bottom_alias)
 
 
 def test_no_code_builder(mocker):
