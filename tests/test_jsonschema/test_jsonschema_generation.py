@@ -5,6 +5,7 @@ import ipaddress
 import os
 import sys
 import types
+import typing
 from base64 import encodebytes
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -42,7 +43,14 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import typing_extensions
-from typing_extensions import Annotated, Buffer, Literal, TypeVarTuple, Unpack
+from typing_extensions import (
+    Annotated,
+    Buffer,
+    Literal,
+    TypedDict,
+    TypeVarTuple,
+    Unpack,
+)
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.meta.helpers import type_name
@@ -906,6 +914,38 @@ def test_jsonschema_for_typeddict():
         additionalProperties=False,
         required=["x"],
     )
+
+
+def test_jsonschema_for_inherited_generic_typed_dict():
+    T = TypeVar("T")
+
+    class Base(TypedDict, Generic[T]):
+        value: T
+
+    class IntChild(Base[int]):
+        pass
+
+    class Intermediate(Base[list[T]], Generic[T]):
+        pass
+
+    class StringChild(Intermediate[str]):
+        pass
+
+    class OptionalGeneric(TypedDict, Generic[T], total=False):
+        value: T
+
+    integer_schema = JSONSchema(type=JSONSchemaInstanceType.INTEGER)
+    string_schema = JSONSchema(type=JSONSchemaInstanceType.STRING)
+
+    schema = build_json_schema(IntChild)
+    assert schema.properties == {"value": integer_schema}
+
+    schema = build_json_schema(StringChild)
+    assert schema.properties == {"value": JSONArraySchema(items=string_schema)}
+
+    schema = build_json_schema(OptionalGeneric[int])
+    assert schema.properties == {"value": integer_schema}
+    assert schema.required is None
 
 
 def test_jsonschema_for_mapping():

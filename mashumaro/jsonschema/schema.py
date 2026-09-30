@@ -54,6 +54,7 @@ from mashumaro.core.meta.helpers import (
     is_union,
     is_unpack,
     resolve_type_params,
+    resolve_typed_dict_annotations,
     type_name,
     type_var_has_default,
 )
@@ -823,17 +824,11 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
 
 
 def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
-    resolved = resolve_type_params(
-        instance.origin_type, get_args(instance.type)
-    )[instance.origin_type]
-    annotations = {
-        k: resolved.get(v, v)
-        for k, v in get_annotations(
-            instance.origin_type, eval_str=True
-        ).items()
-    }
+    annotations = resolve_typed_dict_annotations(instance.type)
     all_keys = list(annotations.keys())
-    required_keys = set(getattr(instance.type, "__required_keys__", all_keys))
+    required_keys = set(
+        getattr(instance.origin_type, "__required_keys__", all_keys)
+    )
 
     # PEP 728
     additional_properties: JSONSchema | bool

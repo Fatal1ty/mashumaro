@@ -23,6 +23,11 @@ from typing_extensions import TypeForm
 from mashumaro.core.const import PY_311_MIN, PY_312_MIN, PY_314_MIN
 from mashumaro.dialect import Dialect
 
+if PY_314_MIN:
+    from annotationlib import get_annotations
+else:
+    from typing_extensions import get_annotations
+
 __all__ = [
     "collect_type_params",
     "get_args",
@@ -69,6 +74,7 @@ __all__ = [
     "not_none_type_arg",
     "resolve_type_alias_type",
     "resolve_type_params",
+    "resolve_typed_dict_annotations",
     "substitute_type_params",
     "type_name",
     "type_var_has_default",
@@ -646,11 +652,18 @@ def resolve_type_params(
             get_type_origin(orig_base): orig_base
             for orig_base in get_orig_bases(typ)
         }
-        for base in getattr(typ, "__bases__", ()):
-            orig_base = orig_bases.get(get_type_origin(base))
-            base_type_params = get_args(orig_base)
+        bases = list(getattr(typ, "__bases__", ()))
+        if is_typed_dict(typ):
+            for logical_base in get_orig_bases(typ):
+                base = get_type_origin(logical_base)
+                if is_typed_dict(base) and base not in bases:
+                    bases.append(base)
+        for base in bases:
+            parameterized_base = orig_bases.get(get_type_origin(base))
+            base_type_params = get_args(parameterized_base)
             base_type_args = tuple(
-                [resolved_type_params.get(a, a) for a in base_type_params]
+                substitute_type_params(a, resolved_type_params)
+                for a in base_type_params
             )
             result.update(resolve_type_params(base, base_type_args))
 
@@ -675,6 +688,38 @@ def substitute_type_params(typ: Any, substitutions: dict[Any, Any]) -> Any:
             return substitutions.get(typ, typ)
         else:
             return typ
+
+
+def resolve_typed_dict_annotations(typ: Any) -> dict[str, Any]:
+    origin = get_type_origin(typ)
+    resolved_type_params = resolve_type_params(origin, get_args(typ))
+
+    def resolve_annotations(current: type) -> dict[str, Any]:
+        inherited_annotations: dict[str, Any] = {}
+        resolved_annotations: dict[str, Any] = {}
+        for orig_base in get_orig_bases(current):
+            base = get_type_origin(orig_base)
+            if is_typed_dict(base):
+                inherited_annotations.update(
+                    get_annotations(base, eval_str=True)
+                )
+                resolved_annotations.update(resolve_annotations(base))
+        annotations = get_annotations(current, eval_str=True)
+        resolved = resolved_type_params[current]
+        # TypedDict exposes a flattened annotations mapping. Keep an inherited
+        # annotation resolved in the context of its declaring base unless the
+        # subclass changed the raw annotation.
+        return {
+            key: (
+                resolved_annotations[key]
+                if key in inherited_annotations
+                and annotation == inherited_annotations[key]
+                else substitute_type_params(annotation, resolved)
+            )
+            for key, annotation in annotations.items()
+        }
+
+    return resolve_annotations(origin)
 
 
 def get_name_error_name(e: NameError) -> str:
