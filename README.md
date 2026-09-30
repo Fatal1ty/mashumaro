@@ -281,8 +281,8 @@ Mashumaro generates specialized conversion functions once, then reuses them
 without repeatedly walking fields and annotations. The repository benchmark
 uses [pyperf](https://github.com/psf/pyperf) and a nested GitHub Issue model.
 
-The results below were recorded on macOS 15.1, an Apple M3 Max, and Python
-3.13.0. Lower is better; the charts use a logarithmic scale.
+The results below were recorded on macOS 27.0.1, an Apple M3 Max, and Python
+3.14.6. Lower is better; the charts use a logarithmic scale.
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Fatal1ty/mashumaro/refs/heads/master/benchmark/charts/load_light.svg">
