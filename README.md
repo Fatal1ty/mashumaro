@@ -213,7 +213,7 @@ to their respective projects, and inclusion does not imply endorsement.
 pip install mashumaro
 ```
 
-The current release supports Python 3.10–3.14. Install optional formats only
+The current release supports Python 3.10–3.15. Install optional formats only
 when you need them:
 
 ```bash
