@@ -51,6 +51,7 @@ from mashumaro.core.meta.helpers import (
     not_none_type_arg,
     resolve_type_alias_type,
     resolve_type_params,
+    resolve_typed_dict_annotations,
     substitute_type_params,
     type_name,
     type_var_has_default,
@@ -760,16 +761,12 @@ def pack_named_tuple(spec: ValueSpec) -> Expression:
 
 
 def pack_typed_dict(spec: ValueSpec) -> Expression:
-    resolved = resolve_type_params(spec.origin_type, get_args(spec.type))[
-        spec.origin_type
-    ]
-    annotations = {
-        k: resolved.get(v, v)
-        for k, v in get_annotations(spec.origin_type, eval_str=True).items()
-    }
+    annotations = resolve_typed_dict_annotations(spec.type)
     all_keys = list(annotations.keys())
-    required_keys = set(getattr(spec.type, "__required_keys__", all_keys))
-    optional_keys = set(getattr(spec.type, "__optional_keys__", []))
+    required_keys = set(
+        getattr(spec.origin_type, "__required_keys__", all_keys)
+    )
+    optional_keys = set(getattr(spec.origin_type, "__optional_keys__", []))
 
     # workaround for https://github.com/python/cpython/issues/97727
     for key, annotation in annotations.items():

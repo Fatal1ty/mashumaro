@@ -42,6 +42,7 @@ from mashumaro.core.meta.helpers import (
     is_union,
     not_none_type_arg,
     resolve_type_params,
+    resolve_typed_dict_annotations,
     substitute_type_params,
     type_name,
     type_var_has_default,
@@ -407,6 +408,57 @@ def test_resolve_type_params():
     resolved = resolve_type_params(B)
     assert resolved[A] == {T: int}
     assert resolved[B] == {}
+
+
+def test_resolve_type_params_for_typed_dict():
+    type_var = typing.TypeVar("type_var")
+
+    class A(typing_extensions.TypedDict, typing.Generic[type_var]):
+        x: type_var
+
+    class B(A[list[type_var]], typing.Generic[type_var]):
+        pass
+
+    class C(B[str]):
+        pass
+
+    resolved = resolve_type_params(C)
+    assert resolved[C] == {}
+    assert resolved[B] == {type_var: str}
+    assert resolved[A] == {type_var: list[str]}
+
+
+def test_resolve_typed_dict_annotations():
+    type_var = typing.TypeVar("type_var")
+    other_type_var = typing.TypeVar("other_type_var")
+
+    class Base(typing_extensions.TypedDict, typing.Generic[type_var]):
+        inherited: type_var
+
+    class Intermediate(Base[list[type_var]], typing.Generic[type_var]):
+        own: type_var
+
+    class Child(Intermediate[str]):
+        pass
+
+    class OtherBase(
+        typing_extensions.TypedDict, typing.Generic[other_type_var]
+    ):
+        other: other_type_var
+
+    class Combined(Child, OtherBase[int]):
+        pass
+
+    assert resolve_typed_dict_annotations(Base[int]) == {"inherited": int}
+    assert resolve_typed_dict_annotations(Child) == {
+        "inherited": list[str],
+        "own": str,
+    }
+    assert resolve_typed_dict_annotations(Combined) == {
+        "inherited": list[str],
+        "own": str,
+        "other": int,
+    }
 
 
 def test_get_generic_name():

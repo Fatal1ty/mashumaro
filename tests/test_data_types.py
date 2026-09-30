@@ -29,6 +29,7 @@ from typing import (
     Deque,
     Dict,
     FrozenSet,
+    Generic,
     Hashable,
     List,
     Mapping,
@@ -40,11 +41,12 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    TypeVar,
 )
 from zoneinfo import ZoneInfo
 
 import pytest
-from typing_extensions import Buffer, Final, LiteralString
+from typing_extensions import Buffer, Final, LiteralString, TypedDict
 
 from mashumaro import DataClassDictMixin
 from mashumaro.codecs import BasicDecoder, BasicEncoder
@@ -1420,6 +1422,47 @@ def test_bound_generic_typed_dict():
     encoder = BasicEncoder(DataClass)
     assert decoder.decode({"x": {"x": "2023-01-22", "y": "42"}}) == obj
     assert encoder.encode(obj) == {"x": {"x": "2023-01-22", "y": 42}}
+
+
+def test_inherited_bound_generic_typed_dict():
+    T = TypeVar("T")
+
+    class Base(TypedDict, Generic[T]):
+        value: T
+
+    class Intermediate(Base[list[T]], Generic[T]):
+        pass
+
+    class Child(Intermediate[date]):
+        pass
+
+    class OptionalBase(TypedDict, Generic[T], total=False):
+        optional: T
+
+    @dataclass
+    class DataClass(DataClassDictMixin):
+        child: Child
+        optional: OptionalBase[date]
+
+    obj = DataClass(
+        child={"value": [date(2023, 1, 22)]},
+        optional={"optional": date(2024, 2, 23)},
+    )
+    dumped = {
+        "child": {"value": ["2023-01-22"]},
+        "optional": {"optional": "2024-02-23"},
+    }
+
+    assert DataClass.from_dict(dumped) == obj
+    assert obj.to_dict() == dumped
+
+    decoder = BasicDecoder(DataClass)
+    encoder = BasicEncoder(DataClass)
+    assert decoder.decode(dumped) == obj
+    assert encoder.encode(obj) == dumped
+
+    missing_optional = {"child": {"value": ["2023-01-22"]}, "optional": {}}
+    assert decoder.decode(missing_optional).optional == {}
 
 
 def test_dataclass_with_init_false_field():
