@@ -1146,7 +1146,7 @@ def test_jsonschema_for_inherited_stdlib_pep_728_typed_dict():
     class GenericBase(
         typing.TypedDict, Generic[type_var], extra_items=type_var
     ):
-        value: type_var
+        value: type_var  # pragma: no cover
 
     class IntChild(GenericBase[int]):
         pass
