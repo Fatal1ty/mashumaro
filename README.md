@@ -2,7 +2,7 @@
 
 <img alt="mashumaro" width="175" src="https://raw.githubusercontent.com/Fatal1ty/mashumaro/ac2f924591d488dbd9a776a6b1ae7dede2d8c73e/img/logo.svg">
 
-### High-performance serialization for standard Python types
+### High-performance serialization without replacing your data model
 
 Work with familiar Python data structures and type annotations. Mashumaro
 generates specialized encoders and decoders for them — no handwritten schemas
