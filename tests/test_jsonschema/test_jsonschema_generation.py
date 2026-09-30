@@ -47,6 +47,7 @@ from typing_extensions import (
     Annotated,
     Buffer,
     Literal,
+    ReadOnly,
     TypedDict,
     TypeVarTuple,
     Unpack,
@@ -946,6 +947,214 @@ def test_jsonschema_for_inherited_generic_typed_dict():
     schema = build_json_schema(OptionalGeneric[int])
     assert schema.properties == {"value": integer_schema}
     assert schema.required is None
+
+
+def test_jsonschema_for_inherited_pep_728_typed_dict():
+    type_var = TypeVar("type_var")
+
+    class ExtraItemsBase(TypedDict, extra_items=str):
+        x: int
+
+    class ExtraItemsChild(ExtraItemsBase):
+        pass
+
+    class OpenBase(TypedDict, closed=False):
+        x: int
+
+    class OpenChild(OpenBase):
+        pass
+
+    class ClosedBase(TypedDict, closed=True):
+        x: int
+
+    class ClosedChild(ClosedBase):
+        pass
+
+    class ConcreteGenericExtraItems(
+        TypedDict, Generic[type_var], extra_items=str
+    ):
+        value: type_var
+
+    class GenericExtraItems(
+        TypedDict, Generic[type_var], extra_items=type_var
+    ):
+        value: type_var
+
+    class CompoundGenericExtraItems(
+        TypedDict, Generic[type_var], extra_items=list[type_var]
+    ):
+        value: list[type_var]
+
+    class IntChild(GenericExtraItems[int]):
+        pass
+
+    class Intermediate(GenericExtraItems[list[type_var]], Generic[type_var]):
+        pass
+
+    class StringChild(Intermediate[str]):
+        pass
+
+    class ReadOnlyExtraItems(TypedDict, extra_items=ReadOnly[int | str]):
+        pass
+
+    class NarrowedExtraItems(ReadOnlyExtraItems, extra_items=str):
+        pass
+
+    class ClosedReadOnlyExtraItems(ReadOnlyExtraItems, closed=True):
+        pass
+
+    class ReadOnlyIntegerExtraItems(TypedDict, extra_items=ReadOnly[int]):
+        pass
+
+    class MutableIntegerExtraItems(TypedDict, extra_items=int):
+        pass
+
+    class OpenAndExtraItems(OpenBase, ExtraItemsBase):
+        pass
+
+    class ExtraItemsAndOpen(ExtraItemsBase, OpenBase):
+        pass
+
+    class OpenAndClosed(OpenBase, ClosedBase):
+        pass
+
+    class NarrowedMultipleExtraItems(
+        ReadOnlyExtraItems, ReadOnlyIntegerExtraItems
+    ):
+        pass
+
+    class MutableMultipleExtraItems(
+        ReadOnlyExtraItems, MutableIntegerExtraItems
+    ):
+        pass
+
+    class NeverExtraItems(TypedDict, extra_items=typing_extensions.Never):
+        pass
+
+    class NeverExtraItemsChild(NeverExtraItems):
+        pass
+
+    class DiamondRoot(TypedDict, extra_items=ReadOnly[int]):
+        pass
+
+    class DiamondLeft(DiamondRoot):
+        pass
+
+    class DiamondRight(DiamondRoot):
+        pass
+
+    class DiamondChild(DiamondLeft, DiamondRight):
+        pass
+
+    integer_schema = JSONSchema(type=JSONSchemaInstanceType.INTEGER)
+    string_schema = JSONSchema(type=JSONSchemaInstanceType.STRING)
+    integer_list_schema = JSONArraySchema(items=integer_schema)
+
+    assert (
+        build_json_schema(ExtraItemsChild).additionalProperties
+        == string_schema
+    )
+    assert build_json_schema(OpenChild).additionalProperties is True
+    assert build_json_schema(ClosedChild).additionalProperties is False
+    assert (
+        build_json_schema(ConcreteGenericExtraItems[int]).additionalProperties
+        == string_schema
+    )
+
+    schema = build_json_schema(GenericExtraItems[int])
+    assert schema.properties == {"value": integer_schema}
+    assert schema.additionalProperties == integer_schema
+
+    schema = build_json_schema(CompoundGenericExtraItems[int])
+    assert schema.properties == {"value": integer_list_schema}
+    assert schema.additionalProperties == integer_list_schema
+
+    schema = build_json_schema(IntChild)
+    assert schema.properties == {"value": integer_schema}
+    assert schema.additionalProperties == integer_schema
+
+    schema = build_json_schema(StringChild)
+    assert schema.properties == {"value": JSONArraySchema(items=string_schema)}
+    assert schema.additionalProperties == JSONArraySchema(items=string_schema)
+
+    assert (
+        build_json_schema(NarrowedExtraItems).additionalProperties
+        == string_schema
+    )
+    assert (
+        build_json_schema(ClosedReadOnlyExtraItems).additionalProperties
+        is False
+    )
+    assert (
+        build_json_schema(OpenAndExtraItems).additionalProperties
+        == string_schema
+    )
+    assert (
+        build_json_schema(ExtraItemsAndOpen).additionalProperties
+        == string_schema
+    )
+    assert build_json_schema(OpenAndClosed).additionalProperties is False
+    assert (
+        build_json_schema(NarrowedMultipleExtraItems).additionalProperties
+        == integer_schema
+    )
+    assert (
+        build_json_schema(MutableMultipleExtraItems).additionalProperties
+        == integer_schema
+    )
+    assert build_json_schema(NeverExtraItems).additionalProperties is False
+    assert (
+        build_json_schema(NeverExtraItemsChild).additionalProperties is False
+    )
+
+    assert (
+        build_json_schema(DiamondChild).additionalProperties == integer_schema
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_items",
+    [
+        typing_extensions.Never,
+        typing_extensions.NoReturn,
+        ReadOnly[typing_extensions.Never],
+        Annotated[typing_extensions.Never, 42],
+        ReadOnly[Annotated[typing_extensions.Never, 42]],
+        Annotated[ReadOnly[typing_extensions.Never], 42],
+        *(
+            [typing.TypeAliasType("BottomAlias", typing_extensions.Never)]
+            if sys.version_info >= (3, 12)
+            else []
+        ),
+    ],
+)
+def test_jsonschema_for_bottom_extra_items(extra_items):
+    bottom_extra_items = TypedDict(
+        "BottomExtraItems", {}, extra_items=extra_items
+    )
+
+    assert build_json_schema(bottom_extra_items).additionalProperties is False
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 15),
+    reason="stdlib PEP 728 support requires Python 3.15",
+)
+def test_jsonschema_for_inherited_stdlib_pep_728_typed_dict():
+    type_var = TypeVar("type_var")
+
+    class GenericBase(
+        typing.TypedDict, Generic[type_var], extra_items=type_var
+    ):
+        value: type_var
+
+    class IntChild(GenericBase[int]):
+        pass
+
+    integer_schema = JSONSchema(type=JSONSchemaInstanceType.INTEGER)
+    schema = build_json_schema(IntChild)
+    assert schema.properties == {"value": integer_schema}
+    assert schema.additionalProperties == integer_schema
 
 
 def test_jsonschema_for_mapping():

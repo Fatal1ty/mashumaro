@@ -20,7 +20,7 @@ from enum import Enum
 from fractions import Fraction
 from functools import cached_property
 from typing import Tuple  # noqa: UP035
-from typing import Any, ForwardRef, TypeAlias, cast
+from typing import Any, ForwardRef, TypeAlias
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -33,10 +33,12 @@ from mashumaro.core.meta.helpers import (
     get_args,
     get_function_return_annotation,
     get_literal_values,
+    get_orig_bases,
     get_slice_type_args,
     get_type_origin,
     get_type_var_default,
     is_annotated,
+    is_bottom_type,
     is_generic,
     is_literal,
     is_named_tuple,
@@ -55,6 +57,7 @@ from mashumaro.core.meta.helpers import (
     is_unpack,
     resolve_type_params,
     resolve_typed_dict_annotations,
+    substitute_type_params,
     type_name,
     type_var_has_default,
 )
@@ -823,6 +826,44 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
         )
 
 
+def _resolve_typed_dict_openness(
+    typ: Any, resolved_type_params: dict[Any, dict[Any, Any]] | None = None
+) -> tuple[bool | None, Any]:
+    origin = get_type_origin(typ)
+    if resolved_type_params is None:
+        resolved_type_params = resolve_type_params(origin, get_args(typ))
+    resolved = resolved_type_params[origin]
+    # `closed` and `extra_items` are mutually exclusive within the same
+    # TypedDict definition.
+    if (is_closed := getattr(origin, "__closed__", None)) is not None:
+        return is_closed, NoExtraItems
+    extra_items = getattr(origin, "__extra_items__", NoExtraItems)
+    if extra_items is not NoExtraItems:
+        return None, substitute_type_params(extra_items, resolved)
+
+    inherited_closed: bool | None = None
+    inherited_extra_items: Any = NoExtraItems
+    for orig_base in get_orig_bases(origin):
+        base = get_type_origin(orig_base)
+        if is_typed_dict(base):
+            base_closed, base_extra_items = _resolve_typed_dict_openness(
+                base, resolved_type_params
+            )
+            # An open base does not constrain a subclass. For valid multiple
+            # inheritance, a later restricted base is compatible with or
+            # narrows the effective openness of the preceding bases.
+            if base_closed is False:
+                if (
+                    inherited_closed is None
+                    and inherited_extra_items is NoExtraItems
+                ):
+                    inherited_closed = False
+            elif base_closed is True or base_extra_items is not NoExtraItems:
+                inherited_closed = base_closed
+                inherited_extra_items = base_extra_items
+    return inherited_closed, inherited_extra_items
+
+
 def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
     annotations = resolve_typed_dict_annotations(instance.type)
     all_keys = list(annotations.keys())
@@ -831,17 +872,12 @@ def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
     )
 
     # PEP 728
-    additional_properties: JSONSchema | bool
-    if (is_closed := getattr(instance.type, "__closed__", None)) is not None:
+    additional_properties: JSONSchema | bool = False
+    is_closed, extra_items = _resolve_typed_dict_openness(instance.type)
+    if is_closed is not None:
         additional_properties = not is_closed
-    elif (
-        extra_items := getattr(instance.type, "__extra_items__", NoExtraItems)
-    ) is not NoExtraItems:
-        additional_properties = get_schema(
-            Instance(cast(type, extra_items)), ctx=ctx
-        )
-    else:
-        additional_properties = False
+    elif extra_items is not NoExtraItems and not is_bottom_type(extra_items):
+        additional_properties = get_schema(Instance(extra_items), ctx=ctx)
 
     # workaround for https://github.com/python/cpython/issues/97727
     for key, annotation in annotations.items():
