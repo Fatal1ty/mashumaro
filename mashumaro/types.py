@@ -1,19 +1,17 @@
 import decimal
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Type
-
-from typing_extensions import Literal
+from typing import Any, Literal
 
 from mashumaro.core.const import Sentinel
 
 __all__ = [
-    "SerializableType",
-    "GenericSerializableType",
-    "SerializationStrategy",
-    "RoundedDecimal",
-    "Discriminator",
     "Alias",
+    "Discriminator",
+    "GenericSerializableType",
+    "RoundedDecimal",
+    "SerializableType",
+    "SerializationStrategy",
 ]
 
 
@@ -42,11 +40,11 @@ class SerializableType:
 class GenericSerializableType:
     __slots__ = ()
 
-    def _serialize(self, types: list[Type]) -> Any:
+    def _serialize(self, types: list[type]) -> Any:
         raise NotImplementedError
 
     @classmethod
-    def _deserialize(cls, value: Any, types: list[Type]) -> Any:
+    def _deserialize(cls, value: Any, types: list[type]) -> Any:
         raise NotImplementedError
 
 
@@ -116,7 +114,7 @@ class Alias:
     def __repr__(self) -> str:
         return f"Alias(name='{self.name}')"
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Alias):
             return False
         return self.name == other.name

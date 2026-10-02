@@ -1,7 +1,11 @@
+import builtins
 import collections
 import datetime
 import ipaddress
 import os
+import sys
+import types
+import typing
 from base64 import encodebytes
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -17,7 +21,6 @@ from pathlib import (
 from typing import (
     AbstractSet,
     Any,
-    ByteString,
     ChainMap,
     Counter,
     DefaultDict,
@@ -40,7 +43,15 @@ from zoneinfo import ZoneInfo
 
 import pytest
 import typing_extensions
-from typing_extensions import Annotated, Buffer, Literal, TypeVarTuple, Unpack
+from typing_extensions import (
+    Annotated,
+    Buffer,
+    Literal,
+    ReadOnly,
+    TypedDict,
+    TypeVarTuple,
+    Unpack,
+)
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.meta.helpers import type_name
@@ -120,6 +131,13 @@ from tests.test_pep_655 import (
     TypedDictCorrectRequired,
 )
 
+if sys.version_info < (3, 15):
+    from collections.abc import ByteString  # noqa: PYI057
+
+    _BINARY_TYPES = (ByteString, Buffer, bytes, bytearray, memoryview)
+else:
+    _BINARY_TYPES = (Buffer, bytes, bytearray, memoryview)
+
 Ts = TypeVarTuple("Ts")
 
 
@@ -131,11 +149,14 @@ class ThirdPartyType:
     pass
 
 
+third_party_type_value = ThirdPartyType()
+
+
 @dataclass
 class DataClassWithThirdPartyType:
     a: ThirdPartyType
     b: Optional[ThirdPartyType]
-    c: ThirdPartyType = ThirdPartyType()
+    c: ThirdPartyType = third_party_type_value
     d: Optional[ThirdPartyType] = None
 
     class Config(BaseConfig):
@@ -262,7 +283,9 @@ def test_jsonschema_for_literal():
     assert build_json_schema(Literal[True, False]) == JSONSchema(
         enum=[True, False]
     )
-    assert build_json_schema(Literal[1, None]) == JSONSchema(enum=[1, None])
+    assert build_json_schema(Literal[1, None]) == JSONSchema(  # noqa: PYI061
+        enum=[1, None]
+    )
     assert build_json_schema(Literal[MyEnum.a, MyEnum.b]) == JSONSchema(
         enum=["letter a", "letter b"]
     )
@@ -371,14 +394,52 @@ def test_jsonschema_for_timedelta():
 
 
 def test_jsonschema_for_slice():
-    int_or_null = JSONSchema(
-        anyOf=[
-            JSONSchema(type=JSONSchemaInstanceType.INTEGER),
-            JSONSchema(type=JSONSchemaInstanceType.NULL),
-        ]
-    )
     assert build_json_schema(slice) == JSONArraySchema(
-        prefixItems=[int_or_null, int_or_null, int_or_null],
+        prefixItems=[EmptyJSONSchema(), EmptyJSONSchema(), EmptyJSONSchema()],
+        minItems=3,
+        maxItems=3,
+    )
+
+
+def test_jsonschema_for_generic_slice():
+    date_schema = JSONSchema(
+        type=JSONSchemaInstanceType.STRING, format=JSONSchemaStringFormat.DATE
+    )
+    timedelta_schema = JSONSchema(
+        type=JSONSchemaInstanceType.NUMBER,
+        format=JSONSchemaInstanceFormatExtension.TIMEDELTA,
+    )
+    null_schema = JSONSchema(type=JSONSchemaInstanceType.NULL)
+    date_or_null = JSONSchema(anyOf=[date_schema, null_schema])
+    timedelta_or_null = JSONSchema(anyOf=[timedelta_schema, null_schema])
+    date_or_timedelta_or_null = JSONSchema(
+        anyOf=[date_schema, timedelta_schema, null_schema]
+    )
+
+    assert build_json_schema(
+        types.GenericAlias(slice, (datetime.date,))
+    ) == JSONArraySchema(
+        prefixItems=[date_or_null, date_or_null, date_or_null],
+        minItems=3,
+        maxItems=3,
+    )
+    assert build_json_schema(
+        types.GenericAlias(slice, (datetime.date, datetime.timedelta))
+    ) == JSONArraySchema(
+        prefixItems=[
+            date_or_null,
+            timedelta_or_null,
+            date_or_timedelta_or_null,
+        ],
+        minItems=3,
+        maxItems=3,
+    )
+    assert build_json_schema(
+        types.GenericAlias(
+            slice, (datetime.date, datetime.date, datetime.timedelta)
+        )
+    ) == JSONArraySchema(
+        prefixItems=[date_or_null, date_or_null, timedelta_or_null],
         minItems=3,
         maxItems=3,
     )
@@ -410,8 +471,14 @@ def test_jsonschema_for_uuid():
         (ipaddress.IPv6Address, JSONSchemaStringFormat.IPV6ADDRESS),
         (ipaddress.IPv4Network, JSONSchemaInstanceFormatExtension.IPV4NETWORK),
         (ipaddress.IPv6Network, JSONSchemaInstanceFormatExtension.IPV6NETWORK),
-        (ipaddress.IPv4Network, JSONSchemaInstanceFormatExtension.IPV4NETWORK),
-        (ipaddress.IPv6Network, JSONSchemaInstanceFormatExtension.IPV6NETWORK),
+        (
+            ipaddress.IPv4Interface,
+            JSONSchemaInstanceFormatExtension.IPV4INTERFACE,
+        ),
+        (
+            ipaddress.IPv6Interface,
+            JSONSchemaInstanceFormatExtension.IPV6INTERFACE,
+        ),
     ),
 )
 def test_jsonschema_for_ipaddress(instance_type, string_format):
@@ -435,7 +502,7 @@ def test_jsonschema_for_fraction():
 
 
 def test_jsonschema_for_binary_types():
-    for instance_type in (ByteString, Buffer, bytes, bytearray, memoryview):
+    for instance_type in _BINARY_TYPES:
         assert build_json_schema(instance_type) == JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,
@@ -850,6 +917,246 @@ def test_jsonschema_for_typeddict():
     )
 
 
+def test_jsonschema_for_inherited_generic_typed_dict():
+    T = TypeVar("T")
+
+    class Base(TypedDict, Generic[T]):
+        value: T
+
+    class IntChild(Base[int]):
+        pass
+
+    class Intermediate(Base[list[T]], Generic[T]):
+        pass
+
+    class StringChild(Intermediate[str]):
+        pass
+
+    class OptionalGeneric(TypedDict, Generic[T], total=False):
+        value: T
+
+    integer_schema = JSONSchema(type=JSONSchemaInstanceType.INTEGER)
+    string_schema = JSONSchema(type=JSONSchemaInstanceType.STRING)
+
+    schema = build_json_schema(IntChild)
+    assert schema.properties == {"value": integer_schema}
+
+    schema = build_json_schema(StringChild)
+    assert schema.properties == {"value": JSONArraySchema(items=string_schema)}
+
+    schema = build_json_schema(OptionalGeneric[int])
+    assert schema.properties == {"value": integer_schema}
+    assert schema.required is None
+
+
+def test_jsonschema_for_inherited_pep_728_typed_dict():
+    type_var = TypeVar("type_var")
+
+    class ExtraItemsBase(TypedDict, extra_items=str):
+        x: int
+
+    class ExtraItemsChild(ExtraItemsBase):
+        pass
+
+    class OpenBase(TypedDict, closed=False):
+        x: int
+
+    class OpenChild(OpenBase):
+        pass
+
+    class ClosedBase(TypedDict, closed=True):
+        x: int
+
+    class ClosedChild(ClosedBase):
+        pass
+
+    class ConcreteGenericExtraItems(
+        TypedDict, Generic[type_var], extra_items=str
+    ):
+        value: type_var
+
+    class GenericExtraItems(
+        TypedDict, Generic[type_var], extra_items=type_var
+    ):
+        value: type_var
+
+    class CompoundGenericExtraItems(
+        TypedDict, Generic[type_var], extra_items=list[type_var]
+    ):
+        value: list[type_var]
+
+    class IntChild(GenericExtraItems[int]):
+        pass
+
+    class Intermediate(GenericExtraItems[list[type_var]], Generic[type_var]):
+        pass
+
+    class StringChild(Intermediate[str]):
+        pass
+
+    class ReadOnlyExtraItems(TypedDict, extra_items=ReadOnly[int | str]):
+        pass
+
+    class NarrowedExtraItems(ReadOnlyExtraItems, extra_items=str):
+        pass
+
+    class ClosedReadOnlyExtraItems(ReadOnlyExtraItems, closed=True):
+        pass
+
+    class ReadOnlyIntegerExtraItems(TypedDict, extra_items=ReadOnly[int]):
+        pass
+
+    class MutableIntegerExtraItems(TypedDict, extra_items=int):
+        pass
+
+    class OpenAndExtraItems(OpenBase, ExtraItemsBase):
+        pass
+
+    class ExtraItemsAndOpen(ExtraItemsBase, OpenBase):
+        pass
+
+    class OpenAndClosed(OpenBase, ClosedBase):
+        pass
+
+    class NarrowedMultipleExtraItems(
+        ReadOnlyExtraItems, ReadOnlyIntegerExtraItems
+    ):
+        pass
+
+    class MutableMultipleExtraItems(
+        ReadOnlyExtraItems, MutableIntegerExtraItems
+    ):
+        pass
+
+    class NeverExtraItems(TypedDict, extra_items=typing_extensions.Never):
+        pass
+
+    class NeverExtraItemsChild(NeverExtraItems):
+        pass
+
+    class DiamondRoot(TypedDict, extra_items=ReadOnly[int]):
+        pass
+
+    class DiamondLeft(DiamondRoot):
+        pass
+
+    class DiamondRight(DiamondRoot):
+        pass
+
+    class DiamondChild(DiamondLeft, DiamondRight):
+        pass
+
+    integer_schema = JSONSchema(type=JSONSchemaInstanceType.INTEGER)
+    string_schema = JSONSchema(type=JSONSchemaInstanceType.STRING)
+    integer_list_schema = JSONArraySchema(items=integer_schema)
+
+    assert (
+        build_json_schema(ExtraItemsChild).additionalProperties
+        == string_schema
+    )
+    assert build_json_schema(OpenChild).additionalProperties is True
+    assert build_json_schema(ClosedChild).additionalProperties is False
+    assert (
+        build_json_schema(ConcreteGenericExtraItems[int]).additionalProperties
+        == string_schema
+    )
+
+    schema = build_json_schema(GenericExtraItems[int])
+    assert schema.properties == {"value": integer_schema}
+    assert schema.additionalProperties == integer_schema
+
+    schema = build_json_schema(CompoundGenericExtraItems[int])
+    assert schema.properties == {"value": integer_list_schema}
+    assert schema.additionalProperties == integer_list_schema
+
+    schema = build_json_schema(IntChild)
+    assert schema.properties == {"value": integer_schema}
+    assert schema.additionalProperties == integer_schema
+
+    schema = build_json_schema(StringChild)
+    assert schema.properties == {"value": JSONArraySchema(items=string_schema)}
+    assert schema.additionalProperties == JSONArraySchema(items=string_schema)
+
+    assert (
+        build_json_schema(NarrowedExtraItems).additionalProperties
+        == string_schema
+    )
+    assert (
+        build_json_schema(ClosedReadOnlyExtraItems).additionalProperties
+        is False
+    )
+    assert (
+        build_json_schema(OpenAndExtraItems).additionalProperties
+        == string_schema
+    )
+    assert (
+        build_json_schema(ExtraItemsAndOpen).additionalProperties
+        == string_schema
+    )
+    assert build_json_schema(OpenAndClosed).additionalProperties is False
+    assert (
+        build_json_schema(NarrowedMultipleExtraItems).additionalProperties
+        == integer_schema
+    )
+    assert (
+        build_json_schema(MutableMultipleExtraItems).additionalProperties
+        == integer_schema
+    )
+    assert build_json_schema(NeverExtraItems).additionalProperties is False
+    assert (
+        build_json_schema(NeverExtraItemsChild).additionalProperties is False
+    )
+
+    assert (
+        build_json_schema(DiamondChild).additionalProperties == integer_schema
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_items",
+    [
+        typing_extensions.Never,
+        typing_extensions.NoReturn,
+        ReadOnly[typing_extensions.Never],
+        Annotated[typing_extensions.Never, 42],
+        ReadOnly[Annotated[typing_extensions.Never, 42]],
+        Annotated[ReadOnly[typing_extensions.Never], 42],
+        *(
+            [typing.TypeAliasType("BottomAlias", typing_extensions.Never)]
+            if sys.version_info >= (3, 12)
+            else []
+        ),
+    ],
+)
+def test_jsonschema_for_bottom_extra_items(extra_items):
+    bottom_extra_items = TypedDict(
+        "BottomExtraItems", {}, extra_items=extra_items
+    )
+
+    assert build_json_schema(bottom_extra_items).additionalProperties is False
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 15),
+    reason="stdlib PEP 728 support requires Python 3.15",
+)
+def test_jsonschema_for_inherited_stdlib_pep_728_typed_dict():
+    type_var = TypeVar("type_var")
+
+    class GenericBase(
+        typing.TypedDict, Generic[type_var], extra_items=type_var
+    ):
+        value: type_var  # pragma: no cover
+
+    class IntChild(GenericBase[int]):
+        pass
+
+    integer_schema = JSONSchema(type=JSONSchemaInstanceType.INTEGER)
+    schema = build_json_schema(IntChild)
+    assert schema.properties == {"value": integer_schema}
+    assert schema.additionalProperties == integer_schema
+
+
 def test_jsonschema_for_mapping():
     for generic_type in (
         Dict,
@@ -1056,6 +1363,9 @@ def test_overridden_serialization_method_without_signature():
         assert (
             build_json_schema(DataClass).properties["x"] == EmptyJSONSchema()
         )
+    with pytest.warns(
+        UserWarning, match=f"Type Any will be used for {type_name(DataClass)}"
+    ):
         assert (
             build_json_schema(DataClass).properties["y"] == EmptyJSONSchema()
         )
@@ -1488,8 +1798,8 @@ def test_jsonschema_with_custom_instance_format():
             self,
             instance: Instance,
             ctx: Context,
-            schema: Optional[JSONSchema] = None,
-        ) -> Optional[JSONSchema]:
+            schema: JSONSchema | None = None,
+        ) -> JSONSchema | None:
             for annotation in instance.annotations:
                 if isinstance(annotation, JSONSchemaInstanceFormat):
                     schema.format = annotation
@@ -1756,4 +2066,16 @@ def test_jsonschema_annotation_overlay_ignores_structural_keywords():
         ]
     ) == JSONSchema(
         type=JSONSchemaInstanceType.STRING, description="Plain string"
+    )
+
+
+@pytest.mark.skipif(
+    not hasattr(builtins, "frozendict"), reason="requires Python 3.15"
+)
+def test_jsonschema_for_frozendict():
+    frozendict = builtins.frozendict
+
+    assert build_json_schema(frozendict[str, int]) == JSONObjectSchema(
+        additionalProperties=JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+        propertyNames=JSONSchema(type=JSONSchemaInstanceType.STRING),
     )

@@ -293,8 +293,8 @@ def test_local_types():
         def _serialize(self) -> Any:
             return {}
 
-        def __eq__(self, __value: object) -> bool:
-            return isinstance(__value, LocalSerializableType)
+        def __eq__(self, value: object, /) -> bool:
+            return isinstance(value, LocalSerializableType)
 
     class LocalGenericSerializableType(GenericSerializableType):
         @classmethod
@@ -304,8 +304,8 @@ def test_local_types():
         def _serialize(self, types) -> Any:
             return {}
 
-        def __eq__(self, __value: object) -> bool:
-            return isinstance(__value, LocalGenericSerializableType)
+        def __eq__(self, value: object, /) -> bool:
+            return isinstance(value, LocalGenericSerializableType)
 
     class LocalSelfSerializableAnnotatedType(
         SerializableType, use_annotations=True
@@ -317,8 +317,8 @@ def test_local_types():
         def _serialize(self) -> Self:
             return self
 
-        def __eq__(self, __value: object) -> bool:
-            return isinstance(__value, LocalSelfSerializableAnnotatedType)
+        def __eq__(self, value: object, /) -> bool:
+            return isinstance(value, LocalSelfSerializableAnnotatedType)
 
     @dataclass
     class DataClassWithLocalType(DataClassDictMixin):

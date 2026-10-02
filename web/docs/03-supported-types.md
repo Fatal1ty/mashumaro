@@ -173,7 +173,7 @@ Mashumaro supports [`pathlib.Path`](https://docs.python.org/3/library/pathlib.ht
 
 ### Slices
 
-A [`slice`](https://docs.python.org/3/library/functions.html#slice) is serialized as a three-element list `[start, stop, step]`. Each component is an integer or `None`, matching the attributes of the `slice` object. Because the encoded form is a list, a `slice` cannot be used as a mapping key in JSON, TOML, YAML, or MessagePack.
+A [`slice`](https://docs.python.org/3/library/functions.html#slice) is serialized as a three-element list `[start, stop, step]`. Because the encoded form is a list, a `slice` cannot be used as a mapping key in JSON, TOML, YAML, or MessagePack.
 
 ```python
 from dataclasses import dataclass
@@ -191,6 +191,31 @@ assert Window(slice(5)).to_dict() == {"rows": [None, 5, None]}
 assert Window.from_dict({"rows": [1, 10, None]}) == Window(slice(1, 10))
 ```
 
+On Python 3.15+, `slice` is generic. Mashumaro recursively converts each component according to its type argument and follows the type-parameter defaults used by type checkers:
+
+| Annotation | Effective component types |
+|---|---|
+| `slice` | `slice[Any, Any, Any]` |
+| `slice[A]` | `slice[A, A, A]` |
+| `slice[A, B]` | `slice[A, B, A \| B]` |
+| `slice[A, B, C]` | `slice[A, B, C]` |
+
+Other arities are rejected. Each component may also be `None`. A common example is a date range whose step is a `timedelta`:
+
+```python
+from datetime import date, timedelta
+
+from mashumaro.codecs import BasicDecoder, BasicEncoder
+
+
+Slice = slice[date, date, timedelta]
+value = slice(date(2026, 1, 1), date(2026, 1, 3), timedelta(days=1))
+dumped = ["2026-01-01", "2026-01-03", 86400.0]
+
+assert BasicEncoder(Slice).encode(value) == dumped
+assert BasicDecoder(Slice).decode(dumped) == value
+```
+
 ## Collections
 
 Collection contents are converted recursively. Abstract collection annotations deserialize to a useful concrete implementation.
@@ -199,11 +224,12 @@ Collection contents are converted recursively. Abstract collection annotations d
 |---|---|---|
 | `list[T]`, `typing.List[T]` | `list` | `list` |
 | `tuple[...]`, `typing.Tuple[...]` | `list` | `tuple` |
-| `set[T]`, `collections.abc.Set[T]` | `list` | `set` |
+| `set[T]`, `collections.abc.Set[T]`, `collections.abc.MutableSet[T]` | `list` | `set` |
 | `frozenset[T]` | `list` | `frozenset` |
 | `collections.deque[T]` | `list` | `deque` |
 | `Sequence[T]`, `MutableSequence[T]` | `list` | `list` |
 | `dict[K, V]`, `Mapping[K, V]`, `MutableMapping[K, V]` | `dict` | `dict` |
+| `frozendict[K, V]` | `dict` | `frozendict` |
 | `OrderedDict[K, V]` | `dict` | `OrderedDict` |
 | `defaultdict[K, V]` | `dict` | `defaultdict` |
 | `Counter[K]` | `dict` | `Counter` |
@@ -211,6 +237,8 @@ Collection contents are converted recursively. Abstract collection annotations d
 | `types.MappingProxyType[K, V]` | `dict` | Read-only mapping proxy |
 
 Both legacy names from `typing` and [PEP 585](https://peps.python.org/pep-0585/) built-in generic syntax are supported. On supported Python versions, prefer `list[int]` and `dict[str, User]` unless your project needs a compatibility style.
+
+The built-in [`frozendict`](https://docs.python.org/3.15/builtins/stdtypes.html#frozendict) is available on Python 3.15 and newer. Its keys and values are converted recursively like those of other mappings, while deserialization preserves the immutable `frozendict` type.
 
 ### Tuples
 

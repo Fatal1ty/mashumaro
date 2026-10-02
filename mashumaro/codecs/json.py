@@ -1,6 +1,8 @@
 import json
 from collections.abc import Callable
-from typing import Any, Generic, Type, TypeVar, final, overload
+from typing import Any, Generic, TypeVar, final
+
+from typing_extensions import TypeForm
 
 from mashumaro.codecs._builder import CodecCodeBuilder
 from mashumaro.core.meta.helpers import get_args
@@ -11,29 +13,11 @@ EncodedData = str | bytes | bytearray
 
 
 class JSONDecoder(Generic[T]):
-    @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: TypeForm[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
-        pre_decoder_func: Callable[[EncodedData], Any] = json.loads,
-    ): ...
-
-    @overload
-    def __init__(
-        self,
-        shape_type: Any,
-        *,
-        default_dialect: Type[Dialect] | None = None,
-        pre_decoder_func: Callable[[EncodedData], Any] = json.loads,
-    ): ...
-
-    def __init__(
-        self,
-        shape_type: Type[T] | Any,
-        *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         pre_decoder_func: Callable[[EncodedData], Any] = json.loads,
     ):
         code_builder = CodecCodeBuilder.new(
@@ -46,29 +30,11 @@ class JSONDecoder(Generic[T]):
 
 
 class JSONEncoder(Generic[T]):
-    @overload
     def __init__(
         self,
-        shape_type: Type[T],
+        shape_type: TypeForm[T],
         *,
-        default_dialect: Type[Dialect] | None = None,
-        post_encoder_func: Callable[[Any], str] = json.dumps,
-    ): ...
-
-    @overload
-    def __init__(
-        self,
-        shape_type: Any,
-        *,
-        default_dialect: Type[Dialect] | None = None,
-        post_encoder_func: Callable[[Any], str] = json.dumps,
-    ): ...
-
-    def __init__(
-        self,
-        shape_type: Type[T] | Any,
-        *,
-        default_dialect: Type[Dialect] | None = None,
+        default_dialect: type[Dialect] | None = None,
         post_encoder_func: Callable[[Any], str] = json.dumps,
     ):
         code_builder = CodecCodeBuilder.new(
@@ -82,7 +48,7 @@ class JSONEncoder(Generic[T]):
 
 def json_decode(
     data: EncodedData,
-    shape_type: Type[T] | Any,
+    shape_type: TypeForm[T],
     pre_decoder_func: Callable[[EncodedData], Any] = json.loads,
 ) -> T:
     return JSONDecoder(shape_type, pre_decoder_func=pre_decoder_func).decode(
@@ -92,7 +58,7 @@ def json_decode(
 
 def json_encode(
     obj: T,
-    shape_type: Type[T] | Any,
+    shape_type: TypeForm[T],
     post_encoder_func: Callable[[Any], str] = json.dumps,
 ) -> str:
     return JSONEncoder(shape_type, post_encoder_func=post_encoder_func).encode(
@@ -107,8 +73,8 @@ encode = json_encode
 __all__ = [
     "JSONDecoder",
     "JSONEncoder",
-    "json_decode",
-    "json_encode",
     "decode",
     "encode",
+    "json_decode",
+    "json_encode",
 ]

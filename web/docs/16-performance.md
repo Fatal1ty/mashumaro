@@ -64,6 +64,17 @@ Choose based on application startup behavior:
 
 Measure total startup plus first-use cost; import time alone can hide deferred work.
 
+The first lazy call replaces the placeholder method on the class with the
+generated implementation. A method reference captured before that call keeps
+pointing to the placeholder and can repeat the compilation path. Warm the model
+before saving a direct reference, or retain a callable that performs attribute
+lookup at call time:
+
+```python
+from_dict = lambda data: MyModel.from_dict(data)
+to_dict = lambda value: value.to_dict()
+```
+
 ## Choose the format deliberately
 
 The typed conversion stage and the final encoder both contribute to runtime.
@@ -136,9 +147,16 @@ Do not change omission policy only for speed if consumers distinguish missing fr
 
 ## Sorting keys
 
-`sort_keys=True` creates deterministic dictionary order but adds sorting work. Enable it for reproducible snapshots, signatures, or human comparison; leave it off on throughput-sensitive paths that do not require canonical ordering.
+`sort_keys=True` creates deterministic dataclass field order when Mashumaro
+generates the serialization method. It does not sort the output dictionary on
+every call and therefore adds no per-call sorting cost. It also does not sort
+keys inside arbitrary mapping fields.
 
-The final JSON encoder may sort again if configured separately. Avoid paying for both basic-form and encoder sorting unless nested model policy requires it.
+Key sorting provided by a format library is a separate operation, not another
+mashumaro config option. For example, `json.dumps(..., sort_keys=True)` and
+`orjson.dumps(..., option=orjson.OPT_SORT_KEYS)` sort keys at encoding time,
+including keys in arbitrary nested mappings. Use those library-specific options
+only when the final JSON needs deterministically ordered object keys.
 
 ## Measure correctly
 
@@ -153,8 +171,6 @@ A useful benchmark separates:
 - Allocation/peak memory for large collections.
 
 Use representative payloads and a benchmark runner such as [`pyperf`](https://pyperf.readthedocs.io/en/stable/); follow its [guidance for reproducible runs](https://pyperf.readthedocs.io/en/stable/run_benchmark.html) and use enough processes to reduce noise. Compare exact semantics — bytes versus strings, validation strictness, omission, aliases, datetime handling, and unknown keys — before comparing numbers.
-
-The repository benchmark uses real nested models and logarithmic charts. Results are workload- and configuration-dependent, so treat published comparisons as orientation rather than a guarantee for your application.
 
 ## Performance checklist
 

@@ -40,7 +40,7 @@ class A1(Base):
 
 @dataclass
 class A2(Base):
-    a: B2
+    a: B2  # noqa: F821
 
 
 @dataclass
@@ -79,7 +79,7 @@ class A1MessagePack(BaseMessagePack):
 
 @dataclass
 class A2MessagePack(BaseMessagePack):
-    a: B2
+    a: B2  # noqa: F821
 
 
 @dataclass
@@ -119,7 +119,7 @@ def test_postponed_annotation_evaluation():
 def test_unresolved_type_with_allowed_postponed_annotation_evaluation():
     @dataclass
     class DataClass(DataClassDictMixin):
-        x: X
+        x: X  # noqa: F821
 
     with pytest.raises(UnresolvedTypeReferenceError):
         DataClass.from_dict({})
@@ -133,7 +133,7 @@ def test_unresolved_type_with_disallowed_postponed_annotation_evaluation():
 
         @dataclass
         class DataClass(DataClassDictMixin):
-            x: X
+            x: X  # noqa: F821
 
             class Config(BaseConfig):
                 allow_postponed_evaluation = False
@@ -143,7 +143,7 @@ def test_unresolved_type_with_disallowed_postponed_annotation_evaluation():
 
             @dataclass
             class DataClass(DataClassDictMixin):
-                x: X
+                x: X  # noqa: F821
 
                 class Config(BaseConfig):
                     allow_postponed_evaluation = False
@@ -190,7 +190,7 @@ def test_postponed_annotation_evaluation_msgpack():
 def test_unresolved_type_with_allowed_postponed_annotation_evaluation_msgpack():
     @dataclass
     class DataClass(DataClassMessagePackMixin):
-        x: X
+        x: X  # noqa: F821
 
     with pytest.raises(UnresolvedTypeReferenceError):
         DataClass.from_msgpack(b"")

@@ -7,7 +7,6 @@ import warnings
 from base64 import encodebytes
 from collections import ChainMap, Counter, deque
 from collections.abc import (  # type: ignore[attr-defined]
-    ByteString,
     Callable,
     Collection,
     Iterable,
@@ -20,11 +19,12 @@ from decimal import Decimal
 from enum import Enum
 from fractions import Fraction
 from functools import cached_property
-from typing import Any, ForwardRef, Tuple, Type, cast
+from typing import Tuple  # noqa: UP035
+from typing import Any, ForwardRef, TypeAlias
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from typing_extensions import Buffer, NoExtraItems, NotRequired, TypeAlias
+from typing_extensions import Buffer, NoExtraItems, NotRequired
 
 from mashumaro.config import BaseConfig
 from mashumaro.core.const import PY_311_MIN
@@ -33,9 +33,12 @@ from mashumaro.core.meta.helpers import (
     get_args,
     get_function_return_annotation,
     get_literal_values,
+    get_orig_bases,
+    get_slice_type_args,
     get_type_origin,
     get_type_var_default,
     is_annotated,
+    is_bottom_type,
     is_generic,
     is_literal,
     is_named_tuple,
@@ -53,6 +56,8 @@ from mashumaro.core.meta.helpers import (
     is_union,
     is_unpack,
     resolve_type_params,
+    resolve_typed_dict_annotations,
+    substitute_type_params,
     type_name,
     type_var_has_default,
 )
@@ -98,6 +103,15 @@ try:
 except ImportError:  # pragma: no cover
     from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore
 
+if sys.version_info < (3, 15):
+    from collections.abc import ByteString  # noqa: PYI057
+
+    _BASE64_TYPES = (ByteString, bytes, bytearray, memoryview)
+    _BUFFER_ORIGINS = (Buffer, ByteString)
+else:
+    _BASE64_TYPES = (bytes, bytearray, memoryview)
+    _BUFFER_ORIGINS = (Buffer,)
+
 if sys.version_info >= (3, 14):
     from annotationlib import get_annotations
     from typing import evaluate_forward_ref
@@ -110,16 +124,18 @@ UTC_OFFSET_PATTERN = r"^UTC([+-][0-2][0-9]:[0-5][0-9])?$"
 
 @dataclass
 class Instance:
-    type: Type
+    # Derived field annotations can contain Required and NotRequired, which
+    # are annotation qualifiers rather than TypeForm values.
+    type: Any
     name: str | None = None
 
     __owner_builder: CodeBuilder | None = None
     __self_builder: CodeBuilder | None = None
 
     # Original type despite custom serialization. To be revised.
-    _original_type: Type = field(init=False)
+    _original_type: Any = field(init=False)
 
-    origin_type: Type = field(init=False)
+    origin_type: Any = field(init=False)
     annotations: list[Annotation] = field(init=False, default_factory=list)
 
     @cached_property
@@ -158,7 +174,7 @@ class Instance:
         return alias
 
     @property
-    def owner_class(self) -> Type | None:
+    def owner_class(self) -> type | None:
         if self.__owner_builder:
             return self.__owner_builder.cls
         return None
@@ -168,7 +184,9 @@ class Instance:
         if isinstance(new_type, ForwardRef):
             changes["type"] = evaluate_forward_ref(new_type)
         new_instance = replace(self, **changes)
-        if is_dataclass(self.origin_type):
+        if isinstance(self.origin_type, type) and is_dataclass(
+            self.origin_type
+        ):
             new_instance.__owner_builder = self.__self_builder
             new_instance.update_type(new_instance.type)
         return new_instance
@@ -181,20 +199,22 @@ class Instance:
             self.type = get_args(self.type)[0]
             self.origin_type = get_type_origin(self.type)
 
-    def update_type(self, new_type: Type) -> None:
+    def update_type(self, new_type: Any) -> None:
         if self.__owner_builder:
             self.type = self.__owner_builder.get_real_type(
                 field_name=self.name, field_type=new_type  # type: ignore
             )
         self.origin_type = get_type_origin(self.type)
-        if is_dataclass(self.origin_type):
+        if isinstance(self.origin_type, type) and is_dataclass(
+            self.origin_type
+        ):
             type_args = get_args(self.type)
             self.__self_builder = CodeBuilder(self.origin_type, type_args)
             self.__self_builder.reset()
         else:
             self.__self_builder = None
 
-    def fields(self) -> Iterable[tuple[str, Type, bool, Any]]:
+    def fields(self) -> Iterable[tuple[str, Any, bool, Any]]:
         for f_name, f_type in self._self_builder.get_field_types(
             include_extras=True
         ).items():
@@ -236,7 +256,7 @@ class Instance:
                 return serialize_option
         return None
 
-    def get_owner_config(self) -> Type[BaseConfig]:
+    def get_owner_config(self) -> type[BaseConfig]:
         if self.__owner_builder:
             return self.__owner_builder.get_config()
         else:
@@ -252,7 +272,7 @@ class Instance:
         else:
             return default
 
-    def get_self_config(self) -> Type[BaseConfig]:
+    def get_self_config(self) -> type[BaseConfig]:
         if self.__self_builder:
             return self.__self_builder.get_config()
         else:
@@ -321,7 +341,7 @@ def apply_schema_annotations(
     for annotation in instance.annotations:
         if isinstance(annotation, JSONSchema):
             annotation_dict = replace(annotation).to_dict()
-            for key in annotation_dict.keys():
+            for key in annotation_dict:
                 if key in ("$schema", "$ref", "$defs"):
                     continue
                 if key in ("const", "default"):
@@ -332,9 +352,7 @@ def apply_schema_annotations(
     return schema
 
 
-def _default(
-    f_type: Type | None, f_value: Any, config_cls: Type[BaseConfig]
-) -> Any:
+def _default(f_type: Any, f_value: Any, config_cls: type[BaseConfig]) -> Any:
     @dataclass
     class CC(DataClassJSONMixin):
         x: f_type = f_value  # type: ignore
@@ -389,14 +407,16 @@ def on_type_with_overridden_serialization(
                 return None
             else:
                 instance.update_type(new_type)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             override_with_any(e)
         return get_schema(instance, ctx)
 
 
 @register
 def on_dataclass(instance: Instance, ctx: Context) -> JSONSchema | None:
-    if is_dataclass(instance.origin_type):
+    if isinstance(instance.origin_type, type) and is_dataclass(
+        instance.origin_type
+    ):
         # When dataclasses reference themselves (typing.Self) or each other,
         # we must break infinite recursion by forcing $ref/$defs.
         origin = instance.origin_type
@@ -504,7 +524,7 @@ def on_special_typing_primitive(
             return get_schema(
                 instance.derive(type=get_type_var_default(instance.type)), ctx
             )
-        constraints = getattr(instance.type, "__constraints__")
+        constraints = instance.type.__constraints__
         if constraints:
             return JSONSchema(
                 anyOf=[
@@ -513,7 +533,7 @@ def on_special_typing_primitive(
                 ]
             )
         else:
-            bound = getattr(instance.type, "__bound__")
+            bound = instance.type.__bound__
             return get_schema(instance.derive(type=bound), ctx)
     elif is_new_type(instance.type):
         return get_schema(
@@ -645,16 +665,19 @@ def on_timezone(instance: Instance, ctx: Context) -> JSONSchema | None:
 @register
 def on_slice(instance: Instance, ctx: Context) -> JSONSchema | None:
     if instance.origin_type is slice:
-        int_or_null = JSONSchema(
-            anyOf=[
-                JSONSchema(type=JSONSchemaInstanceType.INTEGER),
-                JSONSchema(type=JSONSchemaInstanceType.NULL),
-            ]
-        )
+        component_schemas: list[JSONSchema] = []
+        for type_arg in get_slice_type_args(instance.type):
+            component_schema: JSONSchema
+            if type_arg is Any:
+                component_schema = EmptyJSONSchema()
+            else:
+                nullable_type = type_arg | None
+                component_schema = get_schema(
+                    instance.derive(type=nullable_type), ctx
+                )
+            component_schemas.append(component_schema)
         return JSONArraySchema(
-            prefixItems=[int_or_null, int_or_null, int_or_null],
-            minItems=3,
-            maxItems=3,
+            prefixItems=component_schemas, minItems=3, maxItems=3
         )
 
 
@@ -713,7 +736,7 @@ def on_fraction(instance: Instance, ctx: Context) -> JSONSchema | None:
 def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
     args = get_args(instance.type)
     if not args:
-        if instance.type in (Tuple, tuple):
+        if instance.type in (Tuple, tuple):  # noqa: UP006
             args = [Any, ...]  # type: ignore
         else:
             return JSONArraySchema(maxItems=0)
@@ -803,31 +826,58 @@ def on_named_tuple(instance: Instance, ctx: Context) -> JSONSchema:
         )
 
 
+def _resolve_typed_dict_openness(
+    typ: Any, resolved_type_params: dict[Any, dict[Any, Any]] | None = None
+) -> tuple[bool | None, Any]:
+    origin = get_type_origin(typ)
+    if resolved_type_params is None:
+        resolved_type_params = resolve_type_params(origin, get_args(typ))
+    resolved = resolved_type_params[origin]
+    # `closed` and `extra_items` are mutually exclusive within the same
+    # TypedDict definition.
+    if (is_closed := getattr(origin, "__closed__", None)) is not None:
+        return is_closed, NoExtraItems
+    extra_items = getattr(origin, "__extra_items__", NoExtraItems)
+    if extra_items is not NoExtraItems:
+        return None, substitute_type_params(extra_items, resolved)
+
+    inherited_closed: bool | None = None
+    inherited_extra_items: Any = NoExtraItems
+    for orig_base in get_orig_bases(origin):
+        base = get_type_origin(orig_base)
+        if is_typed_dict(base):
+            base_closed, base_extra_items = _resolve_typed_dict_openness(
+                base, resolved_type_params
+            )
+            # An open base does not constrain a subclass. For valid multiple
+            # inheritance, a later restricted base is compatible with or
+            # narrows the effective openness of the preceding bases.
+            if base_closed is False:
+                if (
+                    inherited_closed is None
+                    and inherited_extra_items is NoExtraItems
+                ):
+                    inherited_closed = False
+            elif base_closed is True or base_extra_items is not NoExtraItems:
+                inherited_closed = base_closed
+                inherited_extra_items = base_extra_items
+    return inherited_closed, inherited_extra_items
+
+
 def on_typed_dict(instance: Instance, ctx: Context) -> JSONObjectSchema:
-    resolved = resolve_type_params(
-        instance.origin_type, get_args(instance.type)
-    )[instance.origin_type]
-    annotations = {
-        k: resolved.get(v, v)
-        for k, v in get_annotations(
-            instance.origin_type, eval_str=True
-        ).items()
-    }
+    annotations = resolve_typed_dict_annotations(instance.type)
     all_keys = list(annotations.keys())
-    required_keys = set(getattr(instance.type, "__required_keys__", all_keys))
+    required_keys = set(
+        getattr(instance.origin_type, "__required_keys__", all_keys)
+    )
 
     # PEP 728
-    additional_properties: JSONSchema | bool
-    if (is_closed := getattr(instance.type, "__closed__", None)) is not None:
+    additional_properties: JSONSchema | bool = False
+    is_closed, extra_items = _resolve_typed_dict_openness(instance.type)
+    if is_closed is not None:
         additional_properties = not is_closed
-    elif (
-        extra_items := getattr(instance.type, "__extra_items__", NoExtraItems)
-    ) is not NoExtraItems:
-        additional_properties = get_schema(
-            Instance(cast(Type, extra_items)), ctx=ctx
-        )
-    else:
-        additional_properties = False
+    elif extra_items is not NoExtraItems and not is_bottom_type(extra_items):
+        additional_properties = get_schema(Instance(extra_items), ctx=ctx)
 
     # workaround for https://github.com/python/cpython/issues/97727
     for key, annotation in annotations.items():
@@ -890,16 +940,14 @@ def apply_object_constraints(
 
 @register
 def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
-    if not issubclass(instance.origin_type, Collection):
+    if not issubclass(instance.origin_type, Collection):  # noqa: SIM114
         return None
     elif issubclass(instance.origin_type, Enum):
         return None
 
     args = get_args(instance.type)
 
-    if issubclass(
-        instance.origin_type, (ByteString, bytes, bytearray, memoryview)
-    ):
+    if issubclass(instance.origin_type, _BASE64_TYPES):
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,
@@ -1012,7 +1060,7 @@ def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
 
 @register
 def on_buffer(instance: Instance, ctx: Context) -> JSONSchema | None:
-    if instance.origin_type in (Buffer, ByteString):
+    if instance.origin_type in _BUFFER_ORIGINS:
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,

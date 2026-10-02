@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 import pytest
 
@@ -64,7 +64,7 @@ def test_dataclass_with_pass_through():
             metadata=field_options(serialization_strategy=pass_through)
         )
 
-    x = datetime.now()
+    x = datetime.now(tz=timezone.utc)
     y = x.date()
     instance = DataClass(x, y)
     assert instance.to_dict() == {"x": x, "y": y}

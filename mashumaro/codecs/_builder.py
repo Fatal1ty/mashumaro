@@ -1,6 +1,8 @@
 import re
 from collections.abc import Callable
-from typing import Any, Type
+from typing import Any
+
+from typing_extensions import TypeForm
 
 from mashumaro.core.meta.code.builder import CodeBuilder
 from mashumaro.core.meta.helpers import is_optional, is_type_var_any
@@ -24,7 +26,7 @@ class CodecCodeBuilder(CodeBuilder):
 
     def add_decode_method(
         self,
-        shape_type: Type,
+        shape_type: TypeForm,
         decoder_obj: Any,
         pre_decoder_func: Callable[[Any], Any] | None = None,
     ) -> None:
@@ -63,7 +65,7 @@ class CodecCodeBuilder(CodeBuilder):
 
     def add_encode_method(
         self,
-        shape_type: Type,
+        shape_type: TypeForm,
         encoder_obj: Any,
         post_encoder_func: Callable[[Any], Any] | None = None,
     ) -> None:

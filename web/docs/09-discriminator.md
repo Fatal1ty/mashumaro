@@ -73,6 +73,10 @@ assert isinstance(batch.events[1], Disconnected)
 
 The tag can come from a class attribute or a field declared with [`ClassVar`](https://docs.python.org/3/library/typing.html#typing.ClassVar), [`Final`](https://docs.python.org/3/library/typing.html#typing.Final), [`Literal`](https://docs.python.org/3/library/typing.html#typing.Literal), or a string enum. `Literal` and [`StrEnum`](https://docs.python.org/3/library/enum.html#enum.StrEnum) fields are especially convenient because the tag is also naturally included in serialization.
 
+By default, only `Final`, `Literal`, and `StrEnum` tag fields are processed
+during serialization. An unannotated class attribute or `ClassVar` can select
+a variant during deserialization, but it is not emitted as a serialized field.
+
 > [!IMPORTANT]
 > The discriminator attribute is looked up in each descendant's own class namespace rather than inherited. A descendant that does not define it is skipped as a tagged variant, but its descendants are still considered independently and remain eligible if they define the attribute themselves. This prevents an inherited tag from accidentally identifying multiple variants.
 

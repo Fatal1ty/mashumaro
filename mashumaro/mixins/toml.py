@@ -1,8 +1,10 @@
 from collections.abc import Callable
 from datetime import date, datetime, time
-from typing import Any, Type, TypeVar, final
+from types import MappingProxyType
+from typing import Any, final
 
 import tomli_w
+from typing_extensions import Self
 
 from mashumaro.dialect import Dialect
 from mashumaro.helper import pass_through
@@ -13,8 +15,6 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore
 
-T = TypeVar("T", bound="DataClassTOMLMixin")
-
 
 EncodedData = str
 Encoder = Callable[[Any], EncodedData]
@@ -24,39 +24,39 @@ Decoder = Callable[[EncodedData], dict[Any, Any]]
 class TOMLDialect(Dialect):
     no_copy_collections = (list, dict)
     omit_none = True
-    serialization_strategy = {
-        datetime: pass_through,
-        date: pass_through,
-        time: pass_through,
-    }
+    serialization_strategy = MappingProxyType(
+        {datetime: pass_through, date: pass_through, time: pass_through}
+    )
 
 
 class DataClassTOMLMixin(DataClassDictMixin):
     __slots__ = ()
 
-    __mashumaro_builder_params = {
-        "packer": {
-            "format_name": "toml",
-            "dialect": TOMLDialect,
-            "encoder": tomli_w.dumps,
-        },
-        "unpacker": {
-            "format_name": "toml",
-            "dialect": TOMLDialect,
-            "decoder": tomllib.loads,
-        },
-    }
+    __mashumaro_builder_params = MappingProxyType(
+        {
+            "packer": {
+                "format_name": "toml",
+                "dialect": TOMLDialect,
+                "encoder": tomli_w.dumps,
+            },
+            "unpacker": {
+                "format_name": "toml",
+                "dialect": TOMLDialect,
+                "decoder": tomllib.loads,
+            },
+        }
+    )
 
     @final
     def to_toml(
-        self: T, encoder: Encoder = tomli_w.dumps, **to_dict_kwargs: Any
+        self, encoder: Encoder = tomli_w.dumps, **to_dict_kwargs: Any
     ) -> EncodedData: ...
 
     @classmethod
     @final
     def from_toml(
-        cls: Type[T],
+        cls,
         data: EncodedData,
         decoder: Decoder = tomllib.loads,
         **from_dict_kwargs: Any,
-    ) -> T: ...
+    ) -> Self: ...

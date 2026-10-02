@@ -306,6 +306,11 @@ class Config(BaseConfig):
 
 This can reduce import time in applications that define many models but use only a subset. The first call pays the compilation cost; subsequent calls use the generated method.
 
+References captured before the first call need extra care because they keep
+pointing to the lazy placeholder after the generated method is installed on
+the class. See [Eager versus lazy mixins](#/docs/performance#eager-versus-lazy-mixins)
+for safe ways to retain a callable.
+
 ### `sort_keys`
 
 Sort keys in each generated dictionary:
@@ -315,7 +320,11 @@ class Config(BaseConfig):
     sort_keys = True
 ```
 
-This makes basic output deterministic and propagates to nested dataclasses according to their own config. JSON encoders may also have a separate sort option; basic sorting happens before the format encoder.
+This fixes the generated field order when the serialization method is compiled,
+so it does not sort the output dictionary on every call. Nested dataclasses use
+their own config. Separately from mashumaro, a format library may sort arbitrary
+mapping keys at runtime; for example, `json.dumps(..., sort_keys=True)` and
+`orjson.OPT_SORT_KEYS` are independent of this option.
 
 ## Strict input with `forbid_extra_keys`
 

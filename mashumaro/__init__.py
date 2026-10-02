@@ -3,8 +3,8 @@ from mashumaro.helper import field_options, pass_through
 from mashumaro.mixins.dict import DataClassDictMixin
 
 __all__ = [
-    "MissingField",
     "DataClassDictMixin",
+    "MissingField",
     "field_options",
     "pass_through",
 ]

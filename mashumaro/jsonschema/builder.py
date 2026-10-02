@@ -1,6 +1,8 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Type
+from typing import Any
+
+from typing_extensions import TypeForm
 
 from mashumaro.jsonschema.dialects import DRAFT_2020_12, JSONSchemaDialect
 from mashumaro.jsonschema.models import Context, JSONSchema
@@ -16,7 +18,7 @@ except ImportError:  # pragma: no cover
 
 
 def build_json_schema(
-    instance_type: Type | Any,
+    instance_type: TypeForm,
     context: Context | None = None,
     with_definitions: bool = True,
     all_refs: bool | None = None,
@@ -83,7 +85,7 @@ class JSONSchemaBuilder:
             plugins=plugins,
         )
 
-    def build(self, instance_type: Type) -> JSONSchema:
+    def build(self, instance_type: TypeForm) -> JSONSchema:
         return build_json_schema(
             instance_type=instance_type,
             context=self.context,

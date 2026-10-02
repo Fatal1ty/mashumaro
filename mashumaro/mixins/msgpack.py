@@ -1,15 +1,13 @@
 from collections.abc import Callable
-from typing import Any, Type, TypeVar, final
+from types import MappingProxyType
+from typing import Any, final
 
 import msgpack
-from typing_extensions import Buffer
+from typing_extensions import Buffer, Self
 
 from mashumaro.dialect import Dialect
 from mashumaro.helper import pass_through
 from mashumaro.mixins.dict import DataClassDictMixin
-
-T = TypeVar("T", bound="DataClassMessagePackMixin")
-
 
 EncodedData = bytes
 Encoder = Callable[[Any], EncodedData]
@@ -18,12 +16,14 @@ Decoder = Callable[[EncodedData], dict[Any, Any]]
 
 class MessagePackDialect(Dialect):
     no_copy_collections = (list, dict)
-    serialization_strategy = {
-        Buffer: pass_through,
-        bytes: pass_through,
-        bytearray: {"deserialize": bytearray, "serialize": pass_through},
-        memoryview: {"deserialize": memoryview, "serialize": pass_through},
-    }
+    serialization_strategy = MappingProxyType(
+        {
+            Buffer: pass_through,
+            bytes: pass_through,
+            bytearray: {"deserialize": bytearray, "serialize": pass_through},
+            memoryview: {"deserialize": memoryview, "serialize": pass_through},
+        }
+    )
 
 
 def default_encoder(data: Any) -> EncodedData:
@@ -37,29 +37,31 @@ def default_decoder(data: EncodedData) -> dict[Any, Any]:
 class DataClassMessagePackMixin(DataClassDictMixin):
     __slots__ = ()
 
-    __mashumaro_builder_params = {
-        "packer": {
-            "format_name": "msgpack",
-            "dialect": MessagePackDialect,
-            "encoder": default_encoder,
-        },
-        "unpacker": {
-            "format_name": "msgpack",
-            "dialect": MessagePackDialect,
-            "decoder": default_decoder,
-        },
-    }
+    __mashumaro_builder_params = MappingProxyType(
+        {
+            "packer": {
+                "format_name": "msgpack",
+                "dialect": MessagePackDialect,
+                "encoder": default_encoder,
+            },
+            "unpacker": {
+                "format_name": "msgpack",
+                "dialect": MessagePackDialect,
+                "decoder": default_decoder,
+            },
+        }
+    )
 
     @final
     def to_msgpack(
-        self: T, encoder: Encoder = default_encoder, **to_dict_kwargs: Any
+        self, encoder: Encoder = default_encoder, **to_dict_kwargs: Any
     ) -> EncodedData: ...
 
     @classmethod
     @final
     def from_msgpack(
-        cls: Type[T],
+        cls,
         data: EncodedData,
         decoder: Decoder = default_decoder,
         **from_dict_kwargs: Any,
-    ) -> T: ...
+    ) -> Self: ...

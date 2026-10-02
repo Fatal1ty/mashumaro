@@ -26,6 +26,7 @@ from mashumaro.core.meta.helpers import (
     get_type_var_default,
     hash_type_args,
     is_annotated,
+    is_bottom_type,
     is_dataclass_dict_mixin,
     is_dataclass_dict_mixin_subclass,
     is_dialect_subclass,
@@ -42,6 +43,7 @@ from mashumaro.core.meta.helpers import (
     is_union,
     not_none_type_arg,
     resolve_type_params,
+    resolve_typed_dict_annotations,
     substitute_type_params,
     type_name,
     type_var_has_default,
@@ -85,6 +87,49 @@ TMyDataClass = typing.TypeVar("TMyDataClass", bound=MyDataClass)
 def test_is_init_var():
     assert is_init_var(InitVar[int])
     assert not is_init_var(int)
+
+
+@pytest.mark.parametrize(
+    "typ",
+    [
+        typing_extensions.Never,
+        typing.NoReturn,
+        typing_extensions.ReadOnly[typing_extensions.Never],
+        typing_extensions.Annotated[typing_extensions.Never, 42],
+        typing_extensions.ReadOnly[
+            typing_extensions.Annotated[typing_extensions.Never, 42]
+        ],
+        typing_extensions.Annotated[
+            typing_extensions.ReadOnly[typing_extensions.Never], 42
+        ],
+    ],
+)
+def test_is_bottom_type(typ):
+    assert is_bottom_type(typ)
+
+
+@pytest.mark.parametrize(
+    "typ",
+    [
+        int,
+        list[typing_extensions.Never],
+        typing_extensions.Annotated[list[typing_extensions.Never], 42],
+        typing_extensions.ReadOnly[int],
+    ],
+)
+def test_is_not_bottom_type(typ):
+    assert not is_bottom_type(typ)
+
+
+def test_is_bottom_type_alias():
+    if type_alias_type := getattr(typing, "TypeAliasType", None):
+        bottom_alias = type_alias_type(
+            "BottomAlias",
+            typing_extensions.Annotated[
+                typing_extensions.ReadOnly[typing_extensions.Never], 42
+            ],
+        )
+        assert is_bottom_type(bottom_alias)
 
 
 def test_no_code_builder(mocker):
@@ -409,6 +454,57 @@ def test_resolve_type_params():
     assert resolved[B] == {}
 
 
+def test_resolve_type_params_for_typed_dict():
+    type_var = typing.TypeVar("type_var")
+
+    class A(typing_extensions.TypedDict, typing.Generic[type_var]):
+        x: type_var
+
+    class B(A[list[type_var]], typing.Generic[type_var]):
+        pass
+
+    class C(B[str]):
+        pass
+
+    resolved = resolve_type_params(C)
+    assert resolved[C] == {}
+    assert resolved[B] == {type_var: str}
+    assert resolved[A] == {type_var: list[str]}
+
+
+def test_resolve_typed_dict_annotations():
+    type_var = typing.TypeVar("type_var")
+    other_type_var = typing.TypeVar("other_type_var")
+
+    class Base(typing_extensions.TypedDict, typing.Generic[type_var]):
+        inherited: type_var
+
+    class Intermediate(Base[list[type_var]], typing.Generic[type_var]):
+        own: type_var
+
+    class Child(Intermediate[str]):
+        pass
+
+    class OtherBase(
+        typing_extensions.TypedDict, typing.Generic[other_type_var]
+    ):
+        other: other_type_var
+
+    class Combined(Child, OtherBase[int]):
+        pass
+
+    assert resolve_typed_dict_annotations(Base[int]) == {"inherited": int}
+    assert resolve_typed_dict_annotations(Child) == {
+        "inherited": list[str],
+        "own": str,
+    }
+    assert resolve_typed_dict_annotations(Combined) == {
+        "inherited": list[str],
+        "own": str,
+        "other": int,
+    }
+
+
 def test_get_generic_name():
     assert get_generic_name(typing.List[int]) == "typing.List"
     assert get_generic_name(typing.List[int], short=True) == "List"
@@ -515,7 +611,7 @@ def test_is_literal():
 def test_get_literal_values():
     assert get_literal_values(typing_extensions.Literal[1, 2, 3]) == (1, 2, 3)
     assert get_literal_values(
-        typing_extensions.Literal[
+        typing_extensions.Literal[  # noqa: RUF041
             1, typing_extensions.Literal[typing_extensions.Literal[2], 3]
         ]
     ) == (1, 2, 3)
@@ -523,7 +619,7 @@ def test_get_literal_values():
 
 def test_type_name_literal():
     assert type_name(
-        getattr(typing, "Literal")[
+        typing.Literal[
             1,
             "a",
             b"\x00",
@@ -537,10 +633,12 @@ def test_type_name_literal():
             MyFlag.a,
             MyIntFlag.a,
             typing_extensions.Literal[2, 3],
-            typing_extensions.Literal[typing_extensions.Literal["b", "c"]],
+            typing_extensions.Literal[  # noqa: RUF041
+                typing_extensions.Literal["b", "c"]
+            ],
         ]
     ) == (
-        f"typing.Literal[1, 'a', b'\\x00', True, False, None, "
+        "typing.Literal[1, 'a', b'\\x00', True, False, None, "
         "tests.entities.MyEnum.a, tests.entities.MyStrEnum.a, "
         "tests.entities.MyNativeStrEnum.a, tests.entities.MyIntEnum.a, "
         "tests.entities.MyFlag.a, tests.entities.MyIntFlag.a, 2, 3, 'b', 'c']"

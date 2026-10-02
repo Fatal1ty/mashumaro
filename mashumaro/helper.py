@@ -1,7 +1,5 @@
 from collections.abc import Callable, Sequence
-from typing import Any, TypeVar
-
-from typing_extensions import Literal
+from typing import Any, Literal, TypeVar
 
 from mashumaro.types import SerializationStrategy
 

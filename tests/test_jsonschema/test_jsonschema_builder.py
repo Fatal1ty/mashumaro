@@ -51,7 +51,7 @@ def test_jsonschema_json_simple():
 def test_jsonschema_json_literal_none():
     @dataclass
     class DataClass:
-        x: Literal[None] = None
+        x: Literal[None] = None  # noqa: PYI061
 
     assert json.loads(build_json_schema(DataClass).to_json()) == {
         "type": "object",

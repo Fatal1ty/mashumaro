@@ -1,3 +1,4 @@
+import builtins
 import collections
 import collections.abc
 import datetime
@@ -26,10 +27,11 @@ from dataclasses import fields as dataclass_fields
 from dataclasses import is_dataclass
 from decimal import Decimal
 from fractions import Fraction
-from typing import Any, ForwardRef, Tuple
+from typing import Tuple  # noqa: UP035
+from typing import Any, ForwardRef
 
 import typing_extensions
-from typing_extensions import Buffer, NotRequired
+from typing_extensions import Buffer, NotRequired, TypeForm
 
 from mashumaro.core.const import PY_311_MIN
 from mashumaro.core.helpers import parse_timezone
@@ -39,6 +41,7 @@ from mashumaro.core.meta.helpers import (
     get_class_that_defines_method,
     get_function_arg_annotation,
     get_literal_values,
+    get_slice_type_args,
     get_type_origin,
     get_type_var_default,
     is_final,
@@ -63,6 +66,7 @@ from mashumaro.core.meta.helpers import (
     not_none_type_arg,
     resolve_type_alias_type,
     resolve_type_params,
+    resolve_typed_dict_annotations,
     substitute_type_params,
     type_name,
     type_var_has_default,
@@ -113,7 +117,10 @@ except ImportError:  # pragma: no cover
     pendulum: types.ModuleType | None = None  # type: ignore
 
 
-__all__ = ["UnpackerRegistry", "SubtypeUnpackerBuilder"]
+_FROZENDICT_TYPE = getattr(builtins, "frozendict", None)
+
+
+__all__ = ["SubtypeUnpackerBuilder", "UnpackerRegistry"]
 
 
 UnpackerRegistry = Registry()
@@ -172,7 +179,7 @@ class AbstractUnpackerBuilder(AbstractMethodBuilder, ABC):
 
 
 class UnionUnpackerBuilder(AbstractUnpackerBuilder):
-    def __init__(self, args: tuple[type, ...]):
+    def __init__(self, args: tuple[TypeForm, ...]):
         self.union_args = args
         self.method_name: str | None = None
 
@@ -306,7 +313,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         base_variants: tuple[type, ...] | None = None,
     ):
         self.discriminator = discriminator
-        self.base_variants = base_variants or tuple()
+        self.base_variants = base_variants or ()
         self._variants_attr: str | None = None
         self._unpackers_attr: str | None = None
 
@@ -558,7 +565,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             lines.append(
                 "CodeBuilder(variant, "
                 "dialect=_dialect, "
-                f"format_name={repr(spec.builder.format_name)}, "
+                f"format_name={spec.builder.format_name!r}, "
                 "default_dialect=_default_dialect,"
                 f"attrs={attrs},"
                 f"attrs_registry={spec.attrs_registry_name})"
@@ -579,7 +586,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             lines.append(
                 "CodeBuilder(variant, "
                 "dialect=_dialect, "
-                f"format_name={repr(spec.builder.format_name)}, "
+                f"format_name={spec.builder.format_name!r}, "
                 "default_dialect=_default_dialect)"
                 ".add_unpack_method()"
             )
@@ -680,7 +687,7 @@ def _unpack_with_annotated_serialization_strategy(
 ) -> Expression:
     strategy_type = type(strategy)
     try:
-        value_type: type | Any = get_function_arg_annotation(
+        value_type: Any = get_function_arg_annotation(
             strategy.deserialize, arg_pos=0
         )
     except (KeyError, ValueError):
@@ -815,7 +822,7 @@ def unpack_generic_serializable_type(spec: ValueSpec) -> Expression | None:
 
 @register
 def unpack_dataclass(spec: ValueSpec) -> Expression | None:
-    if is_dataclass(spec.origin_type):
+    if isinstance(spec.origin_type, type) and is_dataclass(spec.origin_type):
         for annotation in spec.annotations:
             if isinstance(annotation, Discriminator):
                 return DiscriminatedUnionUnpackerBuilder(annotation).build(
@@ -919,11 +926,11 @@ def unpack_special_typing_primitive(spec: ValueSpec) -> Expression | None:
                     spec.copy(type=get_type_var_default(spec.type))
                 )
                 return expr_or_maybe_none(spec, uv)
-            constraints = getattr(spec.type, "__constraints__")
+            constraints = spec.type.__constraints__
             if constraints:
                 return TypeVarUnpackerBuilder(constraints).build(spec)
             else:
-                bound = getattr(spec.type, "__bound__")
+                bound = spec.type.__bound__
                 # act as if it was Optional[bound]
                 uv = UnpackerRegistry.get(spec.copy(type=bound))
                 return expr_or_maybe_none(spec, uv)
@@ -1098,7 +1105,15 @@ def unpack_timezone(spec: ValueSpec) -> Expression | None:
 @register
 def unpack_slice(spec: ValueSpec) -> Expression | None:
     if spec.origin_type is slice:
-        return f"slice(*{spec.expression})"
+        unpackers = []
+        for index, type_arg in enumerate(get_slice_type_args(spec.type)):
+            expression = f"{spec.expression}[{index}]"
+            component_spec = spec.copy(
+                type=type_arg, expression=expression, could_be_none=True
+            )
+            unpacker = UnpackerRegistry.get(component_spec)
+            unpackers.append(expr_or_maybe_none(component_spec, unpacker))
+        return f"slice({', '.join(unpackers)})"
 
 
 @register
@@ -1148,7 +1163,7 @@ def unpack_fraction(spec: ValueSpec) -> Expression | None:
 
 def unpack_tuple(spec: ValueSpec, args: tuple[type, ...]) -> Expression:
     if not args:
-        if spec.type in (Tuple, tuple):
+        if spec.type in (Tuple, tuple):  # noqa: UP006
             args = [Any, ...]  # type: ignore
         else:
             return "()"
@@ -1303,16 +1318,12 @@ def unpack_named_tuple(spec: ValueSpec) -> Expression:
 
 
 def unpack_typed_dict(spec: ValueSpec) -> Expression:
-    resolved = resolve_type_params(spec.origin_type, get_args(spec.type))[
-        spec.origin_type
-    ]
-    annotations = {
-        k: resolved.get(v, v)
-        for k, v in get_annotations(spec.origin_type, eval_str=True).items()
-    }
+    annotations = resolve_typed_dict_annotations(spec.type)
     all_keys = list(annotations.keys())
-    required_keys = set(getattr(spec.type, "__required_keys__", all_keys))
-    optional_keys = set(getattr(spec.type, "__optional_keys__", []))
+    required_keys = set(
+        getattr(spec.origin_type, "__required_keys__", all_keys)
+    )
+    optional_keys = set(getattr(spec.origin_type, "__optional_keys__", []))
 
     # workaround for https://github.com/python/cpython/issues/97727
     for key, annotation in annotations.items():
@@ -1378,7 +1389,7 @@ def unpack_typed_dict(spec: ValueSpec) -> Expression:
 
 @register
 def unpack_collection(spec: ValueSpec) -> Expression | None:
-    if not issubclass(spec.origin_type, Collection):
+    if not issubclass(spec.origin_type, Collection):  # noqa: SIM114
         return None
     elif issubclass(spec.origin_type, enum.Enum):
         return None
@@ -1468,6 +1479,13 @@ def unpack_collection(spec: ValueSpec) -> Expression | None:
         return (
             f'types.MappingProxyType({{{inner_expr(0, "key")}: {inner_expr(1)}'
             f" for key, value in {spec.expression}.items()}})"
+        )
+    elif _FROZENDICT_TYPE is not None and ensure_generic_mapping(
+        spec, args, _FROZENDICT_TYPE
+    ):
+        return (
+            f'frozendict({{{inner_expr(0, "key")}: {inner_expr(1)} '
+            f"for key, value in {spec.expression}.items()}})"
         )
     elif ensure_generic_mapping(spec, args, Mapping):
         return (

@@ -5,6 +5,7 @@ from typing import Generic, List, Optional, TypeVar, Union
 import pytest
 from typing_extensions import Literal
 
+from mashumaro import pass_through
 from mashumaro.codecs import BasicDecoder, BasicEncoder
 from mashumaro.codecs.basic import decode, encode
 from mashumaro.dialect import Dialect
@@ -154,6 +155,14 @@ def test_encoder_with_default_dialect():
         738785,
         738786,
     ]
+
+
+def test_encoder_with_non_class_union_arg_and_pass_through():
+    class LiteralDialect(Dialect):
+        serialization_strategy = {Literal[42]: pass_through}
+
+    encoder = BasicEncoder(Literal[42] | int, default_dialect=LiteralDialect)
+    assert encoder.encode(42) == 42
 
 
 def test_pre_decoder_func():

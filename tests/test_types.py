@@ -119,8 +119,8 @@ class MyMapping(Mapping[XT, YT], SerializableType, use_annotations=True):
     def _deserialize(cls, mapping: Mapping[XT, YT]):
         return cls(mapping)
 
-    def __getitem__(self, __k: XT) -> YT:
-        return self.value[__k]
+    def __getitem__(self, k: XT, /) -> YT:
+        return self.value[k]
 
     def __len__(self) -> int:  # pragma: no cover
         return len(self.value)
@@ -129,7 +129,7 @@ class MyMapping(Mapping[XT, YT], SerializableType, use_annotations=True):
         return iter(self.value)
 
     def __repr__(self):  # pragma: no cover
-        return f"<MyMapping: {repr(self.value)}>"
+        return f"<MyMapping: {self.value!r}>"
 
 
 class MyAnnotatedUserGenericSerializableType(
@@ -146,7 +146,7 @@ class MyAnnotatedUserGenericSerializableType(
         return cls(value)
 
     def __repr__(self):  # pragma: no cover
-        return f"<MyAnnotatedUserGenericSerializableType: {repr(self.value)}>"
+        return f"<MyAnnotatedUserGenericSerializableType: {self.value!r}>"
 
 
 class MySelfSerializableType(SerializableType, use_annotations=True):

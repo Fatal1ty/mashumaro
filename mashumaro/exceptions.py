@@ -1,10 +1,12 @@
-from typing import Any, Type
+from typing import Any
+
+from typing_extensions import TypeForm
 
 from mashumaro.core.meta.helpers import type_name
 
 
 class MissingField(LookupError):
-    def __init__(self, field_name: str, field_type: Type, holder_class: Type):
+    def __init__(self, field_name: str, field_type: Any, holder_class: type):
         self.field_name = field_name
         self.field_type = field_type
         self.holder_class = holder_class
@@ -25,7 +27,7 @@ class MissingField(LookupError):
 
 
 class ExtraKeysError(ValueError):
-    def __init__(self, extra_keys: set[str], target_type: Type):
+    def __init__(self, extra_keys: set[str], target_type: type):
         self.extra_keys = extra_keys
         self.target_type = target_type
 
@@ -49,8 +51,8 @@ class UnserializableField(UnserializableDataError):
     def __init__(
         self,
         field_name: str,
-        field_type: Type,
-        holder_class: Type,
+        field_type: Any,
+        holder_class: type,
         msg: str | None = None,
     ):
         self.field_name = field_name
@@ -78,13 +80,9 @@ class UnserializableField(UnserializableDataError):
 
 class UnsupportedSerializationEngine(UnserializableField):
     def __init__(
-        self,
-        field_name: str,
-        field_type: Type,
-        holder_class: Type,
-        engine: Any,
+        self, field_name: str, field_type: Any, holder_class: type, engine: Any
     ):
-        super(UnsupportedSerializationEngine, self).__init__(
+        super().__init__(
             field_name,
             field_type,
             holder_class,
@@ -94,13 +92,9 @@ class UnsupportedSerializationEngine(UnserializableField):
 
 class UnsupportedDeserializationEngine(UnserializableField):
     def __init__(
-        self,
-        field_name: str,
-        field_type: Type,
-        holder_class: Type,
-        engine: Any,
+        self, field_name: str, field_type: Any, holder_class: type, engine: Any
     ):
-        super(UnsupportedDeserializationEngine, self).__init__(
+        super().__init__(
             field_name,
             field_type,
             holder_class,
@@ -112,9 +106,9 @@ class InvalidFieldValue(ValueError):
     def __init__(
         self,
         field_name: str,
-        field_type: Type,
+        field_type: Any,
         field_value: Any,
-        holder_class: Type,
+        holder_class: type,
         msg: str | None = None,
     ):
         self.field_name = field_name
@@ -135,7 +129,7 @@ class InvalidFieldValue(ValueError):
         s = (
             f'Field "{self.field_name}" of type {self.field_type_name} '
             f"in {self.holder_class_name} has invalid value "
-            f"{repr(self.field_value)}"
+            f"{self.field_value!r}"
         )
         if self.msg:
             s += f": {self.msg}"
@@ -153,7 +147,7 @@ class MissingDiscriminatorError(LookupError):
 class SuitableVariantNotFoundError(ValueError):
     def __init__(
         self,
-        variants_type: Type,
+        variants_type: TypeForm,
         discriminator_name: str | None = None,
         discriminator_value: Any = None,
     ):
@@ -178,7 +172,7 @@ class BadHookSignature(TypeError):
 
 
 class ThirdPartyModuleNotFoundError(ModuleNotFoundError):
-    def __init__(self, module_name: str, field_name: str, holder_class: Type):
+    def __init__(self, module_name: str, field_name: str, holder_class: type):
         self.module_name = module_name
         self.field_name = field_name
         self.holder_class = holder_class
@@ -197,7 +191,7 @@ class ThirdPartyModuleNotFoundError(ModuleNotFoundError):
 
 
 class UnresolvedTypeReferenceError(NameError):
-    def __init__(self, holder_class: Type, unresolved_type_name: str):
+    def __init__(self, holder_class: type, unresolved_type_name: str):
         self.holder_class = holder_class
         self.name = unresolved_type_name
 
