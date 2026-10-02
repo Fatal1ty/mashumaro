@@ -87,6 +87,8 @@ DataClassDictMixinPath = (
     f"{__name__.rsplit('.', 3)[:-3][0]}.mixins.dict.DataClassDictMixin"
 )
 
+T = typing_extensions.TypeVar("T")
+
 
 # An origin can be a bare typing special form (for example, typing.Literal),
 # which is not necessarily a valid TypeForm on its own.
@@ -810,7 +812,7 @@ def hash_type_args(type_args: Iterable[Any]) -> str:
     return md5(",".join(map(type_name, type_args)).encode()).hexdigest()
 
 
-def iter_all_subclasses(cls: type) -> Iterator[type]:
+def iter_all_subclasses(cls: type[T]) -> Iterator[type[T]]:
     for subclass in cls.__subclasses__():
         yield subclass
         yield from iter_all_subclasses(subclass)
