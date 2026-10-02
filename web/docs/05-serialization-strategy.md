@@ -137,6 +137,11 @@ As a result, an input string such as `"1723800000"` is converted to `float` befo
 
 Annotation processing changes the boundary of your method. Without it, the method sees raw input and its return value is final. With it, Mashumaro applies recursive typed conversion on both sides.
 
+> [!NOTE]
+> `use_annotations` is opt-in for compatibility with older code and is planned
+> to become the default in the next major release. Annotate both directions so
+> the conversion contract remains complete when enabling it today.
+
 ## Match subclasses
 
 By default a strategy registered for `Base` matches exactly `Base`. Opt into subclass matching when a base-class policy should apply across a hierarchy:

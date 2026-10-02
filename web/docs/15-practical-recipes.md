@@ -38,30 +38,102 @@ Mashumaro deliberately uses an explicit alias mapping rather than guessing a nam
 
 ## Rename a field without breaking old payloads
 
-An alias plus `allow_deserialization_not_by_alias` supports two names: the external alias and current Python field name.
-
-For more than two historical names, normalize them before deserialization:
+Declare the current wire name first, followed by every historical input name.
+Enable `allow_deserialization_not_by_alias` when the Python field name should
+also remain valid during the migration:
 
 ```python
 from dataclasses import dataclass
+from typing import Annotated
 
 from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+from mashumaro.types import Alias
 
 
 @dataclass
 class Customer(DataClassDictMixin):
-    display_name: str
+    display_name: Annotated[
+        str,
+        Alias("displayName"),
+        Alias("name"),
+        Alias("full_name"),
+    ]
 
-    @classmethod
-    def __pre_deserialize__(cls, data):
-        data = dict(data)
-        for old_name in ("name", "full_name", "displayName"):
-            if old_name in data and "display_name" not in data:
-                data["display_name"] = data.pop(old_name)
-        return data
+    class Config(BaseConfig):
+        serialize_by_alias = True
+        allow_deserialization_not_by_alias = True
+
+
+assert Customer.from_dict({"name": "Alice"}) == Customer("Alice")
+assert Customer.from_dict({"full_name": "Alice"}) == Customer("Alice")
+assert Customer.from_dict({"display_name": "Alice"}) == Customer("Alice")
+assert Customer("Alice").to_dict() == {"displayName": "Alice"}
 ```
 
-Choose one canonical output name and stop emitting old names. Input compatibility can be wider than output compatibility.
+The first alias is the canonical output name. Later aliases are accepted only
+on input, so compatibility can be wider for readers than for writers.
+
+## Give logical types distinct wire contracts
+
+When several values share the same runtime type but have different wire
+contracts, give each one a logical type and register its own strategy.
+`NewType` gives type checkers the strongest separation, while `Annotated`
+adds no wrapper call when values are constructed manually:
+
+```python
+from dataclasses import dataclass
+from typing import Annotated, NewType
+
+from mashumaro import DataClassDictMixin
+
+SessionID = NewType("SessionID", str)
+AccountID = Annotated[str, "AccountID"]
+type DeviceID = str  # Python 3.12+
+
+
+@dataclass
+class Context(DataClassDictMixin):
+    account_id: AccountID
+    session_id: SessionID
+    device_id: DeviceID
+
+    class Config:
+        serialization_strategy = {
+            AccountID: {
+                "serialize": lambda value: f"account:{value}",
+                "deserialize": lambda value: value.removeprefix("account:"),
+            },
+            SessionID: {
+                "serialize": lambda value: f"session:{value}",
+                "deserialize": lambda value: value.removeprefix("session:"),
+            },
+            DeviceID: {
+                "serialize": lambda value: f"device:{value}",
+                "deserialize": lambda value: value.removeprefix("device:"),
+            },
+        }
+
+
+context = Context(
+    account_id="42",
+    session_id=SessionID("abc"),
+    device_id="mobile",
+)
+assert context.to_dict() == {
+    "account_id": "account:42",
+    "session_id": "session:abc",
+    "device_id": "device:mobile",
+}
+assert Context.from_dict(context.to_dict()) == context
+```
+
+The `type` statement creates a [`TypeAliasType`](https://docs.python.org/3/library/typing.html#typing.TypeAliasType)
+and requires Python 3.12 or newer. On Python 3.10 and 3.11, import
+`TypeAliasType` from `typing_extensions` and write
+`DeviceID = TypeAliasType("DeviceID", str)` instead. Keep the modern syntax in
+a version-specific module when the same source tree must be parsed by older
+Python versions.
 
 ## Strict public payload, flexible internal model
 
@@ -402,8 +474,8 @@ from mashumaro.codecs.basic import BasicDecoder, BasicEncoder
 request_decoder = BasicDecoder(CreateUserRequest)
 response_encoder = BasicEncoder(APIUser)
 
-request = request_decoder.decode(framework_request_json)
-framework_response_json = response_encoder.encode(response_model)
+request = request_decoder.decode(framework_request_data)
+framework_response_data = response_encoder.encode(response_model)
 ```
 
 This avoids encoding JSON to text and parsing it again just to reach the typed conversion layer.

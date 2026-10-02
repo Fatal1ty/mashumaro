@@ -224,7 +224,7 @@ Collection contents are converted recursively. Abstract collection annotations d
 |---|---|---|
 | `list[T]`, `typing.List[T]` | `list` | `list` |
 | `tuple[...]`, `typing.Tuple[...]` | `list` | `tuple` |
-| `set[T]`, `collections.abc.Set[T]` | `list` | `set` |
+| `set[T]`, `collections.abc.Set[T]`, `collections.abc.MutableSet[T]` | `list` | `set` |
 | `frozenset[T]` | `list` | `frozenset` |
 | `collections.deque[T]` | `list` | `deque` |
 | `Sequence[T]`, `MutableSequence[T]` | `list` | `list` |

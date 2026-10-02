@@ -223,7 +223,9 @@ tree = Tree.from_dict(
 assert tree.root.children[0].value == 2
 ```
 
-With [postponed annotations](https://docs.python.org/3/library/__future__.html#future-annotations) enabled by default, compilation can wait until referenced types exist.
+With [`Config.allow_postponed_evaluation`](#/docs/config-options#allow-postponed-evaluation)
+enabled by default, generated-method compilation can wait until referenced
+types exist.
 
 > [!IMPORTANT]
 > Calling an inherited mixin method through a runtime generic alias such as `Node[int].from_dict(...)` does not specialize that method with `int`; Python forwards the attribute to the unspecialized origin class. Put the specialized type in a containing model, use `BasicDecoder(Node[int])`, or create a concrete subclass when direct methods are required.
@@ -265,14 +267,15 @@ Construct and reuse one codec per concrete shape. A bare generic with unresolved
 
 ## Version matrix
 
-| Capability | Python 3.10 | 3.11 | 3.12 | 3.13–3.14 |
-|---|---|---|---|---|
-| Classic `Generic[T]` | Yes | Yes | Yes | Yes |
-| `TypeVarTuple`/`Unpack` objects | `typing_extensions` | Native | Native | Native |
-| `tuple[*Ts]` syntax | Limited; use `Unpack` | Yes | Yes | Yes |
-| PEP 695 class/type-alias syntax | No | No | Yes | Yes |
-| TypeVar defaults | `typing_extensions` | `typing_extensions` | `typing_extensions` | Native or extension |
-| Deferred 3.14 annotations | Future import model | Future import model | Future import model | Native in 3.14 |
+| Capability | Native starting in | Earlier supported versions |
+|---|---|---|
+| Classic `Generic[T]` | Python 3.10 | Not applicable |
+| `TypeVarTuple` and `Unpack` objects | Python 3.11 | Import them from `typing_extensions` on 3.10 |
+| `tuple[*Ts]` syntax | Python 3.11 | Use `tuple[Unpack[Ts]]` on 3.10 |
+| PEP 695 class and type-alias syntax | Python 3.12 | Use classic `Generic` declarations and assignment-style aliases |
+| TypeVar defaults | Python 3.13 | Import `TypeVar` from `typing_extensions` |
+| Deferred annotation evaluation | Python 3.14 | Use the future-annotations model with `allow_postponed_evaluation` |
+| Generic `slice` annotations | Python 3.15 | Use unparameterized `slice` |
 
 ## Troubleshooting generics
 

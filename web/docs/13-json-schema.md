@@ -7,7 +7,7 @@ group: Advanced
 
 Mashumaro builds [JSON Schema](https://json-schema.org/specification) for any [supported type shape](#/docs/supported-types), not only dataclasses. The result is a typed `JSONSchema` object with `to_dict()` and `to_json()` methods.
 
-Built-in schema dialects cover [**JSON Schema Draft 2020-12**](https://json-schema.org/draft/2020-12/json-schema-core) and [**OpenAPI 3.1**](https://spec.openapis.org/oas/v3.1.0.html#schema-object).
+Built-in schema dialects cover [**JSON Schema Draft 2020-12**](https://json-schema.org/draft/2020-12/json-schema-core) and [**OpenAPI 3.1**](https://spec.openapis.org/oas/v3.1.html).
 
 ## Build a schema
 

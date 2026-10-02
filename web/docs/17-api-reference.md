@@ -325,7 +325,7 @@ See [Field Options](#/docs/field-options).
 
 ## JSON Schema
 
-The supported targets are [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12/json-schema-core) and the [OpenAPI 3.1 Schema Object](https://spec.openapis.org/oas/v3.1.0.html#schema-object).
+The supported targets are [JSON Schema Draft 2020-12](https://json-schema.org/draft/2020-12/json-schema-core) and the [OpenAPI 3.1 Schema Object](https://spec.openapis.org/oas/v3.1.html#schema-object).
 
 ```python
 from mashumaro.jsonschema import (
