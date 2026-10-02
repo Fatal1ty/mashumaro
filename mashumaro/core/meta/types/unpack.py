@@ -641,7 +641,7 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
             origin = get_type_origin(typ)
             if id(origin) in seen_types:
                 continue
-            if not is_dataclass(origin):
+            if not isinstance(origin, type) or not is_dataclass(origin):
                 continue
             seen_types.add(id(origin))
             config = builder.get_config(origin)
