@@ -344,6 +344,17 @@ class CodeBuilder:
             if not method_was_in_progress:
                 self.methods_in_progress.remove(method_key)
 
+    @property
+    def generated_code_filename(self) -> str:
+        name = type_name(self.cls)
+        if self.dialect is not None:
+            name = f"{name}[{type_name(self.dialect)}]"
+        return f"<mashumaro {name}>"
+
+    def exec_generated_code(self, code: str) -> None:
+        filename = self.generated_code_filename
+        exec(compile(code, filename, "exec"), self.globals, self.__dict__)
+
     def compile(self) -> None:
         code = self.lines.as_text()
         if self.get_config().debug:
@@ -352,7 +363,7 @@ class CodeBuilder:
             else:
                 print(f"{type_name(self.cls)}:")
             print(code)
-        exec(code, self.globals, self.__dict__)
+        self.exec_generated_code(code)
 
     def get_declared_hook(self, method_name: str) -> typing.Any:
         cls = get_class_that_defines_method(method_name, self.cls)
