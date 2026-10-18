@@ -1,18 +1,19 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from typing import Optional
 
 import pytest
-from typing_extensions import Literal
+from typing_extensions import Annotated, Literal
 
-from mashumaro import DataClassDictMixin
+from mashumaro import DataClassDictMixin, field_options
 from mashumaro.codecs.basic import decode
-from mashumaro.config import BaseConfig
+from mashumaro.config import BaseConfig, TO_DICT_ADD_BY_ALIAS_FLAG
 from mashumaro.exceptions import (
     InvalidFieldValue,
+    MissingDiscriminatorError,
     SuitableVariantNotFoundError,
 )
-from mashumaro.types import Discriminator
+from mashumaro.types import Alias, Discriminator
 
 DT_STR = "2023-05-30"
 DT_DATE = date(2023, 5, 30)
@@ -811,3 +812,57 @@ def test_by_subtypes_with_custom_variant_tagger_and_multiple_tags():
         VariantWithMultipleTags.from_dict({"type": "unknown"})
     with pytest.raises(SuitableVariantNotFoundError):
         decode({"type": "unknown"}, _VariantWithMultipleTags)
+
+
+@pytest.mark.parametrize("alias_source", ["metadata", "config", "annotated"])
+@pytest.mark.parametrize("allow_python_name", [False, True])
+@pytest.mark.parametrize("use_codec", [False, True])
+def test_class_discriminator_field_aliases(
+    alias_source, allow_python_name, use_codec
+):
+    key_aliases = ("k", "kind_alias")
+    metadata = (
+        field_options(alias=key_aliases) if alias_source == "metadata" else {}
+    )
+
+    parent_field_type = str
+    child_field_type = Literal["child"]
+    if alias_source == "annotated":
+        parent_field_type = Annotated[str, Alias("k"), Alias("kind_alias")]
+        child_field_type = Annotated[
+            Literal["child"], Alias("k"), Alias("kind_alias")
+        ]
+
+    @dataclass
+    class Parent(DataClassDictMixin):
+        kind: parent_field_type = field(metadata=metadata)
+
+        class Config(BaseConfig):
+            discriminator = Discriminator(field="kind", include_subtypes=True)
+            allow_deserialization_not_by_alias = allow_python_name
+            code_generation_options = [TO_DICT_ADD_BY_ALIAS_FLAG]
+            aliases = {"kind": key_aliases} if alias_source == "config" else {}
+
+    @dataclass
+    class Child(Parent):
+        kind: child_field_type = field(default="child", metadata=metadata)
+
+    def load(value):
+        return decode(value, Parent) if use_codec else Parent.from_dict(value)
+
+    child = Child()
+    assert child.to_dict(by_alias=True) == {"k": "child"}
+    assert load(child.to_dict(by_alias=True)) == child
+    assert load({"kind_alias": "child"}) == child
+    # Alias precedence matches that of the selected variant's field unpacker.
+    assert load({"k": "child", "kind": "unknown"}) == child
+    assert load({"k": "child", "kind_alias": "unknown"}) == child
+    if allow_python_name:
+        assert load({"kind": "child"}) == child
+    else:
+        with pytest.raises(MissingDiscriminatorError):
+            load({"kind": "child"})
+    with pytest.raises(MissingDiscriminatorError):
+        load({})
+    with pytest.raises(SuitableVariantNotFoundError):
+        load({"k": "unknown"})

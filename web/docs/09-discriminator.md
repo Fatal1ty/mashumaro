@@ -119,6 +119,8 @@ assert event == Deleted(object_id=42)
 
 This works for nested `Event` fields and direct `Event.from_dict()` calls.
 
+When the discriminator field is declared on the base model, keep `Discriminator.field` equal to its Python attribute name. Tag lookup honors the base field's aliases from field metadata, `Alias` annotations, or `Config.aliases`, in the same order as ordinary field deserialization. The Python name is accepted after the aliases only when `allow_deserialization_not_by_alias=True`. Configure the aliases consistently on the base and its variants so the selected variant can deserialize the same payload.
+
 > [!NOTE]
 > A class-level discriminator is activated for a class only when that class defines `Config` in its own namespace and the effective config provides a discriminator, either directly or through config inheritance. Other descendants are deserialized as concrete types rather than becoming additional polymorphic entry points. This ensures that, after `Event.from_dict()` selects `Deleted`, the selected class does not run the same discriminator again.
 

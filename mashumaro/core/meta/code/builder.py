@@ -411,7 +411,22 @@ class CodeBuilder:
                     variant_tagger_fn=discr.variant_tagger_fn,
                 )
                 self.add_type_modules(self.cls)
-                method = SubtypeUnpackerBuilder(discr).build(
+                discriminator_aliases: tuple[str, ...] = ()
+                if discr.field:
+                    discriminator_aliases = self.__get_field_aliases(
+                        discr.field,
+                        field_types.get(discr.field, typing.Any),
+                        self.metadatas.get(discr.field, {}),
+                        config,
+                    )
+                    if (
+                        discriminator_aliases
+                        and config.allow_deserialization_not_by_alias
+                    ):
+                        discriminator_aliases += (discr.field,)
+                method = SubtypeUnpackerBuilder(
+                    discr, field_aliases=discriminator_aliases
+                ).build(
                     spec=ValueSpec(
                         type=self.cls,
                         expression="d",

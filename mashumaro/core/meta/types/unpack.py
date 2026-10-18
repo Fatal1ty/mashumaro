@@ -310,9 +310,11 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
         self,
         discriminator: Discriminator,
         base_variants: tuple[type, ...] | None = None,
+        field_aliases: tuple[str, ...] = (),
     ):
         self.discriminator = discriminator
         self.base_variants = base_variants or ()
+        self.field_aliases = tuple(dict.fromkeys(field_aliases))
         self._variants_attr: str | None = None
         self._unpackers_attr: str | None = None
 
@@ -430,13 +432,29 @@ class DiscriminatedUnionUnpackerBuilder(AbstractUnpackerBuilder):
 
         if discriminator.field:
             chosen_cls = f"{variants_map}[discriminator]"
-            with lines.indent("try:"):
-                lines.append(f"discriminator = value['{discriminator.field}']")
-            with lines.indent("except KeyError:"):
+            if self.field_aliases:
                 lines.append(
-                    f"raise MissingDiscriminatorError('{discriminator.field}')"
-                    " from None"
+                    f"discriminator = value.get({self.field_aliases[0]!r}, MISSING)"
                 )
+                for alias in self.field_aliases[1:]:
+                    with lines.indent("if discriminator is MISSING:"):
+                        lines.append(
+                            f"discriminator = value.get({alias!r}, MISSING)"
+                        )
+                with lines.indent("if discriminator is MISSING:"):
+                    lines.append(
+                        f"raise MissingDiscriminatorError({discriminator.field!r})"
+                    )
+            else:
+                with lines.indent("try:"):
+                    lines.append(
+                        f"discriminator = value['{discriminator.field}']"
+                    )
+                with lines.indent("except KeyError:"):
+                    lines.append(
+                        f"raise MissingDiscriminatorError('{discriminator.field}')"
+                        " from None"
+                    )
             with lines.indent("try:"):
                 if spec.builder.is_nailed:
                     lines.append(f"return {chosen_cls}.{variant_method_call}")
