@@ -183,10 +183,15 @@ class Instance:
         new_type = changes.get("type")
         if isinstance(new_type, ForwardRef):
             changes["type"] = evaluate_forward_ref(new_type)
-        new_instance = replace(self, **changes)
-        if isinstance(self.origin_type, type) and is_dataclass(
-            self.origin_type
-        ):
+        init_fields = {
+            "type": self.type,
+            "name": self.name,
+            "_Instance__owner_builder": self.__owner_builder,
+            "_Instance__self_builder": self.__self_builder,
+        }
+        init_fields.update(changes)
+        new_instance = self.__class__(**init_fields)
+        if self.__self_builder is not None:
             new_instance.__owner_builder = self.__self_builder
             new_instance.update_type(new_instance.type)
         return new_instance
@@ -194,8 +199,9 @@ class Instance:
     def __post_init__(self) -> None:
         self._original_type = self.type
         self.update_type(self.type)
-        if is_annotated(self.type):
-            self.annotations = getattr(self.type, "__metadata__", [])
+        metadata = getattr(self.type, "__metadata__", None)
+        if metadata is not None and is_annotated(self.type):
+            self.annotations = metadata
             self.type = get_args(self.type)[0]
             self.origin_type = get_type_origin(self.type)
 
@@ -293,7 +299,7 @@ class InstanceSchemaCreatorRegistry:
         return func
 
     def iter(self) -> Iterable[InstanceSchemaCreator]:
-        yield from self._registry
+        return iter(self._registry)
 
 
 @dataclass
@@ -311,7 +317,7 @@ def get_schema(
             if with_dialect_uri:
                 schema.schema = ctx.dialect.uri
             break
-    if schema is not None:
+    if schema is not None and instance.annotations:
         apply_schema_annotations(instance, schema)
     for plugin in ctx.plugins:
         try:
@@ -940,19 +946,18 @@ def apply_object_constraints(
 
 @register
 def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
-    if not issubclass(instance.origin_type, Collection):  # noqa: SIM114
+    origin_type = instance.origin_type
+    if not issubclass(origin_type, Collection):  # noqa: SIM114
         return None
-    elif issubclass(instance.origin_type, Enum):
+    elif issubclass(origin_type, Enum):
         return None
 
-    args = get_args(instance.type)
-
-    if issubclass(instance.origin_type, _BASE64_TYPES):
+    if issubclass(origin_type, _BASE64_TYPES):
         return JSONSchema(
             type=JSONSchemaInstanceType.STRING,
             format=JSONSchemaInstanceFormatExtension.BASE64,
         )
-    elif issubclass(instance.origin_type, str):
+    elif issubclass(origin_type, str):
         schema = JSONSchema(type=JSONSchemaInstanceType.STRING)
         for annotation in instance.annotations:
             if isinstance(annotation, MinLength):
@@ -962,9 +967,12 @@ def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
             elif isinstance(annotation, Pattern):
                 schema.pattern = annotation.value
         return schema
-    elif is_generic(instance.type) and issubclass(
-        instance.origin_type, (list, deque)
-    ):
+
+    args = get_args(instance.type)
+    # Parametrized aliases are always generic.
+    generic = bool(args) or is_generic(instance.type)
+
+    if generic and issubclass(origin_type, (list, deque)):
         return apply_array_constraints(
             instance,
             JSONArraySchema(
@@ -975,16 +983,14 @@ def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
                 )
             ),
         )
-    elif issubclass(instance.origin_type, tuple):
-        if is_named_tuple(instance.origin_type):
+    elif issubclass(origin_type, tuple):
+        if is_named_tuple(origin_type):
             return apply_array_constraints(
                 instance, on_named_tuple(instance, ctx)
             )
-        elif is_generic(instance.type):
+        elif generic:
             return apply_array_constraints(instance, on_tuple(instance, ctx))
-    elif is_generic(instance.type) and issubclass(
-        instance.origin_type, (frozenset, Set)
-    ):
+    elif generic and issubclass(origin_type, (frozenset, Set)):
         return apply_array_constraints(
             instance,
             JSONArraySchema(
@@ -996,9 +1002,7 @@ def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
                 uniqueItems=True,
             ),
         )
-    elif is_generic(instance.type) and issubclass(
-        instance.origin_type, ChainMap
-    ):
+    elif generic and issubclass(origin_type, ChainMap):
         return apply_array_constraints(
             instance,
             JSONArraySchema(
@@ -1014,9 +1018,7 @@ def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
                 )
             ),
         )
-    elif is_generic(instance.type) and issubclass(
-        instance.origin_type, Counter
-    ):
+    elif generic and issubclass(origin_type, Counter):
         schema = JSONObjectSchema(
             additionalProperties=get_schema(instance.derive(type=int), ctx)
         )
@@ -1025,27 +1027,19 @@ def on_collection(instance: Instance, ctx: Context) -> JSONSchema | None:
                 instance.derive(type=args[0]), ctx
             )
         return apply_object_constraints(instance, schema)
-    elif is_typed_dict(instance.origin_type):
+    elif issubclass(origin_type, dict) and is_typed_dict(origin_type):
         return on_typed_dict(instance, ctx)
-    elif is_generic(instance.type) and issubclass(
-        instance.origin_type, Mapping
-    ):
-        schema = JSONObjectSchema(
-            additionalProperties=(
-                _get_schema_or_none(instance.derive(type=args[1]), ctx)
-                if args
-                else None
-            ),
-            propertyNames=(
-                _get_schema_or_none(instance.derive(type=args[0]), ctx)
-                if args
-                else None
-            ),
-        )
+    elif generic and issubclass(origin_type, Mapping):
+        schema = JSONObjectSchema()
+        if args:
+            schema.additionalProperties = _get_schema_or_none(
+                instance.derive(type=args[1]), ctx
+            )
+            schema.propertyNames = _get_schema_or_none(
+                instance.derive(type=args[0]), ctx
+            )
         return apply_object_constraints(instance, schema)
-    elif is_generic(instance.type) and issubclass(
-        instance.origin_type, Sequence
-    ):
+    elif generic and issubclass(origin_type, Sequence):
         return apply_array_constraints(
             instance,
             JSONArraySchema(
