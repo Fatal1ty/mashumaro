@@ -359,11 +359,10 @@ def is_generic(typ: object) -> bool:
 
 
 def is_typed_dict(typ: object) -> bool:
-    for module in (typing, typing_extensions):
-        with suppress(AttributeError):
-            if type(typ) is module._TypedDictMeta:
-                return True
-    return False
+    return type(typ) in (
+        getattr(typing_extensions, "_TypedDictMeta", None),
+        getattr(typing, "_TypedDictMeta", None),
+    )
 
 
 def is_readonly(typ: object) -> bool:
