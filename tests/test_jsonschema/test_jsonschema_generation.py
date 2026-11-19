@@ -1339,6 +1339,41 @@ def test_jsonschema_for_type_var_tuple():
     )
 
 
+@pytest.mark.parametrize(
+    "instance_type",
+    [
+        Tuple[int, Unpack[Tuple[str, str]], bool],
+        Tuple[Unpack[Tuple[int, str]], str, bool],
+        Tuple[int, str, Unpack[Tuple[str, bool]]],
+    ],
+)
+def test_jsonschema_for_fixed_unpack_with_surrounding_items(instance_type):
+    assert build_json_schema(instance_type) == JSONArraySchema(
+        prefixItems=[
+            JSONSchema(type=JSONSchemaInstanceType.INTEGER),
+            JSONSchema(type=JSONSchemaInstanceType.STRING),
+            JSONSchema(type=JSONSchemaInstanceType.STRING),
+            JSONSchema(type=JSONSchemaInstanceType.BOOLEAN),
+        ],
+        minItems=4,
+        maxItems=4,
+    )
+
+
+def test_jsonschema_for_bounded_variadic_unpack():
+    assert build_json_schema(
+        Tuple[Unpack[Annotated[Tuple[str, ...], MaxItems(2)]]]
+    ) == JSONArraySchema(
+        items=JSONSchema(type=JSONSchemaInstanceType.STRING), maxItems=2
+    )
+
+
+def test_jsonschema_for_empty_fixed_unpack():
+    assert build_json_schema(Tuple[Unpack[Tuple[()]]]) == JSONArraySchema(
+        maxItems=0
+    )
+
+
 def test_jsonschema_for_unsupported_type():
     with pytest.raises(NotImplementedError):
         build_json_schema(object)

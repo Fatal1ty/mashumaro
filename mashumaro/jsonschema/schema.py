@@ -756,27 +756,40 @@ def on_tuple(instance: Instance, ctx: Context) -> JSONArraySchema:
         for arg_idx, arg in enumerate(args, start=1):
             if not is_unpack(arg):
                 min_items += 1
+                max_items += 1
                 if not unpack_schema:
                     prefix_items.append(
                         get_schema(instance.derive(type=arg), ctx)
                     )
             else:
-                unpack_schema = get_schema(instance.derive(type=arg), ctx)
-                unpack_idx = arg_idx
+                arg_schema = get_schema(instance.derive(type=arg), ctx)
+                if (
+                    arg_schema.maxItems is not None
+                    and arg_schema.items is None
+                    and len(arg_schema.prefixItems or [])
+                    == arg_schema.maxItems
+                ):
+                    min_items += arg_schema.minItems or 0
+                    max_items += arg_schema.maxItems
+                    if not unpack_schema:
+                        prefix_items.extend(arg_schema.prefixItems or [])
+                else:
+                    unpack_schema = arg_schema
+                    unpack_idx = arg_idx
         if unpack_schema:
             prefix_items.extend(unpack_schema.prefixItems or [])
             min_items += unpack_schema.minItems or 0
-            max_items += unpack_schema.maxItems or 0
             if unpack_idx == len(args):
                 items = unpack_schema.items
-        else:
-            min_items = len(args)
-            max_items = len(args)
         return JSONArraySchema(
             prefixItems=prefix_items or None,
             items=items,
             minItems=min_items or None,
-            maxItems=max_items or None,
+            maxItems=(
+                (unpack_schema.maxItems or None)
+                if unpack_schema
+                else max_items
+            ),
         )
 
 

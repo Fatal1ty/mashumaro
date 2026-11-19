@@ -215,6 +215,8 @@ The builder shares one `Context`, so definitions accumulate across calls. Constr
 | `bytes`, `bytearray`, `memoryview`, `Buffer` | String with Mashumaro's `base64` format extension |
 | Paths | String with Mashumaro's `path` format extension |
 
+For example, `tuple[int, Unpack[tuple[str, str]], bool]` has the same schema as `tuple[int, str, str, bool]`, including four ordered `prefixItems` and an exact length of four.
+
 Mashumaro also defines extension formats for time zones, timedelta, networks, IP interfaces, decimal, fraction, and Base64 where the standard [JSON Schema format vocabulary](https://json-schema.org/draft/2020-12/json-schema-validation#name-defined-formats) has no exact built-in format.
 
 For a bare `slice`, all three component schemas are unrestricted. Generic `slice` arguments determine the schemas for `start`, `stop`, and `step`.
